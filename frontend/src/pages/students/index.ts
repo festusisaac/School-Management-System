@@ -1,0 +1,9 @@
+export { default as StudentRatingPage } from './StudentRatingPage';
+export { default as StudentDirectory } from './StudentDirectory';
+export { default as StudentAdmission } from './StudentAdmission';
+export { default as OnlineAdmission } from './OnlineAdmission';
+export { default as DeactivatedStudents } from './DeactivatedStudents';
+export { default as StudentCategories } from './StudentCategories';
+export { default as StudentHouses } from './StudentHouses';
+export { default as DeactivateReasons } from './DeactivateReasons';
+export { default as StudentProfile } from './StudentProfile';

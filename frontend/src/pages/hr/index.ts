@@ -1,0 +1,9 @@
+export { default as StaffDirectoryPage } from './StaffDirectoryPage';
+export { default as DepartmentsPage } from './DepartmentsPage';
+export { default as DesignationsPage } from './DesignationsPage';
+export { default as StaffAttendancePage } from './StaffAttendancePage';
+export { default as LeaveTypesPage } from './LeaveTypesPage';
+export { default as ApproveLeavePage } from './ApproveLeavePage';
+export { default as ApplyLeavePage } from './ApplyLeavePage';
+export { default as PayrollPage } from './PayrollPage';
+export { default as TeacherRatingPage } from './TeacherRatingPage';

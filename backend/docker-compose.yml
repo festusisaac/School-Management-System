@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: sms-postgres
+    environment:
+      POSTGRES_USER: ${DATABASE_USER:-sms_user}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-sms_password}
+      POSTGRES_DB: ${DATABASE_NAME:-sms_db}
+    ports:
+      - "${DATABASE_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - sms-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-sms_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache & Queue
+  redis:
+    image: redis:7-alpine
+    container_name: sms-redis
+    command: redis-server --appendonly yes
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - sms-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PgAdmin (PostgreSQL Management - Optional for development)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: sms-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@sms.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    networks:
+      - sms-network
+    depends_on:
+      - postgres
+
+  # Redis Commander (Redis Management - Optional for development)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: sms-redis-commander
+    environment:
+      REDIS_HOSTS: local:${REDIS_HOST:-redis}:${REDIS_PORT:-6379}
+    ports:
+      - "8081:8081"
+    networks:
+      - sms-network
+    depends_on:
+      - redis
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  sms-network:
+    driver: bridge

@@ -1,0 +1,306 @@
+import React, { useState, useEffect } from 'react';
+import { Download, Search, Filter } from 'lucide-react';
+import { useToast } from '../../../context/ToastContext';
+import { examinationService, ExamGroup, Exam, ExamResult } from '../../../services/examinationService';
+import api from '../../../services/api';
+import { utils, writeFile } from 'xlsx'; // Assuming valid xlsx import or we'll mock if not available, usually available in this repo context
+
+interface BroadsheetRow {
+    studentId: string;
+    studentName: string;
+    admissionNumber: string;
+    totalScore: number;
+    averageScore: number;
+    position: number;
+    subjectScores: Record<string, number>; // subjectName -> score
+}
+
+const BroadsheetPage = () => {
+    const [groups, setGroups] = useState<ExamGroup[]>([]);
+    const [classes, setClasses] = useState<any[]>([]);
+
+    const [selectedGroup, setSelectedGroup] = useState('');
+    const [selectedClass, setSelectedClass] = useState('');
+
+    const [rows, setRows] = useState<BroadsheetRow[]>([]);
+    const [subjects, setSubjects] = useState<string[]>([]); // Array of subject names for columns
+    const [loading, setLoading] = useState(false);
+
+    const { showError, showSuccess } = useToast();
+
+    useEffect(() => {
+        const init = async () => {
+            try {
+                const [g, c] = await Promise.all([
+                    examinationService.getExamGroups(),
+                    api.getClasses()
+                ]);
+                setGroups(g || []);
+                setClasses(c || []);
+                if (g && g.length > 0) setSelectedGroup(g[0].id);
+            } catch (e) {
+                showError('Failed to load initial data');
+            }
+        };
+        init();
+    }, []);
+
+    useEffect(() => {
+        if (selectedGroup && selectedClass) {
+            fetchBroadsheetData();
+        } else {
+            setRows([]);
+            setSubjects([]);
+        }
+    }, [selectedGroup, selectedClass]);
+
+    const fetchBroadsheetData = async () => {
+        setLoading(true);
+        try {
+            // 1. Fetch Students (Source of Truth)
+            // 2. Fetch Exams for columns
+            // 3. Fetch Processed Results (for official Rank/Avg if available)
+            const [studentsData, allExams, processedResults] = await Promise.all([
+                api.getStudents({ classId: selectedClass, limit: 1000 }),
+                examinationService.getExams(selectedGroup),
+                examinationService.getBroadsheet(selectedClass, selectedGroup).catch(() => []) // unique catch to prevent failure
+            ]);
+
+            // Filter exams for this class only
+            const classExams = allExams.filter(e => e.classId === selectedClass);
+
+            // Extract Subject Names for Columns
+            const examMap = new Map<string, string>(); // examId -> SubjectName
+            classExams.forEach(e => examMap.set(e.id, e.name));
+
+            const subjectNames = Array.from(examMap.values()).sort();
+            setSubjects(subjectNames);
+
+            // 4. Fetch Marks for these exams
+            const marksPromises = classExams.map(exam => examinationService.getMarks(exam.id));
+            const allMarksResults = await Promise.all(marksPromises);
+
+            // Flatten marks: Map<studentId, Map<SubjectName, Score>>
+            const studentMarksMap = new Map<string, Map<string, number>>();
+
+            allMarksResults.forEach((examMarks, index) => {
+                const subjectName = examMap.get(classExams[index].id);
+                if (!subjectName) return;
+
+                examMarks.forEach(mark => {
+                    if (!studentMarksMap.has(mark.studentId)) {
+                        studentMarksMap.set(mark.studentId, new Map());
+                    }
+                    studentMarksMap.get(mark.studentId)?.set(subjectName, mark.score);
+                });
+            });
+
+            // 5. Merge Data
+            const processedRows: BroadsheetRow[] = studentsData.map((student: any) => {
+                const termResult = processedResults.find((r: any) => (r.student?.id === student.id) || (r.studentId === student.id));
+
+                const scores: Record<string, number> = {};
+                const marks = studentMarksMap.get(student.id);
+
+                let calculatedTotal = 0;
+                let subjectCount = 0;
+
+                if (marks) {
+                    marks.forEach((score, subj) => {
+                        scores[subj] = score;
+                        calculatedTotal += score;
+                        subjectCount++;
+                    });
+                }
+
+                // Prefer term result if available (it has official rank), otherwise calculate on fly
+                const totalScore = termResult ? termResult.totalScore : calculatedTotal;
+                const averageScore = termResult ? termResult.averageScore : (subjectCount > 0 ? calculatedTotal / subjectCount : 0);
+
+                return {
+                    studentId: student.id,
+                    studentName: `${student.firstName} ${student.lastName}`,
+                    admissionNumber: student.admissionNumber || student.admissionNo || 'N/A',
+                    totalScore: totalScore,
+                    averageScore: averageScore,
+                    position: termResult ? (processedResults.indexOf(termResult) + 1) : 0, // 0 means unranked/unprocessed
+                    subjectScores: scores
+                };
+            });
+
+            // Sort by Total Score DESC if not using official ranks
+            if (processedResults.length === 0) {
+                processedRows.sort((a, b) => b.totalScore - a.totalScore);
+                // Assign temporary ranks
+                processedRows.forEach((row, idx) => row.position = idx + 1);
+            } else {
+                // If we have official ranks, sort by them
+                processedRows.sort((a, b) => (a.position || 9999) - (b.position || 9999));
+            }
+
+            setRows(processedRows);
+
+        } catch (error) {
+            console.error(error);
+            showError('Failed to build broadsheet');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleExport = () => {
+        if (rows.length === 0) return;
+
+        // Flatten for Excel
+        const exportData = rows.map(r => {
+            const row: any = {
+                'Rank': r.position,
+                'Student Name': r.studentName,
+                'Admission No': r.admissionNumber,
+                ...r.subjectScores,
+                'Total': r.totalScore,
+                'Average': parseInt(r.averageScore.toString()).toFixed(2)
+            };
+            return row;
+        });
+
+        const ws = utils.json_to_sheet(exportData);
+        const wb = utils.book_new();
+        utils.book_append_sheet(wb, ws, "Broadsheet");
+        writeFile(wb, `Broadsheet_${new Date().toISOString().split('T')[0]}.xlsx`);
+        showSuccess('Broadsheet exported');
+    };
+
+    return (
+        <div className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Broadsheet</h1>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Master accumulation sheet for class performance.</p>
+                </div>
+                <div className="flex gap-2">
+                    <button
+                        onClick={handleExport}
+                        disabled={rows.length === 0}
+                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-shadow shadow-sm text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <Download className="w-4 h-4" />
+                        Export Excel
+                    </button>
+                </div>
+            </div>
+
+            {/* Filters */}
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Exam Group</label>
+                    <select
+                        className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={selectedGroup}
+                        onChange={(e) => setSelectedGroup(e.target.value)}
+                    >
+                        <option value="">Select Exam Group</option>
+                        {groups.map(g => (
+                            <option key={g.id} value={g.id}>{g.name}</option>
+                        ))}
+                    </select>
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Class</label>
+                    <select
+                        className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={selectedClass}
+                        onChange={(e) => setSelectedClass(e.target.value)}
+                    >
+                        <option value="">Select Class</option>
+                        {classes.map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                    </select>
+                </div>
+            </div>
+
+            {/* Main Content */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden min-h-[400px] grid grid-cols-1 w-full">
+                {loading ? (
+                    <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-3"></div>
+                        <p className="text-sm font-medium">Compiling master sheet...</p>
+                    </div>
+                ) : !selectedGroup || !selectedClass ? (
+                    <div className="flex flex-col items-center justify-center h-64 text-center p-8 text-gray-400">
+                        <Search className="w-12 h-12 mb-4 opacity-10" />
+                        <p className="font-medium text-gray-900 dark:text-white">Ready to Compile</p>
+                        <p className="text-sm mt-1">Select an Exam Group and Class to generate the broadsheet.</p>
+                    </div>
+                ) : rows.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-64 text-center p-8 text-gray-400">
+                        <Filter className="w-12 h-12 mb-4 opacity-10" />
+                        <p className="font-medium text-gray-900 dark:text-white">No Result Data</p>
+                        <p className="text-sm mt-1">No processed results found for this selection. Have you processed the results yet?</p>
+                    </div>
+                ) : (
+                    <div className="w-full overflow-x-auto">
+                        <table className="w-full text-sm text-left border-collapse">
+                            <thead className="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700 whitespace-nowrap">
+                                <tr>
+                                    <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider sticky left-0 bg-gray-50 dark:bg-gray-900 z-10 w-16 text-center border-r border-gray-200 dark:border-gray-700 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">Pos</th>
+                                    <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider min-w-[250px] sticky left-16 bg-gray-50 dark:bg-gray-900 z-10 border-r border-gray-200 dark:border-gray-700 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">Student Information</th>
+
+                                    {subjects.map(subj => (
+                                        <th key={subj} className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider min-w-[100px] border-r border-gray-100 dark:border-gray-700">
+                                            {subj}
+                                        </th>
+                                    ))}
+
+                                    <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider bg-blue-50 dark:bg-blue-900/10 min-w-[80px]">Total</th>
+                                    <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider bg-blue-50 dark:bg-blue-900/10 min-w-[80px]">Avg</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-gray-800 whitespace-nowrap">
+                                {rows.map((row) => (
+                                    <tr key={row.studentId} className="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
+                                        <td className="px-4 py-3 text-center font-bold text-gray-500 sticky left-0 bg-white dark:bg-gray-800 z-10 border-r border-gray-100 dark:border-gray-700 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
+                                            {row.position}
+                                        </td>
+                                        <td className="px-6 py-3 sticky left-16 bg-white dark:bg-gray-800 z-10 border-r border-gray-100 dark:border-gray-700 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
+                                            <div className="flex flex-col">
+                                                <span className="font-semibold text-gray-900 dark:text-white">{row.studentName}</span>
+                                                <span className="text-xs text-gray-400 font-medium">ID: {row.admissionNumber}</span>
+                                            </div>
+                                        </td>
+
+                                        {subjects.map(subj => {
+                                            const score = row.subjectScores[subj];
+                                            return (
+                                                <td key={subj} className="px-4 py-3 text-center border-r border-gray-50 dark:border-gray-800">
+                                                    {score !== undefined ? (
+                                                        <span className={`font-medium ${score < 50 ? 'text-red-500' : 'text-gray-700 dark:text-gray-300'}`}>
+                                                            {score}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-gray-200 dark:text-gray-700">-</span>
+                                                    )}
+                                                </td>
+                                            );
+                                        })}
+
+                                        <td className="px-4 py-3 text-center font-bold text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/5">
+                                            {row.totalScore}
+                                        </td>
+                                        <td className="px-4 py-3 text-center font-bold text-gray-800 dark:text-gray-200 bg-blue-50/50 dark:bg-blue-900/5">
+                                            {Number(row.averageScore).toFixed(2)}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default BroadsheetPage;

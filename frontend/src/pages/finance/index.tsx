@@ -1,0 +1,8 @@
+export { default as RecordPaymentPage } from './RecordPaymentPage'
+export { default as FeesHistoryPage } from './FeesHistoryPage'
+export { default as DebtorsListPage } from './DebtorsListPage'
+export { default as FeeStructurePage } from './FeeStructurePage'
+export { default as DiscountsPage } from './DiscountsPage'
+export { default as PaymentRemindersPage } from './PaymentRemindersPage'
+export { default as CarryForwardPage } from './CarryForwardPage'
+export { default as CarryForwardHistoryPage } from './CarryForwardHistoryPage'
