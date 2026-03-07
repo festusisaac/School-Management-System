@@ -4,6 +4,7 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  Index,
 } from 'typeorm';
 
 @Entity('users')
@@ -29,6 +30,7 @@ export class User {
   })
   role!: string;
 
+  @Index()
   @Column({ type: 'uuid', nullable: true })
   tenantId!: string;
 

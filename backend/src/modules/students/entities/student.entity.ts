@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany, Index } from 'typeorm';
 import { Class } from '../../academics/entities/class.entity';
 import { Section } from '../../academics/entities/section.entity';
 import { StudentCategory } from './student-category.entity';
@@ -18,6 +18,7 @@ export class Student {
   // ... (existing fields)
 
   // Parent Relationship
+  @Index()
   @Column({ nullable: true })
   parentId?: string;
 
@@ -76,6 +77,7 @@ export class Student {
   asOnDate?: Date;
 
   // Academic Details
+  @Index()
   @Column({ nullable: true })
   classId?: string;
 
@@ -83,6 +85,7 @@ export class Student {
   @JoinColumn({ name: 'classId' })
   class?: Class;
 
+  @Index()
   @Column({ nullable: true })
   sectionId?: string;
 

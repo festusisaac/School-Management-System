@@ -6,6 +6,7 @@ import {
     UpdateDateColumn,
     ManyToOne,
     JoinColumn,
+    Index,
 } from 'typeorm';
 import { Exam } from './exam.entity';
 import { Student } from '../../students/entities/student.entity';
@@ -20,6 +21,7 @@ export class ExamResult {
     @PrimaryGeneratedColumn('uuid')
     id!: string;
 
+    @Index()
     @Column({ nullable: true })
     examId?: string;
 
@@ -34,6 +36,7 @@ export class ExamResult {
     @JoinColumn({ name: 'assessmentTypeId' })
     assessmentType?: AssessmentType;
 
+    @Index()
     @Column({ nullable: true })
     studentId?: string;
 
@@ -51,18 +54,21 @@ export class ExamResult {
     status?: string; // PRESENT, ABSENT, EXEMPT
 
     // Denormalized fields for faster queries
+    @Index()
     @Column({ nullable: true })
     classId?: string;
 
     @Column({ nullable: true })
     sectionId?: string;
 
+    @Index()
     @Column({ nullable: true })
     subjectId?: string;
 
     @Column({ nullable: true })
     examGroupId?: string;
 
+    @Index()
     @Column({ nullable: true })
     tenantId?: string;
 

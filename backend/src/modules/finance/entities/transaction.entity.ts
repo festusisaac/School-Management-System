@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { Student } from '../../students/entities/student.entity';
+import { FeeGroup } from '../../fee-groups/entities/fee-group.entity';
 
 export enum TransactionType {
   FEE_PAYMENT = 'FEE_PAYMENT',
@@ -26,12 +27,25 @@ export class Transaction {
   @Column({ type: 'enum', enum: TransactionType, default: TransactionType.FEE_PAYMENT })
   type!: TransactionType;
 
+  @Index()
   @Column({ type: 'varchar', nullable: true })
-  studentId!: string | null;
+  studentId?: string;
 
   @ManyToOne(() => Student)
   @JoinColumn({ name: 'studentId' })
   student?: Student;
+
+  @Index()
+  @Column({ type: 'varchar', nullable: true })
+  feeGroupId?: string;
+
+  @ManyToOne(() => FeeGroup)
+  @JoinColumn({ name: 'feeGroupId' })
+  feeGroup?: FeeGroup;
+
+  @Index()
+  @Column({ type: 'varchar', nullable: true })
+  tenantId?: string;
 
   @Column({ type: 'varchar', nullable: true })
   reference!: string | null;
