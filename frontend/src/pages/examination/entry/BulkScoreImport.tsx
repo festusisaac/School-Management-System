@@ -99,12 +99,24 @@ const BulkScoreImport: React.FC<BulkScoreImportProps> = ({ isOpen, onClose, onIm
                     scores: {}
                 };
 
+                let hasLimitError = false;
                 Object.keys(mapping).forEach(assId => {
                     const hIndex = headers.indexOf(mapping[assId]);
                     if (hIndex >= 0) {
+                        const score = parseFloat(row[hIndex]);
+                        const assessment = assessments.find(a => a.id === assId);
+
+                        if (assessment && score > assessment.maxMarks) {
+                            hasLimitError = true;
+                        }
+
                         studentScores.scores[assId] = row[hIndex];
                     }
                 });
+
+                if (hasLimitError) {
+                    throw new Error('Some scores in the file exceed the maximum allowed marks.');
+                }
 
                 return studentScores;
             }).filter(Boolean);

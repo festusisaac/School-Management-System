@@ -123,7 +123,17 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 { label: 'Manage Scratch Cards', path: '/examination/control/scratch-cards' },
             ]
         },
-        { label: 'Settings', icon: Settings, path: '/settings' },
+        {
+            label: 'Settings',
+            icon: Settings,
+            path: '/settings',
+            children: [
+                { type: 'header', label: 'Configuration' },
+                { label: 'General Settings', path: '/settings/general' },
+                { label: 'Academic Sessions', path: '/settings/sessions' },
+                { label: 'Academic Terms', path: '/settings/terms' },
+            ]
+        },
     ];
 
     return (

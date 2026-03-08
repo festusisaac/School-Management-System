@@ -15,21 +15,19 @@ export class ResultProcessingService {
     ) { }
 
     async processResults(dto: ProcessResultDto) {
-        // 1. Fetch all students in the class (mocked for now, assume we iterate through exam results)
-        // In real app: fetch students from StudentsModule
-
-        // 2. Aggregate scores per student
+        // 1. Aggregate scores per student (Simple Sum)
         const aggregation = await this.examResultRepo
             .createQueryBuilder('result')
+            .leftJoin('result.exam', 'exam')
             .select('result.studentId', 'studentId')
             .addSelect('SUM(result.score)', 'totalScore')
-            .addSelect('COUNT(result.id)', 'subjectCount')
-            .where('result.examGroupId = :groupId', { groupId: dto.examGroupId })
-            .andWhere('result.classId = :classId', { classId: dto.classId })
+            .addSelect('COUNT(DISTINCT exam.subjectId)', 'subjectCount')
+            .where('exam.examGroupId = :groupId', { groupId: dto.examGroupId })
+            .andWhere('exam.classId = :classId', { classId: dto.classId })
             .groupBy('result.studentId')
             .getRawMany();
 
-        // 3. Save to StudentTermResult
+        // 2. Save to StudentTermResult
         for (const record of aggregation) {
             let termResult = await this.termResultRepo.findOne({
                 where: {
@@ -59,11 +57,29 @@ export class ResultProcessingService {
     }
 
     async getBroadsheet(examGroupId: string, classId: string) {
-        // Return all term results for a class, ideally with joined Student data
-        return this.termResultRepo.find({
+        // 1. Fetch official processed term results
+        const results = await this.termResultRepo.find({
             where: { examGroupId, classId },
             relations: ['student'],
-            order: { totalScore: 'DESC' }, // Rank by total score
+            order: { totalScore: 'DESC' },
         });
+
+        // 2. Fetch subject-level aggregations
+        const subjectScores = await this.examResultRepo
+            .createQueryBuilder('result')
+            .leftJoin('result.exam', 'exam')
+            .select('result.studentId', 'studentId')
+            .addSelect('exam.subjectId', 'subjectId')
+            .addSelect('SUM(result.score)', 'totalSubjectScore')
+            .where('exam.examGroupId = :examGroupId', { examGroupId })
+            .andWhere('exam.classId = :classId', { classId })
+            .groupBy('result.studentId')
+            .addGroupBy('exam.subjectId')
+            .getRawMany();
+
+        return {
+            results,
+            subjectScores
+        };
     }
 }

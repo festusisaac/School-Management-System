@@ -10,6 +10,8 @@ import * as HR from './pages/hr';
 import * as Students from './pages/students';
 import * as Finance from './pages/finance';
 import * as Examination from './pages/examination';
+import * as Settings from './pages/settings';
+import ScrollToTop from './components/common/ScrollToTop';
 import './App.css'
 
 function App() {
@@ -17,6 +19,7 @@ function App() {
     <ThemeProvider>
       <ToastProvider>
         <Router future={{ v7_relativeSplatPath: true }}>
+          <ScrollToTop />
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
@@ -103,6 +106,14 @@ function App() {
                 <Route path="processing/result-sheet" element={<Examination.ResultSheetPage />} />
 
                 {/* Add other routes as they are implemented */}
+              </Route>
+
+              {/* Settings Routes */}
+              <Route path="settings">
+                <Route index element={<Navigate to="general" replace />} />
+                <Route path="general" element={<Settings.GeneralSettingsPage />} />
+                <Route path="sessions" element={<Settings.SessionsPage />} />
+                <Route path="terms" element={<Settings.TermsPage />} />
               </Route>
             </Route>
 

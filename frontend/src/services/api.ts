@@ -32,7 +32,7 @@ class ApiService {
     this.axiosInstance.interceptors.response.use(
       (response) => {
         // Automatically unwrap the data envelope if it exists
-        if (response.data && response.data.data) {
+        if (response.data && typeof response.data === 'object' && 'data' in response.data) {
           response.data = response.data.data;
         }
         return response;

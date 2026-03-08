@@ -58,84 +58,76 @@ const BroadsheetPage = () => {
         setLoading(true);
         try {
             // 1. Fetch Students (Source of Truth)
-            // 2. Fetch Exams for columns
-            // 3. Fetch Processed Results (for official Rank/Avg if available)
-            const [studentsData, allExams, processedResults] = await Promise.all([
+            // 2. Fetch Subjects (for ID -> Name mapping)
+            const [studentsData, allSubjects] = await Promise.all([
                 api.getStudents({ classId: selectedClass, limit: 1000 }),
-                examinationService.getExams(selectedGroup),
-                examinationService.getBroadsheet(selectedClass, selectedGroup).catch(() => []) // unique catch to prevent failure
+                api.getSubjects()
             ]);
 
-            // Filter exams for this class only
-            const classExams = allExams.filter(e => e.classId === selectedClass);
+            const subjectMap = new Map<string, string>();
+            allSubjects.forEach((s: any) => subjectMap.set(s.id, s.name));
 
-            // Extract Subject Names for Columns
-            const examMap = new Map<string, string>(); // examId -> SubjectName
-            classExams.forEach(e => examMap.set(e.id, e.name));
+            // 3. Fetch Optimized Broadsheet Data (One call now!)
+            const broadsheetData: any = await examinationService.getBroadsheet(selectedClass, selectedGroup);
+            const termResults = broadsheetData.results || [];
+            const subjectScoresRaw = broadsheetData.subjectScores || [];
 
-            const subjectNames = Array.from(examMap.values()).sort();
+            // Identify which subjects have scores
+            const scheduledSubjectIds = Array.from(new Set(subjectScoresRaw.map((s: any) => s.subjectId))) as string[];
+            const subjectNames = scheduledSubjectIds
+                .map(id => subjectMap.get(id) || 'Unknown')
+                .sort();
+
             setSubjects(subjectNames);
 
-            // 4. Fetch Marks for these exams
-            const marksPromises = classExams.map(exam => examinationService.getMarks(exam.id));
-            const allMarksResults = await Promise.all(marksPromises);
+            // Map subjectId to Name for easy score retrieval
+            const idToNameMap = new Map<string, string>();
+            scheduledSubjectIds.forEach(id => idToNameMap.set(id, subjectMap.get(id) || 'Unknown'));
 
-            // Flatten marks: Map<studentId, Map<SubjectName, Score>>
-            const studentMarksMap = new Map<string, Map<string, number>>();
+            // Pre-group raw subject scores by studentId
+            const studentSubjectMap = new Map<string, Record<string, number>>();
+            subjectScoresRaw.forEach((item: any) => {
+                // Handle potential lowercase keys from raw SQL
+                const sId = item.studentId || item.studentid;
+                const subjId = item.subjectId || item.subjectid;
+                const rawScore = item.totalSubjectScore || item.totalsubjectscore || 0;
 
-            allMarksResults.forEach((examMarks, index) => {
-                const subjectName = examMap.get(classExams[index].id);
-                if (!subjectName) return;
-
-                examMarks.forEach(mark => {
-                    if (!studentMarksMap.has(mark.studentId)) {
-                        studentMarksMap.set(mark.studentId, new Map());
-                    }
-                    studentMarksMap.get(mark.studentId)?.set(subjectName, mark.score);
-                });
+                const subjName = idToNameMap.get(subjId) || 'Unknown';
+                if (!studentSubjectMap.has(sId)) {
+                    studentSubjectMap.set(sId, {});
+                }
+                studentSubjectMap.get(sId)![subjName] = parseFloat(rawScore);
             });
 
-            // 5. Merge Data
+            // 5. Merge Data across all students in class
             const processedRows: BroadsheetRow[] = studentsData.map((student: any) => {
-                const termResult = processedResults.find((r: any) => (r.student?.id === student.id) || (r.studentId === student.id));
-
-                const scores: Record<string, number> = {};
-                const marks = studentMarksMap.get(student.id);
+                const termResult = termResults.find((r: any) => r.studentId === student.id);
+                const scores = studentSubjectMap.get(student.id) || {};
 
                 let calculatedTotal = 0;
                 let subjectCount = 0;
-
-                if (marks) {
-                    marks.forEach((score, subj) => {
-                        scores[subj] = score;
-                        calculatedTotal += score;
-                        subjectCount++;
-                    });
-                }
-
-                // Prefer term result if available (it has official rank), otherwise calculate on fly
-                const totalScore = termResult ? termResult.totalScore : calculatedTotal;
-                const averageScore = termResult ? termResult.averageScore : (subjectCount > 0 ? calculatedTotal / subjectCount : 0);
+                Object.values(scores).forEach(s => {
+                    calculatedTotal += s;
+                    subjectCount++;
+                });
 
                 return {
                     studentId: student.id,
                     studentName: `${student.firstName} ${student.lastName}`,
                     admissionNumber: student.admissionNumber || student.admissionNo || 'N/A',
-                    totalScore: totalScore,
-                    averageScore: averageScore,
-                    position: termResult ? (processedResults.indexOf(termResult) + 1) : 0, // 0 means unranked/unprocessed
+                    totalScore: termResult ? parseFloat(termResult.totalScore) : calculatedTotal,
+                    averageScore: termResult ? parseFloat(termResult.averageScore) : (subjectCount > 0 ? calculatedTotal / subjectCount : 0),
+                    position: termResult ? (termResults.indexOf(termResult) + 1) : 0,
                     subjectScores: scores
                 };
             });
 
-            // Sort by Total Score DESC if not using official ranks
-            if (processedResults.length === 0) {
-                processedRows.sort((a, b) => b.totalScore - a.totalScore);
-                // Assign temporary ranks
-                processedRows.forEach((row, idx) => row.position = idx + 1);
-            } else {
-                // If we have official ranks, sort by them
+            // Sort by Rank/Position if available, else by Total Score
+            if (termResults.length > 0) {
                 processedRows.sort((a, b) => (a.position || 9999) - (b.position || 9999));
+            } else {
+                processedRows.sort((a, b) => b.totalScore - a.totalScore);
+                processedRows.forEach((r, i) => r.position = i + 1);
             }
 
             setRows(processedRows);
@@ -274,23 +266,17 @@ const BroadsheetPage = () => {
                                         {subjects.map(subj => {
                                             const score = row.subjectScores[subj];
                                             return (
-                                                <td key={subj} className="px-4 py-3 text-center border-r border-gray-50 dark:border-gray-800">
-                                                    {score !== undefined ? (
-                                                        <span className={`font-medium ${score < 50 ? 'text-red-500' : 'text-gray-700 dark:text-gray-300'}`}>
-                                                            {score}
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-gray-200 dark:text-gray-700">-</span>
-                                                    )}
+                                                <td key={subj} className="px-4 py-3 text-center text-gray-700 dark:text-gray-300 border-r border-gray-50 dark:border-gray-800">
+                                                    {score !== undefined ? Math.round(score) : '-'}
                                                 </td>
                                             );
                                         })}
 
                                         <td className="px-4 py-3 text-center font-bold text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/5">
-                                            {row.totalScore}
+                                            {Math.round(row.totalScore)}
                                         </td>
                                         <td className="px-4 py-3 text-center font-bold text-gray-800 dark:text-gray-200 bg-blue-50/50 dark:bg-blue-900/5">
-                                            {Number(row.averageScore).toFixed(2)}
+                                            {Number(row.averageScore).toFixed(1)}
                                         </td>
                                     </tr>
                                 ))}

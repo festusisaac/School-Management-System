@@ -19,6 +19,7 @@ import { ReportingModule } from '@modules/reporting/reporting.module';
 import { BackupModule } from '@modules/backup/backup.module';
 import { HrModule } from '@modules/hr/hr.module';
 import { ExaminationModule } from '@modules/examination/examination.module';
+import { SystemModule } from '@modules/system/system.module';
 
 @Module({
   imports: [
@@ -71,6 +72,7 @@ import { ExaminationModule } from '@modules/examination/examination.module';
     BackupModule,
     HrModule,
     ExaminationModule,
+    SystemModule,
   ],
   controllers: [AppController],
   providers: [AppService],

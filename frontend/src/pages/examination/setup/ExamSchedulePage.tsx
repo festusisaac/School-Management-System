@@ -20,6 +20,7 @@ interface SubjectRow {
 const ExamSchedulePage = () => {
     const [groups, setGroups] = useState<ExamGroup[]>([]);
     const [classes, setClasses] = useState<any[]>([]);
+    const [assessments, setAssessments] = useState<AssessmentType[]>([]);
 
     const [selectedGroup, setSelectedGroup] = useState<string>('');
     const [selectedClass, setSelectedClass] = useState<string>('');
@@ -59,6 +60,16 @@ const ExamSchedulePage = () => {
         };
         init();
     }, []);
+
+    useEffect(() => {
+        if (selectedGroup) {
+            examinationService.getAssessmentTypes(selectedGroup)
+                .then(setAssessments)
+                .catch(() => setAssessments([]));
+        } else {
+            setAssessments([]);
+        }
+    }, [selectedGroup]);
 
     useEffect(() => {
         if (selectedGroup && selectedClass) {
@@ -114,8 +125,21 @@ const ExamSchedulePage = () => {
 
     const handleScheduleClick = (row: SubjectRow) => {
         setCurrentSubject(row);
+
+        // Suggest marks from Assessment Structure if not already scheduled
+        let suggestedMarks = row.totalMarks || 100;
+        if (row.status === 'Not Scheduled' && assessments.length > 0) {
+            const examAssessment = assessments.find(a =>
+                a.name.toLowerCase().includes('exam') ||
+                a.name.toLowerCase().includes('final')
+            );
+            if (examAssessment) {
+                suggestedMarks = examAssessment.maxMarks;
+            }
+        }
+
         setFormData({
-            totalMarks: row.totalMarks || 100,
+            totalMarks: suggestedMarks,
             date: row.details?.date ? new Date(row.details.date).toISOString().split('T')[0] : '',
             startTime: row.details?.startTime || '',
             endTime: row.details?.endTime || '',
@@ -338,14 +362,24 @@ const ExamSchedulePage = () => {
                 <form onSubmit={handleSubmit} className="space-y-5">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="md:col-span-2">
-                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Max Marks for this Exam</label>
+                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-2">
+                                Max Marks
+                                <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100 uppercase tracking-tighter">Locked to Assessment Structure</span>
+                            </label>
                             <input
                                 type="number"
                                 required
-                                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                readOnly
+                                className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 px-4 py-2.5 text-sm text-gray-500 cursor-not-allowed outline-none font-medium"
                                 value={formData.totalMarks}
-                                onChange={(e) => setFormData({ ...formData, totalMarks: parseInt(e.target.value) })}
+                                tabIndex={-1}
                             />
+                            {assessments.find(a => a.name.toLowerCase().includes('exam') || a.name.toLowerCase().includes('final')) && (
+                                <p className="mt-1.5 text-[10px] text-gray-400 flex items-center gap-1 italic">
+                                    <Info className="w-2.5 h-2.5" />
+                                    Pulled from "{assessments.find(a => a.name.toLowerCase().includes('exam') || a.name.toLowerCase().includes('final'))?.name}" in Assessment Structure.
+                                </p>
+                            )}
                         </div>
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Exam Date</label>

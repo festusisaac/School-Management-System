@@ -224,6 +224,7 @@ const GradingSystemPage = () => {
                 isOpen={isCreateOpen}
                 onClose={resetForm}
                 title={editingId ? "Edit Grade Scale" : "Create Grade Scale"}
+                size="lg"
             >
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
@@ -243,47 +244,47 @@ const GradingSystemPage = () => {
                             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                                 <thead className="bg-gray-100/50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400">
                                     <tr>
-                                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider">Grade</th>
-                                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider">Min</th>
-                                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider">Max</th>
-                                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider">Remark</th>
-                                        <th className="px-3 py-2"></th>
+                                        <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider w-20">Grade</th>
+                                        <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider w-24">Min (%)</th>
+                                        <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider w-24">Max (%)</th>
+                                        <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider">Remark</th>
+                                        <th className="px-3 py-3 w-12"></th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                     {gradeRows.map((row, index) => (
                                         <tr key={index} className="group hover:bg-white dark:hover:bg-gray-800 transition-colors">
-                                            <td className="px-2 py-2">
+                                            <td className="px-3 py-3">
                                                 <input
                                                     placeholder="A"
-                                                    className="w-12 border border-gray-200 dark:border-gray-600 rounded-lg p-1.5 text-sm bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 outline-none"
+                                                    className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                                                     value={row.name}
                                                     onChange={(e) => handleRowChange(index, 'name', e.target.value)}
                                                     required
                                                 />
                                             </td>
-                                            <td className="px-2 py-2">
+                                            <td className="px-3 py-3">
                                                 <input
                                                     type="number"
-                                                    className="w-16 border border-gray-200 dark:border-gray-600 rounded-lg p-1.5 text-sm bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 outline-none"
+                                                    className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                                                     value={row.minScore}
                                                     onChange={(e) => handleRowChange(index, 'minScore', e.target.value)}
                                                     required
                                                 />
                                             </td>
-                                            <td className="px-2 py-2">
+                                            <td className="px-3 py-3">
                                                 <input
                                                     type="number"
-                                                    className="w-16 border border-gray-200 dark:border-gray-600 rounded-lg p-1.5 text-sm bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 outline-none"
+                                                    className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                                                     value={row.maxScore}
                                                     onChange={(e) => handleRowChange(index, 'maxScore', e.target.value)}
                                                     required
                                                 />
                                             </td>
-                                            <td className="px-2 py-2">
+                                            <td className="px-3 py-3">
                                                 <input
-                                                    className="w-full border border-gray-200 dark:border-gray-600 rounded-lg p-1.5 text-sm bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 outline-none"
-                                                    placeholder="Excellent"
+                                                    className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                                    placeholder="e.g. Excellent performance"
                                                     value={row.remark}
                                                     onChange={(e) => handleRowChange(index, 'remark', e.target.value)}
                                                 />

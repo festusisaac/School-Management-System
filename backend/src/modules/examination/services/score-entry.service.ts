@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ExamResult } from '../entities/exam-result.entity';
+import { Exam } from '../entities/exam.entity';
+import { AssessmentType } from '../entities/assessment-type.entity';
 import { StudentSkill } from '../entities/student-skill.entity';
 import { StudentPsychomotor } from '../entities/student-psychomotor.entity';
 import { SaveMarksDto, SaveSkillsDto, SavePsychomotorDto } from '../dtos/entry/score-entry.dto';
@@ -15,12 +17,35 @@ export class ScoreEntryService {
         private studentSkillRepo: Repository<StudentSkill>,
         @InjectRepository(StudentPsychomotor)
         private studentPsychomotorRepo: Repository<StudentPsychomotor>,
+        @InjectRepository(AssessmentType)
+        private assessmentTypeRepo: Repository<AssessmentType>,
+        @InjectRepository(Exam)
+        private examRepo: Repository<Exam>,
     ) { }
 
     // --- Marks Entry ---
     async saveMarks(dto: SaveMarksDto) {
         const savedResults = [];
+
+        // Fetch Exam details for denormalization
+        const exam = await this.examRepo.findOne({
+            where: { id: dto.examId }
+        });
+
+        // Fetch AssessmentType once if ID is provided
+        let assessmentType: any = null;
+        if (dto.assessmentTypeId) {
+            assessmentType = await this.assessmentTypeRepo.findOne({
+                where: { id: dto.assessmentTypeId }
+            });
+        }
+
         for (const mark of dto.marks) {
+            // Strict Validation: Prevent saving scores higher than maxMarks
+            if (assessmentType && mark.score > assessmentType.maxMarks) {
+                throw new Error(`Invalid score: ${mark.score} exceeds maximum allowed marks (${assessmentType.maxMarks}) for ${assessmentType.name}`);
+            }
+
             // Build query criteria
             const criteria: any = {
                 examId: dto.examId,
@@ -43,13 +68,23 @@ export class ScoreEntryService {
                 result = this.examResultRepo.create({
                     examId: dto.examId,
                     studentId: mark.studentId,
-                    assessmentTypeId: dto.assessmentTypeId || undefined
+                    assessmentTypeId: dto.assessmentTypeId || undefined,
+                    // Denormalize fields from exam
+                    classId: exam?.classId,
+                    subjectId: exam?.subjectId,
+                    examGroupId: exam?.examGroupId,
+                    tenantId: exam?.tenantId
                 });
             }
 
             result.score = mark.score;
             result.status = mark.status || 'PRESENT';
-            // In a real app, fetch maxMarks from Exam/AssessmentType here
+
+            // Populate maxMarks from AssessmentType
+            if (assessmentType) {
+                result.maxMarks = assessmentType.maxMarks;
+            }
+
             savedResults.push(await this.examResultRepo.save(result));
         }
         return savedResults;
@@ -64,6 +99,13 @@ export class ScoreEntryService {
         return this.examResultRepo.find({
             where: criteria,
             relations: ['student', 'assessmentType'],
+        });
+    }
+
+    async getClassMarks(classId: string, examGroupId: string) {
+        return this.examResultRepo.find({
+            where: { classId, examGroupId },
+            relations: ['assessmentType'],
         });
     }
 

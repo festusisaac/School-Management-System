@@ -130,6 +130,10 @@ export const examinationService = {
         return await api.post<ExamResult[]>('/examination/entry/marks', data);
     },
 
+    getClassMarks: async (classId: string, examGroupId: string) => {
+        return await api.get<ExamResult[]>(`/examination/entry/class-marks/${classId}/${examGroupId}`);
+    },
+
     // Domains (Setup)
     getPsychomotorDomains: async () => {
         return await api.get<PsychomotorDomain[]>('/examination/setup/psychomotor-domains');

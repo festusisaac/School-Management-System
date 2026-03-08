@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, AlertCircle, FileText, Info } from 'lucide-react';
+import { Save, AlertCircle, FileText, Info, Calendar, AlertTriangle } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { examinationService, ExamGroup, Exam, AssessmentType } from '../../../services/examinationService';
 import api from '../../../services/api';
@@ -190,13 +190,13 @@ const ScoresheetPage = () => {
         }
     };
 
-    // Calculate Dynamic Total
+    // Calculate Dynamic Total (Simple Sum)
     const calculateTotal = (student: StudentRow) => {
         const total = assessments.reduce((sum, ass) => {
             const val = student.scores[ass.id];
-            // Treat empty string as 0 for calculation, but don't display 0 if all are empty? 
-            // Current logic: sum what is entered.
-            const score = parseFloat(val || '0');
+            if (!val) return sum;
+
+            const score = parseFloat(val);
             return sum + (isNaN(score) ? 0 : score);
         }, 0);
 
@@ -316,21 +316,37 @@ const ScoresheetPage = () => {
                         <p className="text-sm mt-1">Select an Exam Group, Class, and Subject to begin entering scores.</p>
                     </div>
                 ) : !currentExam ? (
-                    <div className="flex flex-col items-center justify-center h-64 text-center p-8">
-                        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
-                            <AlertCircle className="w-8 h-8 text-red-500" />
+                    <div className="flex-1 flex flex-col items-center justify-center p-12 text-center animate-in fade-in zoom-in duration-300">
+                        <div className="w-20 h-20 bg-amber-50 dark:bg-amber-900/20 rounded-2xl flex items-center justify-center mb-6 ring-8 ring-amber-50/50 dark:ring-amber-900/10">
+                            <AlertCircle className="w-10 h-10 text-amber-500" />
                         </div>
-                        <h3 className="text-lg font-bold text-gray-900">Exam Not Scheduled</h3>
-                        <p className="text-sm text-gray-500 max-w-sm mt-2">
-                            This subject has not been scheduled for an exam in this group yet.
-                            Please go to the <strong>Scheduler</strong> to set it up.
+                        <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">No Schedule Found</h3>
+                        <p className="text-gray-500 dark:text-gray-400 max-w-sm mt-3 leading-relaxed">
+                            This subject hasn't been added to the examination calendar yet. You need to schedule it before you can enter scores.
                         </p>
+                        <div className="mt-8 flex gap-3">
+                            <button
+                                onClick={() => window.location.hash = '#/examination/setup/exam-schedules'}
+                                className="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl transition-all shadow-lg shadow-amber-500/20 flex items-center gap-2"
+                            >
+                                <Calendar className="w-4 h-4" />
+                                Go to Scheduler
+                            </button>
+                        </div>
                     </div>
                 ) : assessments.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-64 text-center p-8">
                         <Info className="w-12 h-12 text-blue-500 mb-4" />
                         <h3 className="text-lg font-bold">No Assessment Types Configured</h3>
                         <p className="text-sm text-gray-500 mt-2">Please configure Assessment Types (e.g., CA1, Exam) in Setup first.</p>
+                    </div>
+                ) : students.length === 0 ? (
+                    <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
+                        <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                            <FileText className="w-8 h-8 text-gray-300" />
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">No Students Found</h3>
+                        <p className="text-sm text-gray-500 mt-2">There are no students registered in this class.</p>
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
@@ -343,8 +359,8 @@ const ScoresheetPage = () => {
                                     {assessments.map(ass => (
                                         <th key={ass.id} className="px-4 py-4 text-center min-w-[140px]">
                                             <div className="flex flex-col items-center">
-                                                <span className="text-xs font-semibold text-gray-900 dark:text-white">{ass.name}</span>
-                                                <span className="text-[10px] text-gray-400">Max: {ass.maxMarks}</span>
+                                                <span className="text-xs font-semibold text-gray-900 dark:text-white uppercase tracking-tight">{ass.name}</span>
+                                                <span className="text-[10px] text-gray-400 font-medium">Max: {ass.maxMarks}</span>
                                             </div>
                                         </th>
                                     ))}
@@ -365,24 +381,28 @@ const ScoresheetPage = () => {
                                             </div>
                                         </td>
 
-                                        {assessments.map(ass => (
-                                            <td key={ass.id} className="px-4 py-3">
-                                                <div className="relative">
-                                                    <input
-                                                        type="number"
-                                                        min="0"
-                                                        max={ass.maxMarks}
-                                                        className={`w-full text-center border-2 rounded-md py-1.5 px-2 text-sm outline-none transition-all
-                                                            ${parseFloat(student.scores[ass.id]) > ass.maxMarks
-                                                                ? 'border-red-300 bg-red-50 text-red-600 focus:border-red-500'
-                                                                : 'border-transparent bg-gray-50 focus:bg-white focus:border-blue-500 focus:shadow-sm dark:bg-gray-800 dark:border-transparent'}`}
-                                                        value={student.scores[ass.id] || ''}
-                                                        onChange={(e) => handleScoreChange(index, ass.id, e.target.value)}
-                                                        placeholder="-"
-                                                    />
-                                                </div>
-                                            </td>
-                                        ))}
+                                        {assessments.map(ass => {
+                                            const currentScore = parseFloat(student.scores[ass.id]);
+
+                                            return (
+                                                <td key={ass.id} className="px-4 py-3">
+                                                    <div className="relative">
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            max={ass.maxMarks}
+                                                            className={`w-full text-center border-2 rounded-md py-1.5 px-2 text-sm outline-none transition-all
+                                                                ${currentScore > ass.maxMarks
+                                                                    ? 'border-red-300 bg-red-50 text-red-600 focus:border-red-500'
+                                                                    : 'border-transparent bg-gray-50 focus:bg-white focus:border-blue-500 focus:shadow-sm dark:bg-gray-800 dark:border-transparent'}`}
+                                                            value={student.scores[ass.id] || ''}
+                                                            onChange={(e) => handleScoreChange(index, ass.id, e.target.value)}
+                                                            placeholder="-"
+                                                        />
+                                                    </div>
+                                                </td>
+                                            );
+                                        })}
 
                                         <td className="px-6 py-4 text-center font-bold text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800">
                                             {calculateTotal(student)}

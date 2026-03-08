@@ -16,6 +16,11 @@ export class ScoreEntryController {
         return this.entryService.getMarks(examId, assessmentTypeId);
     }
 
+    @Get('class-marks/:classId/:examGroupId')
+    getClassMarks(@Param('classId') classId: string, @Param('examGroupId') examGroupId: string) {
+        return this.entryService.getClassMarks(classId, examGroupId);
+    }
+
     @Post('skills')
     saveSkills(@Body() dto: SaveSkillsDto) {
         return this.entryService.saveSkills(dto);

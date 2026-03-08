@@ -51,7 +51,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', className
                         <X className="w-5 h-5" />
                     </button>
                 </div>
-                <div className="flex-1 overflow-hidden relative">
+                <div className="flex-1 overflow-y-auto p-6 relative">
                     {children}
                 </div>
             </div>

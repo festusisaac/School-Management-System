@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Printer, Search, FileText, ChevronRight, X } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Printer, Search, FileText, ChevronRight, X, Users, Trophy, TrendingUp, Filter, AlertCircle, Eye } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { examinationService, ExamGroup, GradeScale } from '../../../services/examinationService';
 import api from '../../../services/api';
@@ -15,6 +15,9 @@ const ResultSheetPage = () => {
     const [students, setStudents] = useState<ReportCardData[]>([]);
     const [loading, setLoading] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState<ReportCardData | null>(null);
+
+    const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
 
     const { showSuccess, showError } = useToast();
 
@@ -37,46 +40,79 @@ const ResultSheetPage = () => {
         init();
     }, []);
 
+    const getAbsoluteUrl = (url: string) => {
+        if (!url) return '';
+        if (url.startsWith('http')) return url;
+        const apiBaseUrl = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+        const serverUrl = apiBaseUrl.split('/api')[0];
+        return `${serverUrl}/${url.startsWith('/') ? url.slice(1) : url}`;
+    };
+
     // Load Report Cards Data
     const fetchReportCards = async () => {
         if (!selectedGroup || !selectedClass) return;
         setLoading(true);
         try {
             // 1. Fetch Basic Data
-            const [studentsData, groupData, broadsheetData] = await Promise.all([
+            const [studentsData, groupData, broadsheetResponse, assessments] = await Promise.all([
                 api.getStudents({ classId: selectedClass, limit: 1000 }),
                 groups.find(g => g.id === selectedGroup),
-                examinationService.getBroadsheet(selectedClass, selectedGroup).catch(() => [])
+                examinationService.getBroadsheet(selectedClass, selectedGroup).catch(() => ({ results: [], subjectScores: [] })),
+                examinationService.getAssessmentTypes(selectedGroup)
             ]);
 
-            if (!groupData) throw new Error("Exam Group key found");
+            if (!groupData) throw new Error("Exam Group not found");
 
-            // 2. Fetch Detailed Marks for breakdown (Optional: Optimization would be to have backend return this structure)
-            // For now, to get CA/Exam split, we need to fetch all exams for this group + class
-            const exams = await examinationService.getExams(selectedGroup);
+            const broadsheetData = broadsheetResponse?.results || [];
+
+            // 2. Fetch Detailed Marks for breakdown (Optimized: Single Batch Call)
+            const [exams, allClassMarks] = await Promise.all([
+                examinationService.getExams(selectedGroup),
+                examinationService.getClassMarks(selectedClass, selectedGroup)
+            ]);
             const classExams = exams.filter(e => e.classId === selectedClass);
 
-            // Fetch all marks for these exams
-            const marksPromises = classExams.map(e => examinationService.getMarks(e.id).then(marks => ({ exam: e, marks })));
-            const allMarks = await Promise.all(marksPromises);
+            // 3. Group marks by student for performance (O(N) vs O(N^2))
+            const studentMarksMap = allClassMarks.reduce((acc, mark) => {
+                const id = typeof mark.studentId === 'string' ? mark.studentId : (mark.student as any)?.id;
+                if (id) {
+                    if (!acc[id]) acc[id] = [];
+                    acc[id].push(mark);
+                }
+                return acc;
+            }, {} as Record<string, any[]>);
 
-            // 3. Build Report Card Data Objects
+            // 4. Build Report Card Data Objects
             const reports: ReportCardData[] = studentsData.map((student: any) => {
                 const broadsheetRecord = broadsheetData.find((b: any) => (b.studentId === student.id) || (b.student?.id === student.id));
+                const studentPersonalMarks = studentMarksMap[student.id] || [];
 
                 const subjects = classExams.map(exam => {
-                    const examMarksEntry = allMarks.find(m => m.exam.id === exam.id);
-                    const studentMark = examMarksEntry?.marks.find(m => m.studentId === student.id);
-                    const score = studentMark?.score || 0;
+                    const studentMarks = studentPersonalMarks.filter(m => m.examId === exam.id);
 
-                    const { grade, remark } = getGradeDetails(score);
+                    const totalScore = studentMarks.reduce((a, b) => a + b.score, 0);
+
+                    // Map specific scores (CA1, CA2, Exam)
+                    let ca1: number | undefined;
+                    let ca2: number | undefined;
+                    let examScore: number | undefined;
+
+                    studentMarks.forEach(m => {
+                        const ass = assessments.find(a => a.id === m.assessmentTypeId);
+                        const name = ass?.name.toLowerCase() || '';
+                        if (name.includes('ca1') || name.includes('first ca')) ca1 = m.score;
+                        else if (name.includes('ca2') || name.includes('second ca')) ca2 = m.score;
+                        else if (name.includes('exam') || name.includes('final')) examScore = m.score;
+                    });
+
+                    const { grade, remark } = getGradeDetails(totalScore);
 
                     return {
                         subjectName: exam.name.replace(/\s+exam$/i, ''),
-                        ca1: Math.min(20, Math.floor(score * 0.2)), // Dummy data split
-                        ca2: Math.min(20, Math.floor(score * 0.2)), // Dummy data split
-                        examScore: Math.min(60, score - Math.min(40, Math.floor(score * 0.4))),
-                        totalScore: score,
+                        ca1: ca1,
+                        ca2: ca2,
+                        examScore: examScore,
+                        totalScore: totalScore,
                         highestInClass: 0,
                         lowestInClass: 0,
                         classAvg: 0,
@@ -84,7 +120,10 @@ const ResultSheetPage = () => {
                         grade: grade,
                         remark: remark,
                     };
-                }).filter(s => s.totalScore > 0 || true);
+                }).filter(s => s.totalScore > 0);
+
+                const totalObtained = broadsheetRecord?.totalScore || subjects.reduce((a, b) => a + b.totalScore, 0);
+                const averageScore = broadsheetRecord?.averageScore || (subjects.length > 0 ? (totalObtained / subjects.length) : 0);
 
                 return {
                     student: {
@@ -93,7 +132,7 @@ const ResultSheetPage = () => {
                         sex: student.gender,
                         admissionNumber: student.admissionNumber,
                         class: student.class?.name || 'N/A',
-                        photoUrl: student.photo,
+                        photoUrl: getAbsoluteUrl(student.photo || student.studentPhoto),
                     },
                     examGroup: {
                         name: groupData.name,
@@ -111,16 +150,16 @@ const ResultSheetPage = () => {
                     subjects: subjects,
                     summary: {
                         totalObtainable: subjects.length * 100,
-                        totalObtained: broadsheetRecord?.totalScore || subjects.reduce((a, b) => a + b.totalScore, 0),
-                        averageScore: broadsheetRecord?.averageScore || 0,
+                        totalObtained: totalObtained,
+                        averageScore: averageScore,
                         position: broadsheetRecord ? (broadsheetData.indexOf(broadsheetRecord) + 1) : undefined,
                         classSize: studentsData.length
                     }
                 };
             });
 
-            // Sort by position/total
-            reports.sort((a, b) => b.summary.totalScore - a.summary.totalScore);
+            // Sort by totalObtained
+            reports.sort((a, b) => b.summary.totalObtained - a.summary.totalObtained);
 
             setStudents(reports);
 
@@ -131,6 +170,30 @@ const ResultSheetPage = () => {
             setLoading(false);
         }
     };
+
+    const filteredStudents = useMemo(() => {
+        return students.filter(s => {
+            const matchesSearch = s.student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                s.student.admissionNumber?.toLowerCase().includes(searchQuery.toLowerCase());
+
+            const isPassing = s.summary.averageScore >= 40;
+            const matchesStatus = statusFilter === 'all' ||
+                (statusFilter === 'passed' && isPassing) ||
+                (statusFilter === 'failed' && !isPassing);
+
+            return matchesSearch && matchesStatus;
+        });
+    }, [students, searchQuery, statusFilter]);
+
+    const stats = useMemo(() => {
+        if (students.length === 0) return { avg: 0, high: 0, low: 0 };
+        const scores = students.map(s => s.summary.averageScore);
+        return {
+            avg: scores.reduce((a, b) => a + b, 0) / scores.length,
+            high: Math.max(...scores),
+            low: Math.min(...scores)
+        };
+    }, [students]);
 
     const getGradeDetails = (score: number) => {
         // Updated to match the specific grading system in the reference image:
@@ -150,6 +213,14 @@ const ResultSheetPage = () => {
 
     const handlePrint = () => {
         window.print();
+    };
+
+    const printSingle = (student: ReportCardData) => {
+        setSelectedStudent(student);
+        setTimeout(() => {
+            window.print();
+            setSelectedStudent(null);
+        }, 300);
     };
 
     return (
@@ -207,15 +278,88 @@ const ResultSheetPage = () => {
                     <button
                         onClick={fetchReportCards}
                         disabled={!selectedGroup || !selectedClass || loading}
-                        className="px-4 py-2 bg-gray-900 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 h-[38px] flex items-center justify-center gap-2"
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 h-[38px] flex items-center justify-center gap-2 font-bold shadow-lg shadow-blue-500/20"
                     >
                         {loading ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> : <Search className="w-4 h-4" />}
                         Generate
                     </button>
                 </div>
 
-                {/* List View */}
+                {/* Summary Stats */}
                 {!loading && students.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex items-center gap-4">
+                            <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center justify-center">
+                                <Users className="w-6 h-6 text-blue-600" />
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Students</p>
+                                <p className="text-xl font-black text-gray-900 dark:text-white uppercase">{students.length}</p>
+                            </div>
+                        </div>
+
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex items-center gap-4">
+                            <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl flex items-center justify-center">
+                                <TrendingUp className="w-6 h-6 text-emerald-600" />
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Class Avg</p>
+                                <p className="text-xl font-black text-gray-900 dark:text-white uppercase">{stats.avg.toFixed(1)}%</p>
+                            </div>
+                        </div>
+
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex items-center gap-4 border-l-4 border-l-amber-500">
+                            <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 rounded-xl flex items-center justify-center">
+                                <Trophy className="w-6 h-6 text-amber-500" />
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Top Score</p>
+                                <p className="text-xl font-black text-gray-900 dark:text-white uppercase">{stats.high.toFixed(1)}%</p>
+                            </div>
+                        </div>
+
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex items-center gap-4 border-l-4 border-l-red-500">
+                            <div className="w-12 h-12 bg-red-50 dark:bg-red-900/20 rounded-xl flex items-center justify-center">
+                                <AlertCircle className="w-6 h-6 text-red-500" />
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Low Score</p>
+                                <p className="text-xl font-black text-gray-900 dark:text-white uppercase">{stats.low.toFixed(1)}%</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Search & Filter Bar */}
+                {!loading && students.length > 0 && (
+                    <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-gray-50 dark:bg-gray-900/50 p-2 rounded-xl">
+                        <div className="relative w-full md:w-96">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="Search by name or admission number..."
+                                className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+                        <div className="flex items-center gap-2 w-full md:w-auto">
+                            <Filter className="w-4 h-4 text-gray-400" />
+                            <select
+                                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                            >
+                                <option value="all">All Status</option>
+                                <option value="passed">Passed (40%+)</option>
+                                <option value="failed">Failed (&lt;40%)</option>
+                            </select>
+                        </div>
+                    </div>
+                )}
+
+                {/* List View */}
+                {!loading && filteredStudents.length > 0 && (
                     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
                         <table className="w-full text-sm text-left">
                             <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -225,27 +369,67 @@ const ResultSheetPage = () => {
                                     <th className="px-6 py-3 text-center">Subjects</th>
                                     <th className="px-6 py-3 text-center">Total</th>
                                     <th className="px-6 py-3 text-center">Avg</th>
+                                    <th className="px-6 py-3 text-center">Status</th>
                                     <th className="px-6 py-3 text-right">Action</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                                {students.map((student, idx) => (
-                                    <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors cursor-pointer" onClick={() => setSelectedStudent(student)}>
-                                        <td className="px-6 py-4 text-center text-gray-500">{idx + 1}</td>
-                                        <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
-                                            {student.student.name}
-                                            <span className="block text-xs text-gray-400 font-normal">{student.student.admissionNumber}</span>
-                                        </td>
-                                        <td className="px-6 py-4 text-center">{student.subjects.length}</td>
-                                        <td className="px-6 py-4 text-center font-bold text-blue-600">{student.summary.totalScore}</td>
-                                        <td className="px-6 py-4 text-center">{student.summary.averageScore.toFixed(2)}</td>
-                                        <td className="px-6 py-4 text-right">
-                                            <button className="text-blue-600 hover:text-blue-800 text-xs font-semibold uppercase tracking-wide flex items-center gap-1 justify-end">
-                                                View <ChevronRight className="w-3 h-3" />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {filteredStudents.map((student, idx) => {
+                                    const isPassing = student.summary.averageScore >= 40;
+                                    return (
+                                        <tr key={idx} className="hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors cursor-pointer group" onClick={() => setSelectedStudent(student)}>
+                                            <td className="px-6 py-4 text-center text-gray-400 font-medium">{idx + 1}</td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-3">
+                                                    {student.student.photoUrl ? (
+                                                        <img src={student.student.photoUrl} className="w-10 h-10 rounded-full object-cover border-2 border-white dark:border-gray-700 shadow-sm" alt="" />
+                                                    ) : (
+                                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs shadow-sm text-center">
+                                                            {student.student.name ? student.student.name.split(' ').filter(Boolean).map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) : '??'}
+                                                        </div>
+                                                    )}
+                                                    <div>
+                                                        <p className="font-bold text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors">{student.student.name}</p>
+                                                        <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{student.student.admissionNumber}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-center font-medium text-gray-600 dark:text-gray-400">{student.subjects.length}</td>
+                                            <td className="px-6 py-4 text-center font-black text-gray-900 dark:text-white">{student.summary.totalObtained}</td>
+                                            <td className="px-6 py-4 text-center">
+                                                <span className={`px-2 py-1 rounded-md font-bold text-xs ${isPassing ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20' : 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20'}`}>
+                                                    {student.summary.averageScore.toFixed(1)}%
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest ${isPassing
+                                                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                                                    : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-800'
+                                                    }`}>
+                                                    {isPassing ? 'PASSED' : 'FAILED'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); setSelectedStudent(student); }}
+                                                        title="View Report Card"
+                                                        className="p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm border border-blue-100 dark:border-blue-800"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); printSingle(student); }}
+                                                        title="Print Individual Card"
+                                                        className="p-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-lg hover:bg-emerald-600 hover:text-white transition-all shadow-sm border border-emerald-100 dark:border-emerald-800"
+                                                    >
+                                                        <Printer className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
