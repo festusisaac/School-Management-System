@@ -1,6 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { Student } from '../../students/entities/student.entity';
-import { FeeGroup } from '../../fee-groups/entities/fee-group.entity';
+import { FeeGroup } from './fee-group.entity';
 
 export enum TransactionType {
   FEE_PAYMENT = 'FEE_PAYMENT',
