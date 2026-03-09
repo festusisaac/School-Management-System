@@ -1,4 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import * as fs from 'fs';
+import * as path from 'path';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SystemSetting } from '../entities/system-setting.entity';
@@ -44,9 +46,51 @@ export class SystemSettingsService {
     async updateLogo(logoType: string, filePath: string): Promise<SystemSetting> {
         const settings = await this.getSettings();
         if (logoType in settings) {
+            // Optional: delete old file if it exists
+            const oldFile = (settings as any)[logoType];
+            if (oldFile && oldFile !== filePath) {
+                this.removeFileIfExists(oldFile);
+            }
+
             (settings as any)[logoType] = filePath;
             return this.systemSettingRepository.save(settings);
         }
         throw new Error(`Invalid logo type: ${logoType}`);
+    }
+
+    async deleteLogo(logoType: string): Promise<SystemSetting> {
+        const settings = await this.getSettings();
+        if (logoType in settings) {
+            const filePath = (settings as any)[logoType];
+            if (filePath) {
+                this.removeFileIfExists(filePath);
+            }
+
+            // Update the database field to null
+            const updateData: any = {};
+            updateData[logoType] = null;
+            await this.systemSettingRepository.update(settings.id, updateData);
+
+            // Return updated settings
+            return this.getSettings();
+        }
+        throw new Error(`Invalid logo type: ${logoType}`);
+    }
+
+    private removeFileIfExists(relativeFilePath: string) {
+        try {
+            // Trim leading slash if present for filesystem operations
+            const normalizedPath = relativeFilePath.startsWith('/')
+                ? relativeFilePath.substring(1)
+                : relativeFilePath;
+            const absolutePath = path.join(process.cwd(), normalizedPath);
+
+            if (fs.existsSync(absolutePath)) {
+                fs.unlinkSync(absolutePath);
+                console.log(`Deleted file: ${absolutePath}`);
+            }
+        } catch (error) {
+            console.error(`Failed to delete file: ${relativeFilePath}`, error);
+        }
     }
 }

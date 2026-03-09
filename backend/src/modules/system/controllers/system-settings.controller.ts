@@ -1,4 +1,4 @@
-import { Controller, Get, Body, Put, UseInterceptors, UploadedFile, Param, ParseEnumPipe } from '@nestjs/common';
+import { Controller, Get, Body, Put, Delete, UseInterceptors, UploadedFile, Param, ParseEnumPipe } from '@nestjs/common';
 import { SystemSettingsService } from '../services/system-settings.service';
 import { UpdateSystemSettingDto } from '../dtos/update-system-setting.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -45,7 +45,12 @@ export class SystemSettingsController {
         @UploadedFile() file: Express.Multer.File,
     ) {
         // Generate the URL or relative path to save
-        const relativePath = `/uploads/logos/${file.filename}`;
+        const relativePath = `uploads/logos/${file.filename}`;
         return this.settingsService.updateLogo(type, relativePath);
+    }
+
+    @Delete('logo/:type')
+    deleteLogo(@Param('type', new ParseEnumPipe(LogoType)) type: LogoType) {
+        return this.settingsService.deleteLogo(type);
     }
 }

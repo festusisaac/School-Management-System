@@ -12,18 +12,11 @@ export class SystemSetting {
     @PrimaryGeneratedColumn('uuid')
     id!: string;
 
-    // Section 1 - General Info
-    @Column({ type: 'varchar', nullable: true })
-    schoolName!: string;
-
-    @Column({ type: 'text', nullable: true })
-    schoolAddress!: string;
-
-    @Column({ type: 'varchar', nullable: true })
-    schoolEmail!: string;
-
     @Column({ type: 'varchar', nullable: true })
     schoolPhone!: string;
+
+    @Column({ type: 'varchar', nullable: true })
+    schoolMotto!: string;
 
     // Section 1 - Sessions & Terms Default
     @Index()
@@ -47,7 +40,23 @@ export class SystemSetting {
     @Column({ type: 'int', default: 1 }) // 0 = Sunday, 1 = Monday...
     startDayOfWeek!: number;
 
-    // Section 2 - Logos & Branding
+    // Section 2 - Theme & Branding
+    @Column({ type: 'varchar', default: '#4f46e5' }) // Indigo-600 default
+    primaryColor!: string;
+
+    @Column({ type: 'varchar', default: '#94a3b8' }) // Slate-400 default
+    secondaryColor!: string;
+
+    @Column({ type: 'varchar', nullable: true })
+    socialFacebook!: string;
+
+    @Column({ type: 'varchar', nullable: true })
+    socialTwitter!: string;
+
+    @Column({ type: 'varchar', nullable: true })
+    socialInstagram!: string;
+
+    // Logos
     @Column({ type: 'varchar', nullable: true })
     primaryLogo!: string;
 

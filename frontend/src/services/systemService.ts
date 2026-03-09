@@ -6,12 +6,18 @@ export interface SystemSetting {
     schoolAddress?: string;
     schoolEmail?: string;
     schoolPhone?: string;
+    schoolMotto?: string;
     currentSessionId?: string;
     currentTermId?: string;
     sessionStartDate?: string | Date;
     dateFormat?: string;
     timezone?: string;
     startDayOfWeek?: number;
+    primaryColor?: string;
+    secondaryColor?: string;
+    socialFacebook?: string;
+    socialTwitter?: string;
+    socialInstagram?: string;
     primaryLogo?: string;
     favicon?: string;
     printLogo?: string;
@@ -62,6 +68,11 @@ export const systemService = {
                 'Content-Type': 'multipart/form-data',
             },
         });
+        return response;
+    },
+
+    deleteLogo: async (type: string) => {
+        const response = await api.delete<SystemSetting>(`/system/settings/logo/${type}`);
         return response;
     },
 

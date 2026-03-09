@@ -19,6 +19,10 @@ export class CreateSystemSettingDto {
     @IsOptional()
     schoolPhone?: string;
 
+    @IsString()
+    @IsOptional()
+    schoolMotto?: string;
+
     // Sessions Defaults
     @IsUUID()
     @IsOptional()
@@ -45,6 +49,26 @@ export class CreateSystemSettingDto {
     @IsNumber()
     @IsOptional()
     startDayOfWeek?: number;
+
+    @IsString()
+    @IsOptional()
+    primaryColor?: string;
+
+    @IsString()
+    @IsOptional()
+    secondaryColor?: string;
+
+    @IsString()
+    @IsOptional()
+    socialFacebook?: string;
+
+    @IsString()
+    @IsOptional()
+    socialTwitter?: string;
+
+    @IsString()
+    @IsOptional()
+    socialInstagram?: string;
 
     @IsString()
     @IsOptional()
