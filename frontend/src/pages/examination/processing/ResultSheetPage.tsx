@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Printer, Search, FileText, ChevronRight, X, Users, Trophy, TrendingUp, Filter, AlertCircle, Eye } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
+import { useSystem } from '../../../context/SystemContext';
 import { examinationService, ExamGroup, GradeScale } from '../../../services/examinationService';
 import api from '../../../services/api';
 import ReportCardTemplate, { ReportCardData } from '../../../components/examination/ReportCardTemplate';
@@ -20,6 +21,7 @@ const ResultSheetPage = () => {
     const [statusFilter, setStatusFilter] = useState('all');
 
     const { showSuccess, showError } = useToast();
+    const { settings, getFullUrl } = useSystem();
 
     // Initial Load
     useEffect(() => {
@@ -40,13 +42,7 @@ const ResultSheetPage = () => {
         init();
     }, []);
 
-    const getAbsoluteUrl = (url: string) => {
-        if (!url) return '';
-        if (url.startsWith('http')) return url;
-        const apiBaseUrl = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
-        const serverUrl = apiBaseUrl.split('/api')[0];
-        return `${serverUrl}/${url.startsWith('/') ? url.slice(1) : url}`;
-    };
+    // Helper removed as we use getFullUrl from SystemContext
 
     // Load Report Cards Data
     const fetchReportCards = async () => {
@@ -132,7 +128,7 @@ const ResultSheetPage = () => {
                         sex: student.gender,
                         admissionNumber: student.admissionNumber,
                         class: student.class?.name || 'N/A',
-                        photoUrl: getAbsoluteUrl(student.photo || student.studentPhoto),
+                        photoUrl: getFullUrl(student.photo || student.studentPhoto),
                     },
                     examGroup: {
                         name: groupData.name,
@@ -143,7 +139,7 @@ const ResultSheetPage = () => {
                         timesOpened: 127,
                         timesPresent: 109,
                         timesAbsent: 18,
-                        termBegins: '20/11/2025',
+                        termBegins: settings.sessionStartDate || '20/11/2025',
                         termEnds: '31/12/2025',
                         nextTermBegins: '01/01/2026'
                     },

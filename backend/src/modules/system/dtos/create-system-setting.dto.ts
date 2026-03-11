@@ -1,7 +1,11 @@
-import { IsString, IsOptional, IsUUID, IsNumber, IsDateString } from 'class-validator';
+import { IsString, IsOptional, IsUUID, IsNumber, IsDateString, ValidateIf } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateSystemSettingDto {
+    @IsUUID()
+    @IsOptional()
+    id?: string;
+
     // General Info
     @IsString()
     @IsOptional()
@@ -72,21 +76,32 @@ export class CreateSystemSettingDto {
 
     @IsString()
     @IsOptional()
-    primaryLogo?: string;
+    @ValidateIf((o, v) => v !== null)
+    primaryLogo?: string | null;
 
     @IsString()
     @IsOptional()
-    favicon?: string;
+    @ValidateIf((o, v) => v !== null)
+    favicon?: string | null;
 
     @IsString()
     @IsOptional()
-    printLogo?: string;
+    @ValidateIf((o, v) => v !== null)
+    printLogo?: string | null;
 
     @IsString()
     @IsOptional()
-    invoiceLogo?: string;
+    @ValidateIf((o, v) => v !== null)
+    invoiceLogo?: string | null;
 
     @IsString()
     @IsOptional()
-    documentLogo?: string;
+    @ValidateIf((o, v) => v !== null)
+    documentLogo?: string | null;
+
+    @IsOptional()
+    createdAt?: string | Date;
+
+    @IsOptional()
+    updatedAt?: string | Date;
 }

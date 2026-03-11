@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
+import { SystemSettingsService } from '../system/services/system-settings.service';
 
 export interface EmailOptions {
   to: string | string[];
@@ -14,7 +15,7 @@ export class EmailService {
   private readonly logger = new Logger(EmailService.name);
   private transporter: any;
 
-  constructor() {
+  constructor(private readonly systemSettingsService: SystemSettingsService) {
     this.initializeTransporter();
   }
 
@@ -33,11 +34,21 @@ export class EmailService {
     this.logger.log('Email service initialized with SMTP configuration');
   }
 
+  private async getSchoolName(): Promise<string> {
+    try {
+      const settings = await this.systemSettingsService.getSettings();
+      return settings.schoolName || 'School Management System';
+    } catch (error) {
+      return 'School Management System';
+    }
+  }
+
   async sendRegistrationEmail(email: string, firstName: string, verificationLink: string): Promise<boolean> {
     try {
+      const schoolName = await this.getSchoolName();
       const html = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Welcome to School Management System!</h2>
+          <h2>Welcome to ${schoolName}!</h2>
           <p>Hi ${firstName},</p>
           <p>Thank you for registering. Please verify your email address by clicking the link below:</p>
           <p>
@@ -48,14 +59,14 @@ export class EmailService {
           <p>If you did not create this account, please ignore this email.</p>
           <hr />
           <p style="color: #666; font-size: 12px;">
-            School Management System
+            ${schoolName}
           </p>
         </div>
       `;
 
       await this.sendEmail({
         to: email,
-        subject: 'Welcome to School Management System - Verify Your Email',
+        subject: `Welcome to ${schoolName} - Verify Your Email`,
         html,
       });
 
@@ -69,6 +80,7 @@ export class EmailService {
 
   async sendPasswordResetEmail(email: string, firstName: string, resetLink: string): Promise<boolean> {
     try {
+      const schoolName = await this.getSchoolName();
       const html = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2>Password Reset Request</h2>
@@ -83,14 +95,14 @@ export class EmailService {
           <p>If you did not request a password reset, please ignore this email.</p>
           <hr />
           <p style="color: #666; font-size: 12px;">
-            School Management System
+            ${schoolName}
           </p>
         </div>
       `;
 
       await this.sendEmail({
         to: email,
-        subject: 'Password Reset Request - School Management System',
+        subject: `Password Reset Request - ${schoolName}`,
         html,
       });
 
@@ -109,13 +121,14 @@ export class EmailService {
     title: string,
   ): Promise<boolean> {
     try {
+      const schoolName = await this.getSchoolName();
       const html = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2>${title}</h2>
           <p>${message}</p>
           <hr />
           <p style="color: #666; font-size: 12px;">
-            School Management System
+            ${schoolName}
           </p>
         </div>
       `;
@@ -142,18 +155,19 @@ export class EmailService {
     message?: string,
   ): Promise<boolean> {
     try {
+      const schoolName = await this.getSchoolName();
       const html = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-top: 4px solid #f44336; padding: 20px; border-radius: 8px;">
           <h2 style="color: #f44336;">Payment Reminder</h2>
           <p>Hi Parent/Guardian of <strong>${studentName}</strong>,</p>
-          <p>This is a friendly reminder regarding the outstanding balance of <strong>${balance}</strong> in your ward's school fees account.</p>
+          <p>This is a friendly reminder regarding the outstanding balance of <strong>${balance}</strong> in your ward's school fees account at <strong>${schoolName}</strong>.</p>
           <p>The due date for payment is <strong>${dueDate}</strong>.</p>
           ${message ? `<p style="background-color: #f9f9f9; padding: 15px; border-radius: 4px; font-style: italic;">${message}</p>` : ''}
           <p>Kindly ignore this message if payment has already been made.</p>
           <p>Thank you for your cooperation.</p>
           <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
           <p style="color: #666; font-size: 12px; text-align: center;">
-            School Management System Finance Team
+            ${schoolName} Finance Team
           </p>
         </div>
       `;

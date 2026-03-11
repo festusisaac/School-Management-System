@@ -2,9 +2,11 @@ import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bull';
 import { EmailService } from './email.service';
 import { SmsService } from './sms.service';
+import { SystemModule } from '../system/system.module';
 
 @Module({
   imports: [
+    SystemModule,
     BullModule.registerQueue({
       name: 'email',
     }),
@@ -19,4 +21,4 @@ import { SmsService } from './sms.service';
   providers: [EmailService, SmsService],
   exports: [EmailService, SmsService],
 })
-export class CommunicationModule {}
+export class CommunicationModule { }

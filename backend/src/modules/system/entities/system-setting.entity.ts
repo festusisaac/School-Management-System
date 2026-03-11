@@ -13,6 +13,15 @@ export class SystemSetting {
     id!: string;
 
     @Column({ type: 'varchar', nullable: true })
+    schoolName!: string;
+
+    @Column({ type: 'varchar', nullable: true })
+    schoolAddress!: string;
+
+    @Column({ type: 'varchar', nullable: true })
+    schoolEmail!: string;
+
+    @Column({ type: 'varchar', nullable: true })
     schoolPhone!: string;
 
     @Column({ type: 'varchar', nullable: true })

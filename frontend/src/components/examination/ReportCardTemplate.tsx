@@ -1,4 +1,5 @@
 import React from 'react';
+import { useSystem } from '../../context/SystemContext';
 
 export interface ReportCardSubject {
     subjectName: string;
@@ -52,6 +53,8 @@ interface Props {
 }
 
 const ReportCardTemplate: React.FC<Props> = ({ data }) => {
+    const { settings, getFullUrl } = useSystem();
+
     // Helper to format position (e.g., 1 -> 1st)
     const formatSuffix = (n: number | string | undefined | null) => {
         if (n === undefined || n === null || n === 0 || n === '0') return '-';
@@ -73,11 +76,11 @@ const ReportCardTemplate: React.FC<Props> = ({ data }) => {
         }
     };
 
-    // Constants from the Blade template
-    const colorPrimary = '#2aa06c';
-    const colorHeaderBg = '#eaf6f0';
-    const colorSectionBg = '#d9ead3';
-    const colorBorder = '#218b12ff';
+    // Constants from the settings
+    const colorPrimary = settings.primaryColor || '#2aa06c';
+    const colorHeaderBg = '#f8fafc';
+    const colorSectionBg = settings.secondaryColor ? `${settings.secondaryColor}20` : '#eaf6f0';
+    const colorBorder = settings.primaryColor || '#218b12ff';
 
     return (
         <div
@@ -98,19 +101,23 @@ const ReportCardTemplate: React.FC<Props> = ({ data }) => {
                     <tbody>
                         <tr>
                             <td width="15%" className="text-center p-1">
-                                {data.student.photoUrl ? (
-                                    <img src="/logo.png" className="w-[60px] h-[60px] object-contain mx-auto" alt="Logo" />
+                                {settings.printLogo ? (
+                                    <img src={getFullUrl(settings.printLogo)} className="w-[80px] h-[80px] object-contain mx-auto" alt="Logo" />
                                 ) : (
-                                    <div className="w-[60px] h-[60px] bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-[10px] mx-auto uppercase">Logo</div>
+                                    <div className="w-[60px] h-[60px] bg-primary text-white rounded-full flex items-center justify-center font-bold text-[10px] mx-auto uppercase text-center">Logo</div>
                                 )}
                             </td>
                             <td className="text-center">
-                                <div className="text-[16px] font-bold uppercase">HISGRACE INTERNATIONAL SCHOOL</div>
-                                <div className="text-[11px]">Lagos, Nigeria</div>
-                                <div className="italic mt-0.5 text-[11px]">"Excellence & Integrity"</div>
+                                <div className="text-[20px] font-black uppercase text-primary tracking-tight">{settings.schoolName || 'HISGRACE INTERNATIONAL SCHOOL'}</div>
+                                <div className="text-[12px] font-bold text-gray-700">{settings.schoolAddress || 'Lagos, Nigeria'}</div>
+                                <div className="italic mt-1 text-[11px] text-gray-500 font-medium">"{settings.schoolMotto || 'Excellence & Integrity'}"</div>
                             </td>
                             <td width="15%" className="text-center p-1">
-                                <div className="w-[60px] h-[60px] bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-[10px] mx-auto uppercase">Logo</div>
+                                {settings.primaryLogo ? (
+                                    <img src={getFullUrl(settings.primaryLogo)} className="w-[80px] h-[80px] object-contain mx-auto" alt="Logo" />
+                                ) : (
+                                    <div className="w-[60px] h-[60px] bg-primary text-white rounded-full flex items-center justify-center font-bold text-[10px] mx-auto uppercase text-center">Logo</div>
+                                )}
                             </td>
                         </tr>
                     </tbody>

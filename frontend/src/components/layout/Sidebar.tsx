@@ -13,6 +13,7 @@ import {
 import { useState } from 'react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { useSystem } from '../../context/SystemContext';
 
 interface SidebarProps {
     isOpen: boolean;
@@ -21,6 +22,7 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
     const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
+    const { settings, getFullUrl } = useSystem();
 
     const toggleSubmenu = (path: string) => {
         if (!isOpen) {
@@ -77,6 +79,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 { label: 'Student Categories', path: '/students/categories' },
                 { label: 'Student House', path: '/students/houses' },
                 { label: 'Deactivation Reason', path: '/students/deactivate-reasons' },
+                { label: 'Student Profile', path: '/students/profile/:id' },
             ]
         },
         {
@@ -160,14 +163,24 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     isOpen ? "justify-between" : "justify-center"
                 )}>
                     <div className="flex items-center gap-2">
-                        <div className="p-2 bg-blue-600 rounded-lg flex-shrink-0">
-                            <School className="w-5 h-5 text-white" />
+                        <div className="flex-shrink-0">
+                            {settings.primaryLogo ? (
+                                <img
+                                    src={getFullUrl(settings.primaryLogo)}
+                                    className="w-8 h-8 object-contain"
+                                    alt="Logo"
+                                />
+                            ) : (
+                                <div className="p-2 bg-primary-600 rounded-lg flex items-center justify-center">
+                                    <School className="w-5 h-5 text-white" />
+                                </div>
+                            )}
                         </div>
                         <span className={twMerge(
-                            "text-xl font-bold bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text text-transparent transition-opacity duration-300",
+                            "text-xl font-bold bg-gradient-to-r from-primary-600 to-primary-600/70 bg-clip-text text-transparent transition-opacity duration-300",
                             isOpen ? "opacity-100" : "opacity-0 lg:hidden"
                         )}>
-                            SMS Admin
+                            {settings.schoolName || 'SMS Admin'}
                         </span>
                     </div>
                     <button
@@ -198,105 +211,92 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                                         <span className={twMerge(
                                             "flex-1 text-left transition-opacity duration-300",
                                             isOpen ? "opacity-100" : "opacity-0 lg:hidden"
-                                        )}>{item.label}</span>
-                                        {isOpen && (
-                                            <ChevronDown className={clsx(
-                                                "w-4 h-4 transition-transform duration-200",
-                                                expandedMenu === item.path ? "transform rotate-180" : ""
-                                            )} />
-                                        )}
+                                        )}>
+                                            {item.label}
+                                        </span>
+                                        <ChevronDown className={twMerge(
+                                            "w-4 h-4 transition-transform duration-200",
+                                            expandedMenu === item.path ? "rotate-180" : "",
+                                            isOpen ? "opacity-100" : "opacity-0 invisible"
+                                        )} />
                                     </button>
 
                                     {/* Submenu Items */}
                                     <div className={clsx(
                                         "overflow-hidden transition-all duration-300 ease-in-out",
-                                        expandedMenu === item.path ? "max-h-[700px] opacity-100" : "max-h-0 opacity-0"
+                                        (expandedMenu === item.path && isOpen) ? "max-h-96 opacity-100 mb-2" : "max-h-0 opacity-0"
                                     )}>
-                                        <div className="pl-4 space-y-1 mt-1">
-                                            {item.children.map((child: any, index: number) => {
-                                                if (child.type === 'header') {
-                                                    return (
-                                                        <div
-                                                            key={`header-${index}`}
-                                                            className={twMerge(
-                                                                "px-4 py-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider transition-opacity duration-300",
-                                                                isOpen ? "opacity-100" : "opacity-0 lg:hidden"
-                                                            )}
-                                                        >
-                                                            {child.label}
-                                                        </div>
-                                                    );
-                                                }
-
-                                                return (
+                                        <div className="pl-11 space-y-1 py-1">
+                                            {item.children.map((child: any, index: number) => (
+                                                child.type === 'header' ? (
+                                                    <div key={`header-${index}`} className="px-4 py-2 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest transition-opacity duration-300">
+                                                        {child.label}
+                                                    </div>
+                                                ) : (
                                                     <NavLink
                                                         key={child.path}
                                                         to={child.path}
-                                                        onClick={() => window.innerWidth < 1024 && onClose()}
                                                         className={({ isActive }) => clsx(
-                                                            "flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 overflow-hidden whitespace-nowrap",
+                                                            "flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg transition-colors overflow-hidden whitespace-nowrap",
                                                             isActive
-                                                                ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400"
-                                                                : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                                                                ? "text-primary-600 bg-primary-500/10"
+                                                                : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/30"
                                                         )}
                                                     >
                                                         <span className={clsx(
                                                             "w-1.5 h-1.5 rounded-full flex-shrink-0 transition-colors",
                                                             window.location.pathname === child.path
-                                                                ? "bg-blue-600 dark:bg-blue-400"
+                                                                ? "bg-primary-600"
                                                                 : "bg-gray-300 dark:bg-gray-600"
                                                         )} />
-                                                        <span className={twMerge(
-                                                            "transition-opacity duration-300",
-                                                            isOpen ? "opacity-100" : "opacity-0 lg:hidden"
-                                                        )}>{child.label}</span>
+                                                        <span className="flex-1">{child.label}</span>
                                                     </NavLink>
-                                                );
-                                            })}
+                                                )
+                                            ))}
                                         </div>
                                     </div>
                                 </div>
                             ) : (
-
-                                /* Standard Link */
+                                /* Regular Nav Link */
                                 <NavLink
                                     to={item.path}
-                                    title={!isOpen ? item.label : undefined}
-                                    onClick={() => window.innerWidth < 1024 && onClose()}
                                     className={({ isActive }) => clsx(
                                         "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group overflow-hidden whitespace-nowrap",
                                         isActive
-                                            ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 shadow-sm shadow-blue-100/50 dark:shadow-none"
+                                            ? "bg-primary-600 text-white shadow-lg shadow-primary-600/25"
                                             : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-gray-200"
                                     )}
                                 >
-                                    {({ isActive }) => (
-                                        <>
-                                            <item.icon className={clsx(
-                                                "w-5 h-5 transition-colors flex-shrink-0",
-                                                isActive ? "text-blue-600 dark:text-blue-400" : "text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300"
-                                            )} />
-                                            <span className={twMerge(
-                                                "transition-opacity duration-300",
-                                                isOpen ? "opacity-100" : "opacity-0 lg:hidden"
-                                            )}>{item.label}</span>
-                                            {isActive && isOpen && (
-                                                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400 flex-shrink-0" />
-                                            )}
-                                        </>
-                                    )}
+                                    <item.icon className={clsx(
+                                        "w-5 h-5 flex-shrink-0 transition-colors",
+                                        "group-hover:text-inherit"
+                                    )} />
+                                    <span className={twMerge(
+                                        "transition-opacity duration-300",
+                                        isOpen ? "opacity-100" : "opacity-0 lg:hidden"
+                                    )}>
+                                        {item.label}
+                                    </span>
                                 </NavLink>
                             )}
                         </div>
                     ))}
                 </nav>
 
-                {/* Footer */}
-                <div className={twMerge(
-                    "p-4 border-t border-gray-50 dark:border-gray-800/50 bg-gray-50/50 dark:bg-gray-900/50 transition-opacity duration-300 overflow-hidden whitespace-nowrap",
-                    isOpen ? "opacity-100" : "opacity-0 lg:hidden"
-                )}>
-                    <p className="text-xs text-center text-gray-400 dark:text-gray-500 font-medium">© 2026 School Manager</p>
+                {/* Bottom Section - User / Settings / Help */}
+                <div className="p-4 border-t border-gray-50 dark:border-gray-800/50 space-y-1">
+                    <button className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-gray-200 rounded-xl transition-all group overflow-hidden whitespace-nowrap">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0">
+                            JD
+                        </div>
+                        <div className={twMerge(
+                            "text-left transition-opacity duration-300",
+                            isOpen ? "opacity-100" : "opacity-0 lg:hidden"
+                        )}>
+                            <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 leading-none">John Doe</p>
+                            <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1 uppercase tracking-wider">Admin</p>
+                        </div>
+                    </button>
                 </div>
             </div>
         </>

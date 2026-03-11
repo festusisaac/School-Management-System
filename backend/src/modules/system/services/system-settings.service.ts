@@ -45,52 +45,65 @@ export class SystemSettingsService {
     // Helper method for updating logos dynamically
     async updateLogo(logoType: string, filePath: string): Promise<SystemSetting> {
         const settings = await this.getSettings();
-        if (logoType in settings) {
-            // Optional: delete old file if it exists
-            const oldFile = (settings as any)[logoType];
-            if (oldFile && oldFile !== filePath) {
-                this.removeFileIfExists(oldFile);
-            }
 
-            (settings as any)[logoType] = filePath;
-            return this.systemSettingRepository.save(settings);
+        // Allowed logo types
+        const allowedTypes = ['primaryLogo', 'favicon', 'printLogo', 'invoiceLogo', 'documentLogo'];
+        if (!allowedTypes.includes(logoType)) {
+            throw new Error(`Invalid logo type: ${logoType}`);
         }
-        throw new Error(`Invalid logo type: ${logoType}`);
+
+        // Cleanup old file if it exists
+        const oldFile = (settings as any)[logoType];
+        if (oldFile && oldFile !== filePath) {
+            this.removeFileIfExists(oldFile);
+        }
+
+        // Update settings
+        (settings as any)[logoType] = filePath;
+        return this.systemSettingRepository.save(settings);
     }
 
     async deleteLogo(logoType: string): Promise<SystemSetting> {
         const settings = await this.getSettings();
-        if (logoType in settings) {
-            const filePath = (settings as any)[logoType];
-            if (filePath) {
-                this.removeFileIfExists(filePath);
-            }
 
-            // Update the database field to null
-            const updateData: any = {};
-            updateData[logoType] = null;
-            await this.systemSettingRepository.update(settings.id, updateData);
-
-            // Return updated settings
-            return this.getSettings();
+        const allowedTypes = ['primaryLogo', 'favicon', 'printLogo', 'invoiceLogo', 'documentLogo'];
+        if (!allowedTypes.includes(logoType)) {
+            throw new Error(`Invalid logo type: ${logoType}`);
         }
-        throw new Error(`Invalid logo type: ${logoType}`);
+
+        const filePath = (settings as any)[logoType];
+        if (filePath) {
+            console.log(`SystemSettingsService: Attempting to delete logo type "${logoType}" at: ${filePath}`);
+            this.removeFileIfExists(filePath);
+        }
+
+        // Clear the field and save
+        (settings as any)[logoType] = null;
+        return this.systemSettingRepository.save(settings);
     }
 
     private removeFileIfExists(relativeFilePath: string) {
         try {
-            // Trim leading slash if present for filesystem operations
+            if (!relativeFilePath) return;
+
+            // Trim leading slash for filesystem operations
             const normalizedPath = relativeFilePath.startsWith('/')
                 ? relativeFilePath.substring(1)
                 : relativeFilePath;
-            const absolutePath = path.join(process.cwd(), normalizedPath);
+
+            // Use absolute resolution
+            const absolutePath = path.resolve(process.cwd(), normalizedPath);
+            console.log(`SystemSettingsService: process.cwd() = ${process.cwd()}`);
+            console.log(`SystemSettingsService: Resolved path = ${absolutePath}`);
 
             if (fs.existsSync(absolutePath)) {
                 fs.unlinkSync(absolutePath);
-                console.log(`Deleted file: ${absolutePath}`);
+                console.log(`SystemSettingsService: SUCCESS. Deleted file.`);
+            } else {
+                console.warn(`SystemSettingsService: FILE NOT FOUND at ${absolutePath}`);
             }
         } catch (error) {
-            console.error(`Failed to delete file: ${relativeFilePath}`, error);
+            console.error(`SystemSettingsService: ERROR deleting ${relativeFilePath}:`, error);
         }
     }
 }

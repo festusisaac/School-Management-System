@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import api from '@services/api'
+import { useToast } from '../../context/ToastContext';
+import { useSystem } from '../../context/SystemContext';
+import api from '../../services/api';
+import { Mail, Lock, User, UserPlus, School, AlertCircle, Loader2 } from 'lucide-react';
 
-interface RegisterPageProps {}
+interface RegisterPageProps { }
 
-const RegisterPage: React.FC<RegisterPageProps> = () => {
+export default function RegisterPage() {
   const navigate = useNavigate()
   const [formData, setFormData] = useState({
     email: '',
@@ -12,11 +15,13 @@ const RegisterPage: React.FC<RegisterPageProps> = () => {
     firstName: '',
     lastName: '',
     role: 'student',
+    confirmPassword: ''
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({})
+  const { settings, getFullUrl } = useSystem();
 
   const validateForm = () => {
     const errors: { [key: string]: string } = {}
@@ -76,6 +81,7 @@ const RegisterPage: React.FC<RegisterPageProps> = () => {
         firstName: '',
         lastName: '',
         role: 'student',
+        confirmPassword: ''
       })
       // Redirect to login after successful registration
       setTimeout(() => navigate('/login'), 2000)
@@ -91,8 +97,23 @@ const RegisterPage: React.FC<RegisterPageProps> = () => {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <div className="bg-white p-8 rounded-lg shadow-md w-96">
-        <h1 className="text-3xl font-bold text-center mb-2">School Management System</h1>
-        <p className="text-center text-gray-600 text-sm mb-6">Create your account</p>
+        <div className="flex flex-col items-center mb-8">
+          {settings.primaryLogo ? (
+            <img
+              src={getFullUrl(settings.primaryLogo)}
+              alt="Logo"
+              className="w-16 h-16 object-contain mb-4"
+            />
+          ) : (
+            <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-blue-500/30">
+              <School className="w-8 h-8 text-white" />
+            </div>
+          )}
+          <h1 className="text-3xl font-bold text-center text-gray-900 leading-tight">
+            {settings.schoolName || 'School Management System'}
+          </h1>
+          <p className="text-gray-500 mt-2 text-sm">Create your admin account to get started.</p>
+        </div>
 
         {success && (
           <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
@@ -117,9 +138,8 @@ const RegisterPage: React.FC<RegisterPageProps> = () => {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring ${
-                validationErrors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-primary-500'
-              }`}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring ${validationErrors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-primary-500'
+                }`}
               placeholder="Enter your email"
             />
             {validationErrors.email && (
@@ -137,9 +157,8 @@ const RegisterPage: React.FC<RegisterPageProps> = () => {
               name="firstName"
               value={formData.firstName}
               onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring ${
-                validationErrors.firstName ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-primary-500'
-              }`}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring ${validationErrors.firstName ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-primary-500'
+                }`}
               placeholder="Enter your first name"
             />
             {validationErrors.firstName && (
@@ -157,9 +176,8 @@ const RegisterPage: React.FC<RegisterPageProps> = () => {
               name="lastName"
               value={formData.lastName}
               onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring ${
-                validationErrors.lastName ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-primary-500'
-              }`}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring ${validationErrors.lastName ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-primary-500'
+                }`}
               placeholder="Enter your last name"
             />
             {validationErrors.lastName && (
@@ -177,9 +195,8 @@ const RegisterPage: React.FC<RegisterPageProps> = () => {
               name="password"
               value={formData.password}
               onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring ${
-                validationErrors.password ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-primary-500'
-              }`}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring ${validationErrors.password ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-primary-500'
+                }`}
               placeholder="Enter your password (min 6 characters)"
             />
             {validationErrors.password && (
@@ -226,5 +243,3 @@ const RegisterPage: React.FC<RegisterPageProps> = () => {
     </div>
   )
 }
-
-export default RegisterPage
