@@ -177,7 +177,7 @@ const TeacherRatingPage: React.FC = () => {
                                 <tr key={rating.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group transition-all">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-primary-900/40 flex items-center justify-center text-primary-600 dark:text-primary-400 font-bold transition-colors">
+                                            <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center text-primary-600 dark:text-primary-400 font-bold transition-colors">
                                                 {rating.teacher.photo ? (
                                                     <img src={rating.teacher.photo.startsWith('http') ? rating.teacher.photo : `http://localhost:3000${rating.teacher.photo}`} alt="" className="w-full h-full rounded-full object-cover shadow-sm" />
                                                 ) : (

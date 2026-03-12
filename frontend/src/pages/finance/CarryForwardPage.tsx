@@ -213,7 +213,7 @@ const CarryForwardPage = () => {
       {/* Stats Quick View */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm relative overflow-hidden group">
-          <div className="absolute -right-4 -bottom-4 text-primary-50 dark:text-blue-900/10 transition-transform group-hover:scale-110">
+          <div className="absolute -right-4 -bottom-4 text-primary-50 dark:text-primary-900/10 transition-transform group-hover:scale-110">
             <Calculator size={80} />
           </div>
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Students with Balance</p>
@@ -236,11 +236,11 @@ const CarryForwardPage = () => {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-2xl shadow-xl text-white relative overflow-hidden">
+        <div className="bg-gradient-to-br from-primary-600 to-primary-700 p-6 rounded-2xl shadow-xl text-white relative overflow-hidden">
           <div className="relative z-10">
-            <p className="text-[10px] font-black text-blue-100 uppercase tracking-widest mb-1">Selected Count</p>
+            <p className="text-[10px] font-black text-primary-100 uppercase tracking-widest mb-1">Selected Count</p>
             <p className="text-3xl font-black">{selectedIds.size}</p>
-            <div className="mt-4 flex items-center gap-1.5 text-xs font-bold text-blue-100/80 bg-white/10 px-2 py-1 rounded-lg w-fit">
+            <div className="mt-4 flex items-center gap-1.5 text-xs font-bold text-primary-100/80 bg-white/10 px-2 py-1 rounded-lg w-fit">
               <CheckCircle2 size={14} />
               Ready to process
             </div>
@@ -354,7 +354,7 @@ const CarryForwardPage = () => {
                     {parseFloat(debtor.balance) > 50000 ? (
                       <span className="px-2 py-0.5 bg-red-100 text-red-700 text-[10px] font-black rounded-full uppercase tracking-widest border border-red-200">Critical</span>
                     ) : (
-                      <span className="px-2 py-0.5 bg-blue-100 text-primary-700 text-[10px] font-black rounded-full uppercase tracking-widest border border-blue-200">Eligible</span>
+                      <span className="px-2 py-0.5 bg-primary-100 text-primary-700 text-[10px] font-black rounded-full uppercase tracking-widest border border-primary-200">Eligible</span>
                     )}
                   </td>
                   <td className="px-6 py-4 text-right">
@@ -413,9 +413,9 @@ const CarryForwardPage = () => {
       {showCarryModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
           <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-white/20">
-            <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-blue-50 to-white dark:from-blue-900/30 dark:to-gray-800">
+            <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-primary-50 to-white dark:from-primary-900/30 dark:to-gray-800">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 shadow-inner">
+                <div className="w-12 h-12 rounded-2xl bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 shadow-inner">
                   <ArrowRightCircle size={24} />
                 </div>
                 <div>
@@ -433,7 +433,7 @@ const CarryForwardPage = () => {
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Scope of Transaction</p>
                 {selectedStudent ? (
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-primary-600 font-bold">
+                    <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold">
                       {selectedStudent.student.firstName[0]}
                     </div>
                     <div>

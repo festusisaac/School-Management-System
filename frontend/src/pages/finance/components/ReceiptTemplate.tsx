@@ -225,7 +225,7 @@ export const ReceiptTemplate = forwardRef<HTMLDivElement, ReceiptProps>(({ trans
                     <div className="text-center w-40">
                         <div className="h-16 mb-2 flex items-end justify-center">
                             {/* Placeholder for digital signature img */}
-                            <div className="font-script text-2xl text-blue-900 transform -rotate-12 opacity-80">Bursar.Sig</div>
+                            <div className="font-script text-2xl text-primary-900 transform -rotate-12 opacity-80">Bursar.Sig</div>
                         </div>
                         <div className="border-t border-gray-900 pt-2">
                             <p className="text-xs font-bold uppercase text-gray-900">Bursar's Signature</p>

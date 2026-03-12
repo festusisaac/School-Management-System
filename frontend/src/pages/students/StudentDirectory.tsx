@@ -138,7 +138,7 @@ export default function StudentDirectory() {
                 <span className={clsx(
                     "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all",
                     row.original.gender === 'Male'
-                        ? "bg-primary-50 text-primary-700 border-blue-200 dark:bg-primary-500/10 dark:text-primary-400 dark:border-primary-500/20 shadow-sm shadow-primary-500/5"
+                        ? "bg-primary-50 text-primary-700 border-primary-200 dark:bg-primary-500/10 dark:text-primary-400 dark:border-primary-500/20 shadow-sm shadow-primary-500/5"
                         : "bg-pink-50 text-pink-700 border-pink-200 dark:bg-pink-500/10 dark:text-pink-400 dark:border-pink-500/20 shadow-sm shadow-pink-500/5"
                 )}>
                     {row.original.gender}

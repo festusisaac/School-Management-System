@@ -357,7 +357,7 @@ const PaymentRemindersPage = () => {
                   </p>
                 </div>
 
-                <div className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-xl border border-blue-100 dark:border-primary-800">
+                <div className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-xl border border-primary-100 dark:border-primary-800">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[11px] font-bold text-primary-600 dark:text-primary-400 uppercase">Selected Students</span>
                     <span className="text-xl font-black text-primary-700 dark:text-primary-300">{selectedIds.size}</span>

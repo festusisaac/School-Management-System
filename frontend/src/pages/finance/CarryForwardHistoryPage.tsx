@@ -185,7 +185,7 @@ const CarryForwardHistoryPage = () => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className="px-2 py-1 bg-primary-50 text-primary-600 rounded-lg text-xs font-bold border border-blue-100">
+                                            <span className="px-2 py-1 bg-primary-50 text-primary-600 rounded-lg text-xs font-bold border border-primary-100">
                                                 {record.academicYear}
                                             </span>
                                         </td>

@@ -69,12 +69,12 @@ const formatTime = (time: string): string => {
 
 const getSubjectColor = (subjectName: string): string => {
     const colors = [
-        'bg-blue-100 text-blue-800 border-blue-200',
+        'bg-primary-100 text-primary-800 border-primary-200',
         'bg-green-100 text-green-800 border-green-200',
         'bg-purple-100 text-purple-800 border-purple-200',
         'bg-orange-100 text-orange-800 border-orange-200',
         'bg-pink-100 text-pink-800 border-pink-200',
-        'bg-indigo-100 text-indigo-800 border-indigo-200',
+        'bg-primary-100 text-primary-800 border-primary-200',
         'bg-teal-100 text-teal-800 border-teal-200',
         'bg-yellow-100 text-yellow-800 border-yellow-200',
     ];
@@ -338,7 +338,7 @@ const TeachersTimetablePage = () => {
                     <div className="w-full h-full flex flex-col p-2" style={{ transform: 'scale(0.98)', transformOrigin: 'center center' }}>
                         {/* Print Header */}
                         <div className="text-center mb-1 shrink-0">
-                            <h2 className="text-xl font-bold uppercase tracking-wide text-blue-900 border-b-2 border-blue-900 inline-block px-6 py-0.5 mb-1">
+                            <h2 className="text-xl font-bold uppercase tracking-wide text-primary-900 border-b-2 border-primary-900 inline-block px-6 py-0.5 mb-1">
                                 Teacher Timetable
                             </h2>
                             <div className="flex items-center justify-center gap-3">

@@ -122,7 +122,7 @@ const SessionsPage = () => {
                 <div className="flex items-center justify-end gap-2">
                     <button
                         onClick={() => handleEdit(row.original)}
-                        className="p-1.5 text-primary-600 bg-primary-50 hover:bg-blue-100 rounded-lg transition-colors"
+                        className="p-1.5 text-primary-600 bg-primary-50 hover:bg-primary-100 rounded-lg transition-colors"
                         title="Edit"
                     >
                         <Edit2 className="w-4 h-4" />

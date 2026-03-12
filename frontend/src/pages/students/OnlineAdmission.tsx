@@ -105,7 +105,7 @@ export default function OnlineAdmission() {
             id: 'actions',
             cell: ({ row }) => (
                 <div className="flex items-center gap-2">
-                    <button onClick={() => handleView(row.original)} className="p-1.5 rounded-lg bg-primary-50 text-primary-600 hover:bg-blue-100" title="View">
+                    <button onClick={() => handleView(row.original)} className="p-1.5 rounded-lg bg-primary-50 text-primary-600 hover:bg-primary-100" title="View">
                         <Eye className="w-4 h-4" />
                     </button>
                     {row.original.status === 'pending' && (

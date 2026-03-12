@@ -172,7 +172,7 @@ const BulkScoreImport: React.FC<BulkScoreImportProps> = ({ isOpen, onClose, onIm
 
                     {step === 'map' && (
                         <div className="space-y-6">
-                            <div className="bg-primary-50 dark:bg-primary-900/20 p-4 rounded-xl flex gap-3 text-blue-800 dark:text-blue-200 text-sm">
+                            <div className="bg-primary-50 dark:bg-primary-900/20 p-4 rounded-xl flex gap-3 text-primary-800 dark:text-primary-200 text-sm">
                                 <AlertTriangle className="w-5 h-5 shrink-0" />
                                 <p>Please map the Excel columns to the system fields. We attempted to auto-detect them for you.</p>
                             </div>

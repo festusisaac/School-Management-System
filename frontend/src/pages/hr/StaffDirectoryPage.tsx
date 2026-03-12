@@ -353,7 +353,7 @@ const StaffDirectoryPage = () => {
                                                 {member.photo ? (
                                                     <img src={member.photo.startsWith('http') ? member.photo : `http://localhost:3000${member.photo}`} alt="" className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-700" />
                                                 ) : (
-                                                    <div className="w-10 h-10 bg-blue-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-full flex items-center justify-center font-bold">
+                                                    <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-full flex items-center justify-center font-bold">
                                                         {member.firstName[0]}{member.lastName[0]}
                                                     </div>
                                                 )}
@@ -385,7 +385,7 @@ const StaffDirectoryPage = () => {
                                                     </a>
                                                 )}
                                                 <button onClick={() => handleViewStaff(member)} className="p-1 text-primary-600 hover:bg-primary-50 rounded" title="View Staff Details"><Eye size={18} /></button>
-                                                <button onClick={() => handleEdit(member)} className="p-1 text-indigo-600 hover:bg-indigo-50 rounded"><Edit2 size={18} /></button>
+                                                <button onClick={() => handleEdit(member)} className="p-1 text-primary-600 hover:bg-primary-50 rounded"><Edit2 size={18} /></button>
                                                 <button onClick={() => handleDelete(member.id)} className="p-1 text-red-600 hover:bg-red-50 rounded"><Trash2 size={18} /></button>
                                             </div>
                                         </td>
@@ -903,7 +903,7 @@ const StaffDirectoryPage = () => {
                                                             className="w-32 h-32 rounded-full object-cover mx-auto border-4 border-primary-50 dark:border-gray-700 shadow-md mb-4"
                                                         />
                                                     ) : (
-                                                        <div className="w-32 h-32 bg-blue-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-full flex items-center justify-center font-bold text-4xl mx-auto mb-4">
+                                                        <div className="w-32 h-32 bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-full flex items-center justify-center font-bold text-4xl mx-auto mb-4">
                                                             {viewingStaff.firstName[0]}{viewingStaff.lastName[0]}
                                                         </div>
                                                     )}
@@ -1098,7 +1098,7 @@ const StaffDirectoryPage = () => {
                                                         {viewingStaff.joiningLetter && (
                                                             <a href={`http://localhost:3000${viewingStaff.joiningLetter}`} target="_blank" rel="noreferrer" className="flex items-center justify-between p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 group">
                                                                 <div className="flex items-center gap-2">
-                                                                    <div className="w-8 h-8 rounded bg-blue-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 font-bold text-xs">DOC</div>
+                                                                    <div className="w-8 h-8 rounded bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 font-bold text-xs">DOC</div>
                                                                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Joining Letter</span>
                                                                 </div>
                                                                 <Eye size={16} className="text-gray-400 group-hover:text-primary-600 dark:group-hover:text-primary-500" />
@@ -1153,7 +1153,7 @@ const StaffDirectoryPage = () => {
                                                             <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6B7280' }} />
                                                             <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={(v) => `${CURRENCY_SYMBOL}${v / 1000}k`} />
                                                             <Tooltip contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
-                                                            <Area type="monotone" dataKey="total" stroke="#3B82F6" strokeWidth={3} fill="#EFF6FF" className="dark:fill-blue-900/20" />
+                                                            <Area type="monotone" dataKey="total" stroke="rgb(var(--color-primary-rgb))" strokeWidth={3} fill="rgb(var(--color-primary-rgb) / 0.1)" className="dark:fill-primary-900/20" />
                                                         </AreaChart>
                                                     </ResponsiveContainer>
                                                 </div>

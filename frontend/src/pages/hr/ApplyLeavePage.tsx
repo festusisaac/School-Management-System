@@ -170,7 +170,7 @@ const ApplyLeavePage = () => {
                             </div>
 
                             {selectedDays > 0 && (
-                                <div className={`p-4 rounded-2xl flex items-center justify-between ${isExceeding ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/30' : 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 border border-blue-100 dark:border-blue-900/30'}`}>
+                                <div className={`p-4 rounded-2xl flex items-center justify-between ${isExceeding ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/30' : 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 border border-primary-100 dark:border-primary-900/30'}`}>
                                     <div className="text-xs font-black uppercase tracking-wider">Total Days: {selectedDays}</div>
                                     {isExceeding && (
                                         <div className="flex items-center gap-1 text-[10px] font-black uppercase">
@@ -213,9 +213,9 @@ const ApplyLeavePage = () => {
 
                 {/* Status and History */}
                 <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-8 text-white shadow-xl shadow-primary-500/20 flex justify-between items-center">
+                    <div className="bg-gradient-to-br from-primary-600 to-primary-700 rounded-3xl p-8 text-white shadow-xl shadow-primary-500/20 flex justify-between items-center">
                         <div>
-                            <p className="text-blue-100 text-sm font-bold">Current Leave Status</p>
+                            <p className="text-primary-100 text-sm font-bold">Current Leave Status</p>
                             <h2 className="text-3xl font-black mt-1">{loading ? '...' : leaveBalance?.totalAvailable || 0} Days Available</h2>
                             <div className="mt-4 flex flex-wrap gap-2">
                                 {leaveBalance?.details.map((d: any) => (

@@ -243,7 +243,7 @@ export default function FeeStructurePage() {
                     {head.isOptional ? (
                       <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded uppercase tracking-tighter border border-amber-100 dark:border-amber-900/30">Optional</span>
                     ) : (
-                      <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 px-2 py-0.5 rounded uppercase tracking-tighter border border-indigo-100 dark:border-indigo-900/30">Mandatory</span>
+                      <span className="text-[10px] font-black text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 px-2 py-0.5 rounded uppercase tracking-tighter border border-primary-100 dark:border-primary-900/30">Mandatory</span>
                     )}
                   </div>
                   <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">

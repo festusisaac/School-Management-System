@@ -164,7 +164,7 @@ const ResultManagementPage = () => {
 
                 {/* Step 2: Approval */}
                 <div className={`p-6 rounded-lg border shadow-sm transition-all ${status.approved
-                        ? 'bg-primary-50 dark:bg-primary-900/20 border-blue-200 dark:border-primary-800'
+                        ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800'
                         : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
                     }`}>
                     <div className="flex items-center justify-between mb-4">
@@ -181,7 +181,7 @@ const ResultManagementPage = () => {
                         onClick={handleApprove}
                         disabled={!status.calculated || status.approved || loading}
                         className={`w-full py-2 px-4 rounded-lg text-sm font-medium transition-all ${status.approved
-                                ? 'bg-blue-100 text-primary-700 cursor-default'
+                                ? 'bg-primary-100 text-primary-700 cursor-default'
                                 : 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed'
                             }`}
                     >

@@ -281,7 +281,7 @@ const ClassTimetablePage = () => {
         return (
             <div className="min-h-screen bg-white flex items-center justify-center">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900 mx-auto mb-4"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-900 mx-auto mb-4"></div>
                 </div>
             </div>
         );
@@ -398,7 +398,7 @@ const ClassTimetablePage = () => {
                             <div>
                                 <h2 className="text-lg font-bold text-gray-800 uppercase tracking-wide">Weekly Schedule</h2>
                                 <div className="flex items-center gap-2 mt-1">
-                                    <span className="px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-primary-700 border border-blue-200 uppercase">{selectedClassName}</span>
+                                    <span className="px-2 py-0.5 rounded text-xs font-bold bg-primary-100 text-primary-700 border border-primary-200 uppercase">{selectedClassName}</span>
                                     <span className="text-gray-400">•</span>
                                     <span className="px-2 py-0.5 rounded text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200 uppercase">{selectedSectionName}</span>
                                 </div>
@@ -407,7 +407,7 @@ const ClassTimetablePage = () => {
 
                         {/* Print Header (Visible only when printing) */}
                         <div className="hidden print:block text-center mb-6 pt-4">
-                            <h2 className="text-2xl font-bold uppercase tracking-wide text-blue-900 border-b-2 border-blue-900 inline-block px-4 mb-2">
+                            <h2 className="text-2xl font-bold uppercase tracking-wide text-primary-900 border-b-2 border-primary-900 inline-block px-4 mb-2">
                                 Class Timetable
                             </h2>
                             <p className="text-lg font-bold uppercase">{selectedClassName} - {selectedSectionName}</p>
@@ -479,7 +479,7 @@ const ClassTimetablePage = () => {
                                                                             maxHeight: '400px'
                                                                         }}
                                                                     >
-                                                                        <span className="font-bold text-blue-900 text-xs tracking-wider uppercase whitespace-nowrap px-2">
+                                                                        <span className="font-bold text-primary-900 text-xs tracking-wider uppercase whitespace-nowrap px-2">
                                                                             {displayText}
                                                                         </span>
                                                                     </div>
@@ -878,7 +878,7 @@ const PeriodManagementModal = ({ periods, onClose, onRefresh }: { periods: Perio
                                         <td className="p-3">{period.periodOrder}</td>
                                         <td className="p-3 font-medium">{period.name}</td>
                                         <td className="p-3">
-                                            <span className={`px-2 py-1 rounded text-xs ${period.type === PeriodType.LESSON ? 'bg-blue-100 text-blue-800' :
+                                            <span className={`px-2 py-1 rounded text-xs ${period.type === PeriodType.LESSON ? 'bg-primary-100 text-primary-800' :
                                                 period.type === PeriodType.BREAK ? 'bg-orange-100 text-orange-800' :
                                                     period.type === PeriodType.LUNCH ? 'bg-yellow-100 text-yellow-800' :
                                                         'bg-purple-100 text-purple-800'
@@ -908,7 +908,7 @@ const PeriodManagementModal = ({ periods, onClose, onRefresh }: { periods: Perio
                                             </div>
                                             <button
                                                 onClick={() => handleEdit(period)}
-                                                className="text-primary-600 hover:text-blue-800"
+                                                className="text-primary-600 hover:text-primary-800"
                                             >
                                                 Edit
                                             </button>

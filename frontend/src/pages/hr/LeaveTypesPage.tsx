@@ -79,7 +79,7 @@ const LeaveTypesPage = () => {
                                     <p className="text-sm font-mono text-gray-500 dark:text-gray-400 uppercase">{type.code}</p>
                                 </div>
                                 <div className="flex gap-2">
-                                    <button onClick={() => { setEditingType(type); setShowModal(true); }} className="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors"><Edit2 size={18} /></button>
+                                    <button onClick={() => { setEditingType(type); setShowModal(true); }} className="p-2 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/30 rounded-lg transition-colors"><Edit2 size={18} /></button>
                                     <button onClick={() => handleDelete(type.id)} className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"><Trash2 size={18} /></button>
                                 </div>
                             </div>
@@ -171,15 +171,15 @@ const LeaveTypesPage = () => {
                                     </div>
                                     <div className="space-y-3 pt-2">
                                         <label className="flex items-center gap-3 cursor-pointer group">
-                                            <input type="checkbox" name="isPaid" defaultChecked={editingType ? editingType.isPaid : true} className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 accent-blue-600" />
+                                            <input type="checkbox" name="isPaid" defaultChecked={editingType ? editingType.isPaid : true} className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 accent-primary" />
                                             <span className="text-sm text-gray-700 dark:text-gray-300 font-medium group-hover:text-primary-600 dark:group-hover:text-primary-500 transition">Is Paid Leave</span>
                                         </label>
                                         <label className="flex items-center gap-3 cursor-pointer group">
-                                            <input type="checkbox" name="requiresApproval" defaultChecked={editingType ? editingType.requiresApproval : true} className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 accent-blue-600" />
+                                            <input type="checkbox" name="requiresApproval" defaultChecked={editingType ? editingType.requiresApproval : true} className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 accent-primary" />
                                             <span className="text-sm text-gray-700 dark:text-gray-300 font-medium group-hover:text-primary-600 dark:group-hover:text-primary-500 transition">Requires Approval</span>
                                         </label>
                                         <label className="flex items-center gap-3 cursor-pointer group">
-                                            <input type="checkbox" name="requiresDocument" defaultChecked={editingType ? editingType.requiresDocument : false} className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 accent-blue-600" />
+                                            <input type="checkbox" name="requiresDocument" defaultChecked={editingType ? editingType.requiresDocument : false} className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 accent-primary" />
                                             <span className="text-sm text-gray-700 dark:text-gray-300 font-medium group-hover:text-primary-600 dark:group-hover:text-primary-500 transition">Supporting Document Required</span>
                                         </label>
                                     </div>

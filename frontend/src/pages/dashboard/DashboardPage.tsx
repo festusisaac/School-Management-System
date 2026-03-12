@@ -481,7 +481,7 @@ const DashboardPage: React.FC = () => {
             {activities?.recentEnrollments.map((student: any) => (
               <div key={`enroll-${student.id}`} className="flex items-start">
                 <div className="flex-shrink-0">
-                  <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-primary-900/30 flex items-center justify-center">
+                  <div className="h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
                     <UserPlus className="h-5 w-5 text-primary-600 dark:text-primary-400" />
                   </div>
                 </div>
@@ -532,7 +532,7 @@ const DashboardPage: React.FC = () => {
           <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Quick Actions</h2>
           <div className="space-y-3">
             <Link to="/students/register" className="flex items-center p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group">
-              <div className="p-2 bg-primary-50 dark:bg-primary-900/30 rounded-lg group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50 transition-colors">
+              <div className="p-2 bg-primary-50 dark:bg-primary-900/30 rounded-lg group-hover:bg-primary-100 dark:group-hover:bg-primary-900/50 transition-colors">
                 <UserPlus className="w-5 h-5 text-primary-600 dark:text-primary-400" />
               </div>
               <div className="ml-3">

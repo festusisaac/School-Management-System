@@ -250,7 +250,7 @@ const DebtorsListPage = () => {
         </div>
 
         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm relative overflow-hidden group">
-          <div className="absolute -right-4 -bottom-4 text-primary-50 dark:text-blue-900/10 transition-transform group-hover:scale-110">
+          <div className="absolute -right-4 -bottom-4 text-primary-50 dark:text-primary-900/10 transition-transform group-hover:scale-110">
             <Users size={80} />
           </div>
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Active Debtors</p>
@@ -276,7 +276,7 @@ const DebtorsListPage = () => {
 
         <div className="bg-gradient-to-br from-gray-900 to-gray-800 p-6 rounded-2xl shadow-xl text-white relative overflow-hidden">
           <div className="relative z-10">
-            <p className="text-[10px] font-black text-blue-300/60 uppercase tracking-widest mb-1">Avg Debt / Selected</p>
+            <p className="text-[10px] font-black text-primary-300/60 uppercase tracking-widest mb-1">Avg Debt / Selected</p>
             <p className="text-2xl font-black">
               {formatCurrency(total > 0 ? stats.totalOutstanding / total : 0)}
             </p>
@@ -457,7 +457,7 @@ const DebtorsListPage = () => {
                     <div className="flex items-center justify-end gap-2">
                       <button
                         onClick={() => handleViewBreakdown(debtor)}
-                        className="p-2 hover:bg-white dark:hover:bg-gray-700 rounded-lg text-gray-400 hover:text-primary-600 transition-all border border-transparent hover:border-blue-100 dark:hover:border-blue-800 shadow-sm"
+                        className="p-2 hover:bg-white dark:hover:bg-gray-700 rounded-lg text-gray-400 hover:text-primary-600 transition-all border border-transparent hover:border-primary-100 dark:hover:border-primary-800 shadow-sm"
                         title="Fee Breakdown"
                       >
                         <FileText size={16} />
@@ -527,7 +527,7 @@ const DebtorsListPage = () => {
           <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-white/20">
             <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 shadow-inner">
+                <div className="w-12 h-12 rounded-2xl bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 shadow-inner">
                   <FileText size={24} />
                 </div>
                 <div>
@@ -543,13 +543,13 @@ const DebtorsListPage = () => {
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               {loadingBreakdown ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-4">
-                  <div className="w-10 h-10 border-4 border-blue-100 dark:border-blue-900 border-t-blue-600 rounded-full animate-spin" />
+                  <div className="w-10 h-10 border-4 border-primary-100 dark:border-primary-900 border-t-blue-600 rounded-full animate-spin" />
                   <p className="text-sm text-gray-500 font-bold">Calculating Ledger...</p>
                 </div>
               ) : breakdownData && (
                 <>
                   <div className="grid grid-cols-3 gap-4">
-                    <div className="bg-primary-50/50 dark:bg-primary-900/10 p-4 rounded-2xl border border-blue-100 dark:border-primary-800">
+                    <div className="bg-primary-50/50 dark:bg-primary-900/10 p-4 rounded-2xl border border-primary-100 dark:border-primary-800">
                       <p className="text-[10px] font-bold text-primary-500 uppercase tracking-widest mb-1">Total Assessed</p>
                       <p className="text-lg font-black text-primary-700 dark:text-primary-300">{formatCurrency(parseFloat(breakdownData.totalDue))}</p>
                     </div>

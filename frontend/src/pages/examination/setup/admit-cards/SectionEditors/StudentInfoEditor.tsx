@@ -48,7 +48,7 @@ const StudentInfoEditor: React.FC<Props> = ({ settings, onChange }) => {
                             key={key}
                             onClick={() => toggleField(key)}
                             className={`flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all group ${fields[key]
-                                ? 'bg-primary-50/50 border-blue-200 text-primary-700 dark:bg-primary-900/20 dark:border-primary-800 dark:text-primary-400'
+                                ? 'bg-primary-50/50 border-primary-200 text-primary-700 dark:bg-primary-900/20 dark:border-primary-800 dark:text-primary-400'
                                 : 'bg-gray-50/50 border-gray-200 text-gray-500 dark:bg-gray-900/50 dark:border-gray-800'
                                 }`}
                         >

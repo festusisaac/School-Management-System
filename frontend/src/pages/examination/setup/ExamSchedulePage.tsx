@@ -283,7 +283,7 @@ const ExamSchedulePage = () => {
                 <div className="flex items-center justify-end gap-2">
                     <button
                         onClick={() => handleScheduleClick(row.original)}
-                        className="p-1.5 text-primary-600 bg-primary-50 hover:bg-blue-100 rounded-lg transition-colors"
+                        className="p-1.5 text-primary-600 bg-primary-50 hover:bg-primary-100 rounded-lg transition-colors"
                         title={row.original.status === 'Scheduled' ? 'Edit Schedule' : 'Schedule Exam'}
                     >
                         <Edit2 className="w-4 h-4" />
@@ -364,7 +364,7 @@ const ExamSchedulePage = () => {
                         <div className="md:col-span-2">
                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-2">
                                 Max Marks
-                                <span className="text-[10px] bg-primary-50 text-primary-600 px-1.5 py-0.5 rounded border border-blue-100 uppercase tracking-tighter">Locked to Assessment Structure</span>
+                                <span className="text-[10px] bg-primary-50 text-primary-600 px-1.5 py-0.5 rounded border border-primary-100 uppercase tracking-tighter">Locked to Assessment Structure</span>
                             </label>
                             <input
                                 type="number"

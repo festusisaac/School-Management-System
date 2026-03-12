@@ -19,7 +19,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
                 </button>
 
                 {/* Search Bar (Optional visual element) */}
-                <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg border border-transparent focus-within:border-blue-100 dark:focus-within:border-gray-600 focus-within:bg-white dark:focus-within:bg-gray-800 focus-within:ring-2 focus-within:ring-blue-100/50 transition-all">
+                <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg border border-transparent focus-within:border-primary-100 dark:focus-within:border-gray-600 focus-within:bg-white dark:focus-within:bg-gray-800 focus-within:ring-2 focus-within:ring-primary-100/50 transition-all">
                     <Search className="w-4 h-4 text-gray-400" />
                     <input
                         type="text"
@@ -50,7 +50,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
 
                 {/* Profile Dropdown Trigger */}
                 <button className="flex items-center gap-3 p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all border border-transparent hover:border-gray-100 dark:hover:border-gray-600">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-blue-200 font-bold text-xs ring-2 ring-white dark:ring-gray-700 shadow-sm">
+                    <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-200 font-bold text-xs ring-2 ring-white dark:ring-gray-700 shadow-sm">
                         JD
                     </div>
                     <div className="text-left hidden md:block">

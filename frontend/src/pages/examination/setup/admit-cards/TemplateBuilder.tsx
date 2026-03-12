@@ -66,7 +66,7 @@ const TemplateBuilder: React.FC<Props> = ({ sections, onChange }) => {
                 <div className="flex gap-2">
                     <button
                         onClick={() => addSection('header')}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-50 text-primary-600 rounded-lg text-xs font-bold hover:bg-blue-100 transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-50 text-primary-600 rounded-lg text-xs font-bold hover:bg-primary-100 transition-colors"
                     >
                         <Plus className="w-3.5 h-3.5" /> Header
                     </button>

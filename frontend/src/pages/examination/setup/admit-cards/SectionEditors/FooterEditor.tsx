@@ -38,7 +38,7 @@ const FooterEditor: React.FC<Props> = ({ settings, onChange }) => {
                         <button
                             onClick={() => handleChange('showQrCode', !settings.showQrCode)}
                             className={`flex flex-col items-start gap-2 w-full p-4 rounded-xl border-2 transition-all group ${settings.showQrCode
-                                ? 'bg-primary-50/50 border-blue-200 text-primary-700 dark:bg-primary-900/20 dark:border-primary-800 dark:text-primary-400'
+                                ? 'bg-primary-50/50 border-primary-200 text-primary-700 dark:bg-primary-900/20 dark:border-primary-800 dark:text-primary-400'
                                 : 'bg-gray-50/50 border-gray-200 text-gray-500 dark:bg-gray-900/50 dark:border-gray-800'
                                 }`}
                         >

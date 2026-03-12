@@ -23,7 +23,7 @@ const TimetableEditor: React.FC<Props> = ({ settings, onChange }) => {
                     <button
                         onClick={() => handleChange('showVenue', !settings.showVenue)}
                         className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${settings.showVenue !== false
-                            ? 'bg-primary-50/50 border-blue-200 text-primary-700 dark:bg-primary-900/20 dark:border-primary-800 dark:text-primary-400'
+                            ? 'bg-primary-50/50 border-primary-200 text-primary-700 dark:bg-primary-900/20 dark:border-primary-800 dark:text-primary-400'
                             : 'bg-gray-50/50 border-gray-200 text-gray-500 dark:bg-gray-900/50 dark:border-gray-800'
                             }`}
                     >
@@ -36,7 +36,7 @@ const TimetableEditor: React.FC<Props> = ({ settings, onChange }) => {
                     <button
                         onClick={() => handleChange('showSubjectCode', !settings.showSubjectCode)}
                         className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${settings.showSubjectCode
-                            ? 'bg-primary-50/50 border-blue-200 text-primary-700 dark:bg-primary-900/20 dark:border-primary-800 dark:text-primary-400'
+                            ? 'bg-primary-50/50 border-primary-200 text-primary-700 dark:bg-primary-900/20 dark:border-primary-800 dark:text-primary-400'
                             : 'bg-gray-50/50 border-gray-200 text-gray-500 dark:bg-gray-900/50 dark:border-gray-800'
                             }`}
                     >

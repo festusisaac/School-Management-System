@@ -145,7 +145,7 @@ export default function StudentProfile() {
                         <h2 className="text-2xl font-black text-gray-900 dark:text-white font-heading mb-2">{student.firstName} {student.lastName}</h2>
 
                         <div className="flex flex-wrap justify-center gap-2 mb-6">
-                            <span className="px-3 py-1 bg-primary-50 dark:bg-primary-500/10 border border-blue-100 dark:border-primary-500/20 text-primary-600 dark:text-primary-400 text-[10px] font-black uppercase tracking-widest rounded-lg">
+                            <span className="px-3 py-1 bg-primary-50 dark:bg-primary-500/10 border border-primary-100 dark:border-primary-500/20 text-primary-600 dark:text-primary-400 text-[10px] font-black uppercase tracking-widest rounded-lg">
                                 {student.class?.name || 'Academic'}
                             </span>
                             <span className="px-3 py-1 bg-orange-50 dark:bg-orange-500/10 border border-orange-100 dark:border-orange-500/20 text-orange-600 dark:text-orange-400 text-[10px] font-black uppercase tracking-widest rounded-lg">
