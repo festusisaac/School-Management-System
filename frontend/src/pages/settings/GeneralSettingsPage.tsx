@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Save, Upload, Image as ImageIcon, Globe, Settings, MapPin, Calendar, Clock, Phone, Mail, Trash2, Facebook, Twitter, Instagram, Palette } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
+import { useSystem } from '../../context/SystemContext';
 import { systemService, SystemSetting, AcademicSession, AcademicTerm } from '../../services/systemService';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -115,6 +116,7 @@ const LogoUploader = ({
 
 const GeneralSettingsPage = () => {
     const { showSuccess, showError } = useToast();
+    const { refreshSettings } = useSystem();
     const [activeTab, setActiveTab] = useState<'system' | 'logos'>('system');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -162,6 +164,8 @@ const GeneralSettingsPage = () => {
             setSaving(true);
             await systemService.updateSettings(settings);
             showSuccess('Settings saved successfully');
+            // Refresh global settings so colors apply immediately across the app
+            await refreshSettings();
         } catch (error) {
             showError('Failed to save settings');
         } finally {

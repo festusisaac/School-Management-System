@@ -239,14 +239,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                                                         className={({ isActive }) => clsx(
                                                             "flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg transition-colors overflow-hidden whitespace-nowrap",
                                                             isActive
-                                                                ? "text-primary-600 bg-primary-500/10"
-                                                                : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/30"
+                                                                ? "text-primary-600 dark:text-primary-400"
+                                                                : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
                                                         )}
                                                     >
                                                         <span className={clsx(
                                                             "w-1.5 h-1.5 rounded-full flex-shrink-0 transition-colors",
                                                             window.location.pathname === child.path
-                                                                ? "bg-primary-600"
+                                                                ? "bg-primary-600 dark:bg-primary-400"
                                                                 : "bg-gray-300 dark:bg-gray-600"
                                                         )} />
                                                         <span className="flex-1">{child.label}</span>
