@@ -123,7 +123,7 @@ const ApplyLeavePage = () => {
                 {/* Application Form */}
                 <div className="lg:col-span-1">
                     <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-xl shadow-gray-200/50 dark:shadow-none overflow-hidden">
-                        <div className="p-6 bg-blue-600 text-white">
+                        <div className="p-6 bg-primary-600 text-white">
                             <h2 className="text-lg font-bold flex items-center gap-2">
                                 <Send size={20} />
                                 New Application
@@ -137,7 +137,7 @@ const ApplyLeavePage = () => {
                                     required
                                     value={selectedType}
                                     onChange={(e) => setSelectedType(e.target.value)}
-                                    className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl p-4 text-sm font-bold text-gray-700 dark:text-gray-300 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none"
+                                    className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl p-4 text-sm font-bold text-gray-700 dark:text-gray-300 focus:ring-4 focus:ring-primary-500/10 transition-all outline-none"
                                 >
                                     <option value="" className="dark:bg-gray-800">Select Category</option>
                                     {leaveTypes.map((t: LeaveType) => <option key={t.id} value={t.id} className="dark:bg-gray-800">{t.name} (Max {t.maxDaysPerYear} days)</option>)}
@@ -153,7 +153,7 @@ const ApplyLeavePage = () => {
                                         required
                                         value={startDate}
                                         onChange={(e) => setStartDate(e.target.value)}
-                                        className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl p-4 text-sm font-bold text-gray-700 dark:text-gray-300 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none"
+                                        className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl p-4 text-sm font-bold text-gray-700 dark:text-gray-300 focus:ring-4 focus:ring-primary-500/10 transition-all outline-none"
                                     />
                                 </div>
                                 <div>
@@ -164,13 +164,13 @@ const ApplyLeavePage = () => {
                                         required
                                         value={endDate}
                                         onChange={(e) => setEndDate(e.target.value)}
-                                        className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl p-4 text-sm font-bold text-gray-700 dark:text-gray-300 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none"
+                                        className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl p-4 text-sm font-bold text-gray-700 dark:text-gray-300 focus:ring-4 focus:ring-primary-500/10 transition-all outline-none"
                                     />
                                 </div>
                             </div>
 
                             {selectedDays > 0 && (
-                                <div className={`p-4 rounded-2xl flex items-center justify-between ${isExceeding ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/30' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30'}`}>
+                                <div className={`p-4 rounded-2xl flex items-center justify-between ${isExceeding ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/30' : 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 border border-blue-100 dark:border-blue-900/30'}`}>
                                     <div className="text-xs font-black uppercase tracking-wider">Total Days: {selectedDays}</div>
                                     {isExceeding && (
                                         <div className="flex items-center gap-1 text-[10px] font-black uppercase">
@@ -189,7 +189,7 @@ const ApplyLeavePage = () => {
                                         name="document"
                                         required
                                         accept=".pdf,.jpg,.jpeg,.png"
-                                        className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl p-4 text-sm font-bold text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-blue-600 file:text-white hover:file:bg-blue-700 transition-all outline-none"
+                                        className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl p-4 text-sm font-bold text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-primary-600 file:text-white hover:file:bg-primary-700 transition-all outline-none"
                                     />
                                     <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 ml-1">Accepted formats: PDF, JPG, PNG. Max size: 5MB</p>
                                 </div>
@@ -197,13 +197,13 @@ const ApplyLeavePage = () => {
 
                             <div>
                                 <label className="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Reason for Leave</label>
-                                <textarea name="reason" rows={4} required placeholder="Briefly explain why you need this leave..." className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl p-4 text-sm font-bold text-gray-700 dark:text-gray-300 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none resize-none"></textarea>
+                                <textarea name="reason" rows={4} required placeholder="Briefly explain why you need this leave..." className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl p-4 text-sm font-bold text-gray-700 dark:text-gray-300 focus:ring-4 focus:ring-primary-500/10 transition-all outline-none resize-none"></textarea>
                             </div>
 
                             <button
                                 type="submit"
                                 disabled={submitting}
-                                className="w-full py-4 bg-gray-900 dark:bg-blue-600 text-white font-black rounded-2xl hover:bg-black dark:hover:bg-blue-700 transition-all shadow-xl shadow-gray-300 dark:shadow-none flex items-center justify-center gap-2 disabled:opacity-50"
+                                className="w-full py-4 bg-gray-900 dark:bg-primary-600 text-white font-black rounded-2xl hover:bg-black dark:hover:bg-primary-700 transition-all shadow-xl shadow-gray-300 dark:shadow-none flex items-center justify-center gap-2 disabled:opacity-50"
                             >
                                 {submitting ? 'Submitting...' : <><Send size={18} /> Submit Application</>}
                             </button>
@@ -213,7 +213,7 @@ const ApplyLeavePage = () => {
 
                 {/* Status and History */}
                 <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-8 text-white shadow-xl shadow-blue-500/20 flex justify-between items-center">
+                    <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-8 text-white shadow-xl shadow-primary-500/20 flex justify-between items-center">
                         <div>
                             <p className="text-blue-100 text-sm font-bold">Current Leave Status</p>
                             <h2 className="text-3xl font-black mt-1">{loading ? '...' : leaveBalance?.totalAvailable || 0} Days Available</h2>
@@ -233,7 +233,7 @@ const ApplyLeavePage = () => {
                     <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-xl shadow-gray-200/50 dark:shadow-none overflow-hidden">
                         <div className="p-6 border-b border-gray-50 dark:border-gray-700 flex justify-between items-center bg-white dark:bg-gray-800">
                             <h2 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
-                                <Clock size={20} className="text-blue-600 dark:text-blue-400" />
+                                <Clock size={20} className="text-primary-600 dark:text-primary-400" />
                                 Application History
                             </h2>
                         </div>

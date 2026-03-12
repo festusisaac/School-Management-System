@@ -154,7 +154,7 @@ const TeachersTimetablePage = () => {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
                     <p className="text-gray-600">Loading...</p>
                 </div>
             </div>
@@ -174,7 +174,7 @@ const TeachersTimetablePage = () => {
                     <button
                         onClick={handlePrint}
                         disabled={!selectedTeacher}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm font-medium transition-all hover:shadow-md text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-2 px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg shadow-sm font-medium transition-all hover:shadow-md text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Printer className="w-4 h-4" />
                         Print Schedule
@@ -199,7 +199,7 @@ const TeachersTimetablePage = () => {
                             <select
                                 value={selectedTeacher}
                                 onChange={(e) => setSelectedTeacher(e.target.value)}
-                                className="w-full pl-4 pr-10 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none cursor-pointer text-gray-900 dark:text-white"
+                                className="w-full pl-4 pr-10 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all appearance-none cursor-pointer text-gray-900 dark:text-white"
                             >
                                 <option value="">Choose a teacher...</option>
                                 {teachers.map(teacher => (
@@ -301,7 +301,7 @@ const TeachersTimetablePage = () => {
                             <div className="p-6 bg-gray-50 border-t border-gray-200">
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div className="bg-white p-4 rounded-lg border border-gray-200">
-                                        <div className="text-2xl font-bold text-blue-600">
+                                        <div className="text-2xl font-bold text-primary-600">
                                             {timetable.length}
                                         </div>
                                         <div className="text-sm text-gray-600">Total Classes</div>

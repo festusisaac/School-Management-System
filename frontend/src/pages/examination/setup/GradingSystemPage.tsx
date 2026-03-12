@@ -139,8 +139,8 @@ const GradingSystemPage = () => {
             header: 'Scale Name',
             cell: ({ row }) => (
                 <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                        <Scale className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    <div className="p-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
+                        <Scale className="w-4 h-4 text-primary-600 dark:text-primary-400" />
                     </div>
                     <span className="font-medium text-gray-900 dark:text-white">{row.original.name}</span>
                 </div>
@@ -166,7 +166,7 @@ const GradingSystemPage = () => {
                 <div className="flex items-center justify-end gap-2">
                     <button
                         onClick={() => handleEdit(row.original)}
-                        className="p-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                        className="p-1.5 text-primary-600 bg-primary-50 hover:bg-blue-100 rounded-lg transition-colors"
                         title="Edit"
                     >
                         <Edit2 className="w-4 h-4" />
@@ -192,7 +192,7 @@ const GradingSystemPage = () => {
                 </div>
                 <button
                     onClick={() => { resetForm(); setIsCreateOpen(true); }}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20"
+                    className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors shadow-lg shadow-primary-600/20"
                 >
                     <Plus className="w-4 h-4" />
                     Create Grade Scale
@@ -202,7 +202,7 @@ const GradingSystemPage = () => {
             {/* Main Content */}
             {loading ? (
                 <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-12 text-center text-gray-500 dark:text-gray-400">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
                     <p className="mt-4">Loading grade scales...</p>
                 </div>
             ) : scales.length === 0 ? (
@@ -232,7 +232,7 @@ const GradingSystemPage = () => {
                         <input
                             type="text"
                             required
-                            className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                             placeholder="e.g. WAEC Standard"
                             value={scaleName}
                             onChange={(e) => setScaleName(e.target.value)}
@@ -257,7 +257,7 @@ const GradingSystemPage = () => {
                                             <td className="px-3 py-3">
                                                 <input
                                                     placeholder="A"
-                                                    className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                                    className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 outline-none transition-all"
                                                     value={row.name}
                                                     onChange={(e) => handleRowChange(index, 'name', e.target.value)}
                                                     required
@@ -266,7 +266,7 @@ const GradingSystemPage = () => {
                                             <td className="px-3 py-3">
                                                 <input
                                                     type="number"
-                                                    className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                                    className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 outline-none transition-all"
                                                     value={row.minScore}
                                                     onChange={(e) => handleRowChange(index, 'minScore', e.target.value)}
                                                     required
@@ -275,7 +275,7 @@ const GradingSystemPage = () => {
                                             <td className="px-3 py-3">
                                                 <input
                                                     type="number"
-                                                    className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                                    className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 outline-none transition-all"
                                                     value={row.maxScore}
                                                     onChange={(e) => handleRowChange(index, 'maxScore', e.target.value)}
                                                     required
@@ -283,7 +283,7 @@ const GradingSystemPage = () => {
                                             </td>
                                             <td className="px-3 py-3">
                                                 <input
-                                                    className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                                    className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 outline-none transition-all"
                                                     placeholder="e.g. Excellent performance"
                                                     value={row.remark}
                                                     onChange={(e) => handleRowChange(index, 'remark', e.target.value)}
@@ -307,7 +307,7 @@ const GradingSystemPage = () => {
                             <button
                                 type="button"
                                 onClick={handleAddRow}
-                                className="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1.5"
+                                className="text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 flex items-center gap-1.5"
                             >
                                 <Plus className="w-4 h-4" /> Add Grade Row
                             </button>
@@ -324,7 +324,7 @@ const GradingSystemPage = () => {
                         </button>
                         <button
                             type="submit"
-                            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20"
+                            className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors shadow-lg shadow-primary-600/20"
                         >
                             {editingId ? "Update Scale" : "Save Scale"}
                         </button>

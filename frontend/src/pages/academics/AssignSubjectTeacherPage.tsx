@@ -179,7 +179,7 @@ const AssignSubjectTeacherPage = () => {
     return (
         <div className="p-6 max-w-7xl mx-auto text-gray-900 dark:text-white">
             <div className="flex items-center gap-3 mb-8">
-                <BookOpen className="w-8 h-8 text-blue-600" />
+                <BookOpen className="w-8 h-8 text-primary-600" />
                 <div>
                     <h1 className="text-2xl font-bold">Assign Subject Teachers</h1>
                     <p className="text-gray-500 dark:text-gray-400 text-sm">Map teachers to subjects for specific class sections</p>
@@ -197,7 +197,7 @@ const AssignSubjectTeacherPage = () => {
                                 setSelectedClass(e.target.value);
                                 setSelectedSection('');
                             }}
-                            className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm focus:border-primary-500 focus:ring-primary-500"
                         >
                             <option value="">Select Class</option>
                             {classes.map(c => (
@@ -211,7 +211,7 @@ const AssignSubjectTeacherPage = () => {
                             value={selectedSection}
                             onChange={(e) => setSelectedSection(e.target.value)}
                             disabled={!selectedClass}
-                            className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-400 dark:disabled:bg-gray-900"
+                            className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm focus:border-primary-500 focus:ring-primary-500 disabled:bg-gray-50 disabled:text-gray-400 dark:disabled:bg-gray-900"
                         >
                             <option value="">Select Section</option>
                             {filteredSections.map(s => (
@@ -238,7 +238,7 @@ const AssignSubjectTeacherPage = () => {
                         <button
                             onClick={handleSave}
                             disabled={saving}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors"
                         >
                             {saving ? 'Saving...' : 'Save Changes'}
                             <Save className="w-4 h-4" />
@@ -260,7 +260,7 @@ const AssignSubjectTeacherPage = () => {
                                             <select
                                                 value={assignments[subject.id] || ''}
                                                 onChange={(e) => handleAssignmentChange(subject.id, e.target.value)}
-                                                className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                                                className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm"
                                             >
                                                 <option value="">Select Teacher</option>
                                                 {teachers.map(teacher => (

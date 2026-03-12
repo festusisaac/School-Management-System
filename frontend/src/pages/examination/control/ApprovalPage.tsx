@@ -75,7 +75,7 @@ const ApprovalPage = () => {
 
             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm flex flex-col md:flex-row gap-4">
                 <select
-                    className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                     value={selectedGroup}
                     onChange={(e) => setSelectedGroup(e.target.value)}
                 >
@@ -86,7 +86,7 @@ const ApprovalPage = () => {
                 </select>
 
                 <select
-                    className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                     value={selectedClass}
                     onChange={(e) => setSelectedClass(e.target.value)}
                 >
@@ -101,7 +101,7 @@ const ApprovalPage = () => {
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
                     {loading ? (
                         <div className="flex justify-center p-8">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
                         </div>
                     ) : summary ? (
                         <div className="space-y-6">
@@ -118,9 +118,9 @@ const ApprovalPage = () => {
                                     <div className="text-sm text-green-600 dark:text-green-400">Approved</div>
                                     <div className="text-2xl font-bold text-green-700 dark:text-green-300">{summary.approved}</div>
                                 </div>
-                                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                                    <div className="text-sm text-blue-600 dark:text-blue-400">Published</div>
-                                    <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">{summary.published}</div>
+                                <div className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
+                                    <div className="text-sm text-primary-600 dark:text-primary-400">Published</div>
+                                    <div className="text-2xl font-bold text-primary-700 dark:text-primary-300">{summary.published}</div>
                                 </div>
                             </div>
 

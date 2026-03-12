@@ -116,7 +116,7 @@ const StaffAttendancePage = () => {
                         <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={20} />
                         <input
                             type="date"
-                            className="pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
+                            className="pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 outline-none transition-colors"
                             value={date}
                             onChange={(e) => setDate(e.target.value)}
                         />
@@ -124,7 +124,7 @@ const StaffAttendancePage = () => {
                     <button
                         onClick={handleSave}
                         disabled={saving}
-                        className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                        className="flex items-center gap-2 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors"
                     >
                         <Save size={20} />
                         {saving ? 'Saving...' : 'Save Attendance'}
@@ -151,7 +151,7 @@ const StaffAttendancePage = () => {
                     <div><p className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase">Half Day</p><p className="text-xl font-bold dark:text-white">{summary.halfDay}</p></div>
                 </div>
                 <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center gap-3">
-                    <div className="p-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg"><Calendar size={24} /></div>
+                    <div className="p-2 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-lg"><Calendar size={24} /></div>
                     <div><p className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase">On Leave</p><p className="text-xl font-bold dark:text-white">{summary.onLeave}</p></div>
                 </div>
             </div>
@@ -164,7 +164,7 @@ const StaffAttendancePage = () => {
                         <input
                             type="text"
                             placeholder="Search staff..."
-                            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -214,7 +214,7 @@ const StaffAttendancePage = () => {
                                                                 status === 'Absent' ? 'bg-red-600 border-red-600 text-white shadow-lg shadow-red-500/30' :
                                                                     status === 'Late' ? 'bg-yellow-500 border-yellow-500 text-white shadow-lg shadow-yellow-500/30' :
                                                                         status === 'Half-Day' ? 'bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-500/30' :
-                                                                            'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/30'
+                                                                            'bg-primary-600 border-primary-600 text-white shadow-lg shadow-primary-500/30'
                                                             : 'bg-white dark:bg-gray-700 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
                                                             }`}
                                                     >
@@ -227,7 +227,7 @@ const StaffAttendancePage = () => {
                                             <input
                                                 type="text"
                                                 placeholder="Add remarks..."
-                                                className="w-full text-xs p-2 border border-transparent hover:border-gray-200 dark:hover:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400 rounded outline-none bg-transparent text-gray-900 dark:text-white transition-colors"
+                                                className="w-full text-xs p-2 border border-transparent hover:border-gray-200 dark:hover:border-gray-600 focus:border-primary-500 dark:focus:border-primary-500 rounded outline-none bg-transparent text-gray-900 dark:text-white transition-colors"
                                                 value={attendance[staff.id]?.remarks || ''}
                                                 onChange={(e) => handleRemarksChange(staff.id, e.target.value)}
                                             />

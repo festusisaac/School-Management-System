@@ -152,7 +152,7 @@ const SubjectsPage = () => {
                     </div>
                     <button
                         onClick={() => handleOpenModal()}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
                     >
                         <Plus className="w-4 h-4" />
                         Add Subject
@@ -200,8 +200,8 @@ const SubjectsPage = () => {
                                         <tr key={subject.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex items-center">
-                                                    <div className="flex-shrink-0 h-10 w-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-                                                        <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                                    <div className="flex-shrink-0 h-10 w-10 bg-blue-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
+                                                        <BookOpen className="h-5 w-5 text-primary-600 dark:text-primary-400" />
                                                     </div>
                                                     <div className="ml-4">
                                                         <div className="text-sm font-medium text-gray-900 dark:text-white">{subject.name}</div>
@@ -216,7 +216,7 @@ const SubjectsPage = () => {
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`px-2 py-1 text-xs font-medium rounded-full ${subject.isCore
                                                     ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'
-                                                    : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                                                    : 'bg-blue-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400'
                                                     }`}>
                                                     {subject.isCore ? 'Core' : 'Elective'}
                                                 </span>
@@ -235,14 +235,14 @@ const SubjectsPage = () => {
                                                 <div className="flex items-center justify-end gap-2">
                                                     <button
                                                         onClick={() => handleToggleStatus(subject)}
-                                                        className="p-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                                                        className="p-2 text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                                                         title={subject.isActive ? 'Deactivate' : 'Activate'}
                                                     >
                                                         <Power className="w-4 h-4" />
                                                     </button>
                                                     <button
                                                         onClick={() => handleOpenModal(subject)}
-                                                        className="p-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                                                        className="p-2 text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                                                         title="Edit"
                                                     >
                                                         <Edit2 className="w-4 h-4" />
@@ -285,7 +285,7 @@ const SubjectsPage = () => {
                                         type="text"
                                         value={formData.name}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                         placeholder="e.g., Mathematics"
                                         required
                                     />
@@ -297,7 +297,7 @@ const SubjectsPage = () => {
                                     <select
                                         value={formData.groupId}
                                         onChange={(e) => setFormData({ ...formData, groupId: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                     >
                                         <option value="">Select a Group</option>
                                         {groups.map((grp) => (
@@ -316,7 +316,7 @@ const SubjectsPage = () => {
                                             id="isCore"
                                             checked={formData.isCore}
                                             onChange={(e) => setFormData({ ...formData, isCore: e.target.checked })}
-                                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                            className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
                                         />
                                         <label htmlFor="isCore" className="text-sm text-gray-700 dark:text-gray-300">
                                             Is Core Subject?
@@ -328,7 +328,7 @@ const SubjectsPage = () => {
                                             id="isActive"
                                             checked={formData.isActive}
                                             onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                            className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
                                         />
                                         <label htmlFor="isActive" className="text-sm text-gray-700 dark:text-gray-300">
                                             Active
@@ -347,7 +347,7 @@ const SubjectsPage = () => {
                                     </button>
                                     <button
                                         type="submit"
-                                        className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                                        className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
                                         disabled={submitting}
                                     >
                                         {submitting ? 'Saving...' : editingSubject ? 'Update' : 'Create'}

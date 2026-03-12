@@ -48,7 +48,7 @@ export function DataTable<TData, TValue>({
             <div className="rounded-xl border border-gray-200 dark:border-gray-800/50 overflow-hidden bg-white dark:bg-gray-900 shadow-sm">
                 {searchKey && (
                     <div className="p-4 border-b border-gray-100 dark:border-gray-800/50 bg-gray-50/30 dark:bg-gray-800/20">
-                        <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-2 rounded-lg border border-gray-200 dark:border-gray-700/50 w-full md:w-80 shadow-sm transition-colors focus-within:border-blue-500/50">
+                        <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-2 rounded-lg border border-gray-200 dark:border-gray-700/50 w-full md:w-80 shadow-sm transition-colors focus-within:border-primary-500/50">
                             <Search className="w-4 h-4 text-gray-400" />
                             <input
                                 placeholder={placeholder}

@@ -62,7 +62,7 @@ export default function DeactivatedStudents() {
             cell: () => (
                 <button
                     onClick={() => toast.showInfo('Enable functionality to be implemented')}
-                    className="text-blue-600 hover:underline flex items-center gap-1"
+                    className="text-primary-600 hover:underline flex items-center gap-1"
                 >
                     <RefreshCw className="w-3 h-3" /> Enable
                 </button>
@@ -84,7 +84,7 @@ export default function DeactivatedStudents() {
 
             {loading && data.length === 0 ? (
                 <div className="flex justify-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
                 </div>
             ) : (
                 <DataTable columns={columns} data={data} searchKey="firstName" placeholder="Search deactivated students..." />

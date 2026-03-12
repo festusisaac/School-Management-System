@@ -250,7 +250,7 @@ const DebtorsListPage = () => {
         </div>
 
         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm relative overflow-hidden group">
-          <div className="absolute -right-4 -bottom-4 text-blue-50 dark:text-blue-900/10 transition-transform group-hover:scale-110">
+          <div className="absolute -right-4 -bottom-4 text-primary-50 dark:text-blue-900/10 transition-transform group-hover:scale-110">
             <Users size={80} />
           </div>
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Active Debtors</p>
@@ -268,7 +268,7 @@ const DebtorsListPage = () => {
           </p>
           <div className="mt-2 w-full bg-gray-100 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
             <div
-              className="bg-blue-500 h-full transition-all duration-1000"
+              className="bg-primary-500 h-full transition-all duration-1000"
               style={{ width: `${stats.totalDue > 0 ? (stats.totalPaid / stats.totalDue) * 100 : 0}%` }}
             />
           </div>
@@ -280,7 +280,7 @@ const DebtorsListPage = () => {
             <p className="text-2xl font-black">
               {formatCurrency(total > 0 ? stats.totalOutstanding / total : 0)}
             </p>
-            <div className="mt-4 flex items-center gap-1.5 text-xs font-bold text-blue-400">
+            <div className="mt-4 flex items-center gap-1.5 text-xs font-bold text-primary-500">
               <CheckCircle2 size={14} />
               Health Checked
             </div>
@@ -297,7 +297,7 @@ const DebtorsListPage = () => {
             <input
               type="text"
               placeholder="Filter by name or admission number..."
-              className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 transition-all font-medium"
+              className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary-500 transition-all font-medium"
               value={searchQuery}
               onChange={e => {
                 setSearchQuery(e.target.value);
@@ -309,7 +309,7 @@ const DebtorsListPage = () => {
             <div className="relative min-w-[200px]">
               <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
               <select
-                className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 appearance-none font-medium text-gray-600 dark:text-gray-300"
+                className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary-500 appearance-none font-medium text-gray-600 dark:text-gray-300"
                 value={selectedClass}
                 onChange={e => {
                   setSelectedClass(e.target.value);
@@ -325,7 +325,7 @@ const DebtorsListPage = () => {
             <div className="relative min-w-[180px]">
               <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
               <select
-                className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 appearance-none font-medium text-gray-600 dark:text-gray-300"
+                className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary-500 appearance-none font-medium text-gray-600 dark:text-gray-300"
                 value={riskFilter}
                 onChange={e => {
                   setRiskFilter(e.target.value);
@@ -350,7 +350,7 @@ const DebtorsListPage = () => {
               <tr className="bg-gray-50/50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700">
                 <th className="px-6 py-4 w-10">
                   <button onClick={toggleSelectAll} className="w-5 h-5 rounded border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center transition-colors">
-                    {selectedIds.size === debtors.length && debtors.length > 0 && <div className="w-3 h-3 bg-blue-500 rounded-sm" />}
+                    {selectedIds.size === debtors.length && debtors.length > 0 && <div className="w-3 h-3 bg-primary-500 rounded-sm" />}
                   </button>
                 </th>
                 <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Student Information</th>
@@ -366,7 +366,7 @@ const DebtorsListPage = () => {
                 <tr>
                   <td colSpan={7} className="px-6 py-24 text-center">
                     <div className="flex flex-col items-center justify-center gap-3">
-                      <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                      <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
                       <span className="text-sm font-medium text-gray-400">Loading debtors list...</span>
                     </div>
                   </td>
@@ -374,14 +374,14 @@ const DebtorsListPage = () => {
               ) : debtors.map((debtor) => (
                 <tr key={debtor.id} className={clsx(
                   "group transition-all",
-                  selectedIds.has(debtor.id) ? "bg-blue-50/50 dark:bg-blue-900/10" : "hover:bg-gray-50/50 dark:hover:bg-gray-700/50"
+                  selectedIds.has(debtor.id) ? "bg-primary-50/50 dark:bg-primary-900/10" : "hover:bg-gray-50/50 dark:hover:bg-gray-700/50"
                 )}>
                   <td className="px-6 py-4">
                     <button
                       onClick={() => toggleSelect(debtor.id)}
                       className={clsx(
                         "w-5 h-5 rounded border-2 transition-colors flex items-center justify-center",
-                        selectedIds.has(debtor.id) ? "border-blue-500 bg-blue-500" : "border-gray-300 dark:border-gray-600"
+                        selectedIds.has(debtor.id) ? "border-primary-500 bg-primary-500" : "border-gray-300 dark:border-gray-600"
                       )}
                     >
                       {selectedIds.has(debtor.id) && <div className="w-3 h-3 bg-white rounded-sm" />}
@@ -419,7 +419,7 @@ const DebtorsListPage = () => {
                     <div className="flex flex-col">
                       <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{formatCurrency(parseFloat(debtor.totalDue))}</span>
                       {debtor.discountApplied && (
-                        <span className="text-[9px] text-blue-500 font-bold uppercase tracking-widest bg-blue-50 dark:bg-blue-900/20 px-1 py-0.5 rounded">
+                        <span className="text-[9px] text-primary-500 font-bold uppercase tracking-widest bg-primary-50 dark:bg-primary-900/20 px-1 py-0.5 rounded">
                           {debtor.discountApplied}
                         </span>
                       )}
@@ -450,14 +450,14 @@ const DebtorsListPage = () => {
                     ) : parseFloat(debtor.balance) > 20000 ? (
                       <span className="px-2.5 py-1 bg-amber-500 text-white text-[10px] font-black rounded-lg shadow-lg shadow-amber-500/20 border border-amber-400 uppercase tracking-widest">Warning</span>
                     ) : (
-                      <span className="px-2.5 py-1 bg-blue-500 text-white text-[10px] font-black rounded-lg shadow-lg shadow-blue-500/20 border border-blue-400 uppercase tracking-widest">Healthy</span>
+                      <span className="px-2.5 py-1 bg-primary-500 text-white text-[10px] font-black rounded-lg shadow-lg shadow-primary-500/20 border border-primary-500 uppercase tracking-widest">Healthy</span>
                     )}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <button
                         onClick={() => handleViewBreakdown(debtor)}
-                        className="p-2 hover:bg-white dark:hover:bg-gray-700 rounded-lg text-gray-400 hover:text-blue-600 transition-all border border-transparent hover:border-blue-100 dark:hover:border-blue-800 shadow-sm"
+                        className="p-2 hover:bg-white dark:hover:bg-gray-700 rounded-lg text-gray-400 hover:text-primary-600 transition-all border border-transparent hover:border-blue-100 dark:hover:border-blue-800 shadow-sm"
                         title="Fee Breakdown"
                       >
                         <FileText size={16} />
@@ -498,7 +498,7 @@ const DebtorsListPage = () => {
 
         {/* Pagination */}
         <div className="p-4 bg-gray-50/50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
-          <p className="text-xs text-gray-500 font-medium font-bold uppercase tracking-widest px-2 py-1 rounded-full bg-blue-50 dark:bg-blue-900/20 inline-block">
+          <p className="text-xs text-gray-500 font-medium font-bold uppercase tracking-widest px-2 py-1 rounded-full bg-primary-50 dark:bg-primary-900/20 inline-block">
             Showing {debtors.length} of {total} Records
           </p>
           <div className="flex items-center gap-2">
@@ -527,7 +527,7 @@ const DebtorsListPage = () => {
           <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-white/20">
             <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-inner">
+                <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 shadow-inner">
                   <FileText size={24} />
                 </div>
                 <div>
@@ -549,9 +549,9 @@ const DebtorsListPage = () => {
               ) : breakdownData && (
                 <>
                   <div className="grid grid-cols-3 gap-4">
-                    <div className="bg-blue-50/50 dark:bg-blue-900/10 p-4 rounded-2xl border border-blue-100 dark:border-blue-800">
-                      <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1">Total Assessed</p>
-                      <p className="text-lg font-black text-blue-700 dark:text-blue-300">{formatCurrency(parseFloat(breakdownData.totalDue))}</p>
+                    <div className="bg-primary-50/50 dark:bg-primary-900/10 p-4 rounded-2xl border border-blue-100 dark:border-primary-800">
+                      <p className="text-[10px] font-bold text-primary-500 uppercase tracking-widest mb-1">Total Assessed</p>
+                      <p className="text-lg font-black text-primary-700 dark:text-primary-300">{formatCurrency(parseFloat(breakdownData.totalDue))}</p>
                     </div>
                     <div className="bg-green-50/50 dark:bg-green-900/10 p-4 rounded-2xl border border-green-100 dark:border-green-800">
                       <p className="text-[10px] font-bold text-green-400 uppercase tracking-widest mb-1">Total Remitted</p>
@@ -584,7 +584,7 @@ const DebtorsListPage = () => {
             <div className="p-6 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700 flex gap-3">
               <button
                 onClick={() => navigate(`/finance/record-payment`, { state: { studentId: showBreakdown.student.id } })}
-                className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold transition-all shadow-xl shadow-blue-500/20"
+                className="flex-1 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-2xl font-bold transition-all shadow-xl shadow-primary-500/20"
               >
                 Apply Payment
               </button>

@@ -261,25 +261,25 @@ export default function RecordPaymentPage() {
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
                 <div className="p-6 space-y-4">
                     <div className="flex items-center gap-2">
-                        <Search size={16} className="text-blue-500" />
+                        <Search size={16} className="text-primary-500" />
                         <h3 className="text-xs font-bold text-gray-500 underline uppercase tracking-widest">Search Student</h3>
                     </div>
 
                     <div className="relative group max-w-2xl">
-                        <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-blue-500">
+                        <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-primary-500">
                             <Search size={18} />
                         </div>
                         <input
                             type="text"
                             placeholder="Ex: John or ADM-101..."
-                            className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-800 rounded-xl text-sm font-bold text-gray-900 dark:text-white transition-all"
+                            className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 focus:border-primary-500 focus:bg-white dark:focus:bg-gray-800 rounded-xl text-sm font-bold text-gray-900 dark:text-white transition-all"
                             value={keyword}
                             onChange={(e) => setKeyword(e.target.value)}
                             autoFocus
                         />
                         {loading && (
                             <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                                <Loader2 className="animate-spin text-blue-500" size={16} />
+                                <Loader2 className="animate-spin text-primary-500" size={16} />
                             </div>
                         )}
                     </div>
@@ -313,9 +313,9 @@ export default function RecordPaymentPage() {
                                 ))
                             ) : students.length > 0 ? (
                                 students.map((student) => (
-                                    <tr key={student.id} className="group hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors">
+                                    <tr key={student.id} className="group hover:bg-primary-50/30 dark:hover:bg-blue-900/10 transition-colors">
                                         <td className="px-6 py-4">
-                                            <span className="text-sm font-bold text-blue-600 dark:text-blue-400">{student.admissionNo}</span>
+                                            <span className="text-sm font-bold text-primary-600 dark:text-primary-400">{student.admissionNo}</span>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex flex-col">
@@ -335,7 +335,7 @@ export default function RecordPaymentPage() {
                                         <td className="px-6 py-4 text-right">
                                             <button
                                                 onClick={() => openCollectionModal(student)}
-                                                className="px-4 py-2 text-blue-600 hover:text-white bg-blue-50/50 hover:bg-blue-600 rounded-md text-[11px] font-black transition-all duration-300 border border-blue-100 hover:border-blue-600 flex items-center gap-2 ml-auto uppercase tracking-widest shadow-sm hover:shadow-lg hover:shadow-blue-500/20 hover:-translate-y-0.5 active:translate-y-0 active:scale-95"
+                                                className="px-4 py-2 text-primary-600 hover:text-white bg-primary-50/50 hover:bg-primary-600 rounded-md text-[11px] font-black transition-all duration-300 border border-blue-100 hover:border-primary-600 flex items-center gap-2 ml-auto uppercase tracking-widest shadow-sm hover:shadow-lg hover:shadow-primary-500/20 hover:-translate-y-0.5 active:translate-y-0 active:scale-95"
                                             >
                                                 <CreditCard size={12} />
                                                 Collect
@@ -370,7 +370,7 @@ export default function RecordPaymentPage() {
                         {/* Modal Header */}
                         <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-blue-50 to-white dark:from-gray-900 dark:to-gray-800">
                             <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-lg">
+                                <div className="w-12 h-12 rounded-2xl bg-primary-600 flex items-center justify-center text-white shadow-lg">
                                     <CreditCard size={24} />
                                 </div>
                                 <div>
@@ -386,7 +386,7 @@ export default function RecordPaymentPage() {
                                         className={clsx(
                                             "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
                                             transactionType === 'FEE_PAYMENT'
-                                                ? "bg-white dark:bg-gray-800 text-blue-600 shadow-md ring-1 ring-blue-50 dark:ring-blue-900"
+                                                ? "bg-white dark:bg-gray-800 text-primary-600 shadow-md ring-1 ring-blue-50 dark:ring-blue-900"
                                                 : "text-gray-400 hover:text-gray-600"
                                         )}
                                     >
@@ -439,7 +439,7 @@ export default function RecordPaymentPage() {
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="bg-blue-600 p-5 rounded-3xl shadow-lg shadow-blue-500/20 flex items-center gap-4 relative overflow-hidden group">
+                                    <div className="bg-primary-600 p-5 rounded-3xl shadow-lg shadow-primary-500/20 flex items-center gap-4 relative overflow-hidden group">
                                         <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white backdrop-blur-md">
                                             <Banknote size={18} />
                                         </div>
@@ -462,14 +462,14 @@ export default function RecordPaymentPage() {
                                 <div className="lg:col-span-2 space-y-6">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-1 bg-blue-600 h-4 rounded-full" />
+                                            <div className="w-1 bg-primary-600 h-4 rounded-full" />
                                             <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tighter">Student Ledger Summary</h4>
                                         </div>
                                     </div>
 
                                     {loadingStatement ? (
                                         <div className="flex items-center justify-center py-20 bg-gray-50 dark:bg-gray-900/50 rounded-3xl border border-dashed border-gray-200 dark:border-gray-800">
-                                            <Loader2 className="animate-spin text-blue-500" size={32} />
+                                            <Loader2 className="animate-spin text-primary-500" size={32} />
                                         </div>
                                     ) : (
                                         <div className="space-y-6">
@@ -484,7 +484,7 @@ export default function RecordPaymentPage() {
                                                     {statement?.assignedHeads && statement.assignedHeads.length > 0 && (
                                                         <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-gray-800">
                                                             <div className="flex justify-between items-center">
-                                                                <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Head Allocation</p>
+                                                                <p className="text-[10px] font-black text-primary-500 uppercase tracking-widest">Head Allocation</p>
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => {
@@ -507,13 +507,13 @@ export default function RecordPaymentPage() {
                                                                             <span className="text-[9px] text-red-500 mt-0.5">Due: {formatCurrency(parseFloat(head.balance))}</span>
                                                                         </div>
                                                                         <div className="relative group">
-                                                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400 group-focus-within:text-blue-500">
+                                                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400 group-focus-within:text-primary-500">
                                                                                 {CURRENCY_SYMBOL}
                                                                             </span>
                                                                             <input
                                                                                 type="number"
                                                                                 step="0.01"
-                                                                                className="w-24 pl-6 pr-3 py-1.5 bg-white dark:bg-gray-800 border-none rounded-lg text-xs font-bold text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 shadow-sm"
+                                                                                className="w-24 pl-6 pr-3 py-1.5 bg-white dark:bg-gray-800 border-none rounded-lg text-xs font-bold text-gray-900 dark:text-white focus:ring-1 focus:ring-primary-500 shadow-sm"
                                                                                 value={headAllocations[head.id] || ''}
                                                                                 onChange={(e) => handleHeadAmountChange(head.id, e.target.value)}
                                                                                 onKeyDown={(e) => {
@@ -538,7 +538,7 @@ export default function RecordPaymentPage() {
                                             <div className="space-y-3">
                                                 <div className="flex items-center justify-between px-1">
                                                     <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Recent Transactions</h5>
-                                                    <span className="text-[9px] font-bold text-blue-500 uppercase tracking-tighter">Last 5 entries</span>
+                                                    <span className="text-[9px] font-bold text-primary-500 uppercase tracking-tighter">Last 5 entries</span>
                                                 </div>
                                                 <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm">
                                                     <table className="w-full text-left">
@@ -565,7 +565,7 @@ export default function RecordPaymentPage() {
                                                                                 ? "bg-amber-50 text-amber-600 ring-amber-500/20"
                                                                                 : tx.type === 'REFUND'
                                                                                     ? "bg-red-50 text-red-600 ring-red-500/20"
-                                                                                    : "bg-blue-50 text-blue-600 ring-blue-500/20"
+                                                                                    : "bg-primary-50 text-primary-600 ring-primary-500/20"
                                                                         )}>
                                                                             {tx.type === 'REFUND' ? 'REFUND' : tx.paymentMethod || 'CASH'}
                                                                         </span>
@@ -573,7 +573,7 @@ export default function RecordPaymentPage() {
                                                                     <td className={clsx("px-6 py-3 text-xs font-black text-right",
                                                                         tx.type === 'WAIVER' ? "text-amber-600" :
                                                                             tx.type === 'REFUND' ? "text-red-600 font-black" :
-                                                                                "text-blue-600")}>
+                                                                                "text-primary-600")}>
                                                                         {tx.type === 'REFUND' && <span className="mr-1 text-[8px] font-black">REF</span>}
                                                                         {formatCurrency(Math.abs(parseFloat(tx.amount)))}
                                                                         {tx.type === 'WAIVER' && <span className="ml-1 text-[8px] font-black text-amber-500/40 opacity-70">WV</span>}
@@ -602,7 +602,7 @@ export default function RecordPaymentPage() {
                                                 <div className="relative z-10 text-center">
                                                     <p className={clsx(
                                                         "text-[10px] font-black uppercase tracking-widest mb-1",
-                                                        transactionType === 'WAIVER' ? "text-amber-600" : "text-blue-500"
+                                                        transactionType === 'WAIVER' ? "text-amber-600" : "text-primary-500"
                                                     )}>
                                                         {transactionType === 'WAIVER' ? 'Total Amount to Waive' : 'Total Amount to record'}
                                                     </p>
@@ -611,7 +611,7 @@ export default function RecordPaymentPage() {
                                                         step="0.01"
                                                         className={clsx(
                                                             "w-full bg-transparent text-center text-3xl font-black border-none focus:ring-0 p-0",
-                                                            transactionType === 'WAIVER' ? "text-amber-600" : "text-blue-600 dark:text-blue-400"
+                                                            transactionType === 'WAIVER' ? "text-amber-600" : "text-primary-600 dark:text-primary-400"
                                                         )}
                                                         value={amount}
                                                         onChange={(e) => {
@@ -630,7 +630,7 @@ export default function RecordPaymentPage() {
                                                 {transactionType === 'WAIVER' ? (
                                                     <FileText className="absolute -left-2 -bottom-2 text-amber-600/5 -rotate-12" size={80} />
                                                 ) : (
-                                                    <Banknote className="absolute -left-2 -bottom-2 text-blue-600/5 -rotate-12" size={80} />
+                                                    <Banknote className="absolute -left-2 -bottom-2 text-primary-600/5 -rotate-12" size={80} />
                                                 )}
                                             </div>
 
@@ -639,7 +639,7 @@ export default function RecordPaymentPage() {
                                                     <div className="space-y-2">
                                                         <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Payment Method</label>
                                                         <select
-                                                            className="w-full px-4 py-3 bg-white dark:bg-gray-800 border-none rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 shadow-sm transition-all"
+                                                            className="w-full px-4 py-3 bg-white dark:bg-gray-800 border-none rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary-500 shadow-sm transition-all"
                                                             value={paymentMethod}
                                                             onChange={(e) => setPaymentMethod(e.target.value)}
                                                         >
@@ -655,7 +655,7 @@ export default function RecordPaymentPage() {
                                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Transaction Date</label>
                                                     <input
                                                         type="date"
-                                                        className="w-full px-4 py-3 bg-white dark:bg-gray-800 border-none rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 shadow-sm transition-all"
+                                                        className="w-full px-4 py-3 bg-white dark:bg-gray-800 border-none rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary-500 shadow-sm transition-all"
                                                         value={date}
                                                         onChange={(e) => setDate(e.target.value)}
                                                     />
@@ -666,7 +666,7 @@ export default function RecordPaymentPage() {
                                                         <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Reference / Receipt Number</label>
                                                         <input
                                                             type="text"
-                                                            className="w-full px-4 py-3 bg-white dark:bg-gray-800 border-none rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 shadow-sm transition-all placeholder:text-gray-300"
+                                                            className="w-full px-4 py-3 bg-white dark:bg-gray-800 border-none rounded-xl text-sm font-medium focus:ring-2 focus:ring-primary-500 shadow-sm transition-all placeholder:text-gray-300"
                                                             placeholder="E.g. Bank Ref #, Receipt No..."
                                                             value={reference}
                                                             onChange={(e) => setReference(e.target.value)}
@@ -677,7 +677,7 @@ export default function RecordPaymentPage() {
                                                 <div className="space-y-2">
                                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Internal Remarks</label>
                                                     <textarea
-                                                        className="w-full px-4 py-3 bg-white dark:bg-gray-800 border-none rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 h-24 shadow-sm transition-all placeholder:text-gray-300"
+                                                        className="w-full px-4 py-3 bg-white dark:bg-gray-800 border-none rounded-xl text-sm font-medium focus:ring-2 focus:ring-primary-500 h-24 shadow-sm transition-all placeholder:text-gray-300"
                                                         placeholder="Add a private note regarding this transaction..."
                                                         value={note}
                                                         onChange={(e) => setNote(e.target.value)}
@@ -692,7 +692,7 @@ export default function RecordPaymentPage() {
                                                     "w-full py-5 text-white rounded-2xl text-base font-black uppercase tracking-widest shadow-xl transition-all transform active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3 mt-4",
                                                     transactionType === 'WAIVER'
                                                         ? "bg-amber-600 shadow-amber-500/20 hover:bg-amber-700"
-                                                        : "bg-blue-600 shadow-blue-500/20 hover:bg-blue-700"
+                                                        : "bg-primary-600 shadow-primary-500/20 hover:bg-primary-700"
                                                 )}
                                             >
                                                 {processing ? <Loader2 className="animate-spin" size={20} /> : (
@@ -733,7 +733,7 @@ export default function RecordPaymentPage() {
                                     <span>{lastTransaction.type === 'WAIVER' ? 'Amount Waived' : 'Amount Credited'}</span>
                                     <span className={clsx(
                                         "text-2xl font-black",
-                                        lastTransaction.type === 'WAIVER' ? "text-amber-600" : "text-blue-600"
+                                        lastTransaction.type === 'WAIVER' ? "text-amber-600" : "text-primary-600"
                                     )} > {formatCurrency(parseFloat(lastTransaction.amount))}</span>
                                 </div>
                             </div>
@@ -741,7 +741,7 @@ export default function RecordPaymentPage() {
                             <div className="flex flex-col gap-3" >
                                 <button
                                     onClick={() => handlePrintReceipt(lastTransaction)}
-                                    className="w-full py-4 bg-gray-900 dark:bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl hover:bg-black dark:hover:bg-blue-700 transition-all flex items-center justify-center gap-3"
+                                    className="w-full py-4 bg-gray-900 dark:bg-primary-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl hover:bg-black dark:hover:bg-primary-700 transition-all flex items-center justify-center gap-3"
                                 >
                                     <Printer size={20} />
                                     Print Receipt

@@ -188,7 +188,7 @@ const PsychomotorPage = () => {
                     {students.length > 0 && (
                         <button
                             onClick={handleSave}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm text-sm font-medium"
+                            className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-all shadow-sm text-sm font-medium"
                         >
                             <Save className="w-4 h-4" />
                             Save Assessment
@@ -202,7 +202,7 @@ const PsychomotorPage = () => {
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Exam Group</label>
                     <select
-                        className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                         value={selectedGroup}
                         onChange={(e) => setSelectedGroup(e.target.value)}
                     >
@@ -216,7 +216,7 @@ const PsychomotorPage = () => {
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Class</label>
                     <select
-                        className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                         value={selectedClass}
                         onChange={(e) => setSelectedClass(e.target.value)}
                     >
@@ -232,7 +232,7 @@ const PsychomotorPage = () => {
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden min-h-[400px] grid grid-cols-1 w-full">
                 {loading ? (
                     <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-3"></div>
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mb-3"></div>
                         <p className="text-sm font-medium">Loading assessment sheet...</p>
                     </div>
                 ) : !selectedGroup || !selectedClass ? (
@@ -248,7 +248,7 @@ const PsychomotorPage = () => {
                         <p className="text-sm mt-1 mb-4">You need to define what you want to assess (e.g. Handwriting).</p>
                         <button
                             onClick={() => setIsDomainModalOpen(true)}
-                            className="text-sm text-blue-600 font-medium hover:underline"
+                            className="text-sm text-primary-600 font-medium hover:underline"
                         >
                             Manage Domains
                         </button>
@@ -281,7 +281,7 @@ const PsychomotorPage = () => {
                                             <td key={d.id} className="px-4 py-3 text-center">
                                                 <div className="relative">
                                                     <select
-                                                        className="w-full text-center bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all cursor-pointer hover:border-gray-300"
+                                                        className="w-full text-center bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all cursor-pointer hover:border-gray-300"
                                                         value={student.ratings[d.id] || ''}
                                                         onChange={(e) => handleRatingChange(sIdx, d.id, e.target.value)}
                                                     >
@@ -313,7 +313,7 @@ const PsychomotorPage = () => {
                     <div className="flex gap-3">
                         <input
                             type="text"
-                            className="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2.5 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2.5 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                             placeholder="Domain Name (e.g. Handwriting)"
                             value={newDomainName}
                             onChange={(e) => setNewDomainName(e.target.value)}
@@ -322,7 +322,7 @@ const PsychomotorPage = () => {
                         <button
                             onClick={handleAddOrUpdateDomain}
                             disabled={!newDomainName.trim()}
-                            className="bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all shadow-sm font-medium flex items-center gap-2"
+                            className="bg-primary-600 text-white px-4 py-2.5 rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-all shadow-sm font-medium flex items-center gap-2"
                         >
                             {editingDomainId ? "Update" : <><Plus className="w-4 h-4" /> Add</>}
                         </button>
@@ -343,7 +343,7 @@ const PsychomotorPage = () => {
                                     <div className="flex items-center gap-1">
                                         <button
                                             onClick={() => handleEditDomain(d)}
-                                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-all"
+                                            className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-blue-900/20 rounded-md transition-all"
                                             title="Edit"
                                         >
                                             <Edit2 className="w-4 h-4" />

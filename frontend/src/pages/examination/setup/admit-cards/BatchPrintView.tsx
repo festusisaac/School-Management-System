@@ -33,7 +33,7 @@ const BatchPrintView: React.FC<Props> = ({ template, students, schedules, onClos
             {/* Action Bar - Hidden during print */}
             <div className="sticky top-0 p-4 bg-gray-900 text-white flex justify-between items-center print:hidden border-b border-gray-800 z-50">
                 <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center font-black text-xl shadow-lg shadow-blue-600/20">P</div>
+                    <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center font-black text-xl shadow-lg shadow-primary-600/20">P</div>
                     <div>
                         <h2 className="text-sm font-black uppercase tracking-widest leading-tight">Batch Print Preview</h2>
                         <p className="text-[10px] text-gray-400 uppercase tracking-tighter font-bold">Total: {students.length} Admit Cards</p>
@@ -42,7 +42,7 @@ const BatchPrintView: React.FC<Props> = ({ template, students, schedules, onClos
                 <div className="flex gap-3">
                     <button
                         onClick={() => window.print()}
-                        className="px-6 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95"
+                        className="px-6 py-2.5 bg-primary-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary-700 transition-all shadow-lg shadow-primary-600/20 active:scale-95"
                     >
                         Print Now
                     </button>

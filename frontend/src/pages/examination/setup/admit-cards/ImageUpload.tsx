@@ -72,12 +72,12 @@ const ImageUpload: React.FC<Props> = ({ value, onChange, label, description }) =
                         </button>
                     </div>
                 ) : (
-                    <label className="flex flex-col items-center justify-center w-full aspect-video border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-xl hover:border-blue-500 dark:hover:border-blue-500 bg-gray-50/50 dark:bg-gray-900/50 cursor-pointer transition-all hover:bg-white dark:hover:bg-gray-900">
+                    <label className="flex flex-col items-center justify-center w-full aspect-video border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-xl hover:border-primary-500 dark:hover:border-primary-500 bg-gray-50/50 dark:bg-gray-900/50 cursor-pointer transition-all hover:bg-white dark:hover:bg-gray-900">
                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
                             {uploading ? (
-                                <Loader2 className="w-8 h-8 text-blue-500 animate-spin mb-2" />
+                                <Loader2 className="w-8 h-8 text-primary-500 animate-spin mb-2" />
                             ) : (
-                                <Upload className="w-8 h-8 text-gray-300 mb-2 group-hover:text-blue-500" />
+                                <Upload className="w-8 h-8 text-gray-300 mb-2 group-hover:text-primary-500" />
                             )}
                             <p className="text-xs font-bold text-gray-500">
                                 {uploading ? 'Uploading...' : 'Click to upload'}

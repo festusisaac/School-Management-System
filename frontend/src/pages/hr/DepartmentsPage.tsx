@@ -121,7 +121,7 @@ const DepartmentsPage = () => {
                         setFormData({ name: '', code: '', description: '', headOfDepartmentId: '', isActive: true });
                         setShowModal(true);
                     }}
-                    className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                    className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition"
                 >
                     <Plus size={20} />
                     Add Department
@@ -135,7 +135,7 @@ const DepartmentsPage = () => {
                         <input
                             type="text"
                             placeholder="Search departments..."
-                            className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                            className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -157,7 +157,7 @@ const DepartmentsPage = () => {
                             {loading ? (
                                 <tr>
                                     <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
-                                        <div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
+                                        <div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div></div>
                                     </td>
                                 </tr>
                             ) : filteredDepartments.length === 0 ? (
@@ -169,7 +169,7 @@ const DepartmentsPage = () => {
                                     <tr key={dept.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="p-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg">
+                                                <div className="p-2 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-lg">
                                                     <Building2 size={20} />
                                                 </div>
                                                 <div>
@@ -205,7 +205,7 @@ const DepartmentsPage = () => {
                                             <div className="flex justify-end gap-2">
                                                 <button
                                                     onClick={() => handleEdit(dept)}
-                                                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition"
+                                                    className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-blue-900/30 rounded-lg transition"
                                                 >
                                                     <Edit2 size={18} />
                                                 </button>
@@ -239,7 +239,7 @@ const DepartmentsPage = () => {
                                     <input
                                         required
                                         type="text"
-                                        className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                        className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                         value={formData.name}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                         placeholder="e.g. Science"
@@ -250,7 +250,7 @@ const DepartmentsPage = () => {
                                     <input
                                         required
                                         type="text"
-                                        className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                        className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                         value={formData.code}
                                         onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                                         placeholder="e.g. SCI"
@@ -259,7 +259,7 @@ const DepartmentsPage = () => {
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Head of Department</label>
                                     <select
-                                        className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                        className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                         value={formData.headOfDepartmentId}
                                         onChange={(e) => setFormData({ ...formData, headOfDepartmentId: e.target.value })}
                                     >
@@ -274,7 +274,7 @@ const DepartmentsPage = () => {
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Description</label>
                                     <textarea
-                                        className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 h-24 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                        className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 h-24 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                         value={formData.description}
                                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                         placeholder="Brief description of the department..."
@@ -284,7 +284,7 @@ const DepartmentsPage = () => {
                                     <input
                                         type="checkbox"
                                         id="isActive"
-                                        className="w-4 h-4 text-blue-600 rounded accent-blue-600"
+                                        className="w-4 h-4 text-primary-600 rounded accent-blue-600"
                                         checked={formData.isActive}
                                         onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
                                     />
@@ -301,7 +301,7 @@ const DepartmentsPage = () => {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-bold"
+                                    className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition font-bold"
                                 >
                                     {editingDept ? 'Update' : 'Create'}
                                 </button>

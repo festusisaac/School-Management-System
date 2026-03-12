@@ -319,7 +319,7 @@ export default function StudentAdmission() {
     if (initialLoading) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
                 <p className="text-gray-500 font-medium animate-pulse">Loading student details...</p>
             </div>
         );
@@ -478,7 +478,7 @@ export default function StudentAdmission() {
                 <button
                     onClick={handleSubmit}
                     disabled={loading}
-                    className="btn btn-primary bg-blue-600 text-white px-6 py-2.5 rounded-xl flex items-center gap-2 font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20 disabled:opacity-50"
+                    className="btn btn-primary bg-primary-600 text-white px-6 py-2.5 rounded-xl flex items-center gap-2 font-medium hover:bg-primary-700 transition-colors shadow-lg shadow-primary-600/20 disabled:opacity-50"
                 >
                     <Save className="w-4 h-4" /> {loading ? 'Saving...' : (isEditMode ? 'Update Student' : 'Save Student')}
                 </button>
@@ -496,7 +496,7 @@ export default function StudentAdmission() {
                                 className={clsx(
                                     "w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
                                     activeTab === id
-                                        ? "bg-white dark:bg-gray-900 text-blue-600 shadow-md border-l-4 border-blue-600"
+                                        ? "bg-white dark:bg-gray-900 text-primary-600 shadow-md border-l-4 border-primary-600"
                                         : "text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-800/50 hover:text-gray-700"
                                 )}
                             >
@@ -509,7 +509,7 @@ export default function StudentAdmission() {
                         className={clsx(
                             "w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
                             activeTab === 'fee_allocation'
-                                ? "bg-white dark:bg-gray-900 text-blue-600 shadow-md border-l-4 border-blue-600"
+                                ? "bg-white dark:bg-gray-900 text-primary-600 shadow-md border-l-4 border-primary-600"
                                 : "text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-800/50 hover:text-gray-700"
                         )}
                     >
@@ -598,7 +598,7 @@ export default function StudentAdmission() {
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Student Photo</label>
-                                        <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-800/50 border-dashed rounded-lg hover:border-blue-500 transition-colors bg-gray-50 dark:bg-gray-900/50">
+                                        <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-800/50 border-dashed rounded-lg hover:border-primary-500 transition-colors bg-gray-50 dark:bg-gray-900/50">
                                             <div className="space-y-1 text-center">
                                                 {formData.studentPhotoPreview ? (
                                                     <div className="relative inline-block">
@@ -627,7 +627,7 @@ export default function StudentAdmission() {
                                                         <div className="flex text-sm text-gray-600 dark:text-gray-400">
                                                             <label
                                                                 htmlFor="student-photo-upload"
-                                                                className="relative cursor-pointer bg-white dark:bg-gray-800 rounded-md font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
+                                                                className="relative cursor-pointer bg-white dark:bg-gray-800 rounded-md font-medium text-primary-600 dark:text-primary-400 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500"
                                                             >
                                                                 <span>Upload a file</span>
                                                                 <input id="student-photo-upload" name="studentPhoto" type="file" className="sr-only" accept="image/*" onChange={handleFileChange} />
@@ -677,7 +677,7 @@ export default function StudentAdmission() {
                                                 "text-sm px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center gap-2",
                                                 formData.parentId
                                                     ? "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200"
-                                                    : "bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-100"
+                                                    : "bg-primary-50 text-primary-600 hover:bg-blue-100 border border-blue-100"
                                             )}
                                         >
                                             <Users className="w-4 h-4" />
@@ -688,15 +688,15 @@ export default function StudentAdmission() {
 
                                 {/* Linked Siblings List */}
                                 {linkedSiblings.length > 0 && (
-                                    <div className="p-4 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100/50 dark:border-blue-800/50 rounded-2xl">
-                                        <h4 className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-3 flex items-center gap-2">
+                                    <div className="p-4 bg-primary-50/50 dark:bg-primary-900/10 border border-blue-100/50 dark:border-primary-800/50 rounded-2xl">
+                                        <h4 className="text-xs font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400 mb-3 flex items-center gap-2">
                                             <Users className="w-3.5 h-3.5" />
                                             Other Linked Siblings ({linkedSiblings.length})
                                         </h4>
                                         <div className="flex flex-wrap gap-2">
                                             {linkedSiblings.map(sib => (
                                                 <div key={sib.id} className="inline-flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 border border-blue-100 dark:border-gray-700 rounded-xl shadow-sm">
-                                                    <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-[10px] font-bold text-blue-600">
+                                                    <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-primary-900/40 flex items-center justify-center text-[10px] font-bold text-primary-600">
                                                         {sib.firstName[0]}
                                                     </div>
                                                     <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
@@ -736,7 +736,7 @@ export default function StudentAdmission() {
                                                         <input
                                                             type="text"
                                                             placeholder="Search by Name, ID, or Parent Name..."
-                                                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 transition-all outline-none"
+                                                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 transition-all outline-none"
                                                             value={searchQuery}
                                                             onChange={(e) => setSearchQuery(e.target.value)}
                                                             autoFocus
@@ -746,7 +746,7 @@ export default function StudentAdmission() {
                                                         <select
                                                             value={searchClassId}
                                                             onChange={(e) => setSearchClassId(e.target.value)}
-                                                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 transition-all outline-none text-sm"
+                                                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 transition-all outline-none text-sm"
                                                         >
                                                             <option value="">All Classes</option>
                                                             {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -757,7 +757,7 @@ export default function StudentAdmission() {
                                                             value={searchSectionId}
                                                             onChange={(e) => setSearchSectionId(e.target.value)}
                                                             disabled={!searchClassId}
-                                                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 transition-all outline-none text-sm disabled:opacity-50"
+                                                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 transition-all outline-none text-sm disabled:opacity-50"
                                                         >
                                                             <option value="">All Sections</option>
                                                             {sections.filter(s => s.classId === searchClassId).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -770,7 +770,7 @@ export default function StudentAdmission() {
                                             <div className="flex-1 overflow-y-auto p-6 bg-gray-50/30 dark:bg-gray-900/30">
                                                 {searchingSibling ? (
                                                     <div className="flex flex-col items-center justify-center py-12 gap-3">
-                                                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+                                                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
                                                         <p className="text-gray-500 font-medium">Searching students...</p>
                                                     </div>
                                                 ) : siblingResults.length > 0 ? (
@@ -789,12 +789,12 @@ export default function StudentAdmission() {
                                                                             "group w-full text-left p-4 border rounded-xl transition-all flex items-center gap-4",
                                                                             isAlreadyLinked
                                                                                 ? "bg-gray-50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-800 cursor-not-allowed opacity-75"
-                                                                                : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-md"
+                                                                                : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-md"
                                                                         )}
                                                                     >
                                                                         <div className={clsx(
                                                                             "w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg shadow-sm transition-transform",
-                                                                            isAlreadyLinked ? "bg-gray-200 dark:bg-gray-800 text-gray-400" : "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 group-hover:scale-110"
+                                                                            isAlreadyLinked ? "bg-gray-200 dark:bg-gray-800 text-gray-400" : "bg-blue-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 group-hover:scale-110"
                                                                         )}>
                                                                             {sibling.firstName[0]}
                                                                         </div>
@@ -809,7 +809,7 @@ export default function StudentAdmission() {
                                                                                             Already Linked
                                                                                         </span>
                                                                                     )}
-                                                                                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800">
+                                                                                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 border border-blue-100 dark:border-primary-800">
                                                                                         {sibling.class?.name} - {sibling.section?.name}
                                                                                     </span>
                                                                                 </div>
@@ -821,7 +821,7 @@ export default function StudentAdmission() {
                                                                         </div>
                                                                         <div className={clsx(
                                                                             "w-8 h-8 rounded-full flex items-center justify-center transition-all",
-                                                                            isAlreadyLinked ? "bg-gray-100 dark:bg-gray-800 text-gray-300" : "bg-gray-50 dark:bg-gray-800 text-gray-400 group-hover:bg-blue-600 group-hover:text-white"
+                                                                            isAlreadyLinked ? "bg-gray-100 dark:bg-gray-800 text-gray-300" : "bg-gray-50 dark:bg-gray-800 text-gray-400 group-hover:bg-primary-600 group-hover:text-white"
                                                                         )}>
                                                                             <Users className="w-4 h-4" />
                                                                         </div>
@@ -839,8 +839,8 @@ export default function StudentAdmission() {
                                                     </div>
                                                 ) : (
                                                     <div className="text-center py-12">
-                                                        <div className="bg-blue-50 dark:bg-blue-900/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                                                            <Users className="w-8 h-8 text-blue-500" />
+                                                        <div className="bg-primary-50 dark:bg-primary-900/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                            <Users className="w-8 h-8 text-primary-500" />
                                                         </div>
                                                         <h5 className="text-lg font-semibold text-gray-900 dark:text-white">Search Existing Students</h5>
                                                         <p className="text-gray-500 max-w-xs mx-auto">Start typing a name or select a class to find a sibling and auto-fill parent details.</p>
@@ -958,7 +958,7 @@ export default function StudentAdmission() {
                                             name="discountProfileId"
                                             value={formData.discountProfileId}
                                             onChange={handleChange}
-                                            className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800 font-bold text-blue-600 dark:text-blue-400"
+                                            className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800 font-bold text-primary-600 dark:text-primary-400"
                                         >
                                             <option value="">None (Standard Fees)</option>
                                             {discountProfiles.map((p: any) => (
@@ -1022,7 +1022,7 @@ export default function StudentAdmission() {
                                     <button
                                         type="button"
                                         onClick={addDocument}
-                                        className="btn btn-secondary text-sm bg-blue-50 text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-2"
+                                        className="btn btn-secondary text-sm bg-primary-50 text-primary-600 px-4 py-2 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-2"
                                     >
                                         <Plus className="w-4 h-4" /> Add Document
                                     </button>
@@ -1038,7 +1038,7 @@ export default function StudentAdmission() {
                                         <button
                                             type="button"
                                             onClick={addDocument}
-                                            className="mt-6 text-sm font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                                            className="mt-6 text-sm font-bold text-primary-600 hover:text-primary-700 flex items-center gap-1"
                                         >
                                             <Plus className="w-4 h-4" /> Click here to add your first document
                                         </button>
@@ -1062,7 +1062,7 @@ export default function StudentAdmission() {
                                                     <div className="flex items-center gap-2">
                                                         {doc.isNew ? (
                                                             <div className="flex items-center gap-2 w-full">
-                                                                <label className="cursor-pointer text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-2 py-1 rounded border border-blue-100 dark:border-blue-800 hover:bg-blue-100 transition-colors">
+                                                                <label className="cursor-pointer text-xs bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-2 py-1 rounded border border-blue-100 dark:border-primary-800 hover:bg-blue-100 transition-colors">
                                                                     {doc.file ? 'Change file' : 'Select file'}
                                                                     <input
                                                                         type="file"
@@ -1086,7 +1086,7 @@ export default function StudentAdmission() {
                                                                     href={`${API_Base_URL}/${doc.filePath}`}
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
-                                                                    className="text-xs text-blue-500 hover:underline flex items-center gap-1"
+                                                                    className="text-xs text-primary-500 hover:underline flex items-center gap-1"
                                                                 >
                                                                     View Document
                                                                 </a>
@@ -1113,12 +1113,12 @@ export default function StudentAdmission() {
                         {activeTab === 'fee_allocation' && (
                             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 <h3 className="text-xl font-bold text-gray-900 dark:text-white border-b-2 border-gray-200 dark:border-gray-800/50 pb-3 mb-2">Fee Allocation</h3>
-                                <div className="p-4 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100/50 dark:border-blue-800/50 rounded-2xl mb-6">
+                                <div className="p-4 bg-primary-50/50 dark:bg-primary-900/10 border border-blue-100/50 dark:border-primary-800/50 rounded-2xl mb-6">
                                     <div className="flex items-start gap-3">
-                                        <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+                                        <AlertCircle className="w-5 h-5 text-primary-600 mt-0.5" />
                                         <div>
-                                            <p className="text-sm font-medium text-blue-700 dark:text-blue-400">Select Fee Groups</p>
-                                            <p className="text-xs text-blue-600/70 dark:text-blue-500/70">Assigned groups will automatically generate dues for this student.</p>
+                                            <p className="text-sm font-medium text-primary-700 dark:text-primary-400">Select Fee Groups</p>
+                                            <p className="text-xs text-primary-600/70 dark:text-primary-500/70">Assigned groups will automatically generate dues for this student.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -1135,18 +1135,18 @@ export default function StudentAdmission() {
                                                     className={clsx(
                                                         "flex flex-col border rounded-2xl transition-all overflow-hidden",
                                                         isGroupSelected
-                                                            ? "bg-blue-50/30 dark:bg-blue-900/10 border-blue-500 shadow-sm"
+                                                            ? "bg-primary-50/30 dark:bg-primary-900/10 border-primary-500 shadow-sm"
                                                             : "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                                                     )}
                                                 >
                                                     <label className={clsx(
                                                         "flex items-start gap-4 p-4 cursor-pointer transition-colors",
-                                                        isGroupSelected ? "bg-blue-50/50 dark:bg-blue-900/20" : "hover:bg-gray-50 dark:hover:bg-gray-800"
+                                                        isGroupSelected ? "bg-primary-50/50 dark:bg-primary-900/20" : "hover:bg-gray-50 dark:hover:bg-gray-800"
                                                     )}>
                                                         <div className="mt-1">
                                                             <input
                                                                 type="checkbox"
-                                                                className="w-5 h-5 rounded-lg border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                                className="w-5 h-5 rounded-lg border-gray-300 text-primary-600 focus:ring-primary-500"
                                                                 checked={isGroupSelected}
                                                                 onChange={() => handleToggleFeeGroup(group.id)}
                                                             />
@@ -1161,8 +1161,8 @@ export default function StudentAdmission() {
                                                     </label>
 
                                                     {isGroupSelected && group.heads && group.heads.length > 0 && (
-                                                        <div className="px-4 pb-4 space-y-2 border-t border-blue-100 dark:border-blue-800/50 pt-3 bg-blue-50/20 dark:bg-blue-900/5">
-                                                            <p className="text-[10px] font-bold text-blue-600/60 dark:text-blue-400/60 uppercase tracking-widest mb-2">Assign Individual Heads</p>
+                                                        <div className="px-4 pb-4 space-y-2 border-t border-blue-100 dark:border-primary-800/50 pt-3 bg-primary-50/20 dark:bg-primary-900/5">
+                                                            <p className="text-[10px] font-bold text-primary-600/60 dark:text-primary-400/60 uppercase tracking-widest mb-2">Assign Individual Heads</p>
                                                             <div className="grid grid-cols-1 gap-2">
                                                                 {group.heads.map((head: any) => {
                                                                     const isExcluded = groupExclusions.includes(head.id);
@@ -1175,13 +1175,13 @@ export default function StudentAdmission() {
                                                                                 "flex items-center justify-between p-2 rounded-lg border transition-all",
                                                                                 isExcluded
                                                                                     ? "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 opacity-60"
-                                                                                    : "bg-white dark:bg-gray-800 border-blue-200 dark:border-blue-800 shadow-sm"
+                                                                                    : "bg-white dark:bg-gray-800 border-blue-200 dark:border-primary-800 shadow-sm"
                                                                             )}
                                                                         >
                                                                             <div className="flex items-center gap-2">
                                                                                 <input
                                                                                     type="checkbox"
-                                                                                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
+                                                                                    className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 disabled:opacity-50"
                                                                                     checked={!isExcluded}
                                                                                     disabled={isMandatory}
                                                                                     onChange={() => handleToggleFeeHead(group.id, head.id)}
@@ -1191,7 +1191,7 @@ export default function StudentAdmission() {
                                                                                         {head.name}
                                                                                     </span>
                                                                                     {isMandatory && (
-                                                                                        <span className="text-[8px] text-blue-500 font-bold uppercase tracking-tighter">Mandatory</span>
+                                                                                        <span className="text-[8px] text-primary-500 font-bold uppercase tracking-tighter">Mandatory</span>
                                                                                     )}
                                                                                 </div>
                                                                             </div>

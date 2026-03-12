@@ -187,7 +187,7 @@ const BroadsheetPage = () => {
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Exam Group</label>
                     <select
-                        className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                         value={selectedGroup}
                         onChange={(e) => setSelectedGroup(e.target.value)}
                     >
@@ -201,7 +201,7 @@ const BroadsheetPage = () => {
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Class</label>
                     <select
-                        className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                         value={selectedClass}
                         onChange={(e) => setSelectedClass(e.target.value)}
                     >
@@ -217,7 +217,7 @@ const BroadsheetPage = () => {
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden min-h-[400px] grid grid-cols-1 w-full">
                 {loading ? (
                     <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-3"></div>
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mb-3"></div>
                         <p className="text-sm font-medium">Compiling master sheet...</p>
                     </div>
                 ) : !selectedGroup || !selectedClass ? (
@@ -246,8 +246,8 @@ const BroadsheetPage = () => {
                                         </th>
                                     ))}
 
-                                    <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider bg-blue-50 dark:bg-blue-900/10 min-w-[80px]">Total</th>
-                                    <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider bg-blue-50 dark:bg-blue-900/10 min-w-[80px]">Avg</th>
+                                    <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider bg-primary-50 dark:bg-primary-900/10 min-w-[80px]">Total</th>
+                                    <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider bg-primary-50 dark:bg-primary-900/10 min-w-[80px]">Avg</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-800 whitespace-nowrap">
@@ -272,10 +272,10 @@ const BroadsheetPage = () => {
                                             );
                                         })}
 
-                                        <td className="px-4 py-3 text-center font-bold text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/5">
+                                        <td className="px-4 py-3 text-center font-bold text-primary-600 dark:text-primary-400 bg-primary-50/50 dark:bg-primary-900/5">
                                             {Math.round(row.totalScore)}
                                         </td>
-                                        <td className="px-4 py-3 text-center font-bold text-gray-800 dark:text-gray-200 bg-blue-50/50 dark:bg-blue-900/5">
+                                        <td className="px-4 py-3 text-center font-bold text-gray-800 dark:text-gray-200 bg-primary-50/50 dark:bg-primary-900/5">
                                             {Number(row.averageScore).toFixed(1)}
                                         </td>
                                     </tr>

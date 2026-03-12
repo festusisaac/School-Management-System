@@ -43,10 +43,10 @@ const BatchManager: React.FC<Props> = ({ students, onPrintBatch, loading }) => {
             <div className="p-5 border-b border-gray-100 dark:border-gray-700 space-y-4">
                 <div className="flex items-center justify-between">
                     <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                        <Users className="w-4 h-4 text-blue-600" />
+                        <Users className="w-4 h-4 text-primary-600" />
                         Batch Selection
                     </h3>
-                    <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded tracking-widest uppercase">
+                    <span className="text-[10px] font-black text-primary-600 bg-primary-50 px-2 py-0.5 rounded tracking-widest uppercase">
                         {selectedIds.length} Selected
                     </span>
                 </div>
@@ -56,7 +56,7 @@ const BatchManager: React.FC<Props> = ({ students, onPrintBatch, loading }) => {
                     <input
                         type="text"
                         placeholder="Search by name or admission number..."
-                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 shadow-sm transition-all"
+                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary-500 shadow-sm transition-all"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -65,14 +65,14 @@ const BatchManager: React.FC<Props> = ({ students, onPrintBatch, loading }) => {
                 <div className="flex items-center justify-between">
                     <button
                         onClick={toggleAll}
-                        className="text-xs font-black uppercase tracking-wider text-blue-600 hover:text-blue-700"
+                        className="text-xs font-black uppercase tracking-wider text-primary-600 hover:text-primary-700"
                     >
                         {selectedIds.length === filteredStudents.length ? 'Deselect All' : 'Select All'}
                     </button>
                     <button
                         onClick={() => onPrintBatch(selectedIds)}
                         disabled={selectedIds.length === 0 || loading}
-                        className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all disabled:opacity-50 shadow-lg shadow-blue-600/20"
+                        className="flex items-center gap-2 px-6 py-2.5 bg-primary-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary-700 transition-all disabled:opacity-50 shadow-lg shadow-primary-600/20"
                     >
                         <Printer className="w-3.5 h-3.5" />
                         Print Batch
@@ -99,7 +99,7 @@ const BatchManager: React.FC<Props> = ({ students, onPrintBatch, loading }) => {
                             {filteredStudents.map((student, idx) => (
                                 <tr
                                     key={student.id}
-                                    className={`group hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer border-b border-gray-50 dark:border-gray-800 transition-colors ${selectedIds.includes(student.id) ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}`}
+                                    className={`group hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer border-b border-gray-50 dark:border-gray-800 transition-colors ${selectedIds.includes(student.id) ? 'bg-primary-50/30 dark:bg-primary-900/10' : ''}`}
                                     onClick={() => toggleStudent(student.id)}
                                 >
                                     <td className="px-5 py-3 text-xs text-gray-400 font-mono">{idx + 1}</td>
@@ -119,7 +119,7 @@ const BatchManager: React.FC<Props> = ({ students, onPrintBatch, loading }) => {
                                     </td>
                                     <td className="px-5 py-3 text-xs font-medium text-gray-500">{student.admissionNumber || student.admissionNo}</td>
                                     <td className="px-5 py-3">
-                                        <div className={`w-5 h-5 rounded border-2 transition-all flex items-center justify-center ${selectedIds.includes(student.id) ? 'bg-blue-600 border-blue-600 shadow-sm shadow-blue-600/30' : 'border-gray-300 dark:border-gray-700'}`}>
+                                        <div className={`w-5 h-5 rounded border-2 transition-all flex items-center justify-center ${selectedIds.includes(student.id) ? 'bg-primary-600 border-primary-600 shadow-sm shadow-primary-600/30' : 'border-gray-300 dark:border-gray-700'}`}>
                                             {selectedIds.includes(student.id) && <UserCheck className="w-3 h-3 text-white" />}
                                         </div>
                                     </td>

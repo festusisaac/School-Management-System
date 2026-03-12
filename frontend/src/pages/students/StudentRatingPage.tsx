@@ -97,7 +97,7 @@ const StudentRatingPage: React.FC = () => {
                         placeholder="Search for a teacher..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm font-medium"
+                        className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all shadow-sm font-medium"
                     />
                 </div>
             </div>
@@ -105,13 +105,13 @@ const StudentRatingPage: React.FC = () => {
             {/* Teachers Grid */}
             {loading ? (
                 <div className="flex justify-center items-center h-64">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {filteredTeachers.map((teacher) => (
                         <div key={teacher.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all p-6 flex flex-col items-center">
-                            <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mb-4 overflow-hidden border-2 border-white shadow-inner">
+                            <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center text-primary-600 mb-4 overflow-hidden border-2 border-white shadow-inner">
                                 {teacher.photo ? (
                                     <img src={teacher.photo.startsWith('http') ? teacher.photo : `http://localhost:3000${teacher.photo}`} alt="" className="w-full h-full object-cover" />
                                 ) : (
@@ -123,7 +123,7 @@ const StudentRatingPage: React.FC = () => {
 
                             <button
                                 onClick={() => handleRate(teacher)}
-                                className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-bold transition-all"
+                                className="w-full flex items-center justify-center gap-2 bg-primary-600 hover:bg-primary-700 text-white py-2.5 rounded-xl font-bold transition-all"
                             >
                                 <Award size={18} />
                                 Rate Teacher

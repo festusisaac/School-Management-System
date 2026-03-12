@@ -109,7 +109,7 @@ const RatingModal: React.FC<RatingModalProps> = ({ isOpen, onClose, onSubmit, te
                                     value={formData.teacherId}
                                     onChange={handleChange}
                                     required
-                                    className="w-full border border-gray-200 dark:border-gray-700 rounded-xl p-3 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
+                                    className="w-full border border-gray-200 dark:border-gray-700 rounded-xl p-3 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-medium"
                                     disabled={!!initialData}
                                 >
                                     <option value="" className="dark:bg-gray-800">Select Teacher</option>
@@ -129,7 +129,7 @@ const RatingModal: React.FC<RatingModalProps> = ({ isOpen, onClose, onSubmit, te
                                 onChange={handleChange}
                                 required
                                 placeholder="e.g. 2023-2024"
-                                className="w-full border border-gray-200 dark:border-gray-700 rounded-xl p-3 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
+                                className="w-full border border-gray-200 dark:border-gray-700 rounded-xl p-3 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-medium"
                             />
                         </div>
                         <div>
@@ -138,7 +138,7 @@ const RatingModal: React.FC<RatingModalProps> = ({ isOpen, onClose, onSubmit, te
                                 name="term"
                                 value={formData.term}
                                 onChange={handleChange}
-                                className="w-full border border-gray-200 dark:border-gray-700 rounded-xl p-3 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
+                                className="w-full border border-gray-200 dark:border-gray-700 rounded-xl p-3 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-medium"
                             >
                                 <option value="First Term" className="dark:bg-gray-800">First Term</option>
                                 <option value="Second Term" className="dark:bg-gray-800">Second Term</option>
@@ -152,7 +152,7 @@ const RatingModal: React.FC<RatingModalProps> = ({ isOpen, onClose, onSubmit, te
                                 value={formData.subject}
                                 onChange={handleChange}
                                 placeholder="e.g. Mathematics"
-                                className="w-full border border-gray-200 dark:border-gray-700 rounded-xl p-3 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
+                                className="w-full border border-gray-200 dark:border-gray-700 rounded-xl p-3 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-medium"
                             />
                         </div>
                         <div>
@@ -165,7 +165,7 @@ const RatingModal: React.FC<RatingModalProps> = ({ isOpen, onClose, onSubmit, te
                                 value={formData.ratingDate}
                                 onChange={handleChange}
                                 required
-                                className="w-full border border-gray-200 dark:border-gray-700 rounded-xl p-3 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
+                                className="w-full border border-gray-200 dark:border-gray-700 rounded-xl p-3 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-medium"
                             />
                         </div>
                     </div>
@@ -195,7 +195,7 @@ const RatingModal: React.FC<RatingModalProps> = ({ isOpen, onClose, onSubmit, te
                             onChange={handleChange}
                             rows={4}
                             placeholder="Provide detailed feedback on the teacher's performance..."
-                            className="w-full border border-gray-200 dark:border-gray-700 rounded-2xl p-4 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium resize-none shadow-sm"
+                            className="w-full border border-gray-200 dark:border-gray-700 rounded-2xl p-4 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-medium resize-none shadow-sm"
                         ></textarea>
                     </div>
 
@@ -210,7 +210,7 @@ const RatingModal: React.FC<RatingModalProps> = ({ isOpen, onClose, onSubmit, te
                         </button>
                         <button
                             type="submit"
-                            className="px-10 py-3 bg-blue-600 text-white rounded-xl font-black shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all flex items-center gap-2"
+                            className="px-10 py-3 bg-primary-600 text-white rounded-xl font-black shadow-lg shadow-primary-500/30 hover:bg-primary-700 transition-all flex items-center gap-2"
                         >
                             <Save size={20} />
                             {initialData ? 'Update Rating' : 'Save Rating'}

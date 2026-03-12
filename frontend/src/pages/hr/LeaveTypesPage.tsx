@@ -58,7 +58,7 @@ const LeaveTypesPage = () => {
                 </div>
                 <button
                     onClick={() => { setEditingType(null); setShowModal(true); }}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                    className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition"
                 >
                     <Plus size={20} />
                     Add Leave Type
@@ -89,7 +89,7 @@ const LeaveTypesPage = () => {
                             <div className="grid grid-cols-2 gap-4 border-t dark:border-gray-700 pt-4 mt-auto">
                                 <div className="space-y-3">
                                     <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400">
-                                        <Plus size={14} className="text-blue-500" />
+                                        <Plus size={14} className="text-primary-500" />
                                         Max Days: <span className="text-gray-900 dark:text-white ml-1">{type.maxDaysPerYear}</span>
                                     </div>
                                     <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400">
@@ -157,40 +157,40 @@ const LeaveTypesPage = () => {
                                 <div className="p-6 space-y-4">
                                     <div>
                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Type Name *</label>
-                                        <input name="name" defaultValue={editingType?.name} required className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition shadow-sm" placeholder="e.g. Sick Leave" />
+                                        <input name="name" defaultValue={editingType?.name} required className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition shadow-sm" placeholder="e.g. Sick Leave" />
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Short Code *</label>
-                                            <input name="code" defaultValue={editingType?.code} required className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition shadow-sm" placeholder="e.g. SL" />
+                                            <input name="code" defaultValue={editingType?.code} required className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition shadow-sm" placeholder="e.g. SL" />
                                         </div>
                                         <div>
                                             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Max Days *</label>
-                                            <input name="maxDays" type="number" defaultValue={editingType?.maxDaysPerYear} required className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition shadow-sm" placeholder="e.g. 15" />
+                                            <input name="maxDays" type="number" defaultValue={editingType?.maxDaysPerYear} required className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition shadow-sm" placeholder="e.g. 15" />
                                         </div>
                                     </div>
                                     <div className="space-y-3 pt-2">
                                         <label className="flex items-center gap-3 cursor-pointer group">
-                                            <input type="checkbox" name="isPaid" defaultChecked={editingType ? editingType.isPaid : true} className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 accent-blue-600" />
-                                            <span className="text-sm text-gray-700 dark:text-gray-300 font-medium group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">Is Paid Leave</span>
+                                            <input type="checkbox" name="isPaid" defaultChecked={editingType ? editingType.isPaid : true} className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 accent-blue-600" />
+                                            <span className="text-sm text-gray-700 dark:text-gray-300 font-medium group-hover:text-primary-600 dark:group-hover:text-primary-500 transition">Is Paid Leave</span>
                                         </label>
                                         <label className="flex items-center gap-3 cursor-pointer group">
-                                            <input type="checkbox" name="requiresApproval" defaultChecked={editingType ? editingType.requiresApproval : true} className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 accent-blue-600" />
-                                            <span className="text-sm text-gray-700 dark:text-gray-300 font-medium group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">Requires Approval</span>
+                                            <input type="checkbox" name="requiresApproval" defaultChecked={editingType ? editingType.requiresApproval : true} className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 accent-blue-600" />
+                                            <span className="text-sm text-gray-700 dark:text-gray-300 font-medium group-hover:text-primary-600 dark:group-hover:text-primary-500 transition">Requires Approval</span>
                                         </label>
                                         <label className="flex items-center gap-3 cursor-pointer group">
-                                            <input type="checkbox" name="requiresDocument" defaultChecked={editingType ? editingType.requiresDocument : false} className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 accent-blue-600" />
-                                            <span className="text-sm text-gray-700 dark:text-gray-300 font-medium group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">Supporting Document Required</span>
+                                            <input type="checkbox" name="requiresDocument" defaultChecked={editingType ? editingType.requiresDocument : false} className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 accent-blue-600" />
+                                            <span className="text-sm text-gray-700 dark:text-gray-300 font-medium group-hover:text-primary-600 dark:group-hover:text-primary-500 transition">Supporting Document Required</span>
                                         </label>
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Description</label>
-                                        <textarea name="description" defaultValue={editingType?.description} rows={3} className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition resize-none shadow-sm" placeholder="Details about this leave type..."></textarea>
+                                        <textarea name="description" defaultValue={editingType?.description} rows={3} className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition resize-none shadow-sm" placeholder="Details about this leave type..."></textarea>
                                     </div>
                                 </div>
 
                                 <div className="p-6 bg-gray-50 dark:bg-gray-800/50 border-t dark:border-gray-700 flex gap-3">
-                                    <button type="submit" className="flex-1 py-3 px-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-500/25 transition-all">
+                                    <button type="submit" className="flex-1 py-3 px-4 bg-primary-600 text-white font-bold rounded-xl hover:bg-primary-700 shadow-lg shadow-primary-500/25 transition-all">
                                         {editingType ? 'Update Leave Type' : 'Create Leave Type'}
                                     </button>
                                     <button type="button" onClick={() => setShowModal(false)} className="px-6 py-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-all">Cancel</button>

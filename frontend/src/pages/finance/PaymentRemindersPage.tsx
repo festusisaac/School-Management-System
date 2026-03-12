@@ -193,7 +193,7 @@ const PaymentRemindersPage = () => {
             onClick={() => setActiveTab('composer')}
             className={clsx(
               "px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2",
-              activeTab === 'composer' ? "bg-white dark:bg-gray-700 text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+              activeTab === 'composer' ? "bg-white dark:bg-gray-700 text-primary-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
             )}
           >
             <Send size={16} />
@@ -203,7 +203,7 @@ const PaymentRemindersPage = () => {
             onClick={() => setActiveTab('history')}
             className={clsx(
               "px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2",
-              activeTab === 'history' ? "bg-white dark:bg-gray-700 text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+              activeTab === 'history' ? "bg-white dark:bg-gray-700 text-primary-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
             )}
           >
             <History size={16} />
@@ -223,13 +223,13 @@ const PaymentRemindersPage = () => {
                   <input
                     type="text"
                     placeholder="Search debtors..."
-                    className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 transition-all font-medium"
+                    className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary-500 transition-all font-medium"
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                   />
                 </div>
                 <select
-                  className="bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 px-4 py-2"
+                  className="bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-sm font-medium focus:ring-2 focus:ring-primary-500 px-4 py-2"
                   value={selectedClass}
                   onChange={e => setSelectedClass(e.target.value)}
                 >
@@ -247,7 +247,7 @@ const PaymentRemindersPage = () => {
                           onClick={toggleSelectAll}
                           className="w-5 h-5 rounded border-2 border-gray-300 flex items-center justify-center"
                         >
-                          {selectedIds.size === debtors.length && debtors.length > 0 && <Check size={14} className="text-blue-500" />}
+                          {selectedIds.size === debtors.length && debtors.length > 0 && <Check size={14} className="text-primary-500" />}
                         </button>
                       </th>
                       <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest font-bold">Student</th>
@@ -259,7 +259,7 @@ const PaymentRemindersPage = () => {
                     {loadingDebtors ? (
                       <tr>
                         <td colSpan={4} className="px-6 py-20 text-center">
-                          <Loader2 className="w-8 h-8 text-blue-500 animate-spin mx-auto" />
+                          <Loader2 className="w-8 h-8 text-primary-500 animate-spin mx-auto" />
                         </td>
                       </tr>
                     ) : debtors.map(d => (
@@ -267,14 +267,14 @@ const PaymentRemindersPage = () => {
                         key={d.id}
                         className={clsx(
                           "group transition-all cursor-pointer",
-                          selectedIds.has(d.student.id) ? "bg-blue-50/50 dark:bg-blue-900/10" : "hover:bg-gray-50/30"
+                          selectedIds.has(d.student.id) ? "bg-primary-50/50 dark:bg-primary-900/10" : "hover:bg-gray-50/30"
                         )}
                         onClick={() => toggleSelect(d.student.id)}
                       >
                         <td className="px-6 py-4">
                           <div className={clsx(
                             "w-5 h-5 rounded border-2 flex items-center justify-center transition-all",
-                            selectedIds.has(d.student.id) ? "border-blue-500 bg-blue-500 text-white" : "border-gray-200"
+                            selectedIds.has(d.student.id) ? "border-primary-500 bg-primary-500 text-white" : "border-gray-200"
                           )}>
                             {selectedIds.has(d.student.id) && <Check size={14} />}
                           </div>
@@ -313,7 +313,7 @@ const PaymentRemindersPage = () => {
           <div className="lg:col-span-4 space-y-6">
             <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm sticky top-6">
               <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tighter mb-4 flex items-center gap-2">
-                <Bell size={18} className="text-blue-500" />
+                <Bell size={18} className="text-primary-500" />
                 Reminder Settings
               </h3>
 
@@ -332,7 +332,7 @@ const PaymentRemindersPage = () => {
                         className={clsx(
                           "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
                           channel === ch.id
-                            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600"
+                            ? "border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600"
                             : "border-gray-100 dark:border-gray-700 text-gray-400 hover:border-gray-200"
                         )}
                       >
@@ -346,7 +346,7 @@ const PaymentRemindersPage = () => {
                 <div>
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block font-bold">Custom Message (Optional)</label>
                   <textarea
-                    className="w-full p-4 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 min-h-[120px]"
+                    className="w-full p-4 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-sm font-medium focus:ring-2 focus:ring-primary-500 min-h-[120px]"
                     placeholder="E.g. Please clear the pending balance by Friday to avoid late fees..."
                     value={messageTemplate}
                     onChange={e => setMessageTemplate(e.target.value)}
@@ -357,12 +357,12 @@ const PaymentRemindersPage = () => {
                   </p>
                 </div>
 
-                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
+                <div className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-xl border border-blue-100 dark:border-primary-800">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 uppercase">Selected Students</span>
-                    <span className="text-xl font-black text-blue-700 dark:text-blue-300">{selectedIds.size}</span>
+                    <span className="text-[11px] font-bold text-primary-600 dark:text-primary-400 uppercase">Selected Students</span>
+                    <span className="text-xl font-black text-primary-700 dark:text-primary-300">{selectedIds.size}</span>
                   </div>
-                  <p className="text-[10px] text-blue-500/70 font-medium">
+                  <p className="text-[10px] text-primary-500/70 font-medium">
                     {selectedIds.size > 0
                       ? `You are about to notify ${selectedIds.size} student(s) via ${channel.toLowerCase()}.`
                       : "Please select students from the list."}
@@ -375,7 +375,7 @@ const PaymentRemindersPage = () => {
                   className={clsx(
                     "w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg",
                     selectedIds.size > 0 && !sending
-                      ? "bg-blue-600 text-white hover:bg-blue-700 shadow-blue-500/20"
+                      ? "bg-primary-600 text-white hover:bg-primary-700 shadow-primary-500/20"
                       : "bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed"
                   )}
                 >
@@ -402,7 +402,7 @@ const PaymentRemindersPage = () => {
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
                 {loadingHistory ? (
-                  <tr><td colSpan={5} className="px-6 py-20 text-center"><Loader2 className="w-8 h-8 text-blue-500 animate-spin mx-auto" /></td></tr>
+                  <tr><td colSpan={5} className="px-6 py-20 text-center"><Loader2 className="w-8 h-8 text-primary-500 animate-spin mx-auto" /></td></tr>
                 ) : history.length === 0 ? (
                   <tr><td colSpan={5} className="px-6 py-20 text-center text-gray-400 text-sm font-bold">No reminders sent yet.</td></tr>
                 ) : history.map(h => (

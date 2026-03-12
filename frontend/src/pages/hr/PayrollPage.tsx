@@ -217,7 +217,7 @@ const PayrollPage: React.FC = () => {
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'Paid': return 'bg-green-100 text-green-700 border-green-200';
-            case 'Processed': return 'bg-blue-100 text-blue-700 border-blue-200';
+            case 'Processed': return 'bg-blue-100 text-primary-700 border-blue-200';
             case 'Pending': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
             case 'Cancelled': return 'bg-red-100 text-red-700 border-red-200';
             default: return 'bg-gray-100 text-gray-700 border-gray-200';
@@ -235,7 +235,7 @@ const PayrollPage: React.FC = () => {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
                     <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white flex items-center gap-3">
-                        <Banknote className="p-2 bg-blue-600 text-white rounded-lg shadow-lg shadow-blue-500/30" size={40} />
+                        <Banknote className="p-2 bg-primary-600 text-white rounded-lg shadow-lg shadow-primary-500/30" size={40} />
                         Payroll Management
                     </h1>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">Manage staff salaries, allowances, and generate payslips</p>
@@ -243,14 +243,14 @@ const PayrollPage: React.FC = () => {
                 <div className="flex items-center gap-3">
                     <button
                         onClick={handleBulkGenerate}
-                        className="flex items-center justify-center gap-2 bg-white dark:bg-gray-800 border-2 border-blue-600 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 px-6 py-3 rounded-xl font-bold transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+                        className="flex items-center justify-center gap-2 bg-white dark:bg-gray-800 border-2 border-primary-600 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-blue-900/30 px-6 py-3 rounded-xl font-bold transition-all transform hover:scale-[1.02] active:scale-[0.98]"
                     >
                         <Layers size={20} />
                         Bulk Generate
                     </button>
                     <button
                         onClick={() => setShowGenModal(true)}
-                        className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-blue-500/30 transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+                        className="flex items-center justify-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-primary-500/30 transition-all transform hover:scale-[1.02] active:scale-[0.98]"
                     >
                         <Plus size={20} />
                         Generate Payroll
@@ -267,7 +267,7 @@ const PayrollPage: React.FC = () => {
                         <h3 className="text-2xl font-black text-gray-900 dark:text-white">
                             {formatCurrency(payrolls.reduce((sum, p) => sum + Number(p.netSalary), 0))}
                         </h3>
-                        <div className="mt-2 flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 font-bold">
+                        <div className="mt-2 flex items-center gap-1 text-xs text-primary-600 dark:text-primary-400 font-bold">
                             <Calendar size={12} /> {months[month - 1]} {year}
                         </div>
                     </div>
@@ -305,7 +305,7 @@ const PayrollPage: React.FC = () => {
                                 placeholder="Search staff name or ID..."
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
                             />
                         </div>
                         <div className="flex items-center gap-3">
@@ -363,7 +363,7 @@ const PayrollPage: React.FC = () => {
                                     <tr key={payroll.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group">
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-sm shadow-sm transition-colors">
+                                                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 flex items-center justify-center font-bold text-sm shadow-sm transition-colors">
                                                     {payroll.staff.firstName[0]}{payroll.staff.lastName[0]}
                                                 </div>
                                                 <div>
@@ -393,7 +393,7 @@ const PayrollPage: React.FC = () => {
                                             <div className="flex items-center justify-end gap-2">
                                                 <button
                                                     onClick={() => { setSelectedPayroll(payroll); setShowSlipModal(true); }}
-                                                    className="p-2 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-all"
+                                                    className="p-2 text-gray-400 dark:text-gray-500 hover:text-primary-600 dark:hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-blue-900/30 rounded-lg transition-all"
                                                     title="View Payslip"
                                                 >
                                                     <Eye size={18} />
@@ -434,7 +434,7 @@ const PayrollPage: React.FC = () => {
                         <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
                             <div>
                                 <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                    <Plus className="text-blue-600 dark:text-blue-400" /> Generate Payroll Record
+                                    <Plus className="text-primary-600 dark:text-primary-400" /> Generate Payroll Record
                                 </h3>
                                 <p className="text-sm text-gray-500 dark:text-gray-400">Create a new salary record for a staff member</p>
                             </div>
@@ -451,7 +451,7 @@ const PayrollPage: React.FC = () => {
                                         required
                                         value={genForm.staffId}
                                         onChange={handleStaffChange}
-                                        className="w-full border border-gray-200 dark:border-gray-600 rounded-xl p-3 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
+                                        className="w-full border border-gray-200 dark:border-gray-600 rounded-xl p-3 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-medium"
                                     >
                                         <option value="" className="dark:bg-gray-800">Select Staff</option>
                                         {staffList.map(s => (
@@ -464,7 +464,7 @@ const PayrollPage: React.FC = () => {
                                     <select
                                         value={genForm.month}
                                         onChange={(e) => setGenForm({ ...genForm, month: Number(e.target.value) })}
-                                        className="w-full border border-gray-200 dark:border-gray-600 rounded-xl p-3 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
+                                        className="w-full border border-gray-200 dark:border-gray-600 rounded-xl p-3 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-medium"
                                     >
                                         {months.map((m, i) => <option key={i} value={i + 1} className="dark:bg-gray-800">{m}</option>)}
                                     </select>
@@ -474,7 +474,7 @@ const PayrollPage: React.FC = () => {
                                     <select
                                         value={genForm.year}
                                         onChange={(e) => setGenForm({ ...genForm, year: Number(e.target.value) })}
-                                        className="w-full border border-gray-200 dark:border-gray-600 rounded-xl p-3 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
+                                        className="w-full border border-gray-200 dark:border-gray-600 rounded-xl p-3 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-medium"
                                     >
                                         {years.map(y => <option key={y} value={y} className="dark:bg-gray-800">{y}</option>)}
                                     </select>
@@ -490,7 +490,7 @@ const PayrollPage: React.FC = () => {
                                         placeholder="Auto"
                                         value={genForm.workingDays}
                                         onChange={(e) => setGenForm({ ...genForm, workingDays: e.target.value })}
-                                        className="w-full border border-gray-200 dark:border-gray-600 rounded-xl p-3 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
+                                        className="w-full border border-gray-200 dark:border-gray-600 rounded-xl p-3 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-medium"
                                     />
                                 </div>
                                 <div>
@@ -500,7 +500,7 @@ const PayrollPage: React.FC = () => {
                                         placeholder="Auto"
                                         value={genForm.presentDays}
                                         onChange={(e) => setGenForm({ ...genForm, presentDays: e.target.value })}
-                                        className="w-full border border-gray-200 dark:border-gray-600 rounded-xl p-3 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
+                                        className="w-full border border-gray-200 dark:border-gray-600 rounded-xl p-3 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-medium"
                                     />
                                 </div>
                                 <div>
@@ -510,7 +510,7 @@ const PayrollPage: React.FC = () => {
                                         placeholder="Auto"
                                         value={genForm.leaveDays}
                                         onChange={(e) => setGenForm({ ...genForm, leaveDays: e.target.value })}
-                                        className="w-full border border-gray-200 dark:border-gray-600 rounded-xl p-3 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
+                                        className="w-full border border-gray-200 dark:border-gray-600 rounded-xl p-3 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-medium"
                                     />
                                 </div>
                                 <div>
@@ -519,7 +519,7 @@ const PayrollPage: React.FC = () => {
                                         type="number"
                                         value={genForm.basicSalary}
                                         onChange={(e) => setGenForm({ ...genForm, basicSalary: Number(e.target.value) })}
-                                        className="w-full border border-gray-200 dark:border-gray-600 rounded-xl p-3 bg-blue-50 dark:bg-blue-900/30 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-bold text-blue-800 dark:text-blue-300"
+                                        className="w-full border border-gray-200 dark:border-gray-600 rounded-xl p-3 bg-primary-50 dark:bg-primary-900/30 outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-bold text-blue-800 dark:text-primary-300"
                                     />
                                 </div>
                             </div>
@@ -547,7 +547,7 @@ const PayrollPage: React.FC = () => {
                                                         newArr[i].name = e.target.value;
                                                         setGenForm({ ...genForm, allowances: newArr });
                                                     }}
-                                                    className="flex-1 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg p-2 outline-none focus:border-blue-400 transition-colors"
+                                                    className="flex-1 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg p-2 outline-none focus:border-primary-500 transition-colors"
                                                 />
                                                 <input
                                                     type="number"
@@ -558,7 +558,7 @@ const PayrollPage: React.FC = () => {
                                                         newArr[i].amount = Number(e.target.value);
                                                         setGenForm({ ...genForm, allowances: newArr });
                                                     }}
-                                                    className="w-24 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg p-2 outline-none focus:border-blue-400 font-bold transition-colors"
+                                                    className="w-24 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg p-2 outline-none focus:border-primary-500 font-bold transition-colors"
                                                 />
                                                 <button
                                                     type="button"
@@ -590,7 +590,7 @@ const PayrollPage: React.FC = () => {
                                                         newArr[i].name = e.target.value;
                                                         setGenForm({ ...genForm, deductions: newArr });
                                                     }}
-                                                    className="flex-1 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg p-2 outline-none focus:border-blue-400 transition-colors"
+                                                    className="flex-1 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg p-2 outline-none focus:border-primary-500 transition-colors"
                                                 />
                                                 <input
                                                     type="number"
@@ -601,7 +601,7 @@ const PayrollPage: React.FC = () => {
                                                         newArr[i].amount = Number(e.target.value);
                                                         setGenForm({ ...genForm, deductions: newArr });
                                                     }}
-                                                    className="w-24 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg p-2 outline-none focus:border-blue-400 font-bold transition-colors"
+                                                    className="w-24 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg p-2 outline-none focus:border-primary-500 font-bold transition-colors"
                                                 />
                                                 <button
                                                     type="button"
@@ -615,7 +615,7 @@ const PayrollPage: React.FC = () => {
                             </div>
 
                             {/* Summary & Submit */}
-                            <div className="bg-blue-600 rounded-2xl p-8 text-white flex flex-col md:flex-row md:items-center justify-between gap-6">
+                            <div className="bg-primary-600 rounded-2xl p-8 text-white flex flex-col md:flex-row md:items-center justify-between gap-6">
                                 <div>
                                     <div className="flex items-center gap-4 mb-2">
                                         <div className="opacity-70 text-sm">Gross: {formatCurrency(genForm.basicSalary + genForm.allowances.reduce((s, a) => s + a.amount, 0))}</div>
@@ -628,7 +628,7 @@ const PayrollPage: React.FC = () => {
                                 </div>
                                 <button
                                     type="submit"
-                                    className="bg-white dark:bg-gray-100 text-blue-600 px-10 py-4 rounded-xl font-black shadow-xl hover:bg-gray-50 dark:hover:bg-white transition-all flex items-center justify-center gap-2 group"
+                                    className="bg-white dark:bg-gray-100 text-primary-600 px-10 py-4 rounded-xl font-black shadow-xl hover:bg-gray-50 dark:hover:bg-white transition-all flex items-center justify-center gap-2 group"
                                 >
                                     Proceed to Generate <ArrowRight className="group-hover:translate-x-1 transition-transform" />
                                 </button>
@@ -648,7 +648,7 @@ const PayrollPage: React.FC = () => {
                             {/* Header */}
                             <div className="flex justify-between items-start mb-12">
                                 <div>
-                                    <h2 className="text-3xl font-black text-blue-600 dark:text-blue-400 leading-tight uppercase tracking-tighter">Payslip</h2>
+                                    <h2 className="text-3xl font-black text-primary-600 dark:text-primary-400 leading-tight uppercase tracking-tighter">Payslip</h2>
                                     <p className="text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest text-xs mt-1">Earnings Statement</p>
                                 </div>
                                 <div className="text-right">
@@ -678,7 +678,7 @@ const PayrollPage: React.FC = () => {
                                     <div>
                                         <p className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Attendance Summary</p>
                                         <div className="flex justify-end gap-4 text-sm font-bold">
-                                            <div className="text-blue-600 dark:text-blue-400">Work: {selectedPayroll.workingDays}d</div>
+                                            <div className="text-primary-600 dark:text-primary-400">Work: {selectedPayroll.workingDays}d</div>
                                             <div className="text-green-600 dark:text-green-400">Pres: {selectedPayroll.presentDays}d</div>
                                             <div className="text-red-500 dark:text-red-400">Abs: {selectedPayroll.absentDays}d</div>
                                         </div>
@@ -736,7 +736,7 @@ const PayrollPage: React.FC = () => {
                             </div>
 
                             {/* Final Amount */}
-                            <div className="bg-blue-600 rounded-3xl p-10 text-white relative overflow-hidden">
+                            <div className="bg-primary-600 rounded-3xl p-10 text-white relative overflow-hidden">
                                 <Banknote className="absolute -right-10 -bottom-10 opacity-10" size={200} />
                                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                                     <div>

@@ -182,7 +182,7 @@ export default function FeeStructurePage() {
             onClick={() => setActiveTab('heads')}
             className={clsx(
               "px-4 py-2 rounded-lg text-sm font-bold transition-all",
-              activeTab === 'heads' ? "bg-white dark:bg-gray-900 text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+              activeTab === 'heads' ? "bg-white dark:bg-gray-900 text-primary-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
             )}
           >
             <Tag size={16} className="inline mr-2" />
@@ -192,7 +192,7 @@ export default function FeeStructurePage() {
             onClick={() => setActiveTab('groups')}
             className={clsx(
               "px-4 py-2 rounded-lg text-sm font-bold transition-all",
-              activeTab === 'groups' ? "bg-white dark:bg-gray-900 text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+              activeTab === 'groups' ? "bg-white dark:bg-gray-900 text-primary-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
             )}
           >
             <Layers size={16} className="inline mr-2" />
@@ -221,7 +221,7 @@ export default function FeeStructurePage() {
                 setNewHead({ name: '', description: '', defaultAmount: '', isOptional: false });
                 setIsHeadModalOpen(true);
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 shadow-lg shadow-blue-500/20"
+              className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-xl text-sm font-bold hover:bg-primary-700 shadow-lg shadow-primary-500/20"
             >
               <Plus size={18} />
               New Fee Head
@@ -237,7 +237,7 @@ export default function FeeStructurePage() {
               <div key={head.id} className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all group">
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex items-center gap-2">
-                    <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-blue-600">
+                    <div className="p-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg text-primary-600">
                       <Tag size={20} />
                     </div>
                     {head.isOptional ? (
@@ -249,7 +249,7 @@ export default function FeeStructurePage() {
                   <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => openEditHead(head)}
-                      className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-400 hover:text-blue-600"
+                      className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-400 hover:text-primary-600"
                     >
                       <Edit2 size={14} />
                     </button>
@@ -288,7 +288,7 @@ export default function FeeStructurePage() {
                 setNewGroup({ name: '', description: '', headIds: [] });
                 setIsGroupModalOpen(true);
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 shadow-lg shadow-blue-500/20"
+              className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-xl text-sm font-bold hover:bg-primary-700 shadow-lg shadow-primary-500/20"
             >
               <Plus size={18} />
               Create Fee Group
@@ -305,7 +305,7 @@ export default function FeeStructurePage() {
                   </div>
                   <div className="text-right">
                     <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">TOTAL VALUE</p>
-                    <p className="text-lg font-black text-blue-600 dark:text-blue-400">
+                    <p className="text-lg font-black text-primary-600 dark:text-primary-400">
                       {formatCurrency(group.heads.reduce((acc, h) => acc + parseFloat(h.defaultAmount), 0))}
                     </p>
                   </div>
@@ -314,7 +314,7 @@ export default function FeeStructurePage() {
                   <div className="flex flex-wrap gap-2">
                     {group.heads.map(h => (
                       <span key={h.id} className="px-3 py-1.5 bg-gray-50 dark:bg-gray-900 rounded-lg text-xs font-bold text-gray-600 dark:text-gray-400 border border-gray-100 dark:border-gray-700 flex items-center gap-2">
-                        <Tag size={12} className={clsx(h.isOptional ? "text-amber-500" : "text-blue-500")} />
+                        <Tag size={12} className={clsx(h.isOptional ? "text-amber-500" : "text-primary-500")} />
                         {h.name}
                         <span className="text-gray-400 ml-1 opacity-50">({formatCurrency(h.defaultAmount)})</span>
                       </span>
@@ -323,7 +323,7 @@ export default function FeeStructurePage() {
                   <div className="mt-6 flex justify-end gap-3">
                     <button
                       onClick={() => openEditGroup(group)}
-                      className="text-xs font-bold text-gray-400 hover:text-blue-600 transition-colors uppercase tracking-widest"
+                      className="text-xs font-bold text-gray-400 hover:text-primary-600 transition-colors uppercase tracking-widest"
                     >
                       Edit Components
                     </button>
@@ -341,7 +341,7 @@ export default function FeeStructurePage() {
               <div className="lg:col-span-2 py-20 bg-gray-50/50 dark:bg-gray-800/50 rounded-3xl border-2 border-dashed border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center text-gray-400">
                 <LayoutGrid size={48} className="mb-4 opacity-20" />
                 <p className="font-bold">No Fee Groups Created Yet</p>
-                <button onClick={() => setIsGroupModalOpen(true)} className="mt-4 text-blue-600 text-sm font-bold">Build your first group →</button>
+                <button onClick={() => setIsGroupModalOpen(true)} className="mt-4 text-primary-600 text-sm font-bold">Build your first group →</button>
               </div>
             )}
           </div>
@@ -353,7 +353,7 @@ export default function FeeStructurePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-white dark:bg-gray-800 w-full max-w-md p-8 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-700 text-left">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-              <Tag className="text-blue-600" />
+              <Tag className="text-primary-600" />
               {editingHead ? 'Edit Fee Head' : 'New Fee Head'}
             </h2>
             <div className="space-y-4">
@@ -361,7 +361,7 @@ export default function FeeStructurePage() {
                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Name</label>
                 <input
                   type="text"
-                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-500 font-bold"
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl text-sm focus:ring-2 focus:ring-primary-500 font-bold"
                   placeholder="e.g. Tuition Fee"
                   value={newHead.name}
                   onChange={e => setNewHead({ ...newHead, name: e.target.value })}
@@ -375,7 +375,7 @@ export default function FeeStructurePage() {
                   className={clsx(
                     "flex flex-col items-center justify-center p-3 rounded-xl border transition-all gap-1",
                     !newHead.isOptional
-                      ? "border-blue-600 bg-blue-50 dark:bg-blue-900/20 text-blue-600 shadow-sm"
+                      ? "border-primary-600 bg-primary-50 dark:bg-primary-900/20 text-primary-600 shadow-sm"
                       : "border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-400"
                   )}
                 >
@@ -399,7 +399,7 @@ export default function FeeStructurePage() {
                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Default Amount ({CURRENCY_SYMBOL})</label>
                 <input
                   type="number"
-                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl text-sm focus:ring-2 focus:ring-primary-500"
                   placeholder="0.00"
                   value={newHead.defaultAmount}
                   onChange={e => setNewHead({ ...newHead, defaultAmount: e.target.value })}
@@ -408,7 +408,7 @@ export default function FeeStructurePage() {
               <div>
                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Description</label>
                 <textarea
-                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-500 min-h-[80px]"
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl text-sm focus:ring-2 focus:ring-primary-500 min-h-[80px]"
                   placeholder="What is this fee for?"
                   value={newHead.description}
                   onChange={e => setNewHead({ ...newHead, description: e.target.value })}
@@ -426,7 +426,7 @@ export default function FeeStructurePage() {
                 </button>
                 <button
                   onClick={handleCreateHead}
-                  className="flex-1 py-3 text-sm font-bold bg-blue-600 text-white rounded-2xl hover:bg-blue-700 shadow-lg shadow-blue-500/20"
+                  className="flex-1 py-3 text-sm font-bold bg-primary-600 text-white rounded-2xl hover:bg-primary-700 shadow-lg shadow-primary-500/20"
                 >
                   {editingHead ? 'Update Head' : 'Create Head'}
                 </button>
@@ -440,7 +440,7 @@ export default function FeeStructurePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-white dark:bg-gray-800 w-full max-w-lg p-8 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-700 text-left">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-              <Layers className="text-blue-600" />
+              <Layers className="text-primary-600" />
               {editingGroup ? 'Edit Fee Group' : 'Create Fee Group'}
             </h2>
             <div className="space-y-5">
@@ -448,7 +448,7 @@ export default function FeeStructurePage() {
                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Group Name</label>
                 <input
                   type="text"
-                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl text-sm focus:ring-2 focus:ring-primary-500"
                   placeholder="e.g. JSS1 Term 1 Fees"
                   value={newGroup.name}
                   onChange={e => setNewGroup({ ...newGroup, name: e.target.value })}
@@ -469,7 +469,7 @@ export default function FeeStructurePage() {
                       className={clsx(
                         "flex items-center justify-between p-3 rounded-xl border transition-all text-left",
                         newGroup.headIds.includes(h.id)
-                          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 shadow-sm"
+                          ? "border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600 shadow-sm"
                           : "border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-500"
                       )}
                     >
@@ -496,7 +496,7 @@ export default function FeeStructurePage() {
                 </button>
                 <button
                   onClick={handleCreateGroup}
-                  className="flex-1 py-4 text-sm font-bold bg-blue-600 text-white rounded-2xl hover:bg-blue-700 shadow-xl shadow-blue-500/20"
+                  className="flex-1 py-4 text-sm font-bold bg-primary-600 text-white rounded-2xl hover:bg-primary-700 shadow-xl shadow-primary-500/20"
                 >
                   {editingGroup ? 'Update Group' : 'Build Group'}
                 </button>

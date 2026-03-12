@@ -48,11 +48,11 @@ const StudentInfoEditor: React.FC<Props> = ({ settings, onChange }) => {
                             key={key}
                             onClick={() => toggleField(key)}
                             className={`flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all group ${fields[key]
-                                ? 'bg-blue-50/50 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400'
+                                ? 'bg-primary-50/50 border-blue-200 text-primary-700 dark:bg-primary-900/20 dark:border-primary-800 dark:text-primary-400'
                                 : 'bg-gray-50/50 border-gray-200 text-gray-500 dark:bg-gray-900/50 dark:border-gray-800'
                                 }`}
                         >
-                            <div className={`p-1 rounded-md transition-all ${fields[key] ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-400'}`}>
+                            <div className={`p-1 rounded-md transition-all ${fields[key] ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-400'}`}>
                                 <CheckCircle2 className="w-3.5 h-3.5" />
                             </div>
                             <span className="text-xs font-black uppercase tracking-tight">{label}</span>

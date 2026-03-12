@@ -122,7 +122,7 @@ const CarryForwardHistoryPage = () => {
                     <input
                         type="text"
                         placeholder="Search by student ID (exact match required currently)..."
-                        className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 transition-all font-medium"
+                        className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary-500 transition-all font-medium"
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
                     />
@@ -130,7 +130,7 @@ const CarryForwardHistoryPage = () => {
                 <div className="relative w-full sm:w-48">
                     <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                     <select
-                        className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 appearance-none font-medium text-gray-600 dark:text-gray-300"
+                        className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary-500 appearance-none font-medium text-gray-600 dark:text-gray-300"
                         value={selectedYear}
                         onChange={e => setSelectedYear(e.target.value)}
                     >
@@ -158,7 +158,7 @@ const CarryForwardHistoryPage = () => {
                             {loading ? (
                                 <tr>
                                     <td colSpan={5} className="px-6 py-24 text-center">
-                                        <Loader2 className="w-8 h-8 text-blue-500 animate-spin mx-auto" />
+                                        <Loader2 className="w-8 h-8 text-primary-500 animate-spin mx-auto" />
                                     </td>
                                 </tr>
                             ) : records.length === 0 ? (
@@ -185,7 +185,7 @@ const CarryForwardHistoryPage = () => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold border border-blue-100">
+                                            <span className="px-2 py-1 bg-primary-50 text-primary-600 rounded-lg text-xs font-bold border border-blue-100">
                                                 {record.academicYear}
                                             </span>
                                         </td>

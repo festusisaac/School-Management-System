@@ -231,7 +231,7 @@ const StaffDirectoryPage = () => {
                     </button>
                     <button
                         onClick={() => { setEditingStaff(null); setSelectedFiles({}); setShowModal(true); }}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
                     >
                         <Plus size={20} />
                         Add Staff
@@ -247,7 +247,7 @@ const StaffDirectoryPage = () => {
                             <p className="text-sm text-gray-600 dark:text-gray-400">Total Staff</p>
                             <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{statistics.total}</p>
                         </div>
-                        <div className="p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg">
+                        <div className="p-3 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-lg">
                             <Users size={24} />
                         </div>
                     </div>
@@ -284,13 +284,13 @@ const StaffDirectoryPage = () => {
                         <input
                             type="text"
                             placeholder="Search by name, ID..."
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
                     <select
-                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         value={selectedDepartment}
                         onChange={(e) => setSelectedDepartment(e.target.value)}
                     >
@@ -300,7 +300,7 @@ const StaffDirectoryPage = () => {
                         ))}
                     </select>
                     <select
-                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         value={selectedDesignation}
                         onChange={(e) => setSelectedDesignation(e.target.value)}
                     >
@@ -310,7 +310,7 @@ const StaffDirectoryPage = () => {
                         ))}
                     </select>
                     <select
-                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         value={selectedStatus}
                         onChange={(e) => setSelectedStatus(e.target.value)}
                     >
@@ -325,7 +325,7 @@ const StaffDirectoryPage = () => {
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
                 {loading ? (
                     <div className="p-12 text-center text-gray-500 dark:text-gray-400">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
                         <p className="mt-4">Loading staff directory...</p>
                     </div>
                 ) : filteredStaff.length === 0 ? (
@@ -353,7 +353,7 @@ const StaffDirectoryPage = () => {
                                                 {member.photo ? (
                                                     <img src={member.photo.startsWith('http') ? member.photo : `http://localhost:3000${member.photo}`} alt="" className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-700" />
                                                 ) : (
-                                                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center font-bold">
+                                                    <div className="w-10 h-10 bg-blue-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-full flex items-center justify-center font-bold">
                                                         {member.firstName[0]}{member.lastName[0]}
                                                     </div>
                                                 )}
@@ -384,7 +384,7 @@ const StaffDirectoryPage = () => {
                                                         <FileText size={18} />
                                                     </a>
                                                 )}
-                                                <button onClick={() => handleViewStaff(member)} className="p-1 text-blue-600 hover:bg-blue-50 rounded" title="View Staff Details"><Eye size={18} /></button>
+                                                <button onClick={() => handleViewStaff(member)} className="p-1 text-primary-600 hover:bg-primary-50 rounded" title="View Staff Details"><Eye size={18} /></button>
                                                 <button onClick={() => handleEdit(member)} className="p-1 text-indigo-600 hover:bg-indigo-50 rounded"><Edit2 size={18} /></button>
                                                 <button onClick={() => handleDelete(member.id)} className="p-1 text-red-600 hover:bg-red-50 rounded"><Trash2 size={18} /></button>
                                             </div>
@@ -451,18 +451,18 @@ const StaffDirectoryPage = () => {
                                             {/* Basic Information */}
                                             <div>
                                                 <h4 className="font-bold text-gray-800 dark:text-gray-200 border-b border-gray-100 dark:border-gray-700 pb-2 mb-4 flex items-center gap-2">
-                                                    <Users size={18} className="text-blue-600 dark:text-blue-400" />
+                                                    <Users size={18} className="text-primary-600 dark:text-primary-400" />
                                                     Basic Information
                                                 </h4>
                                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                                     {/* Row 1 */}
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Staff ID *</label>
-                                                        <input name="employeeId" defaultValue={editingStaff?.employeeId} required className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                                        <input name="employeeId" defaultValue={editingStaff?.employeeId} required className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Role</label>
-                                                        <select name="role" defaultValue={editingStaff?.role} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                                        <select name="role" defaultValue={editingStaff?.role} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                                                             <option value="">Select Role</option>
                                                             <option value="Admin">Admin</option>
                                                             <option value="Staff">Staff</option>
@@ -471,7 +471,7 @@ const StaffDirectoryPage = () => {
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Designation</label>
-                                                        <select name="designationId" defaultValue={editingStaff?.designationId} required className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                                        <select name="designationId" defaultValue={editingStaff?.designationId} required className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                                                             <option value="">Select</option>
                                                             {designations.map(d => <option key={d.id} value={d.id}>{d.title}</option>)}
                                                         </select>
@@ -482,7 +482,7 @@ const StaffDirectoryPage = () => {
                                                                     name="isTeachingStaff"
                                                                     value="true"
                                                                     defaultChecked={editingStaff?.isTeachingStaff}
-                                                                    className="w-4 h-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 focus:ring-blue-500"
+                                                                    className="w-4 h-4 text-primary-600 rounded border-gray-300 dark:border-gray-600 focus:ring-primary-500"
                                                                 />
                                                                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Teaching Staff?</span>
                                                             </label>
@@ -490,7 +490,7 @@ const StaffDirectoryPage = () => {
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Department</label>
-                                                        <select name="departmentId" defaultValue={editingStaff?.departmentId} required className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                                        <select name="departmentId" defaultValue={editingStaff?.departmentId} required className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                                                             <option value="">Select</option>
                                                             {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                                                         </select>
@@ -499,29 +499,29 @@ const StaffDirectoryPage = () => {
                                                     {/* Row 2 */}
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">First Name *</label>
-                                                        <input name="firstName" defaultValue={editingStaff?.firstName} required className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                                        <input name="firstName" defaultValue={editingStaff?.firstName} required className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Last Name *</label>
-                                                        <input name="lastName" defaultValue={editingStaff?.lastName} required className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                                        <input name="lastName" defaultValue={editingStaff?.lastName} required className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Father Name</label>
-                                                        <input name="fatherName" defaultValue={editingStaff?.fatherName} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                                        <input name="fatherName" defaultValue={editingStaff?.fatherName} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Mother Name</label>
-                                                        <input name="motherName" defaultValue={editingStaff?.motherName} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                                        <input name="motherName" defaultValue={editingStaff?.motherName} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                                                     </div>
 
                                                     {/* Row 3 */}
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Email *</label>
-                                                        <input type="email" name="email" defaultValue={editingStaff?.email} required className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                                        <input type="email" name="email" defaultValue={editingStaff?.email} required className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Gender *</label>
-                                                        <select name="gender" defaultValue={editingStaff?.gender} required className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                                        <select name="gender" defaultValue={editingStaff?.gender} required className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                                                             <option value="">Select</option>
                                                             <option value="Male">Male</option>
                                                             <option value="Female">Female</option>
@@ -530,25 +530,25 @@ const StaffDirectoryPage = () => {
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Date of Birth *</label>
-                                                        <input type="date" name="dateOfBirth" defaultValue={editingStaff?.dateOfBirth ? new Date(editingStaff.dateOfBirth).toISOString().split('T')[0] : ''} required className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                                        <input type="date" name="dateOfBirth" defaultValue={editingStaff?.dateOfBirth ? new Date(editingStaff.dateOfBirth).toISOString().split('T')[0] : ''} required className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Date of Joining</label>
-                                                        <input type="date" name="dateOfJoining" defaultValue={editingStaff?.dateOfJoining ? new Date(editingStaff.dateOfJoining).toISOString().split('T')[0] : ''} required className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                                        <input type="date" name="dateOfJoining" defaultValue={editingStaff?.dateOfJoining ? new Date(editingStaff.dateOfJoining).toISOString().split('T')[0] : ''} required className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                                                     </div>
 
                                                     {/* Row 4 */}
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Phone</label>
-                                                        <input name="phone" defaultValue={editingStaff?.phone} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                                        <input name="phone" defaultValue={editingStaff?.phone} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Emergency Contact</label>
-                                                        <input name="emergencyContactPhone" defaultValue={editingStaff?.emergencyContactPhone} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                                        <input name="emergencyContactPhone" defaultValue={editingStaff?.emergencyContactPhone} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Marital Status</label>
-                                                        <select name="maritalStatus" defaultValue={editingStaff?.maritalStatus} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                                        <select name="maritalStatus" defaultValue={editingStaff?.maritalStatus} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                                                             <option value="">Select</option>
                                                             <option value="Single">Single</option>
                                                             <option value="Married">Married</option>
@@ -575,13 +575,13 @@ const StaffDirectoryPage = () => {
                                                     {/* Current Address */}
                                                     <div className="lg:col-span-2">
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Current Address</label>
-                                                        <textarea name="address" rows={2} defaultValue={editingStaff?.address} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"></textarea>
+                                                        <textarea name="address" rows={2} defaultValue={editingStaff?.address} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"></textarea>
                                                     </div>
 
                                                     {/* Permanent Address */}
                                                     <div className="lg:col-span-2">
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Permanent Address</label>
-                                                        <textarea name="permanentAddress" rows={2} defaultValue={editingStaff?.permanentAddress} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"></textarea>
+                                                        <textarea name="permanentAddress" rows={2} defaultValue={editingStaff?.permanentAddress} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"></textarea>
                                                     </div>
                                                 </div>
                                             </div>
@@ -589,21 +589,21 @@ const StaffDirectoryPage = () => {
                                             {/* Bank Account Details */}
                                             <div>
                                                 <h4 className="font-bold text-gray-800 dark:text-gray-200 border-b border-gray-100 dark:border-gray-700 pb-2 mb-4 flex items-center gap-2">
-                                                    <div className="bg-gray-100 dark:bg-gray-700 p-1 rounded-full text-blue-600 dark:text-blue-400"><Users size={16} /></div>
+                                                    <div className="bg-gray-100 dark:bg-gray-700 p-1 rounded-full text-primary-600 dark:text-primary-400"><Users size={16} /></div>
                                                     Bank Account Details
                                                 </h4>
                                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Account Name</label>
-                                                        <input name="accountTitle" defaultValue={editingStaff ? `${editingStaff.firstName} ${editingStaff.lastName}` : ''} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                                        <input name="accountTitle" defaultValue={editingStaff ? `${editingStaff.firstName} ${editingStaff.lastName}` : ''} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Bank Name</label>
-                                                        <input name="bankName" defaultValue={editingStaff?.bankName} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                                        <input name="bankName" defaultValue={editingStaff?.bankName} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Account Number</label>
-                                                        <input name="accountNumber" defaultValue={editingStaff?.accountNumber} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                                        <input name="accountNumber" defaultValue={editingStaff?.accountNumber} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                                                     </div>
                                                 </div>
                                             </div>
@@ -617,11 +617,11 @@ const StaffDirectoryPage = () => {
                                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Basic Salary *</label>
-                                                        <input type="number" name="basicSalary" defaultValue={editingStaff?.basicSalary || 0} required className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                                        <input type="number" name="basicSalary" defaultValue={editingStaff?.basicSalary || 0} required className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Employment Type *</label>
-                                                        <select name="employmentType" defaultValue={editingStaff?.employmentType || 'Full-Time'} required className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                                        <select name="employmentType" defaultValue={editingStaff?.employmentType || 'Full-Time'} required className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                                                             <option value="Full-Time">Full-Time</option>
                                                             <option value="Part-Time">Part-Time</option>
                                                             <option value="Contract">Contract</option>
@@ -630,7 +630,7 @@ const StaffDirectoryPage = () => {
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Biometric ID</label>
-                                                        <input name="biometricId" defaultValue={editingStaff?.biometricId} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                                        <input name="biometricId" defaultValue={editingStaff?.biometricId} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                                                     </div>
                                                 </div>
                                             </div>
@@ -644,15 +644,15 @@ const StaffDirectoryPage = () => {
                                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                                     <div className="lg:col-span-1">
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Qualification</label>
-                                                        <input name="qualifications" defaultValue={editingStaff?.qualifications} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                                        <input name="qualifications" defaultValue={editingStaff?.qualifications} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                                                     </div>
                                                     <div className="lg:col-span-1">
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Work Experience</label>
-                                                        <input name="workExperience" defaultValue={editingStaff?.workExperience} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                                        <input name="workExperience" defaultValue={editingStaff?.workExperience} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                                                     </div>
                                                     <div className="lg:col-span-2">
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Note</label>
-                                                        <input name="note" defaultValue={editingStaff?.note} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                                        <input name="note" defaultValue={editingStaff?.note} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                                                     </div>
                                                 </div>
                                             </div>
@@ -666,19 +666,19 @@ const StaffDirectoryPage = () => {
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Facebook URL</label>
-                                                        <input name="facebookUrl" defaultValue={editingStaff?.facebookUrl} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                                        <input name="facebookUrl" defaultValue={editingStaff?.facebookUrl} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Twitter URL</label>
-                                                        <input name="twitterUrl" defaultValue={editingStaff?.twitterUrl} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                                        <input name="twitterUrl" defaultValue={editingStaff?.twitterUrl} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Linkedin URL</label>
-                                                        <input name="linkedinUrl" defaultValue={editingStaff?.linkedinUrl} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                                        <input name="linkedinUrl" defaultValue={editingStaff?.linkedinUrl} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Instagram URL</label>
-                                                        <input name="instagramUrl" defaultValue={editingStaff?.instagramUrl} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                                        <input name="instagramUrl" defaultValue={editingStaff?.instagramUrl} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                                                     </div>
                                                 </div>
                                             </div>
@@ -695,13 +695,13 @@ const StaffDirectoryPage = () => {
                                                             <div className="flex justify-between items-center mb-1">
                                                                 <label className="block text-sm font-semibold text-gray-900 dark:text-white">Resume</label>
                                                                 {editingStaff?.resume && (
-                                                                    <a href={`http://localhost:3000${editingStaff.resume}`} target="_blank" rel="noreferrer" className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+                                                                    <a href={`http://localhost:3000${editingStaff.resume}`} target="_blank" rel="noreferrer" className="text-xs text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1">
                                                                         <Eye size={12} /> View Current
                                                                     </a>
                                                                 )}
                                                             </div>
                                                             <div className="relative group">
-                                                                <div className="flex items-center justify-center p-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors bg-gray-50 dark:bg-gray-800/50">
+                                                                <div className="flex items-center justify-center p-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-primary-500 dark:hover:border-primary-500 transition-colors bg-gray-50 dark:bg-gray-800/50">
                                                                     <div className="text-gray-500 dark:text-gray-400 text-sm flex items-center gap-2">
                                                                         <Upload size={16} />
                                                                         <span className="truncate">{selectedFiles['resume'] || 'Drag & drop or click'}</span>
@@ -716,13 +716,13 @@ const StaffDirectoryPage = () => {
                                                             <div className="flex justify-between items-center mb-1">
                                                                 <label className="block text-sm font-semibold text-gray-900 dark:text-white">Joining Letter</label>
                                                                 {editingStaff?.joiningLetter && (
-                                                                    <a href={`http://localhost:3000${editingStaff.joiningLetter}`} target="_blank" rel="noreferrer" className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+                                                                    <a href={`http://localhost:3000${editingStaff.joiningLetter}`} target="_blank" rel="noreferrer" className="text-xs text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1">
                                                                         <Eye size={12} /> View Current
                                                                     </a>
                                                                 )}
                                                             </div>
                                                             <div className="relative group">
-                                                                <div className="flex items-center justify-center p-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors bg-gray-50 dark:bg-gray-800/50">
+                                                                <div className="flex items-center justify-center p-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-primary-500 dark:hover:border-primary-500 transition-colors bg-gray-50 dark:bg-gray-800/50">
                                                                     <div className="text-gray-500 dark:text-gray-400 text-sm flex items-center gap-2">
                                                                         <Upload size={16} />
                                                                         <span className="truncate">{selectedFiles['joiningLetter'] || 'Drag & drop or click'}</span>
@@ -737,13 +737,13 @@ const StaffDirectoryPage = () => {
                                                             <div className="flex justify-between items-center mb-1">
                                                                 <label className="block text-sm font-semibold text-gray-900 dark:text-white">Resignation Letter</label>
                                                                 {editingStaff?.resignationLetter && (
-                                                                    <a href={`http://localhost:3000${editingStaff.resignationLetter}`} target="_blank" rel="noreferrer" className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+                                                                    <a href={`http://localhost:3000${editingStaff.resignationLetter}`} target="_blank" rel="noreferrer" className="text-xs text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1">
                                                                         <Eye size={12} /> View Current
                                                                     </a>
                                                                 )}
                                                             </div>
                                                             <div className="relative group">
-                                                                <div className="flex items-center justify-center p-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors bg-gray-50 dark:bg-gray-800/50">
+                                                                <div className="flex items-center justify-center p-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-primary-500 dark:hover:border-primary-500 transition-colors bg-gray-50 dark:bg-gray-800/50">
                                                                     <div className="text-gray-500 dark:text-gray-400 text-sm flex items-center gap-2">
                                                                         <Upload size={16} />
                                                                         <span className="truncate">{selectedFiles['resignationLetter'] || 'Drag & drop or click'}</span>
@@ -764,7 +764,7 @@ const StaffDirectoryPage = () => {
                                                                 )}
                                                             </div>
                                                             <div className="relative group">
-                                                                <div className="flex items-center justify-center p-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors bg-gray-50 dark:bg-gray-800/50">
+                                                                <div className="flex items-center justify-center p-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-primary-500 dark:hover:border-primary-500 transition-colors bg-gray-50 dark:bg-gray-800/50">
                                                                     <div className="text-gray-500 dark:text-gray-400 text-sm flex items-center gap-2">
                                                                         <Upload size={16} />
                                                                         <span className="truncate">
@@ -785,13 +785,13 @@ const StaffDirectoryPage = () => {
                                                             <div className="flex justify-between items-center mb-1">
                                                                 <label className="block text-sm font-semibold text-gray-900 dark:text-white">ID Proof</label>
                                                                 {editingStaff?.idProof && (
-                                                                    <a href={`http://localhost:3000${editingStaff.idProof}`} target="_blank" rel="noreferrer" className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+                                                                    <a href={`http://localhost:3000${editingStaff.idProof}`} target="_blank" rel="noreferrer" className="text-xs text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1">
                                                                         <Eye size={12} /> View Current
                                                                     </a>
                                                                 )}
                                                             </div>
                                                             <div className="relative group">
-                                                                <div className="flex items-center justify-center p-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors bg-gray-50 dark:bg-gray-800/50">
+                                                                <div className="flex items-center justify-center p-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-primary-500 dark:hover:border-primary-500 transition-colors bg-gray-50 dark:bg-gray-800/50">
                                                                     <div className="text-gray-500 dark:text-gray-400 text-sm flex items-center gap-2">
                                                                         <Upload size={16} />
                                                                         <span className="truncate">{selectedFiles['idProof'] || 'Drag & drop or click'}</span>
@@ -812,7 +812,7 @@ const StaffDirectoryPage = () => {
                                                                 )}
                                                             </div>
                                                             <div className="relative group">
-                                                                <div className="flex items-center justify-center p-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors bg-gray-50 dark:bg-gray-800/50">
+                                                                <div className="flex items-center justify-center p-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-primary-500 dark:hover:border-primary-500 transition-colors bg-gray-50 dark:bg-gray-800/50">
                                                                     <div className="text-gray-500 dark:text-gray-400 text-sm flex items-center gap-2">
                                                                         <Upload size={16} />
                                                                         <span className="truncate">
@@ -833,7 +833,7 @@ const StaffDirectoryPage = () => {
                                         </div>
                                     </div>
                                     <div className="bg-gray-50 dark:bg-gray-800/50 px-6 py-4 flex flex-row-reverse gap-3 border-t dark:border-gray-700">
-                                        <button type="submit" className="px-8 py-2.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 shadow-lg shadow-blue-500/30 transition-all">
+                                        <button type="submit" className="px-8 py-2.5 bg-primary-600 text-white rounded-lg font-bold hover:bg-primary-700 shadow-lg shadow-primary-500/30 transition-all">
                                             {editingStaff ? 'Update Staff Member' : 'Save Staff Member'}
                                         </button>
                                         <button
@@ -863,7 +863,7 @@ const StaffDirectoryPage = () => {
                             <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-5xl sm:w-full border dark:border-gray-700">
                                 <div className="bg-white dark:bg-gray-800 px-6 py-4 border-b dark:border-gray-700 flex justify-between items-center">
                                     <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                        <Users className="text-blue-600 dark:text-blue-400" /> Staff Profile Details
+                                        <Users className="text-primary-600 dark:text-primary-400" /> Staff Profile Details
                                     </h3>
                                     <button onClick={() => setShowViewModal(false)} className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 transition-colors">
                                         <Plus className="rotate-45" size={24} />
@@ -875,7 +875,7 @@ const StaffDirectoryPage = () => {
                                     <div className="flex bg-white dark:bg-gray-800 rounded-xl p-1 border border-gray-200 dark:border-gray-700 mb-6 w-fit mx-auto shadow-sm">
                                         <button
                                             onClick={() => setViewTab('info')}
-                                            className={`px-8 py-2 text-sm font-bold rounded-lg transition-all ${viewTab === 'info' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                                            className={`px-8 py-2 text-sm font-bold rounded-lg transition-all ${viewTab === 'info' ? 'bg-primary-600 text-white shadow-md' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
                                         >
                                             <div className="flex items-center gap-2">
                                                 <Users size={14} /> Full Details
@@ -883,7 +883,7 @@ const StaffDirectoryPage = () => {
                                         </button>
                                         <button
                                             onClick={() => setViewTab('history')}
-                                            className={`px-8 py-2 text-sm font-bold rounded-lg transition-all ${viewTab === 'history' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                                            className={`px-8 py-2 text-sm font-bold rounded-lg transition-all ${viewTab === 'history' ? 'bg-primary-600 text-white shadow-md' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
                                         >
                                             <div className="flex items-center gap-2">
                                                 <HistoryIcon size={14} /> Salary History
@@ -900,10 +900,10 @@ const StaffDirectoryPage = () => {
                                                         <img
                                                             src={viewingStaff.photo.startsWith('http') ? viewingStaff.photo : `http://localhost:3000${viewingStaff.photo}`}
                                                             alt="Profile"
-                                                            className="w-32 h-32 rounded-full object-cover mx-auto border-4 border-blue-50 dark:border-gray-700 shadow-md mb-4"
+                                                            className="w-32 h-32 rounded-full object-cover mx-auto border-4 border-primary-50 dark:border-gray-700 shadow-md mb-4"
                                                         />
                                                     ) : (
-                                                        <div className="w-32 h-32 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center font-bold text-4xl mx-auto mb-4">
+                                                        <div className="w-32 h-32 bg-blue-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-full flex items-center justify-center font-bold text-4xl mx-auto mb-4">
                                                             {viewingStaff.firstName[0]}{viewingStaff.lastName[0]}
                                                         </div>
                                                     )}
@@ -927,26 +927,26 @@ const StaffDirectoryPage = () => {
 
                                                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                                                     <h5 className="font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                                                        <Users size={16} className="text-blue-600 dark:text-blue-400" /> Social Presence
+                                                        <Users size={16} className="text-primary-600 dark:text-primary-400" /> Social Presence
                                                     </h5>
                                                     <div className="space-y-3">
                                                         {viewingStaff.facebookUrl && (
-                                                            <a href={viewingStaff.facebookUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
+                                                            <a href={viewingStaff.facebookUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-500">
                                                                 <Facebook size={16} /> Facebook Profile
                                                             </a>
                                                         )}
                                                         {viewingStaff.twitterUrl && (
-                                                            <a href={viewingStaff.twitterUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
+                                                            <a href={viewingStaff.twitterUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-500">
                                                                 <Twitter size={16} /> Twitter Handle
                                                             </a>
                                                         )}
                                                         {viewingStaff.linkedinUrl && (
-                                                            <a href={viewingStaff.linkedinUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
+                                                            <a href={viewingStaff.linkedinUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-500">
                                                                 <Linkedin size={16} /> LinkedIn Profile
                                                             </a>
                                                         )}
                                                         {viewingStaff.instagramUrl && (
-                                                            <a href={viewingStaff.instagramUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
+                                                            <a href={viewingStaff.instagramUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-500">
                                                                 <Instagram size={16} /> Instagram Profile
                                                             </a>
                                                         )}
@@ -993,7 +993,7 @@ const StaffDirectoryPage = () => {
                                                         <div className="space-y-4">
                                                             <div>
                                                                 <p className="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold">Email Address</p>
-                                                                <p className="text-sm font-medium text-blue-600 dark:text-blue-400">{viewingStaff.email}</p>
+                                                                <p className="text-sm font-medium text-primary-600 dark:text-primary-400">{viewingStaff.email}</p>
                                                             </div>
                                                             <div>
                                                                 <p className="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold">Phone Number</p>
@@ -1092,16 +1092,16 @@ const StaffDirectoryPage = () => {
                                                                     <div className="w-8 h-8 rounded bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 dark:text-red-400 font-bold text-xs">PDF</div>
                                                                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Staff Resume</span>
                                                                 </div>
-                                                                <Eye size={16} className="text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+                                                                <Eye size={16} className="text-gray-400 group-hover:text-primary-600 dark:group-hover:text-primary-500" />
                                                             </a>
                                                         )}
                                                         {viewingStaff.joiningLetter && (
                                                             <a href={`http://localhost:3000${viewingStaff.joiningLetter}`} target="_blank" rel="noreferrer" className="flex items-center justify-between p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 group">
                                                                 <div className="flex items-center gap-2">
-                                                                    <div className="w-8 h-8 rounded bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-xs">DOC</div>
+                                                                    <div className="w-8 h-8 rounded bg-blue-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 font-bold text-xs">DOC</div>
                                                                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Joining Letter</span>
                                                                 </div>
-                                                                <Eye size={16} className="text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+                                                                <Eye size={16} className="text-gray-400 group-hover:text-primary-600 dark:group-hover:text-primary-500" />
                                                             </a>
                                                         )}
                                                         {viewingStaff.idProof && (
@@ -1110,7 +1110,7 @@ const StaffDirectoryPage = () => {
                                                                     <div className="w-8 h-8 rounded bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400 font-bold text-xs">ID</div>
                                                                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Identity Proof</span>
                                                                 </div>
-                                                                <Eye size={16} className="text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+                                                                <Eye size={16} className="text-gray-400 group-hover:text-primary-600 dark:group-hover:text-primary-500" />
                                                             </a>
                                                         )}
                                                         {viewingStaff.certificates?.map((cert, idx) => (
@@ -1119,7 +1119,7 @@ const StaffDirectoryPage = () => {
                                                                     <div className="w-8 h-8 rounded bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center text-yellow-600 dark:text-yellow-400 font-bold text-xs">CERT</div>
                                                                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Certificate {idx + 1}</span>
                                                                 </div>
-                                                                <Eye size={16} className="text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+                                                                <Eye size={16} className="text-gray-400 group-hover:text-primary-600 dark:group-hover:text-primary-500" />
                                                             </a>
                                                         ))}
                                                         {viewingStaff.otherDocuments?.map((doc, idx) => (
@@ -1128,7 +1128,7 @@ const StaffDirectoryPage = () => {
                                                                     <div className="w-8 h-8 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-400 font-bold text-xs">DOC</div>
                                                                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Other Doc {idx + 1}</span>
                                                                 </div>
-                                                                <Eye size={16} className="text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+                                                                <Eye size={16} className="text-gray-400 group-hover:text-primary-600 dark:group-hover:text-primary-500" />
                                                             </a>
                                                         ))}
                                                     </div>
@@ -1140,7 +1140,7 @@ const StaffDirectoryPage = () => {
                                             {/* Trends Chart */}
                                             <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                                                 <h5 className="font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                                                    <TrendingUp size={18} className="text-blue-600 dark:text-blue-400" />
+                                                    <TrendingUp size={18} className="text-primary-600 dark:text-primary-400" />
                                                     Earnings Trend (Last 6 Months)
                                                 </h5>
                                                 <div className="h-64">

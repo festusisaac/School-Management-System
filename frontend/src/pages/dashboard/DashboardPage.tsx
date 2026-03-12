@@ -148,8 +148,8 @@ const DashboardPage: React.FC = () => {
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Students</p>
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{stats?.students?.total || 0}</h3>
             </div>
-            <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-              <GraduationCap className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            <div className="p-2 bg-primary-50 dark:bg-primary-900/30 rounded-lg">
+              <GraduationCap className="w-6 h-6 text-primary-600 dark:text-primary-400" />
             </div>
           </div>
           <div className="mt-4 flex items-center text-sm">
@@ -235,7 +235,7 @@ const DashboardPage: React.FC = () => {
               </div>
               <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2">
                 <div
-                  className="bg-blue-600 h-2 rounded-full"
+                  className="bg-primary-600 h-2 rounded-full"
                   style={{ width: `${stats?.feesOverview ? (stats.feesOverview.unpaid / (stats.feesOverview.unpaid + stats.feesOverview.partial + stats.feesOverview.paid)) * 100 : 0}%` }}
                 ></div>
               </div>
@@ -307,8 +307,8 @@ const DashboardPage: React.FC = () => {
 
             {/* Published vs Unpublished */}
             <div className="grid grid-cols-2 gap-2 mt-2">
-              <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-center">
-                <p className="text-xs text-blue-600 dark:text-blue-400 uppercase font-bold mb-1">Published</p>
+              <div className="p-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg text-center">
+                <p className="text-xs text-primary-600 dark:text-primary-400 uppercase font-bold mb-1">Published</p>
                 <p className="text-lg font-bold text-gray-900 dark:text-white">{stats?.academicHealth?.publishedResultsCount || 0}</p>
               </div>
               <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-center">
@@ -481,8 +481,8 @@ const DashboardPage: React.FC = () => {
             {activities?.recentEnrollments.map((student: any) => (
               <div key={`enroll-${student.id}`} className="flex items-start">
                 <div className="flex-shrink-0">
-                  <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                    <UserPlus className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-primary-900/30 flex items-center justify-center">
+                    <UserPlus className="h-5 w-5 text-primary-600 dark:text-primary-400" />
                   </div>
                 </div>
                 <div className="ml-4 flex-1">
@@ -532,8 +532,8 @@ const DashboardPage: React.FC = () => {
           <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Quick Actions</h2>
           <div className="space-y-3">
             <Link to="/students/register" className="flex items-center p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group">
-              <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50 transition-colors">
-                <UserPlus className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <div className="p-2 bg-primary-50 dark:bg-primary-900/30 rounded-lg group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50 transition-colors">
+                <UserPlus className="w-5 h-5 text-primary-600 dark:text-primary-400" />
               </div>
               <div className="ml-3">
                 <p className="text-sm font-medium text-gray-900 dark:text-white">Register Student</p>

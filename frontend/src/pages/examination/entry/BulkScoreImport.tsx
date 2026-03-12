@@ -151,8 +151,8 @@ const BulkScoreImport: React.FC<BulkScoreImportProps> = ({ isOpen, onClose, onIm
                             <div className="flex flex-col items-center justify-center h-48 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl bg-gray-50 dark:bg-gray-900/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer group"
                                 onClick={() => fileInputRef.current?.click()}>
                                 <input type="file" ref={fileInputRef} className="hidden" accept=".xlsx,.xls,.csv" onChange={handleFileUpload} />
-                                <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/30 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                                    <Upload className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                                <div className="w-12 h-12 bg-primary-50 dark:bg-primary-900/30 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                                    <Upload className="w-6 h-6 text-primary-600 dark:text-primary-400" />
                                 </div>
                                 <p className="font-bold text-gray-900 dark:text-white">Click to Upload Excel File</p>
                                 <p className="text-xs text-gray-500 mt-1">Supports .xlsx, .xls, .csv</p>
@@ -161,7 +161,7 @@ const BulkScoreImport: React.FC<BulkScoreImportProps> = ({ isOpen, onClose, onIm
                             <div className="flex justify-center">
                                 <button
                                     onClick={handleDownloadSample}
-                                    className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                                    className="flex items-center gap-2 text-sm text-primary-600 dark:text-primary-400 hover:underline font-medium"
                                 >
                                     <Download className="w-4 h-4" />
                                     Download Sample Template
@@ -172,7 +172,7 @@ const BulkScoreImport: React.FC<BulkScoreImportProps> = ({ isOpen, onClose, onIm
 
                     {step === 'map' && (
                         <div className="space-y-6">
-                            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl flex gap-3 text-blue-800 dark:text-blue-200 text-sm">
+                            <div className="bg-primary-50 dark:bg-primary-900/20 p-4 rounded-xl flex gap-3 text-blue-800 dark:text-blue-200 text-sm">
                                 <AlertTriangle className="w-5 h-5 shrink-0" />
                                 <p>Please map the Excel columns to the system fields. We attempted to auto-detect them for you.</p>
                             </div>
@@ -218,7 +218,7 @@ const BulkScoreImport: React.FC<BulkScoreImportProps> = ({ isOpen, onClose, onIm
                         <button
                             onClick={handleProcess}
                             disabled={loading}
-                            className="px-6 py-2.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20 disabled:opacity-50 flex items-center gap-2"
+                            className="px-6 py-2.5 rounded-xl bg-primary-600 text-white font-bold hover:bg-primary-700 transition-colors shadow-lg shadow-primary-600/20 disabled:opacity-50 flex items-center gap-2"
                         >
                             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                             Import Scores

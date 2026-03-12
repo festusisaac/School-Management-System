@@ -212,7 +212,7 @@ export default function FeesHistoryPage() {
       case 'FEE_PAYMENT': return <CheckCircle2 size={14} className="text-green-500" />;
       case 'REFUND': return <XCircle size={14} className="text-red-500" />;
       case 'WAIVER': return <FileText size={14} className="text-amber-500" />;
-      default: return <Clock size={14} className="text-blue-500" />;
+      default: return <Clock size={14} className="text-primary-500" />;
     }
   };
 
@@ -239,7 +239,7 @@ export default function FeesHistoryPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {/* Payments Count */}
         <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
+          <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center text-primary-600 dark:text-primary-400">
             <CheckCircle2 size={20} />
           </div>
           <div>
@@ -290,7 +290,7 @@ export default function FeesHistoryPage() {
         </div>
 
         {/* Total Value */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 rounded-2xl shadow-xl shadow-blue-500/20 text-white flex items-center justify-between overflow-hidden relative">
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 rounded-2xl shadow-xl shadow-primary-500/20 text-white flex items-center justify-between overflow-hidden relative">
           <div className="relative z-10">
             <p className="text-[10px] font-bold text-blue-100 uppercase tracking-widest font-outfit">Total Revenue</p>
             <h5 className="text-2xl font-black font-inter tracking-tighter tabular-nums">{formatCurrency(totalAmount)}</h5>
@@ -309,7 +309,7 @@ export default function FeesHistoryPage() {
             <input
               type="text"
               placeholder="ID, Name, or Admission No..." // Updated placeholder
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary-500"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && fetchHistory()} // Allow Enter to search
@@ -321,7 +321,7 @@ export default function FeesHistoryPage() {
             <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={17} />
             <input
               type="date"
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary-500"
               value={startDate}
               onChange={e => setStartDate(e.target.value)}
             />
@@ -332,7 +332,7 @@ export default function FeesHistoryPage() {
             <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={17} />
             <input
               type="date"
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary-500"
               value={endDate}
               onChange={e => setEndDate(e.target.value)}
             />
@@ -342,7 +342,7 @@ export default function FeesHistoryPage() {
           <div className="relative">
             <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={17} />
             <select
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 appearance-none"
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary-500 appearance-none"
               value={method}
               onChange={e => setMethod(e.target.value)}
             >
@@ -354,7 +354,7 @@ export default function FeesHistoryPage() {
           <div className="relative">
             <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={17} />
             <select
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 appearance-none"
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary-500 appearance-none"
               value={type}
               onChange={e => setType(e.target.value)}
             >
@@ -410,18 +410,18 @@ export default function FeesHistoryPage() {
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <span className="text-[10px] text-gray-400">#{tx.id.split('-')[0].toUpperCase()}</span>
                       </div>
-                      <span className="text-[10px] text-blue-600 dark:text-blue-400 font-black whitespace-nowrap tracking-tighter">
+                      <span className="text-[10px] text-primary-600 dark:text-primary-400 font-black whitespace-nowrap tracking-tighter">
                         {new Date(tx.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: true })}
                       </span>
                     </div>
                   </td>
                   <td className="px-3 py-3 border-b border-gray-50 dark:border-gray-800">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800 flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center text-primary-600 dark:text-primary-400 border border-blue-100 dark:border-primary-800 flex-shrink-0">
                         <User size={16} />
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-sm font-bold text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors">
+                        <span className="text-sm font-bold text-gray-900 dark:text-white group-hover:text-primary-600 transition-colors">
                           {tx.student ? `${tx.student.firstName} ${tx.student.lastName}` : 'Direct'}
                         </span>
                         <span className="text-[10px] text-gray-500 font-medium uppercase tracking-tighter">
@@ -435,7 +435,7 @@ export default function FeesHistoryPage() {
                       {tx.meta?.allocations && tx.meta.allocations.length > 0 ? (
                         tx.meta.allocations.map((a: any, idx: number) => (
                           <div key={idx} className="flex items-center gap-1.5">
-                            <div className="w-1 h-1 rounded-full bg-blue-400"></div>
+                            <div className="w-1 h-1 rounded-full bg-primary-500"></div>
                             <span className="text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-tight">{a.name}</span>
                           </div>
                         ))
@@ -454,7 +454,7 @@ export default function FeesHistoryPage() {
                       "inline-flex items-center px-2.5 py-1 rounded-lg border",
                       tx.type === 'REFUND'
                         ? "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-100 dark:border-red-800"
-                        : "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-100 dark:border-blue-800"
+                        : "bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 border-blue-100 dark:border-primary-800"
                     )}>
                       <span className="text-sm font-black">{formatCurrency(tx.amount)}</span>
                     </div>
@@ -467,7 +467,7 @@ export default function FeesHistoryPage() {
                         : tx.type === 'WAIVER'
                           ? "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800"
                           : tx.meta?.allocations?.some((a: any) => a.status === 'PARTIAL')
-                            ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800"
+                            ? "bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 border-blue-200 dark:border-primary-800"
                             : "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800"
                     )}>
                       {tx.type === 'REFUND' ? 'REFUNDED' : tx.type === 'WAIVER' ? 'WAIVED' : tx.meta?.allocations?.some((a: any) => a.status === 'PARTIAL') ? 'PARTIAL' : 'PAID'}
@@ -498,7 +498,7 @@ export default function FeesHistoryPage() {
                     <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => { setSelectedTx(tx); setShowReceipt(true); }}
-                        className="p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded text-gray-400 hover:text-blue-600 transition-colors"
+                        className="p-1.5 hover:bg-primary-50 dark:hover:bg-blue-900/20 rounded text-gray-400 hover:text-primary-600 transition-colors"
                         title="View Receipt"
                       >
                         <Eye size={14} />
@@ -563,7 +563,7 @@ export default function FeesHistoryPage() {
                   className={clsx(
                     "w-8 h-8 rounded-lg text-xs font-bold transition-all",
                     page === p
-                      ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20"
+                      ? "bg-primary-600 text-white shadow-lg shadow-primary-500/20"
                       : "text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
                   )}
                 >
@@ -650,7 +650,7 @@ export default function FeesHistoryPage() {
             <div className="sticky top-0 right-0 p-4 flex justify-end bg-white border-b border-gray-100 z-10">
               <button
                 onClick={() => handlePrintReceipt(selectedTx)}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold mr-2 hover:bg-blue-700"
+                className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-bold mr-2 hover:bg-primary-700"
               >
                 <Printer size={16} /> Print
               </button>

@@ -18,10 +18,10 @@ const HeaderEditor: React.FC<Props> = ({ settings, onChange }) => {
                 <div className="col-span-2 space-y-2">
                     <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1.5 ml-1">Main Heading</label>
                     <div className="relative group">
-                        <Type className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                        <Type className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary-500 transition-colors" />
                         <input
                             type="text"
-                            className="w-full pl-12 pr-4 py-3 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-bold focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all"
+                            className="w-full pl-12 pr-4 py-3 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-bold focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 outline-none transition-all"
                             value={settings.heading || ''}
                             onChange={(e) => handleChange('heading', e.target.value)}
                             placeholder="e.g. BOARD OF SECONDARY EDUCATION"
@@ -33,7 +33,7 @@ const HeaderEditor: React.FC<Props> = ({ settings, onChange }) => {
                     <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1.5 ml-1">Sub-Heading / Examination Name</label>
                     <input
                         type="text"
-                        className="w-full px-4 py-3 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-bold focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all"
+                        className="w-full px-4 py-3 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-bold focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 outline-none transition-all"
                         value={settings.subHeading || ''}
                         onChange={(e) => handleChange('subHeading', e.target.value)}
                         placeholder="e.g. HIGHER SECONDARY SCHOOL CERTIFICATE..."
@@ -43,10 +43,10 @@ const HeaderEditor: React.FC<Props> = ({ settings, onChange }) => {
                 <div className="space-y-2">
                     <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1.5 ml-1">Exam Period</label>
                     <div className="relative group">
-                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary-500 transition-colors" />
                         <input
                             type="text"
-                            className="w-full pl-12 pr-4 py-3 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-bold focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all"
+                            className="w-full pl-12 pr-4 py-3 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-bold focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 outline-none transition-all"
                             value={settings.examPeriod || ''}
                             onChange={(e) => handleChange('examPeriod', e.target.value)}
                             placeholder="e.g. May-June 2026"

@@ -225,8 +225,8 @@ const ExamSchedulePage = () => {
             header: 'Subject',
             cell: ({ row }) => (
                 <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                        <Info className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    <div className="p-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
+                        <Info className="w-4 h-4 text-primary-600 dark:text-primary-400" />
                     </div>
                     <div>
                         <div className="font-bold text-gray-900 dark:text-white">{row.original.subjectName}</div>
@@ -261,7 +261,7 @@ const ExamSchedulePage = () => {
                 return (
                     <div className="text-xs space-y-1 py-1">
                         <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-                            <Calendar className="w-3.5 h-3.5 text-blue-500" />
+                            <Calendar className="w-3.5 h-3.5 text-primary-500" />
                             <span className="font-semibold">{new Date(date).toLocaleDateString(undefined, { dateStyle: 'medium' })}</span>
                         </div>
                         <div className="flex items-center gap-2 text-gray-500">
@@ -283,7 +283,7 @@ const ExamSchedulePage = () => {
                 <div className="flex items-center justify-end gap-2">
                     <button
                         onClick={() => handleScheduleClick(row.original)}
-                        className="p-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                        className="p-1.5 text-primary-600 bg-primary-50 hover:bg-blue-100 rounded-lg transition-colors"
                         title={row.original.status === 'Scheduled' ? 'Edit Schedule' : 'Schedule Exam'}
                     >
                         <Edit2 className="w-4 h-4" />
@@ -311,7 +311,7 @@ const ExamSchedulePage = () => {
                 </div>
                 <div className="flex flex-wrap gap-4 w-full md:w-auto">
                     <select
-                        className="flex-1 md:flex-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 shadow-sm"
+                        className="flex-1 md:flex-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 shadow-sm"
                         value={selectedGroup}
                         onChange={(e) => setSelectedGroup(e.target.value)}
                     >
@@ -322,7 +322,7 @@ const ExamSchedulePage = () => {
                     </select>
 
                     <select
-                        className="flex-1 md:flex-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 shadow-sm"
+                        className="flex-1 md:flex-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 shadow-sm"
                         value={selectedClass}
                         onChange={(e) => setSelectedClass(e.target.value)}
                     >
@@ -337,7 +337,7 @@ const ExamSchedulePage = () => {
             {/* Main Content */}
             {loading ? (
                 <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-12 text-center text-gray-500 dark:text-gray-400">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
                     <p className="mt-4">Loading schedule...</p>
                 </div>
             ) : !selectedClass ? (
@@ -364,7 +364,7 @@ const ExamSchedulePage = () => {
                         <div className="md:col-span-2">
                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-2">
                                 Max Marks
-                                <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100 uppercase tracking-tighter">Locked to Assessment Structure</span>
+                                <span className="text-[10px] bg-primary-50 text-primary-600 px-1.5 py-0.5 rounded border border-blue-100 uppercase tracking-tighter">Locked to Assessment Structure</span>
                             </label>
                             <input
                                 type="number"
@@ -386,7 +386,7 @@ const ExamSchedulePage = () => {
                             <input
                                 type="date"
                                 required
-                                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 outline-none"
                                 value={formData.date}
                                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                             />
@@ -396,7 +396,7 @@ const ExamSchedulePage = () => {
                             <input
                                 type="text"
                                 placeholder="e.g., Examination Hall A"
-                                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 outline-none"
                                 value={formData.venue}
                                 onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
                             />
@@ -408,7 +408,7 @@ const ExamSchedulePage = () => {
                                 <input
                                     type="time"
                                     required
-                                    className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 outline-none"
                                     value={formData.startTime}
                                     onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
                                 />
@@ -421,7 +421,7 @@ const ExamSchedulePage = () => {
                                 <input
                                     type="time"
                                     required
-                                    className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 outline-none"
                                     value={formData.endTime}
                                     onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
                                 />
@@ -434,7 +434,7 @@ const ExamSchedulePage = () => {
                                 <input
                                     type="text"
                                     placeholder="Enter invigilator's name"
-                                    className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 outline-none"
                                     value={formData.invigilatorName}
                                     onChange={(e) => setFormData({ ...formData, invigilatorName: e.target.value })}
                                 />
@@ -452,7 +452,7 @@ const ExamSchedulePage = () => {
                         </button>
                         <button
                             type="submit"
-                            className="px-5 py-2.5 text-sm font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20"
+                            className="px-5 py-2.5 text-sm font-bold text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-all shadow-lg shadow-primary-600/20"
                         >
                             {currentSubject?.scheduleId ? "Update Schedule" : "Save Schedule"}
                         </button>

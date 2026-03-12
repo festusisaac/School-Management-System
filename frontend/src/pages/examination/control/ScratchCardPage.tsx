@@ -44,7 +44,7 @@ const ScratchCardPage = () => {
                             type="number"
                             min="1"
                             max="1000"
-                            className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                             value={count}
                             onChange={(e) => setCount(Number(e.target.value))}
                         />
@@ -55,7 +55,7 @@ const ScratchCardPage = () => {
                         <input
                             type="number"
                             min="1"
-                            className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                             value={maxUsage}
                             onChange={(e) => setMaxUsage(Number(e.target.value))}
                         />
@@ -65,7 +65,7 @@ const ScratchCardPage = () => {
                         <button
                             onClick={handleGenerate}
                             disabled={loading || count < 1}
-                            className="w-full flex justify-center items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                            className="w-full flex justify-center items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
                         >
                             {loading ? 'Generating...' : (
                                 <>
@@ -82,7 +82,7 @@ const ScratchCardPage = () => {
                 <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
                     <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                         <h3 className="font-semibold text-gray-900 dark:text-white">Generated Batch</h3>
-                        <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">Download CSV</button>
+                        <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">Download CSV</button>
                     </div>
                     <div className="overflow-x-auto max-h-[500px]">
                         <table className="w-full text-sm text-left">

@@ -77,7 +77,7 @@ const LogoUploader = ({
                 </div>
                 {uploading && (
                     <div className="absolute inset-0 bg-white/80 dark:bg-gray-800/80 flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"></div>
                     </div>
                 )}
             </div>
@@ -91,7 +91,7 @@ const LogoUploader = ({
                     )}
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">
-                    PNG/SVG, Max 2MB. {recommended && <span className="text-xs text-blue-500 font-medium">Rec: {recommended}</span>}
+                    PNG/SVG, Max 2MB. {recommended && <span className="text-xs text-primary-500 font-medium">Rec: {recommended}</span>}
                 </p>
                 <div className="mt-3 flex items-center justify-center md:justify-start gap-2">
                     <label className="inline-flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer transition-colors shadow-sm">
@@ -211,7 +211,7 @@ const GeneralSettingsPage = () => {
         return (
             <div className="p-12 text-center text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 min-h-screen flex items-center justify-center">
                 <div>
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
                     <p className="mt-4">Loading settings...</p>
                 </div>
             </div>
@@ -228,7 +228,7 @@ const GeneralSettingsPage = () => {
                 <button
                     onClick={handleSaveSettings}
                     disabled={saving}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 shadow-sm"
+                    className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 shadow-sm"
                 >
                     {saving ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> : <Save className="w-4 h-4" />}
                     {saving ? 'Saving...' : 'Save Settings'}
@@ -243,7 +243,7 @@ const GeneralSettingsPage = () => {
                         className={twMerge(
                             "whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors",
                             activeTab === 'system'
-                                ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                                ? "border-primary-500 text-primary-600 dark:text-primary-400"
                                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
                         )}
                     >
@@ -255,7 +255,7 @@ const GeneralSettingsPage = () => {
                         className={twMerge(
                             "whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors",
                             activeTab === 'logos'
-                                ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                                ? "border-primary-500 text-primary-600 dark:text-primary-400"
                                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
                         )}
                     >
@@ -272,7 +272,7 @@ const GeneralSettingsPage = () => {
                         {/* School Info Section */}
                         <div>
                             <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-6 border-b border-gray-100 dark:border-gray-700 pb-3">
-                                <Globe className="w-5 h-5 text-blue-500" />
+                                <Globe className="w-5 h-5 text-primary-500" />
                                 School Information
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -286,7 +286,7 @@ const GeneralSettingsPage = () => {
                                         value={settings.schoolName || ''}
                                         onChange={handleChange}
                                         required
-                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                                         placeholder="Enter full school name"
                                     />
                                 </div>
@@ -299,7 +299,7 @@ const GeneralSettingsPage = () => {
                                         name="schoolMotto"
                                         value={settings.schoolMotto || ''}
                                         onChange={handleChange}
-                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                                         placeholder="e.g. Knowledge is Power"
                                     />
                                 </div>
@@ -311,7 +311,7 @@ const GeneralSettingsPage = () => {
                                         value={settings.schoolPhone || ''}
                                         onChange={handleChange}
                                         required
-                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                                     />
                                 </div>
                                 <div>
@@ -322,7 +322,7 @@ const GeneralSettingsPage = () => {
                                         value={settings.schoolEmail || ''}
                                         onChange={handleChange}
                                         required
-                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                                     />
                                 </div>
                                 <div className="md:col-span-2">
@@ -333,7 +333,7 @@ const GeneralSettingsPage = () => {
                                         value={settings.schoolAddress || ''}
                                         onChange={handleChange}
                                         required
-                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                                     />
                                 </div>
                             </div>
@@ -355,7 +355,7 @@ const GeneralSettingsPage = () => {
                                         value={settings.currentSessionId || ''}
                                         onChange={handleChange}
                                         required
-                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                                     >
                                         <option value="">Select Target Default Session</option>
                                         {sessions.filter(s => s.isActive).map(s => (
@@ -373,7 +373,7 @@ const GeneralSettingsPage = () => {
                                         value={settings.currentTermId || ''}
                                         onChange={handleChange}
                                         required
-                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                                         disabled={!settings.currentSessionId}
                                     >
                                         <option value="">Select Target Default Term</option>
@@ -392,7 +392,7 @@ const GeneralSettingsPage = () => {
                                         name="sessionStartDate"
                                         value={settings.sessionStartDate as string || ''}
                                         onChange={handleChange}
-                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                                     />
                                 </div>
                             </div>
@@ -414,7 +414,7 @@ const GeneralSettingsPage = () => {
                                         value={settings.dateFormat || 'DD/MM/YYYY'}
                                         onChange={handleChange}
                                         required
-                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                                     >
                                         <option value="DD/MM/YYYY">DD/MM/YYYY (e.g. 25/12/2026)</option>
                                         <option value="MM/DD/YYYY">MM/DD/YYYY (e.g. 12/25/2026)</option>
@@ -430,7 +430,7 @@ const GeneralSettingsPage = () => {
                                         value={settings.timezone || 'UTC'}
                                         onChange={handleChange}
                                         required
-                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                                     >
                                         <option value="UTC">UTC</option>
                                         <option value="Africa/Lagos">Africa/Lagos (WAT)</option>
@@ -448,7 +448,7 @@ const GeneralSettingsPage = () => {
                                         value={settings.startDayOfWeek?.toString() || '1'}
                                         onChange={handleChange}
                                         required
-                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                                     >
                                         <option value="0">Sunday</option>
                                         <option value="1">Monday</option>
@@ -526,7 +526,7 @@ const GeneralSettingsPage = () => {
                         {/* Brand Logos Section */}
                         <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
                             <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-2">
-                                <ImageIcon className="w-5 h-5 text-blue-500" />
+                                <ImageIcon className="w-5 h-5 text-primary-500" />
                                 Brand Logos
                             </h3>
                             <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 pb-4 border-b border-gray-100 dark:border-gray-800">
@@ -588,14 +588,14 @@ const GeneralSettingsPage = () => {
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
-                                        <Facebook className="w-4 h-4 text-blue-600" /> Facebook URL
+                                        <Facebook className="w-4 h-4 text-primary-600" /> Facebook URL
                                     </label>
                                     <input
                                         type="url"
                                         name="socialFacebook"
                                         value={settings.socialFacebook || ''}
                                         onChange={handleChange}
-                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                                         placeholder="https://facebook.com/yourschool"
                                     />
                                 </div>
@@ -608,7 +608,7 @@ const GeneralSettingsPage = () => {
                                         name="socialTwitter"
                                         value={settings.socialTwitter || ''}
                                         onChange={handleChange}
-                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                                         placeholder="https://x.com/yourschool"
                                     />
                                 </div>
@@ -621,7 +621,7 @@ const GeneralSettingsPage = () => {
                                         name="socialInstagram"
                                         value={settings.socialInstagram || ''}
                                         onChange={handleChange}
-                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                                         placeholder="https://instagram.com/yourschool"
                                     />
                                 </div>

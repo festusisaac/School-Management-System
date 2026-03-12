@@ -190,7 +190,7 @@ const AssignClassTeacherPage = () => {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
                     <p className="text-gray-600">Loading...</p>
                 </div>
             </div>
@@ -203,7 +203,7 @@ const AssignClassTeacherPage = () => {
                 {/* Header */}
                 <div className="mb-8">
                     <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight flex items-center gap-3">
-                        <UserCheck className="p-2 bg-blue-600 text-white rounded-lg shadow-lg shadow-blue-500/30" size={40} />
+                        <UserCheck className="p-2 bg-primary-600 text-white rounded-lg shadow-lg shadow-primary-500/30" size={40} />
                         Assign Class Teacher
                     </h1>
                     <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm font-medium">Assign teachers to manage specific class sections</p>
@@ -240,7 +240,7 @@ const AssignClassTeacherPage = () => {
                                     setSelectedClass(e.target.value);
                                     setSelectedSection('');
                                 }}
-                                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900 dark:text-white"
+                                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all text-gray-900 dark:text-white"
                             >
                                 <option value="">Select Class</option>
                                 {classes.map(cls => (
@@ -254,7 +254,7 @@ const AssignClassTeacherPage = () => {
                                 value={selectedSection}
                                 onChange={(e) => setSelectedSection(e.target.value)}
                                 disabled={!selectedClass}
-                                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <option value="">Select Section / Scope</option>
                                 <option value="GENERAL">General (All Sections)</option>
@@ -268,7 +268,7 @@ const AssignClassTeacherPage = () => {
                             <select
                                 value={selectedTeacher}
                                 onChange={(e) => setSelectedTeacher(e.target.value)}
-                                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900 dark:text-white"
+                                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all text-gray-900 dark:text-white"
                             >
                                 <option value="">Select Teacher</option>
                                 {teachers.map(teacher => (
@@ -283,7 +283,7 @@ const AssignClassTeacherPage = () => {
                         <button
                             onClick={handleAssign}
                             disabled={!selectedClass || !selectedTeacher || !selectedSection || saving}
-                            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow-sm transition-all hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-6 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium shadow-sm transition-all hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {saving ? 'Assigning...' : 'Assign Class Teacher'}
                         </button>
@@ -299,7 +299,7 @@ const AssignClassTeacherPage = () => {
                             placeholder="Search by class, section, or teacher name..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900 dark:text-white"
+                            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all text-gray-900 dark:text-white"
                         />
                     </div>
                 </div>

@@ -247,7 +247,7 @@ const ScoresheetPage = () => {
                         </button>
                         <button
                             onClick={handleSave}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm"
+                            className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-all shadow-sm"
                         >
                             <Save className="w-4 h-4" />
                             Save Scores
@@ -261,7 +261,7 @@ const ScoresheetPage = () => {
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Exam Group</label>
                     <select
-                        className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                         value={selectedGroup}
                         onChange={(e) => setSelectedGroup(e.target.value)}
                     >
@@ -275,7 +275,7 @@ const ScoresheetPage = () => {
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Class</label>
                     <select
-                        className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                         value={selectedClass}
                         onChange={(e) => setSelectedClass(e.target.value)}
                     >
@@ -289,7 +289,7 @@ const ScoresheetPage = () => {
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subject</label>
                     <select
-                        className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                         value={selectedSubject}
                         onChange={(e) => setSelectedSubject(e.target.value)}
                         disabled={!selectedClass}
@@ -306,7 +306,7 @@ const ScoresheetPage = () => {
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden min-h-[400px] flex flex-col">
                 {loading ? (
                     <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-3"></div>
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mb-3"></div>
                         <p className="text-sm font-medium">Loading scoresheet...</p>
                     </div>
                 ) : !selectedGroup || !selectedClass || !selectedSubject ? (
@@ -336,7 +336,7 @@ const ScoresheetPage = () => {
                     </div>
                 ) : assessments.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-64 text-center p-8">
-                        <Info className="w-12 h-12 text-blue-500 mb-4" />
+                        <Info className="w-12 h-12 text-primary-500 mb-4" />
                         <h3 className="text-lg font-bold">No Assessment Types Configured</h3>
                         <p className="text-sm text-gray-500 mt-2">Please configure Assessment Types (e.g., CA1, Exam) in Setup first.</p>
                     </div>
@@ -394,7 +394,7 @@ const ScoresheetPage = () => {
                                                             className={`w-full text-center border-2 rounded-md py-1.5 px-2 text-sm outline-none transition-all
                                                                 ${currentScore > ass.maxMarks
                                                                     ? 'border-red-300 bg-red-50 text-red-600 focus:border-red-500'
-                                                                    : 'border-transparent bg-gray-50 focus:bg-white focus:border-blue-500 focus:shadow-sm dark:bg-gray-800 dark:border-transparent'}`}
+                                                                    : 'border-transparent bg-gray-50 focus:bg-white focus:border-primary-500 focus:shadow-sm dark:bg-gray-800 dark:border-transparent'}`}
                                                             value={student.scores[ass.id] || ''}
                                                             onChange={(e) => handleScoreChange(index, ass.id, e.target.value)}
                                                             placeholder="-"

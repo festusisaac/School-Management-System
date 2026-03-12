@@ -42,7 +42,7 @@ const Toast: React.FC<ToastProps> = ({ id, type, message, duration = 5000, onClo
             case 'warning':
                 return 'bg-yellow-50 border-yellow-200 text-yellow-800';
             case 'info':
-                return 'bg-blue-50 border-blue-200 text-blue-800';
+                return 'bg-primary-50 border-blue-200 text-blue-800';
         }
     };
 
@@ -55,7 +55,7 @@ const Toast: React.FC<ToastProps> = ({ id, type, message, duration = 5000, onClo
             case 'warning':
                 return 'text-yellow-600';
             case 'info':
-                return 'text-blue-600';
+                return 'text-primary-600';
         }
     };
 

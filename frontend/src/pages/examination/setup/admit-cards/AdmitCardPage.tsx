@@ -219,7 +219,7 @@ const AdmitCardPage = () => {
             header: 'Design',
             cell: ({ row }) => (
                 <div className="flex items-center gap-1.5">
-                    <div className="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded text-xs font-medium">
+                    <div className="px-2 py-0.5 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded text-xs font-medium">
                         {row.original.sections.length} blocks
                     </div>
                 </div>
@@ -232,7 +232,7 @@ const AdmitCardPage = () => {
                 <div className="flex justify-end gap-1">
                     <button
                         onClick={() => handleEdit(row.original)}
-                        className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                        className="p-1.5 text-primary-600 hover:bg-primary-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                         title="Edit Template"
                     >
                         <Edit3 className="w-4 h-4" />
@@ -272,7 +272,7 @@ const AdmitCardPage = () => {
                     <div className="flex flex-col">
                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300 ml-1 mb-1">Active Exam Group</label>
                         <select
-                            className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 shadow-sm min-w-[200px]"
+                            className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 shadow-sm min-w-[200px]"
                             value={selectedGroup}
                             onChange={(e) => setSelectedGroup(e.target.value)}
                         >
@@ -287,7 +287,7 @@ const AdmitCardPage = () => {
                         <button
                             onClick={handleCreateNew}
                             disabled={!selectedGroup}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all disabled:opacity-50 shadow-sm h-[38px]"
+                            className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-all disabled:opacity-50 shadow-sm h-[38px]"
                         >
                             <Plus className="w-4 h-4" />
                             Create Template
@@ -296,13 +296,13 @@ const AdmitCardPage = () => {
                         <div className="flex p-1 bg-gray-100 dark:bg-gray-800 rounded-lg h-[38px] items-center">
                             <button
                                 onClick={() => setActiveTab('design')}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${activeTab === 'design' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'}`}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${activeTab === 'design' ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-500'}`}
                             >
                                 <Layout className="w-3.5 h-3.5" /> Design
                             </button>
                             <button
                                 onClick={() => setActiveTab('print')}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${activeTab === 'print' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'}`}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${activeTab === 'print' ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-500'}`}
                             >
                                 <Printer className="w-3.5 h-3.5" /> Print
                             </button>
@@ -325,7 +325,7 @@ const AdmitCardPage = () => {
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Template</label>
                                 <select
-                                    className="w-full rounded-md border border-gray-300 p-2 text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="w-full rounded-md border border-gray-300 p-2 text-sm bg-gray-50 focus:ring-2 focus:ring-primary-500 outline-none"
                                     value={selectedTemplateForPrint?.id || ''}
                                     onChange={(e) => setSelectedTemplateForPrint(admitCards.find(c => c.id === e.target.value) || null)}
                                 >
@@ -335,7 +335,7 @@ const AdmitCardPage = () => {
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Class</label>
                                 <select
-                                    className="w-full rounded-md border border-gray-300 p-2 text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="w-full rounded-md border border-gray-300 p-2 text-sm bg-gray-50 focus:ring-2 focus:ring-primary-500 outline-none"
                                     value={selectedClass}
                                     onChange={(e) => setSelectedClass(e.target.value)}
                                 >
@@ -366,10 +366,10 @@ const AdmitCardPage = () => {
                     <div className="flex items-center justify-between px-6 py-3 bg-gray-50/50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700 shrink-0">
                         <div className="flex items-center gap-4">
                             <div className="relative group">
-                                <label className="absolute -top-2 left-2 px-1 bg-gray-50 dark:bg-gray-900 text-xs font-medium text-gray-500 transition-colors group-focus-within:text-blue-500">Template Name</label>
+                                <label className="absolute -top-2 left-2 px-1 bg-gray-50 dark:bg-gray-900 text-xs font-medium text-gray-500 transition-colors group-focus-within:text-primary-500">Template Name</label>
                                 <input
                                     type="text"
-                                    className="text-lg font-medium bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500 w-[350px] transition-all"
+                                    className="text-lg font-medium bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-primary-500 w-[350px] transition-all"
                                     placeholder="Enter template name..."
                                     value={templateName}
                                     onChange={(e) => setTemplateName(e.target.value)}
@@ -378,7 +378,7 @@ const AdmitCardPage = () => {
 
                             <div className="flex flex-col">
                                 <span className="text-xs font-medium text-gray-500 mb-1">Assigned To</span>
-                                <div className="px-3 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-md text-xs font-medium border border-blue-100 dark:border-blue-900/50">
+                                <div className="px-3 py-1 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-md text-xs font-medium border border-blue-100 dark:border-blue-900/50">
                                     {groups.find(g => g.id === (editingId ? admitCards.find(c => c.id === editingId)?.examGroupId : selectedGroup))?.name || 'No Group'}
                                 </div>
                             </div>
@@ -391,13 +391,13 @@ const AdmitCardPage = () => {
                                     <div className="flex gap-1 mt-1">
                                         <button
                                             onClick={() => setConfig({ ...config, layout: 'portrait' })}
-                                            className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${config.layout === 'portrait' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'}`}
+                                            className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${config.layout === 'portrait' ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-500'}`}
                                         >
                                             Portrait
                                         </button>
                                         <button
                                             onClick={() => setConfig({ ...config, layout: 'landscape' })}
-                                            className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${config.layout === 'landscape' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'}`}
+                                            className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${config.layout === 'landscape' ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-500'}`}
                                         >
                                             Landscape
                                         </button>
@@ -416,7 +416,7 @@ const AdmitCardPage = () => {
 
                             <button
                                 onClick={handleSaveTemplate}
-                                className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-all shadow-sm active:scale-95"
+                                className="flex items-center gap-2 px-6 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-all shadow-sm active:scale-95"
                             >
                                 <Save className="w-4 h-4" /> Save Design
                             </button>

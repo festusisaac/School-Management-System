@@ -86,7 +86,7 @@ export default function LoginPage() {
               className="w-16 h-16 object-contain mb-4"
             />
           ) : (
-            <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-blue-500/30">
+            <div className="w-16 h-16 bg-primary-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-primary-500/30">
               <School className="w-8 h-8 text-white" />
             </div>
           )}

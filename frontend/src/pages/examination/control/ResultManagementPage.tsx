@@ -104,7 +104,7 @@ const ResultManagementPage = () => {
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Exam Group</label>
                     <select
-                        className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                         value={selectedGroup}
                         onChange={(e) => setSelectedGroup(e.target.value)}
                     >
@@ -118,7 +118,7 @@ const ResultManagementPage = () => {
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Class</label>
                     <select
-                        className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                         value={selectedClass}
                         onChange={(e) => setSelectedClass(e.target.value)}
                     >
@@ -164,12 +164,12 @@ const ResultManagementPage = () => {
 
                 {/* Step 2: Approval */}
                 <div className={`p-6 rounded-lg border shadow-sm transition-all ${status.approved
-                        ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+                        ? 'bg-primary-50 dark:bg-primary-900/20 border-blue-200 dark:border-primary-800'
                         : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
                     }`}>
                     <div className="flex items-center justify-between mb-4">
                         <div className="p-3 bg-white dark:bg-gray-800 rounded-full shadow-sm">
-                            <ShieldCheck className={`w-6 h-6 ${status.approved ? 'text-blue-600' : 'text-gray-400'}`} />
+                            <ShieldCheck className={`w-6 h-6 ${status.approved ? 'text-primary-600' : 'text-gray-400'}`} />
                         </div>
                         <span className="text-xs font-bold uppercase tracking-wider text-gray-500">Step 2</span>
                     </div>
@@ -181,8 +181,8 @@ const ResultManagementPage = () => {
                         onClick={handleApprove}
                         disabled={!status.calculated || status.approved || loading}
                         className={`w-full py-2 px-4 rounded-lg text-sm font-medium transition-all ${status.approved
-                                ? 'bg-blue-100 text-blue-700 cursor-default'
-                                : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed'
+                                ? 'bg-blue-100 text-primary-700 cursor-default'
+                                : 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed'
                             }`}
                     >
                         {status.approved ? 'Approved' : 'Approve Results'}

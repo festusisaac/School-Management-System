@@ -105,7 +105,7 @@ export default function OnlineAdmission() {
             id: 'actions',
             cell: ({ row }) => (
                 <div className="flex items-center gap-2">
-                    <button onClick={() => handleView(row.original)} className="p-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100" title="View">
+                    <button onClick={() => handleView(row.original)} className="p-1.5 rounded-lg bg-primary-50 text-primary-600 hover:bg-blue-100" title="View">
                         <Eye className="w-4 h-4" />
                     </button>
                     {row.original.status === 'pending' && (
@@ -137,7 +137,7 @@ export default function OnlineAdmission() {
 
             {loading && data.length === 0 ? (
                 <div className="flex justify-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
                 </div>
             ) : (
                 <DataTable columns={columns} data={data} searchKey="firstName" placeholder="Search applicants..." />

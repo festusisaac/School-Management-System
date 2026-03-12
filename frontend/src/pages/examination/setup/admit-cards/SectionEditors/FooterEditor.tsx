@@ -18,7 +18,7 @@ const FooterEditor: React.FC<Props> = ({ settings, onChange }) => {
                 <div className="space-y-2">
                     <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1.5 ml-1">Footer Instructions / Exam Rules</label>
                     <textarea
-                        className="w-full px-4 py-3 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-bold focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all resize-none min-h-[100px]"
+                        className="w-full px-4 py-3 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-bold focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 outline-none transition-all resize-none min-h-[100px]"
                         value={settings.footerText || ''}
                         onChange={(e) => handleChange('footerText', e.target.value)}
                         placeholder="e.g. Please bring this card to the exam hall. No entry without admit card."
@@ -38,12 +38,12 @@ const FooterEditor: React.FC<Props> = ({ settings, onChange }) => {
                         <button
                             onClick={() => handleChange('showQrCode', !settings.showQrCode)}
                             className={`flex flex-col items-start gap-2 w-full p-4 rounded-xl border-2 transition-all group ${settings.showQrCode
-                                ? 'bg-blue-50/50 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400'
+                                ? 'bg-primary-50/50 border-blue-200 text-primary-700 dark:bg-primary-900/20 dark:border-primary-800 dark:text-primary-400'
                                 : 'bg-gray-50/50 border-gray-200 text-gray-500 dark:bg-gray-900/50 dark:border-gray-800'
                                 }`}
                         >
                             <div className="flex items-center gap-2">
-                                <div className={`p-1 rounded-md transition-all ${settings.showQrCode ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-400'}`}>
+                                <div className={`p-1 rounded-md transition-all ${settings.showQrCode ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-400'}`}>
                                     <CheckCircle2 className="w-3.5 h-3.5" />
                                 </div>
                                 <span className="text-sm font-black uppercase tracking-tight">Show Batch QR Code</span>

@@ -40,7 +40,7 @@ export default function StudentProfile() {
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
                 <p className="text-gray-500 font-medium animate-pulse">Loading profile...</p>
             </div>
         );
@@ -145,7 +145,7 @@ export default function StudentProfile() {
                         <h2 className="text-2xl font-black text-gray-900 dark:text-white font-heading mb-2">{student.firstName} {student.lastName}</h2>
 
                         <div className="flex flex-wrap justify-center gap-2 mb-6">
-                            <span className="px-3 py-1 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase tracking-widest rounded-lg">
+                            <span className="px-3 py-1 bg-primary-50 dark:bg-primary-500/10 border border-blue-100 dark:border-primary-500/20 text-primary-600 dark:text-primary-400 text-[10px] font-black uppercase tracking-widest rounded-lg">
                                 {student.class?.name || 'Academic'}
                             </span>
                             <span className="px-3 py-1 bg-orange-50 dark:bg-orange-500/10 border border-orange-100 dark:border-orange-500/20 text-orange-600 dark:text-orange-400 text-[10px] font-black uppercase tracking-widest rounded-lg">
@@ -174,7 +174,7 @@ export default function StudentProfile() {
                                 onClick={() => navigate(`/students/admission?id=${student.id}&edit=true`)}
                                 className="flex items-center justify-center gap-2 py-3.5 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white rounded-2xl text-[10px] font-black transition-all border border-gray-100 dark:border-gray-700 group"
                             >
-                                <Edit className="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                                <Edit className="w-3.5 h-3.5 text-gray-400 group-hover:text-primary-500 transition-colors" />
                                 <span className="uppercase tracking-widest">Edit</span>
                             </button>
                             <button
@@ -211,7 +211,7 @@ export default function StudentProfile() {
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-black text-gray-900 dark:text-white truncate group-hover:text-blue-500 transition-colors uppercase font-heading">{sibling.firstName} {sibling.lastName}</p>
+                                            <p className="text-sm font-black text-gray-900 dark:text-white truncate group-hover:text-primary-500 transition-colors uppercase font-heading">{sibling.firstName} {sibling.lastName}</p>
                                             <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">{sibling.class?.name || 'Class N/A'}</p>
                                         </div>
                                     </div>
@@ -282,7 +282,7 @@ export default function StudentProfile() {
                                         </div>
                                     </div>
                                     <div className="space-y-6">
-                                        <h4 className="text-[10px] font-black text-blue-600 dark:text-blue-500 uppercase tracking-[0.2em] mb-4">Maternal Details</h4>
+                                        <h4 className="text-[10px] font-black text-primary-600 dark:text-primary-500 uppercase tracking-[0.2em] mb-4">Maternal Details</h4>
                                         <div className="space-y-4">
                                             <div>
                                                 <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-1">Mother's Name</p>

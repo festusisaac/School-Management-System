@@ -316,7 +316,7 @@ const ClassTimetablePage = () => {
                         {periods.length === 0 && (
                             <button
                                 onClick={initializePeriods}
-                                className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm font-medium transition-all hover:shadow text-sm"
+                                className="flex items-center gap-2 px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg shadow-sm font-medium transition-all hover:shadow text-sm"
                             >
                                 <RefreshCw className="w-4 h-4" />
                                 Initialize Defaults
@@ -361,7 +361,7 @@ const ClassTimetablePage = () => {
                                     setSelectedSection('');
                                     setTimetable([]);
                                 }}
-                                className="w-full pl-4 pr-10 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none cursor-pointer text-gray-900 dark:text-white"
+                                className="w-full pl-4 pr-10 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all appearance-none cursor-pointer text-gray-900 dark:text-white"
                             >
                                 <option value="">Select Class</option>
                                 {classes.map(cls => (
@@ -378,7 +378,7 @@ const ClassTimetablePage = () => {
                                 value={selectedSection}
                                 onChange={(e) => setSelectedSection(e.target.value)}
                                 disabled={!selectedClass}
-                                className="w-full pl-4 pr-10 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none cursor-pointer text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full pl-4 pr-10 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all appearance-none cursor-pointer text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <option value="">Select Section</option>
                                 {sections.map(sec => (
@@ -398,7 +398,7 @@ const ClassTimetablePage = () => {
                             <div>
                                 <h2 className="text-lg font-bold text-gray-800 uppercase tracking-wide">Weekly Schedule</h2>
                                 <div className="flex items-center gap-2 mt-1">
-                                    <span className="px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200 uppercase">{selectedClassName}</span>
+                                    <span className="px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-primary-700 border border-blue-200 uppercase">{selectedClassName}</span>
                                     <span className="text-gray-400">•</span>
                                     <span className="px-2 py-0.5 rounded text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200 uppercase">{selectedSectionName}</span>
                                 </div>
@@ -492,7 +492,7 @@ const ClassTimetablePage = () => {
                                                     return (
                                                         <td
                                                             key={period.id}
-                                                            className={`border border-black p-0 relative transition-colors h-16 ${isEditing ? 'bg-blue-50' : 'hover:bg-gray-50'
+                                                            className={`border border-black p-0 relative transition-colors h-16 ${isEditing ? 'bg-primary-50' : 'hover:bg-gray-50'
                                                                 }`}
                                                             onClick={() => handleCellClick(day.value, period)}
                                                         >
@@ -566,7 +566,7 @@ const ClassTimetablePage = () => {
                         {periods.length === 0 && (
                             <button
                                 onClick={initializePeriods}
-                                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                className="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700"
                             >
                                 Set Default Periods
                             </button>
@@ -836,7 +836,7 @@ const PeriodManagementModal = ({ periods, onClose, onRefresh }: { periods: Perio
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 disabled:opacity-50"
+                                className="bg-primary-600 text-white px-4 py-2 rounded text-sm hover:bg-primary-700 disabled:opacity-50"
                             >
                                 {loading ? 'Saving...' : editingPeriod ? 'Update Period' : 'Add New Period'}
                             </button>
@@ -908,7 +908,7 @@ const PeriodManagementModal = ({ periods, onClose, onRefresh }: { periods: Perio
                                             </div>
                                             <button
                                                 onClick={() => handleEdit(period)}
-                                                className="text-blue-600 hover:text-blue-800"
+                                                className="text-primary-600 hover:text-blue-800"
                                             >
                                                 Edit
                                             </button>
@@ -1017,7 +1017,7 @@ const CopyTimetableModal = ({ classes, currentClassId, currentSectionId, onClose
                     <button
                         onClick={handleCopy}
                         disabled={loading || !isReady}
-                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                        className="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700 disabled:opacity-50"
                     >
                         {loading ? 'Copying...' : 'Copy Timetable'}
                     </button>

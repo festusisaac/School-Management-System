@@ -236,10 +236,10 @@ export default function DiscountsPage() {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl p-6 rounded-3xl border border-white dark:border-gray-800 shadow-xl shadow-blue-500/5">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl p-6 rounded-3xl border border-white dark:border-gray-800 shadow-xl shadow-primary-500/5">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <div className="p-2 bg-blue-600 rounded-xl shadow-lg shadow-blue-500/30">
+            <div className="p-2 bg-primary-600 rounded-xl shadow-lg shadow-primary-500/30">
               <Tag className="w-5 h-5 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Discount & Scholarship Policies</h1>
@@ -248,7 +248,7 @@ export default function DiscountsPage() {
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-semibold shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
+          className="flex items-center justify-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-2xl font-semibold shadow-lg shadow-primary-500/20 active:scale-95 transition-all"
         >
           <Plus className="w-5 h-5" />
           Create New Policy
@@ -258,21 +258,21 @@ export default function DiscountsPage() {
       {/* Search & Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2 relative group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-primary-500 transition-colors" />
           <input
             type="text"
             placeholder="Search by policy name or description..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-6 py-4 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all shadow-sm shadow-blue-500/5"
+            className="w-full pl-12 pr-6 py-4 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 outline-none transition-all shadow-sm shadow-primary-500/5"
           />
         </div>
         <div className="flex items-center gap-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-2xl border border-blue-100/50 dark:border-blue-800/50">
           <div className="p-2 bg-white dark:bg-gray-800 rounded-xl">
-            <ShieldCheck className="w-5 h-5 text-blue-600" />
+            <ShieldCheck className="w-5 h-5 text-primary-600" />
           </div>
           <div>
-            <div className="text-sm text-blue-600/80 font-medium">Active Policies</div>
+            <div className="text-sm text-primary-600/80 font-medium">Active Policies</div>
             <div className="text-xl font-bold text-blue-900 dark:text-blue-100">{profiles.length} Total</div>
           </div>
         </div>
@@ -295,7 +295,7 @@ export default function DiscountsPage() {
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors">{profile.name}</h3>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-primary-600 transition-colors">{profile.name}</h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{profile.description || 'No description provided.'}</p>
                   </div>
                   <button
@@ -312,7 +312,7 @@ export default function DiscountsPage() {
                     {profile.rules.map((rule, idx) => (
                       <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100/50 dark:border-gray-800/50">
                         <div className="flex items-center gap-3">
-                          <div className="w-2 h-2 rounded-full bg-blue-500" />
+                          <div className="w-2 h-2 rounded-full bg-primary-500" />
                           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{rule.feeHead?.name}</span>
                         </div>
                         <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
@@ -337,7 +337,7 @@ export default function DiscountsPage() {
                       "px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1",
                       new Date(profile.expiryDate) < new Date()
                         ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                        : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                        : "bg-blue-100 text-primary-700 dark:bg-blue-900/30 dark:text-blue-400"
                     )}>
                       <Clock className="w-3 h-3" />
                       {new Date(profile.expiryDate) < new Date() ? 'EXPIRED' : `Expires: ${new Date(profile.expiryDate).toLocaleDateString()}`}
@@ -347,14 +347,14 @@ export default function DiscountsPage() {
                 <div className="flex items-center gap-4">
                   <button
                     onClick={() => handleAssign(profile)}
-                    className="text-blue-600 hover:text-blue-700 text-sm font-bold flex items-center gap-1 group/btn"
+                    className="text-primary-600 hover:text-primary-700 text-sm font-bold flex items-center gap-1 group/btn"
                   >
                     <Users className="w-4 h-4" />
                     Assign
                   </button>
                   <button
                     onClick={() => handleEdit(profile)}
-                    className="text-blue-600 hover:text-blue-700 text-sm font-bold flex items-center gap-1 group/btn"
+                    className="text-primary-600 hover:text-primary-700 text-sm font-bold flex items-center gap-1 group/btn"
                   >
                     Edit Rules
                     <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
@@ -373,7 +373,7 @@ export default function DiscountsPage() {
           <p className="text-gray-500 dark:text-gray-400 mb-6">Start by creating your first automated discount rule.</p>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="px-6 py-3 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
+            className="px-6 py-3 bg-primary-600 text-white rounded-2xl font-bold shadow-lg shadow-primary-500/20 active:scale-95 transition-all"
           >
             New Policy
           </button>
@@ -409,7 +409,7 @@ export default function DiscountsPage() {
                       placeholder="e.g. 50% Academic Scholarship"
                       value={newProfile.name}
                       onChange={(e) => setNewProfile({ ...newProfile, name: e.target.value })}
-                      className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-2xl focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-medium"
+                      className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-2xl focus:ring-4 focus:ring-primary-500/10 outline-none transition-all font-medium"
                     />
                   </div>
                   <div>
@@ -419,19 +419,19 @@ export default function DiscountsPage() {
                       rows={2}
                       value={newProfile.description}
                       onChange={(e) => setNewProfile({ ...newProfile, description: e.target.value })}
-                      className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800/50 rounded-2xl focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-medium resize-none"
+                      className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800/50 rounded-2xl focus:ring-4 focus:ring-primary-500/10 outline-none transition-all font-medium resize-none"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 px-1 flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-blue-500" />
+                      <Calendar className="w-4 h-4 text-primary-500" />
                       Expiry Date (Optional)
                     </label>
                     <input
                       type="date"
                       value={newProfile.expiryDate}
                       onChange={(e) => setNewProfile({ ...newProfile, expiryDate: e.target.value })}
-                      className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800/50 rounded-2xl focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-medium"
+                      className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800/50 rounded-2xl focus:ring-4 focus:ring-primary-500/10 outline-none transition-all font-medium"
                     />
                     <p className="mt-2 text-xs text-gray-500 px-1">Policy will automatically stop applying after this date.</p>
                   </div>
@@ -442,13 +442,13 @@ export default function DiscountsPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-6 bg-blue-600 rounded-full" />
+                    <div className="w-1.5 h-6 bg-primary-600 rounded-full" />
                     <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-widest">Rule Configuration</h3>
                   </div>
                   <button
                     type="button"
                     onClick={handleAddRule}
-                    className="text-sm font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                    className="text-sm font-bold text-primary-600 hover:text-primary-700 flex items-center gap-1"
                   >
                     <Plus className="w-4 h-4" />
                     Add Rule
@@ -477,7 +477,7 @@ export default function DiscountsPage() {
                             onClick={() => handleRuleChange(idx, 'type', rule.type === 'percentage' ? 'fixed' : 'percentage')}
                             className="w-full flex justify-center py-2 bg-white dark:bg-gray-800 rounded-xl"
                           >
-                            {rule.type === 'percentage' ? <Percent className="w-4 h-4 text-blue-600" /> : <Banknote className="w-4 h-4 text-emerald-600" />}
+                            {rule.type === 'percentage' ? <Percent className="w-4 h-4 text-primary-600" /> : <Banknote className="w-4 h-4 text-emerald-600" />}
                           </button>
                         </div>
                         <div className="col-span-3">
@@ -498,7 +498,7 @@ export default function DiscountsPage() {
                         {/* Live Preview */}
                         {rule.feeHeadId && rule.value && (
                           <div className="col-span-12 mt-1 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100/50 dark:border-blue-800/50">
-                            <div className="flex items-center gap-2 text-[10px] font-bold text-blue-600 uppercase tracking-widest">
+                            <div className="flex items-center gap-2 text-[10px] font-bold text-primary-600 uppercase tracking-widest">
                               <Info className="w-3 h-3" />
                               Live Preview
                             </div>
@@ -525,8 +525,8 @@ export default function DiscountsPage() {
                     <div className="text-center py-8 bg-blue-50/50 dark:bg-blue-900/10 rounded-3xl border-2 border-dashed border-blue-100 dark:border-blue-800/50">
                       <div className="flex flex-col items-center gap-2">
                         <Info className="w-6 h-6 text-blue-400" />
-                        <p className="text-xs text-blue-600 font-bold uppercase tracking-widest px-8">No rules added yet. This policy will have no effect.</p>
-                        <button onClick={handleAddRule} className="mt-2 text-xs font-bold text-blue-700 bg-white px-4 py-2 rounded-xl shadow-sm">Start Building Now</button>
+                        <p className="text-xs text-primary-600 font-bold uppercase tracking-widest px-8">No rules added yet. This policy will have no effect.</p>
+                        <button onClick={handleAddRule} className="mt-2 text-xs font-bold text-primary-700 bg-white px-4 py-2 rounded-xl shadow-sm">Start Building Now</button>
                       </div>
                     </div>
                   )}
@@ -542,7 +542,7 @@ export default function DiscountsPage() {
                 <button
                   onClick={handleSubmit}
                   disabled={!newProfile.name || newProfile.rules.length === 0}
-                  className="flex items-center gap-2 px-10 py-3 bg-blue-600 text-white rounded-2xl font-bold shadow-xl shadow-blue-500/20 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 transition-all cursor-pointer"
+                  className="flex items-center gap-2 px-10 py-3 bg-primary-600 text-white rounded-2xl font-bold shadow-xl shadow-primary-500/20 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 transition-all cursor-pointer"
                 >
                   <Save className="w-5 h-5" />
                   {editingId ? 'Update Policy' : 'Save Policy'}
@@ -551,7 +551,7 @@ export default function DiscountsPage() {
               <div className="flex items-center gap-2 order-1 sm:order-2">
                 <div className={clsx(
                   "w-10 h-6 h rounded-full relative transition-colors cursor-pointer",
-                  newProfile.isActive ? "bg-blue-600" : "bg-gray-300"
+                  newProfile.isActive ? "bg-primary-600" : "bg-gray-300"
                 )} onClick={() => setNewProfile({ ...newProfile, isActive: !newProfile.isActive })}>
                   <div className={clsx(
                     "absolute top-1 w-4 h-4 rounded-full bg-white transition-all shadow-sm",
@@ -605,7 +605,7 @@ export default function DiscountsPage() {
                       className={clsx(
                         "px-4 py-2 rounded-xl text-xs font-bold border transition-all",
                         assignmentData.classIds.includes(cls.id)
-                          ? "bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-500/20"
+                          ? "bg-primary-600 text-white border-primary-600 shadow-lg shadow-primary-500/20"
                           : "bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-gray-100 dark:border-gray-800/50 hover:bg-gray-100"
                       )}
                     >
@@ -692,7 +692,7 @@ export default function DiscountsPage() {
                     }
                     value={studentSearch}
                     onChange={(e) => setStudentSearch(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800/50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full pl-11 pr-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800/50 rounded-2xl outline-none focus:ring-2 focus:ring-primary-500/20"
                   />
                 </div>
                 {studentSearch && (
@@ -719,7 +719,7 @@ export default function DiscountsPage() {
                           <p className="text-sm font-bold text-gray-900 dark:text-white capitalize">{s.firstName} {s.lastName}</p>
                           <p className="text-[10px] text-gray-500 uppercase">{s.admissionNo} • {classes.find(c => c.id === s.classId)?.name || 'No Class'}</p>
                         </div>
-                        <Plus className="w-4 h-4 text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <Plus className="w-4 h-4 text-primary-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </button>
                     ))}
                   </div>
@@ -730,7 +730,7 @@ export default function DiscountsPage() {
                       const student = students.find(s => s.id === id);
                       if (!student) return null;
                       return (
-                        <span key={id} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl text-[10px] font-bold border border-blue-100 dark:border-blue-800">
+                        <span key={id} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-primary-600 dark:text-blue-400 rounded-xl text-[10px] font-bold border border-blue-100 dark:border-blue-800">
                           {student.firstName} {student.lastName}
                           <button onClick={() => setAssignmentData(prev => ({ ...prev, studentIds: prev.studentIds.filter(sid => sid !== id) }))}>
                             <X className="w-3 h-3 hover:text-red-500" />
@@ -791,7 +791,7 @@ export default function DiscountsPage() {
                           className={clsx(
                             "px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all border",
                             assignmentData.excludeIds.includes(student.id)
-                              ? "bg-blue-50 text-blue-600 border-blue-100 hover:bg-white"
+                              ? "bg-blue-50 text-primary-600 border-blue-100 hover:bg-white"
                               : "bg-white text-red-500 border-gray-100 hover:bg-red-50 hover:border-red-100"
                           )}
                         >
@@ -802,8 +802,8 @@ export default function DiscountsPage() {
                   </div>
                   {simulationResult.conflicts > 0 && (
                     <div className="bg-blue-50/50 dark:bg-blue-900/10 p-3 rounded-2xl border border-blue-100 dark:border-blue-800/50 flex gap-3">
-                      <Info className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <p className="text-[11px] text-blue-700 dark:text-blue-300 leading-relaxed font-medium">
+                      <Info className="w-4 h-4 text-primary-500 flex-shrink-0 mt-0.5" />
+                      <p className="text-[11px] text-primary-700 dark:text-blue-300 leading-relaxed font-medium">
                         Students with existing policies will have their current policy <span className="font-bold text-blue-800 dark:text-blue-100 underline decoration-blue-500/30">replaced</span> by this new one unless they are excluded.
                       </p>
                     </div>
@@ -819,7 +819,7 @@ export default function DiscountsPage() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-gray-900 dark:text-white uppercase text-[10px] tracking-widest bg-white dark:bg-gray-800 px-2 py-0.5 rounded-md border border-gray-100 dark:border-gray-800/50 shadow-sm mr-1">Summary</span>
                       <span>This will apply to </span>
-                      <span className="text-blue-600 font-bold">{simulationResult.total - assignmentData.excludeIds.length}</span>
+                      <span className="text-primary-600 font-bold">{simulationResult.total - assignmentData.excludeIds.length}</span>
                       <span> students</span>
                       {assignmentData.classIds.length > 0 && <span className="text-gray-400 italic font-normal"> (across {assignmentData.classIds.length} classes)</span>}
                       {simulationResult.conflicts > 0 && (
@@ -829,7 +829,7 @@ export default function DiscountsPage() {
                       )}
                     </div>
                   ) : isSimulating ? (
-                    <div className="flex items-center gap-2 text-blue-600 animate-pulse font-bold uppercase tracking-widest text-[11px]">
+                    <div className="flex items-center gap-2 text-primary-600 animate-pulse font-bold uppercase tracking-widest text-[11px]">
                       <Clock className="w-4 h-4" />
                       Finalizing allocation summary...
                     </div>
@@ -848,7 +848,7 @@ export default function DiscountsPage() {
                 <button
                   onClick={submitAssignment}
                   disabled={(assignmentData.classIds.length === 0 && assignmentData.sectionIds.length === 0 && assignmentData.categoryIds.length === 0 && assignmentData.studentIds.length === 0) || isSimulating}
-                  className="flex items-center gap-2 px-10 py-3 bg-blue-600 text-white rounded-2xl font-bold shadow-xl shadow-blue-500/20 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 transition-all cursor-pointer"
+                  className="flex items-center gap-2 px-10 py-3 bg-primary-600 text-white rounded-2xl font-bold shadow-xl shadow-primary-500/20 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 transition-all cursor-pointer"
                 >
                   <Save className="w-5 h-5" />
                   Apply Policy to {simulationResult ? (simulationResult.total - assignmentData.excludeIds.length) : 'Targets'} Students

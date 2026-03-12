@@ -90,14 +90,14 @@ export default function DeactivateReasons() {
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Deactivate Reasons</h1>
                     <p className="text-sm text-gray-500 dark:text-gray-400">Manage reasons for student deactivation</p>
                 </div>
-                <button onClick={() => setIsModalOpen(true)} className="btn btn-primary bg-blue-600 text-white px-4 py-2 rounded-xl flex items-center gap-2">
+                <button onClick={() => setIsModalOpen(true)} className="btn btn-primary bg-primary-600 text-white px-4 py-2 rounded-xl flex items-center gap-2">
                     <Plus className="w-4 h-4" /> Add Reason
                 </button>
             </div>
 
             {loading && data.length === 0 ? (
                 <div className="flex justify-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
                 </div>
             ) : (
                 <DataTable columns={columns} data={data} searchKey="reason" />
@@ -121,7 +121,7 @@ export default function DeactivateReasons() {
                         <button
                             type="submit"
                             disabled={saving || !formData.reason.trim()}
-                            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                            className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50"
                         >
                             {saving ? 'Saving...' : 'Save'}
                         </button>
