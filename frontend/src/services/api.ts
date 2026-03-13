@@ -755,8 +755,8 @@ class ApiService {
   }
 
   // Teacher Rating API methods
-  async getRatings() {
-    return this.get<any[]>('/hr/ratings')
+  async getRatings(params?: any) {
+    return this.get<any[]>('/hr/ratings', { params })
   }
 
   async getTeacherRatings(teacherId: string) {
@@ -782,6 +782,10 @@ class ApiService {
   // Student API methods
   async getStudents(params?: any) {
     return this.get<any[]>('/students', { params })
+  }
+
+  async promoteStudents(data: { studentIds: string[], classId: string, sectionId?: string }) {
+    return this.post<any>('/students/bulk/promote', data)
   }
 
   async createStudent(data: any) {

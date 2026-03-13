@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { CheckCircle, Globe, Lock, AlertTriangle, ShieldCheck, FileCheck, RefreshCw } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { CheckCircle, Globe, Lock, AlertTriangle, ShieldCheck, FileCheck } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
-import { examinationService, ExamGroup } from '../../../services/examinationService';
+import { examinationService, ExamGroup, ResultSummary } from '../../../services/examinationService';
 import api from '../../../services/api';
+import { useSystem } from '../../../context/SystemContext';
+import { systemService, AcademicSession, AcademicTerm } from '../../../services/systemService';
 
 const ResultManagementPage = () => {
     const [groups, setGroups] = useState<ExamGroup[]>([]);
@@ -10,6 +12,12 @@ const ResultManagementPage = () => {
 
     const [selectedGroup, setSelectedGroup] = useState('');
     const [selectedClass, setSelectedClass] = useState('');
+
+    const { settings } = useSystem();
+    const [sessions, setSessions] = useState<AcademicSession[]>([]);
+    const [terms, setTerms] = useState<AcademicTerm[]>([]);
+    const [selectedSession, setSelectedSession] = useState<string>(settings?.activeSessionName || '');
+    const [selectedTerm, setSelectedTerm] = useState<string>(settings?.activeTermName || '');
 
     // Status State (Mocked for now as we might not have a dedicated status endpoint yet)
     const [status, setStatus] = useState({
@@ -25,19 +33,44 @@ const ResultManagementPage = () => {
     useEffect(() => {
         const init = async () => {
             try {
-                const [g, c] = await Promise.all([
+                const [g, c, s, t] = await Promise.all([
                     examinationService.getExamGroups(),
-                    api.getClasses()
+                    api.getClasses(),
+                    systemService.getSessions(),
+                    systemService.getTerms()
                 ]);
                 setGroups(g || []);
                 setClasses(c || []);
-                if (g && g.length > 0) setSelectedGroup(g[0].id);
+                setSessions(s || []);
+                setTerms(t || []);
+
+                // Select matching group if possible
+                const sessionToUse = selectedSession || settings?.activeSessionName;
+                const termToUse = selectedTerm || settings?.activeTermName;
+
+                if (g?.length > 0) {
+                    const filtered = g.filter(group =>
+                        (!sessionToUse || group.academicYear === sessionToUse) &&
+                        (!termToUse || group.term === termToUse)
+                    );
+                    if (filtered.length > 0) {
+                        setSelectedGroup(filtered[0].id);
+                    } else {
+                        setSelectedGroup(g[0].id);
+                    }
+                }
             } catch (e) {
                 showError('Failed to load initial data');
             }
         };
         init();
     }, []);
+
+    // Filtered Groups for Selection
+    const filteredGroups = groups.filter(g =>
+        (!selectedSession || g.academicYear === selectedSession) &&
+        (!selectedTerm || g.term === selectedTerm)
+    );
 
     useEffect(() => {
         if (selectedGroup && selectedClass) {
@@ -50,7 +83,7 @@ const ResultManagementPage = () => {
         try {
             // In a real app, we'd fetch the actual status from backend.
             // For now, we'll try to deduce it or just fetch summary to see if data exists.
-            const summary = await examinationService.getResultSummary(selectedClass, selectedGroup).catch(() => null);
+            const summary = await examinationService.getResultSummary(selectedClass, selectedGroup).catch(() => null) as ResultSummary | null;
 
             // Mocking logic based on summary existence
             // If summary exists, it's calculated. 
@@ -100,7 +133,41 @@ const ResultManagementPage = () => {
             </div>
 
             {/* Filters */}
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Session</label>
+                    <select
+                        className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        value={selectedSession}
+                        onChange={(e) => {
+                            setSelectedSession(e.target.value);
+                            setSelectedGroup('');
+                        }}
+                    >
+                        <option value="">All Sessions</option>
+                        {sessions.map(s => (
+                            <option key={s.id} value={s.name}>{s.name}</option>
+                        ))}
+                    </select>
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Term</label>
+                    <select
+                        className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        value={selectedTerm}
+                        onChange={(e) => {
+                            setSelectedTerm(e.target.value);
+                            setSelectedGroup('');
+                        }}
+                    >
+                        <option value="">All Terms</option>
+                        {terms.map(t => (
+                            <option key={t.id} value={t.name}>{t.name}</option>
+                        ))}
+                    </select>
+                </div>
+
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Exam Group</label>
                     <select
@@ -109,7 +176,7 @@ const ResultManagementPage = () => {
                         onChange={(e) => setSelectedGroup(e.target.value)}
                     >
                         <option value="">Select Exam Group</option>
-                        {groups.map(g => (
+                        {filteredGroups.map(g => (
                             <option key={g.id} value={g.id}>{g.name}</option>
                         ))}
                     </select>

@@ -49,6 +49,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 { label: 'Assign Class Teachers', path: '/academics/assign-class-teachers' },
                 { label: 'Class Timetable', path: '/academics/class-timetable' },
                 { label: 'Teachers Timetable', path: '/academics/teachers-timetable' },
+                { label: 'Promote Students', path: '/academics/promotion' },
             ]
         },
         {
@@ -80,6 +81,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 { label: 'Student House', path: '/students/houses' },
                 { label: 'Deactivation Reason', path: '/students/deactivate-reasons' },
                 { label: 'Student Profile', path: '/students/profile/:id' },
+                { label: 'Rate Teachers', path: '/students/rate-teachers' },
             ]
         },
         {
@@ -123,6 +125,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 // Control
                 { type: 'header', label: 'Control' },
                 { label: 'Result Management', path: '/examination/control/results' },
+                { label: 'Approval', path: '/examination/control/approval' },
+                { label: 'Publish', path: '/examination/control/publish' },
                 { label: 'Manage Scratch Cards', path: '/examination/control/scratch-cards' },
             ]
         },
@@ -152,10 +156,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             {/* Sidebar */}
             <div className={twMerge(
                 "fixed inset-y-0 left-0 z-50 bg-white/80 dark:bg-gray-900/80 border-r border-gray-100 dark:border-gray-800 backdrop-blur-xl transition-all duration-300 ease-in-out flex flex-col print:hidden",
-                // Desktop: relative positioning to push content
-                "lg:static lg:shadow-none",
+                // Desktop: sticky positioning with fixed height
+                "lg:sticky lg:top-0 lg:h-screen lg:shadow-none",
                 // Width Logic
-                isOpen ? "translate-x-0 w-64" : "-translate-x-full lg:translate-x-0 lg:w-20"
+                isOpen ? "translate-x-0 w-80" : "-translate-x-full lg:translate-x-0 lg:w-20"
             )}>
                 {/* Logo Section */}
                 <div className="flex h-16 items-center px-6 border-b border-gray-50 dark:border-gray-800/50 overflow-hidden relative justify-center">
@@ -163,7 +167,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                         {settings.primaryLogo ? (
                             <img
                                 src={getFullUrl(settings.primaryLogo)}
-                                className="w-10 h-10 object-contain"
+                                className="w-14 h-14 object-contain"
                                 alt="Logo"
                             />
                         ) : (
@@ -213,7 +217,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                                     {/* Submenu Items */}
                                     <div className={clsx(
                                         "overflow-hidden transition-all duration-300 ease-in-out",
-                                        (expandedMenu === item.path && isOpen) ? "max-h-96 opacity-100 mb-2" : "max-h-0 opacity-0"
+                                        (expandedMenu === item.path && isOpen) ? "max-h-[1000px] opacity-100 mb-2" : "max-h-0 opacity-0"
                                     )}>
                                         <div className="pl-11 space-y-1 py-1">
                                             {item.children.map((child: any, index: number) => (

@@ -58,6 +58,25 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const refreshSettings = useCallback(async () => {
         try {
             const data = await systemService.getSettings();
+            
+            // Fetch session and term names
+            if (data?.currentSessionId) {
+                try {
+                    const sessionData = await systemService.getSession(data.currentSessionId);
+                    data.activeSessionName = sessionData?.name;
+                } catch (e) {
+                    console.error('Failed to load active session name');
+                }
+            }
+            if (data?.currentTermId) {
+                try {
+                    const termData = await systemService.getTerm(data.currentTermId);
+                    data.activeTermName = termData?.name;
+                } catch (e) {
+                    console.error('Failed to load active term name');
+                }
+            }
+            
             setSettings(data || {});
             applyColors(data?.primaryColor, data?.secondaryColor);
             

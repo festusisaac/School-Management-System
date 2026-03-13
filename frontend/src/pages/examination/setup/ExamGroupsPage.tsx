@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, AlertTriangle } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
+import { useSystem } from '../../../context/SystemContext';
 import { examinationService, ExamGroup } from '../../../services/examinationService';
 import { DataTable } from '../../../components/ui/data-table';
 import { ColumnDef } from '@tanstack/react-table';
 import { Modal } from '../../../components/ui/modal';
+import { systemService, AcademicSession, AcademicTerm } from '../../../services/systemService';
 
 const ExamGroupsPage = () => {
     const [groups, setGroups] = useState<ExamGroup[]>([]);
@@ -14,12 +16,17 @@ const ExamGroupsPage = () => {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [deletingGroup, setDeletingGroup] = useState<ExamGroup | null>(null);
     const { showSuccess, showError } = useToast();
+    const { settings } = useSystem();
+    const [sessions, setSessions] = useState<AcademicSession[]>([]);
+    const [terms, setTerms] = useState<AcademicTerm[]>([]);
+    const [selectedSession, setSelectedSession] = useState<string>(settings?.activeSessionName || '');
+    const [selectedTerm, setSelectedTerm] = useState<string>(settings?.activeTermName || '');
 
     // Form State
     const [formData, setFormData] = useState({
         name: '',
-        academicYear: '',
-        term: '',
+        academicYear: settings?.activeSessionName || '',
+        term: settings?.activeTermName || '',
         startDate: '',
         endDate: '',
         description: ''
@@ -37,12 +44,33 @@ const ExamGroupsPage = () => {
         }
     };
 
+    const fetchDropdownData = async () => {
+        try {
+            const [s, t] = await Promise.all([
+                systemService.getSessions(),
+                systemService.getTerms()
+            ]);
+            setSessions(s || []);
+            setTerms(t || []);
+        } catch (error) {
+            console.error('Failed to fetch dropdown data', error);
+        }
+    };
+
     useEffect(() => {
         fetchGroups();
+        fetchDropdownData();
     }, []);
 
     const resetForm = () => {
-        setFormData({ name: '', academicYear: '', term: '', startDate: '', endDate: '', description: '' });
+        setFormData({ 
+            name: '', 
+            academicYear: settings?.activeSessionName || '', 
+            term: settings?.activeTermName || '', 
+            startDate: '', 
+            endDate: '', 
+            description: '' 
+        });
         setEditingId(null);
         setIsCreateOpen(false);
     };
@@ -151,6 +179,11 @@ const ExamGroupsPage = () => {
         },
     ];
 
+    const filteredGroups = groups.filter(g =>
+        (!selectedSession || g.academicYear === selectedSession) &&
+        (!selectedTerm || g.term === selectedTerm)
+    );
+
     return (
         <div className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -158,13 +191,37 @@ const ExamGroupsPage = () => {
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Exam Groups</h1>
                     <p className="text-sm text-gray-500 dark:text-gray-400">Manage Examination Terms and Sessions</p>
                 </div>
-                <button
-                    onClick={() => { resetForm(); setIsCreateOpen(true); }}
-                    className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-                >
-                    <Plus className="w-4 h-4" />
-                    Create Exam Group
-                </button>
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                        <select
+                            className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            value={selectedSession}
+                            onChange={(e) => setSelectedSession(e.target.value)}
+                        >
+                            <option value="">All Sessions</option>
+                            {sessions.map(s => (
+                                <option key={s.id} value={s.name}>{s.name}</option>
+                            ))}
+                        </select>
+                        <select
+                            className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            value={selectedTerm}
+                            onChange={(e) => setSelectedTerm(e.target.value)}
+                        >
+                            <option value="">All Terms</option>
+                            {terms.map(t => (
+                                <option key={t.id} value={t.name}>{t.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <button
+                        onClick={() => { resetForm(); setIsCreateOpen(true); }}
+                        className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Create Exam Group
+                    </button>
+                </div>
             </div>
 
             {/* Main Content */}
@@ -176,7 +233,7 @@ const ExamGroupsPage = () => {
             ) : (
                 <DataTable
                     columns={columns}
-                    data={groups}
+                    data={filteredGroups}
                     searchKey="name"
                 />
             )}
@@ -212,11 +269,8 @@ const ExamGroupsPage = () => {
                                                     onChange={(e) => setFormData({ ...formData, academicYear: e.target.value })}
                                                 >
                                                     <option value="">Select Year</option>
-                                                    {Array.from({ length: 5 }, (_, i) => {
-                                                        const y = new Date().getFullYear() + 1 - i;
-                                                        return `${y}/${y + 1}`;
-                                                    }).map(y => (
-                                                        <option key={y} value={y}>{y}</option>
+                                                    {sessions.map(s => (
+                                                        <option key={s.id} value={s.name}>{s.name}</option>
                                                     ))}
                                                 </select>
                                             </div>
@@ -229,9 +283,9 @@ const ExamGroupsPage = () => {
                                                     onChange={(e) => setFormData({ ...formData, term: e.target.value })}
                                                 >
                                                     <option value="">Select Term</option>
-                                                    <option value="1st Term">1st Term</option>
-                                                    <option value="2nd Term">2nd Term</option>
-                                                    <option value="3rd Term">3rd Term</option>
+                                                    {terms.map(t => (
+                                                        <option key={t.id} value={t.name}>{t.name}</option>
+                                                    ))}
                                                 </select>
                                             </div>
                                         </div>

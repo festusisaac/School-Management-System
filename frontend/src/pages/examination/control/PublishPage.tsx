@@ -1,14 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Globe, Lock } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { examinationService, ExamGroup } from '../../../services/examinationService';
 import api from '../../../services/api';
+import { useSystem } from '../../../context/SystemContext';
+import { systemService, AcademicSession, AcademicTerm } from '../../../services/systemService';
 
 const PublishPage = () => {
     const [groups, setGroups] = useState<ExamGroup[]>([]);
     const [classes, setClasses] = useState<any[]>([]);
     const [selectedGroup, setSelectedGroup] = useState('');
     const [selectedClass, setSelectedClass] = useState('');
+
+    const { settings } = useSystem();
+    const [sessions, setSessions] = useState<AcademicSession[]>([]);
+    const [terms, setTerms] = useState<AcademicTerm[]>([]);
+    const [selectedSession, setSelectedSession] = useState<string>(settings?.activeSessionName || '');
+    const [selectedTerm, setSelectedTerm] = useState<string>(settings?.activeTermName || '');
     const [summary, setSummary] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [processing, setProcessing] = useState(false);
@@ -18,18 +26,42 @@ const PublishPage = () => {
     useEffect(() => {
         const init = async () => {
             try {
-                const [g, c] = await Promise.all([
+                const [g, c, s, t] = await Promise.all([
                     examinationService.getExamGroups(),
-                    api.getClasses()
+                    api.getClasses(),
+                    systemService.getSessions(),
+                    systemService.getTerms()
                 ]);
                 setGroups(g || []);
                 setClasses(c || []);
+                setSessions(s || []);
+                setTerms(t || []);
+
+                // Select matching group if possible
+                const sessionToUse = selectedSession || settings?.activeSessionName;
+                const termToUse = selectedTerm || settings?.activeTermName;
+
+                if (g?.length > 0) {
+                    const filtered = g.filter(group =>
+                        (!sessionToUse || group.academicYear === sessionToUse) &&
+                        (!termToUse || group.term === termToUse)
+                    );
+                    if (filtered.length > 0) {
+                        setSelectedGroup(filtered[0].id);
+                    }
+                }
             } catch (e) {
                 showError('Failed to load initial data');
             }
         };
         init();
     }, []);
+
+    // Filtered Groups for Selection
+    const filteredGroups = groups.filter(g =>
+        (!selectedSession || g.academicYear === selectedSession) &&
+        (!selectedTerm || g.term === selectedTerm)
+    );
 
     useEffect(() => {
         if (selectedGroup && selectedClass) {
@@ -73,14 +105,42 @@ const PublishPage = () => {
                 <p className="text-gray-500 dark:text-gray-400">Release approved results to portals.</p>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm flex flex-col md:flex-row gap-4">
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm grid grid-cols-1 md:grid-cols-4 gap-4">
+                <select
+                    className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    value={selectedSession}
+                    onChange={(e) => {
+                        setSelectedSession(e.target.value);
+                        setSelectedGroup('');
+                    }}
+                >
+                    <option value="">All Sessions</option>
+                    {sessions.map(s => (
+                        <option key={s.id} value={s.name}>{s.name}</option>
+                    ))}
+                </select>
+
+                <select
+                    className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    value={selectedTerm}
+                    onChange={(e) => {
+                        setSelectedTerm(e.target.value);
+                        setSelectedGroup('');
+                    }}
+                >
+                    <option value="">All Terms</option>
+                    {terms.map(t => (
+                        <option key={t.id} value={t.name}>{t.name}</option>
+                    ))}
+                </select>
+
                 <select
                     className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                     value={selectedGroup}
                     onChange={(e) => setSelectedGroup(e.target.value)}
                 >
                     <option value="">Select Exam Group</option>
-                    {groups.map(g => (
+                    {filteredGroups.map(g => (
                         <option key={g.id} value={g.id}>{g.name}</option>
                     ))}
                 </select>

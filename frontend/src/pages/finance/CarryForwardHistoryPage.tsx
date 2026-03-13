@@ -16,6 +16,8 @@ import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { formatCurrency } from '../../utils/currency';
 import { clsx } from 'clsx';
+import { systemService, AcademicSession } from '../../services/systemService';
+import { useSystem } from '../../context/SystemContext';
 
 interface CarryForwardRecord {
     id: string;
@@ -42,13 +44,31 @@ const CarryForwardHistoryPage = () => {
     const [selectedYear, setSelectedYear] = useState('');
     const [page, setPage] = useState(1);
     const [total, setTotal] = useState(0);
+    const [availableSessions, setAvailableSessions] = useState<AcademicSession[]>([]);
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
+    const { settings } = useSystem();
+    const activeSessionName = settings?.activeSessionName;
+
     const limit = 20;
-    const years = Array.from({ length: 5 }, (_, i) => {
-        const y = new Date().getFullYear() - i;
-        return `${y}/${y + 1}`;
-    });
+
+    useEffect(() => {
+        const loadSessions = async () => {
+            try {
+                const sessions = await systemService.getSessions();
+                setAvailableSessions(sessions || []);
+            } catch (e) {
+                console.error('Failed to load sessions');
+            }
+        };
+        loadSessions();
+    }, []);
+
+    useEffect(() => {
+        if (!selectedYear && activeSessionName) {
+            setSelectedYear(activeSessionName);
+        }
+    }, [activeSessionName]);
 
     useEffect(() => {
         fetchHistory();
@@ -135,8 +155,8 @@ const CarryForwardHistoryPage = () => {
                         onChange={e => setSelectedYear(e.target.value)}
                     >
                         <option value="">All Years</option>
-                        {years.map(y => (
-                            <option key={y} value={y}>{y}</option>
+                        {availableSessions.map(s => (
+                            <option key={s.id} value={s.name}>{s.name}</option>
                         ))}
                     </select>
                 </div>

@@ -5,6 +5,8 @@ export { default as GradingSystemPage } from './setup/GradingSystemPage';
 export { default as ExamSchedulePage } from './setup/ExamSchedulePage';
 export { default as AdmitCardPage } from './setup/admit-cards/AdmitCardPage';
 // Control
+export { default as ApprovalPage } from './control/ApprovalPage';
+export { default as PublishPage } from './control/PublishPage';
 export { default as ResultManagementPage } from './control/ResultManagementPage';
 export { default as ScratchCardPage } from './control/ScratchCardPage';
 // Entry

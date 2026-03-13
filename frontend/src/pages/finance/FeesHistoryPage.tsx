@@ -27,6 +27,8 @@ import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { clsx } from 'clsx';
 import { formatCurrency, CURRENCY_SYMBOL } from '../../utils/currency';
+import { systemService, AcademicSession } from '../../services/systemService';
+import { useSystem } from '../../context/SystemContext';
 
 interface Transaction {
   id: string;
@@ -76,7 +78,11 @@ export default function FeesHistoryPage() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [method, setMethod] = useState('');
-  const [type, setType] = useState(''); // Default to empty to show all, or 'FEE_PAYMENT' if preferred
+  const [type, setType] = useState('');
+  const [selectedSessionId, setSelectedSessionId] = useState('');
+  const [availableSessions, setAvailableSessions] = useState<AcademicSession[]>([]);
+
+  const { settings } = useSystem();
 
   // Actions
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
@@ -116,6 +122,32 @@ export default function FeesHistoryPage() {
   useEffect(() => {
     fetchHistory();
   }, [fetchHistory]);
+
+  useEffect(() => {
+    const loadSessions = async () => {
+      try {
+        const res = await systemService.getSessions();
+        setAvailableSessions(res || []);
+      } catch (e) {
+        console.error('Failed to load sessions');
+      }
+    };
+    loadSessions();
+  }, []);
+
+  const handleSessionChange = (sessionId: string) => {
+    setSelectedSessionId(sessionId);
+    if (!sessionId) {
+      setStartDate('');
+      setEndDate('');
+      return;
+    }
+    const session = availableSessions.find(s => s.id === sessionId);
+    if (session) {
+      if (session.startDate) setStartDate(new Date(session.startDate).toISOString().split('T')[0]);
+      if (session.endDate) setEndDate(new Date(session.endDate).toISOString().split('T')[0]);
+    }
+  };
 
   const handleExportCSV = () => {
     if (transactions.length === 0) return;
@@ -302,7 +334,22 @@ export default function FeesHistoryPage() {
 
       {/* Filters Bar */}
       <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+          {/* Session Filter */}
+          <div className="relative">
+            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={17} />
+            <select
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary-500 appearance-none font-bold"
+              value={selectedSessionId}
+              onChange={e => handleSessionChange(e.target.value)}
+            >
+              <option value="">All Sessions</option>
+              {availableSessions.map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </div>
+
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />

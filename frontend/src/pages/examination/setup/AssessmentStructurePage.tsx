@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, AlertTriangle, Layers } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { examinationService, ExamGroup, AssessmentType } from '../../../services/examinationService';
 import { DataTable } from '../../../components/ui/data-table';
 import { ColumnDef } from '@tanstack/react-table';
 import { Modal } from '../../../components/ui/modal';
+import { useSystem } from '../../../context/SystemContext';
+import { systemService, AcademicSession, AcademicTerm } from '../../../services/systemService';
 
 const AssessmentStructurePage = () => {
     const [groups, setGroups] = useState<ExamGroup[]>([]);
@@ -16,6 +18,11 @@ const AssessmentStructurePage = () => {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [deletingAssessment, setDeletingAssessment] = useState<AssessmentType | null>(null);
     const { showSuccess, showError } = useToast();
+    const { settings } = useSystem();
+    const [sessions, setSessions] = useState<AcademicSession[]>([]);
+    const [terms, setTerms] = useState<AcademicTerm[]>([]);
+    const [selectedSession, setSelectedSession] = useState<string>(settings?.activeSessionName || '');
+    const [selectedTerm, setSelectedTerm] = useState<string>(settings?.activeTermName || '');
 
     // Form State
     const [formData, setFormData] = useState({
@@ -25,7 +32,36 @@ const AssessmentStructurePage = () => {
     });
 
     useEffect(() => {
-        fetchGroups();
+        const init = async () => {
+            try {
+                const [g, s, t] = await Promise.all([
+                    examinationService.getExamGroups(),
+                    systemService.getSessions(),
+                    systemService.getTerms()
+                ]);
+                setGroups(g || []);
+                setSessions(s || []);
+                setTerms(t || []);
+
+                const sessionToUse = selectedSession || settings?.activeSessionName;
+                const termToUse = selectedTerm || settings?.activeTermName;
+
+                if (g?.length > 0) {
+                    const filtered = g.filter(group =>
+                        (!sessionToUse || group.academicYear === sessionToUse) &&
+                        (!termToUse || group.term === termToUse)
+                    );
+                    if (filtered.length > 0) {
+                        setSelectedGroup(filtered[0].id);
+                    } else if (!selectedGroup) {
+                        setSelectedGroup(g[0].id);
+                    }
+                }
+            } catch (error) {
+                showError('Failed to load initial data');
+            }
+        };
+        init();
     }, []);
 
     useEffect(() => {
@@ -37,17 +73,11 @@ const AssessmentStructurePage = () => {
         }
     }, [selectedGroup]);
 
-    const fetchGroups = async () => {
-        try {
-            const data = await examinationService.getExamGroups();
-            setGroups(data || []);
-            if (data && data.length > 0 && !selectedGroup) {
-                setSelectedGroup(data[0].id);
-            }
-        } catch (error) {
-            showError('Failed to fetch exam groups');
-        }
-    };
+    // Filtered Groups for Selection
+    const filteredGroups = groups.filter(g =>
+        (!selectedSession || g.academicYear === selectedSession) &&
+        (!selectedTerm || g.term === selectedTerm)
+    );
 
     const fetchAssessments = async (groupId: string) => {
         try {
@@ -168,14 +198,42 @@ const AssessmentStructurePage = () => {
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Assessment Structure</h1>
                     <p className="text-gray-500 dark:text-gray-400">Define CA and Exam weightage for each term</p>
                 </div>
-                <div className="flex gap-4 items-center">
+                <div className="flex flex-wrap gap-4 items-center">
+                    <select
+                        className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-sm"
+                        value={selectedSession}
+                        onChange={(e) => {
+                            setSelectedSession(e.target.value);
+                            setSelectedGroup('');
+                        }}
+                    >
+                        <option value="">All Sessions</option>
+                        {sessions.map(s => (
+                            <option key={s.id} value={s.name}>{s.name}</option>
+                        ))}
+                    </select>
+
+                    <select
+                        className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-sm"
+                        value={selectedTerm}
+                        onChange={(e) => {
+                            setSelectedTerm(e.target.value);
+                            setSelectedGroup('');
+                        }}
+                    >
+                        <option value="">All Terms</option>
+                        {terms.map(t => (
+                            <option key={t.id} value={t.name}>{t.name}</option>
+                        ))}
+                    </select>
+
                     <select
                         className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-sm"
                         value={selectedGroup}
                         onChange={(e) => setSelectedGroup(e.target.value)}
                     >
                         <option value="">Select Exam Group</option>
-                        {groups.map(g => (
+                        {filteredGroups.map(g => (
                             <option key={g.id} value={g.id}>{g.name}</option>
                         ))}
                     </select>

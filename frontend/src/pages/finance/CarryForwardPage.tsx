@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Search,
   Filter,
@@ -6,12 +6,8 @@ import {
   AlertTriangle,
   User,
   SearchX,
-  Banknote,
-  MoreHorizontal,
-  Bell,
   CheckCircle2,
   X,
-  FileText,
   ChevronLeft,
   ChevronRight,
   Loader2,
@@ -23,6 +19,7 @@ import {
 import { formatCurrency } from '../../utils/currency';
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import { useSystem } from '../../context/SystemContext';
 import { clsx } from 'clsx';
 import { useNavigate } from 'react-router-dom';
 
@@ -44,9 +41,10 @@ interface Debtor {
 
 const CarryForwardPage = () => {
   const { showError, showSuccess, showInfo } = useToast();
+  const { settings } = useSystem();
   const navigate = useNavigate();
 
-  // State
+  // ... (previous state)
   const [debtors, setDebtors] = useState<Debtor[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -75,6 +73,21 @@ const CarryForwardPage = () => {
   useEffect(() => {
     fetchClasses();
   }, []);
+
+  // Set default target year based on global session
+  useEffect(() => {
+    if (settings?.activeSessionName && !targetYear) {
+      // If global session is 2024/2025, target should be 2025/2026
+      const parts = settings.activeSessionName.split('/');
+      if (parts.length === 2) {
+        const startYear = parseInt(parts[0]);
+        const endYear = parseInt(parts[1]);
+        if (!isNaN(startYear) && !isNaN(endYear)) {
+          setTargetYear(`${startYear + 1}/${endYear + 1}`);
+        }
+      }
+    }
+  }, [settings?.activeSessionName]);
 
   // Main fetch effect
   useEffect(() => {

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Star, MessageSquare, Calendar, User, Save } from 'lucide-react';
+import { useSystem } from '../../context/SystemContext';
+import { systemService, AcademicSession, AcademicTerm } from '../../services/systemService';
 
 interface Staff {
     id: string;
@@ -17,10 +19,11 @@ interface RatingModalProps {
 }
 
 const RatingModal: React.FC<RatingModalProps> = ({ isOpen, onClose, onSubmit, teachers, initialData }) => {
+    const { settings } = useSystem();
     const [formData, setFormData] = useState({
         teacherId: '',
-        academicYear: new Date().getFullYear().toString() + '-' + (new Date().getFullYear() + 1).toString(),
-        term: 'First Term',
+        academicYear: settings?.activeSessionName || '',
+        term: settings?.activeTermName || '',
         subject: '',
         teachingSkills: 5,
         classroomManagement: 5,
@@ -31,6 +34,25 @@ const RatingModal: React.FC<RatingModalProps> = ({ isOpen, onClose, onSubmit, te
         comments: '',
         ratingDate: new Date().toISOString().split('T')[0]
     });
+
+    const [sessions, setSessions] = useState<AcademicSession[]>([]);
+    const [terms, setTerms] = useState<AcademicTerm[]>([]);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [s, t] = await Promise.all([
+                    systemService.getSessions(),
+                    systemService.getTerms()
+                ]);
+                setSessions(s || []);
+                setTerms(t || []);
+            } catch (error) {
+                console.error('Failed to fetch sessions/terms', error);
+            }
+        };
+        fetchData();
+    }, []);
 
     useEffect(() => {
         if (initialData) {
@@ -123,26 +145,34 @@ const RatingModal: React.FC<RatingModalProps> = ({ isOpen, onClose, onSubmit, te
                             <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-1">
                                 <Calendar size={14} /> Academic Year *
                             </label>
-                            <input
+                            <select
                                 name="academicYear"
                                 value={formData.academicYear}
                                 onChange={handleChange}
                                 required
-                                placeholder="e.g. 2023-2024"
                                 className="w-full border border-gray-200 dark:border-gray-700 rounded-xl p-3 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-medium"
-                            />
+                            >
+                                <option value="" className="dark:bg-gray-800">Select Year</option>
+                                {sessions.map(s => (
+                                    <option key={s.id} value={s.name} className="dark:bg-gray-800">{s.name}</option>
+                                ))}
+                            </select>
                         </div>
                         <div>
-                            <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">Term</label>
+                            <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-1">
+                                <Calendar size={14} /> Term *
+                            </label>
                             <select
                                 name="term"
                                 value={formData.term}
                                 onChange={handleChange}
+                                required
                                 className="w-full border border-gray-200 dark:border-gray-700 rounded-xl p-3 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-medium"
                             >
-                                <option value="First Term" className="dark:bg-gray-800">First Term</option>
-                                <option value="Second Term" className="dark:bg-gray-800">Second Term</option>
-                                <option value="Third Term" className="dark:bg-gray-800">Third Term</option>
+                                <option value="" className="dark:bg-gray-800">Select Term</option>
+                                {terms.map(t => (
+                                    <option key={t.id} value={t.name} className="dark:bg-gray-800">{t.name}</option>
+                                ))}
                             </select>
                         </div>
                         <div>

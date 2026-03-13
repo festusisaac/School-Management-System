@@ -8,7 +8,9 @@ export interface SystemSetting {
     schoolPhone?: string;
     schoolMotto?: string;
     currentSessionId?: string;
+    activeSessionName?: string;
     currentTermId?: string;
+    activeTermName?: string;
     sessionStartDate?: string | Date;
     dateFormat?: string;
     timezone?: string;

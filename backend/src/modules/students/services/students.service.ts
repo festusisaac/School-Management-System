@@ -410,4 +410,13 @@ export class StudentsService {
 
         return student;
     }
+
+    async promote(data: { studentIds: string[], classId: string, sectionId?: string }): Promise<void> {
+        if (!data.studentIds || data.studentIds.length === 0) return;
+        
+        await this.studentsRepository.update(data.studentIds, {
+            classId: data.classId,
+            sectionId: (data.sectionId || undefined) as any
+        });
+    }
 }

@@ -1,14 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Award,
-    Search,
-    TrendingUp,
-    Filter
+    Star,
+    Calendar,
 } from 'lucide-react';
 import api from '../../services/api';
 import RatingModal from '../../components/hr/RatingModal';
 import { format } from 'date-fns';
 import { useToast } from '../../context/ToastContext';
+import { useSystem } from '../../context/SystemContext';
+import { systemService, AcademicSession } from '../../services/systemService';
+import { DataTable } from '../../components/ui/data-table';
+import { ColumnDef } from '@tanstack/react-table';
 
 interface Staff {
     id: string;
@@ -31,27 +34,53 @@ interface TeacherRating {
     rater: Staff;
 }
 
-const TeacherRatingPage: React.FC = () => {
+export default function TeacherRatingPage() {
     const [ratings, setRatings] = useState<TeacherRating[]>([]);
     const [teachers, setTeachers] = useState<Staff[]>([]);
     const [loading, setLoading] = useState(true);
-    const [search, setSearch] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [editingRating, setEditingRating] = useState<TeacherRating | null>(null);
     const toast = useToast();
+    const { settings } = useSystem();
+
+    const [availableSessions, setAvailableSessions] = useState<AcademicSession[]>([]);
+    const [selectedSession, setSelectedSession] = useState('');
+    const [selectedTerm, setSelectedTerm] = useState('');
+
+    useEffect(() => {
+        const loadInitial = async () => {
+            try {
+                const sess = await systemService.getSessions();
+                setAvailableSessions(sess || []);
+            } catch (e) {
+                console.error('Failed to load sessions');
+            }
+        };
+        loadInitial();
+    }, []);
+
+    useEffect(() => {
+        if (settings) {
+            setSelectedSession(settings.activeSessionName || '');
+            setSelectedTerm(settings.activeTermName || '');
+        }
+    }, [settings]);
 
     useEffect(() => {
         fetchData();
-    }, []);
+    }, [selectedSession, selectedTerm]);
 
     const fetchData = async () => {
         try {
             setLoading(true);
             const [ratingsData, staffData] = await Promise.all([
-                api.getRatings(),
+                api.getRatings({
+                    academicYear: selectedSession || undefined,
+                    term: selectedTerm || undefined
+                }),
                 api.getStaff()
             ]);
-            setRatings(ratingsData);
+            setRatings(ratingsData || []);
             setTeachers(staffData.filter((s: any) => s.role === 'Teacher'));
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -81,139 +110,158 @@ const TeacherRatingPage: React.FC = () => {
         return 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-800';
     };
 
-    const filteredRatings = ratings.filter(r =>
-        `${r.teacher.firstName} ${r.teacher.lastName}`.toLowerCase().includes(search.toLowerCase()) ||
-        r.teacher.employeeId.toLowerCase().includes(search.toLowerCase()) ||
-        r.subject?.toLowerCase().includes(search.toLowerCase())
-    );
-
     const averageScore = ratings.length > 0
         ? (ratings.reduce((acc, r) => acc + Number(r.overallRating), 0) / ratings.length).toFixed(1)
         : '0.0';
 
+    const columns: ColumnDef<TeacherRating>[] = [
+        {
+            id: 'teacher',
+            header: 'Teacher',
+            accessorFn: (row) => `${row.teacher.firstName} ${row.teacher.lastName}`,
+            cell: ({ row }) => (
+                <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-primary-50 dark:bg-primary-900/40 flex items-center justify-center text-primary-600 dark:text-primary-400 font-bold border-2 border-white dark:border-gray-800 shadow-sm overflow-hidden">
+                        {row.original.teacher.photo ? (
+                            <img src={row.original.teacher.photo.startsWith('http') ? row.original.teacher.photo : `http://localhost:3000${row.original.teacher.photo}`} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                            <span className="text-sm">{row.original.teacher.firstName[0]}{row.original.teacher.lastName[0]}</span>
+                        )}
+                    </div>
+                    <div>
+                        <p className="font-bold text-gray-900 dark:text-white leading-tight">{row.original.teacher.firstName} {row.original.teacher.lastName}</p>
+                        <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-tight">{row.original.teacher.employeeId}</p>
+                    </div>
+                </div>
+            ),
+        },
+        {
+            id: 'session_term',
+            header: 'Year / Term',
+            accessorFn: (row) => `${row.academicYear} ${row.term}`,
+            cell: ({ row }) => (
+                <div className="flex flex-col">
+                    <span className="text-xs font-bold text-gray-700 dark:text-gray-200">{row.original.academicYear}</span>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">{row.original.term}</span>
+                </div>
+            ),
+        },
+        {
+            id: 'subject',
+            header: 'Subject',
+            accessorKey: 'subject',
+            cell: ({ row }) => (
+                <span className="text-xs font-medium text-gray-600 dark:text-gray-300">{row.original.subject || 'N/A'}</span>
+            ),
+        },
+        {
+            id: 'score',
+            header: 'Score',
+            accessorKey: 'overallRating',
+            cell: ({ row }) => (
+                <span className={`px-2.5 py-1 rounded-lg text-xs font-black border ${getRatingColor(row.original.overallRating)}`}>
+                    {Number(row.original.overallRating).toFixed(1)} / 5.0
+                </span>
+            ),
+        },
+        {
+            id: 'date',
+            header: 'Date',
+            accessorKey: 'ratingDate',
+            cell: ({ row }) => (
+                <span className="text-xs text-gray-500 font-medium">
+                    {format(new Date(row.original.ratingDate), 'MMM dd, yyyy')}
+                </span>
+            ),
+        },
+        {
+            id: 'rater',
+            header: () => <div className="text-right">Rater</div>,
+            cell: ({ row }) => (
+                <div className="text-right">
+                    <span className="text-xs font-bold text-gray-600 dark:text-gray-300">
+                        {row.original.rater?.firstName ? `${row.original.rater.firstName} ${row.original.rater.lastName}` : 'Anonymous'}
+                    </span>
+                </div>
+            ),
+        },
+    ];
+
     return (
-        <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-300">
+        <div className="space-y-6 animate-in fade-in duration-500 pb-20">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                <div>
-                    <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white flex items-center gap-3">
-                        <Award className="p-2 bg-yellow-500 text-white rounded-lg shadow-lg shadow-yellow-500/30" size={40} />
-                        Teacher Performance Dashboard
-                    </h1>
-                    <p className="text-gray-500 dark:text-gray-400 mt-1">Review student feedback and overall performance analytics</p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm transition-all">
+                <div className="flex items-center gap-4">
+                    <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 rounded-xl">
+                        <Award className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Performance Dashboard</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Track and manage teacher performance ratings</p>
+                    </div>
                 </div>
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm transition-all">
-                    <p className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Average Score</p>
-                    <div className="flex items-end gap-2">
-                        <h3 className="text-3xl font-black text-gray-900 dark:text-white leading-none">{averageScore}</h3>
-                        <span className="text-gray-400 dark:text-gray-600 font-bold mb-1">/ 5.0</span>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {[
+                    { label: 'Average Score', value: averageScore, sub: '/ 5.0', color: 'text-gray-900' },
+                    { label: 'Total Ratings', value: ratings.length, color: 'text-gray-900' },
+                    { label: 'Rated Teachers', value: new Set(ratings.map(r => r.teacherId)).size, color: 'text-gray-900' },
+                    { label: 'Top Performer', value: ratings.length > 0 ? ratings.sort((a, b) => b.overallRating - a.overallRating)[0].teacher.firstName : 'N/A', color: 'text-primary-600' }
+                ].map((stat, i) => (
+                    <div key={i} className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">{stat.label}</p>
+                        <div className="flex items-end gap-1">
+                            <h3 className={`text-2xl font-black ${stat.color} dark:text-white leading-none`}>{stat.value}</h3>
+                            {stat.sub && <span className="text-xs font-bold text-gray-400 mb-0.5">{stat.sub}</span>}
+                        </div>
                     </div>
-                </div>
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm transition-all">
-                    <p className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Total Ratings</p>
-                    <h3 className="text-3xl font-black text-gray-900 dark:text-white leading-none">{ratings.length}</h3>
-                </div>
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm transition-all">
-                    <p className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Rated Teachers</p>
-                    <h3 className="text-3xl font-black text-gray-900 dark:text-white leading-none">{new Set(ratings.map(r => r.teacherId)).size}</h3>
-                </div>
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm transition-all">
-                    <p className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Top Performer</p>
-                    <h3 className="text-xl font-black text-primary-600 dark:text-primary-400 truncate leading-none">
-                        {ratings.length > 0 ? `${ratings.sort((a, b) => b.overallRating - a.overallRating)[0].teacher.firstName}` : 'N/A'}
-                    </h3>
-                </div>
+                ))}
             </div>
 
             {/* List Section */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md transition-all overflow-hidden">
-                <div className="p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div className="relative flex-1 max-w-md w-full">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
-                        <input
-                            type="text"
-                            placeholder="Search teacher, ID or subject..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-medium"
-                        />
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-gray-50 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div className="flex items-center gap-2">
+                         <Star size={16} className="text-yellow-500" />
+                         <h2 className="text-sm font-bold text-gray-700 dark:text-gray-200">Performance Records</h2>
                     </div>
-                    <div className="flex gap-2 w-full md:w-auto">
-                        <button className="flex-1 md:flex-none p-2.5 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-xl border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
-                            <Filter size={18} className="mx-auto" />
-                        </button>
-                        <button className="flex-1 md:flex-none p-2.5 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-xl border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
-                            <TrendingUp size={18} className="mx-auto" />
-                        </button>
+                    <div className="flex flex-wrap gap-2">
+                        <div className="relative">
+                            <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                            <select
+                                className="pl-8 pr-3 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-[11px] font-bold outline-none focus:ring-2 focus:ring-primary-500 transition-all cursor-pointer"
+                                value={selectedSession}
+                                onChange={e => setSelectedSession(e.target.value)}
+                            >
+                                <option value="">All Sessions</option>
+                                {availableSessions.map(s => (
+                                    <option key={s.id} value={s.name}>{s.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <select
+                            className="px-3 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-[11px] font-bold outline-none focus:ring-2 focus:ring-primary-500 transition-all cursor-pointer"
+                            value={selectedTerm}
+                            onChange={e => setSelectedTerm(e.target.value)}
+                        >
+                            <option value="">All Terms</option>
+                            <option value="First Term">First Term</option>
+                            <option value="Second Term">Second Term</option>
+                            <option value="Third Term">Third Term</option>
+                        </select>
                     </div>
                 </div>
 
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead className="bg-gray-50 dark:bg-gray-800/10 border-b border-gray-100 dark:border-gray-700 transition-colors">
-                            <tr>
-                                <th className="px-6 py-4 text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Teacher</th>
-                                <th className="px-6 py-4 text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Year / Term</th>
-                                <th className="px-6 py-4 text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Subject</th>
-                                <th className="px-6 py-4 text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Score</th>
-                                <th className="px-6 py-4 text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Date</th>
-                                <th className="px-6 py-4 text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                            {loading ? (
-                                <tr>
-                                    <td colSpan={6} className="px-6 py-12 text-center text-gray-400 italic">Loading ratings...</td>
-                                </tr>
-                            ) : filteredRatings.length === 0 ? (
-                                <tr>
-                                    <td colSpan={6} className="px-6 py-12 text-center text-gray-400">No performance ratings found</td>
-                                </tr>
-                            ) : filteredRatings.map((rating) => (
-                                <tr key={rating.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group transition-all">
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center text-primary-600 dark:text-primary-400 font-bold transition-colors">
-                                                {rating.teacher.photo ? (
-                                                    <img src={rating.teacher.photo.startsWith('http') ? rating.teacher.photo : `http://localhost:3000${rating.teacher.photo}`} alt="" className="w-full h-full rounded-full object-cover shadow-sm" />
-                                                ) : (
-                                                    <span className="text-sm">{rating.teacher.firstName[0]}{rating.teacher.lastName[0]}</span>
-                                                )}
-                                            </div>
-                                            <div>
-                                                <p className="font-bold text-gray-900 dark:text-white leading-tight">{rating.teacher.firstName} {rating.teacher.lastName}</p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400">{rating.teacher.employeeId} • {rating.teacher.designation?.title}</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <p className="text-sm font-bold text-gray-700 dark:text-gray-200">{rating.academicYear}</p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">{rating.term}</p>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300">{rating.subject || 'N/A'}</span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`px-3 py-1 rounded-full text-sm font-black border transition-all ${getRatingColor(rating.overallRating)}`}>
-                                            {Number(rating.overallRating).toFixed(1)} / 5.0
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-medium">
-                                        {format(new Date(rating.ratingDate), 'MMM dd, yyyy')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                                            {rating.rater?.firstName ? `${rating.rater.firstName} ${rating.rater.lastName}` : 'Anonymous'}
-                                        </span>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                <div className="p-0">
+                    <DataTable 
+                        columns={columns} 
+                        data={ratings}
+                        loading={loading}
+                        searchKey="teacher"
+                        placeholder="Search by teacher name or ID..."
+                    />
                 </div>
             </div>
 
@@ -226,6 +274,4 @@ const TeacherRatingPage: React.FC = () => {
             />
         </div>
     );
-};
-
-export default TeacherRatingPage;
+}

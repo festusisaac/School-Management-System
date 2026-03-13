@@ -96,6 +96,8 @@ function App() {
 
                   {/* Control */}
                   <Route path="control/results" element={<Examination.ResultManagementPage />} />
+                  <Route path="control/approval" element={<Examination.ApprovalPage />} />
+                  <Route path="control/publish" element={<Examination.PublishPage />} />
                   <Route path="control/scratch-cards" element={<Examination.ScratchCardPage />} />
 
                   {/* Entry */}

@@ -11,8 +11,13 @@ export class RatingService {
         private readonly ratingRepository: Repository<TeacherRating>,
     ) { }
 
-    async findAll(): Promise<TeacherRating[]> {
+    async findAll(query: { academicYear?: string, term?: string } = {}): Promise<TeacherRating[]> {
+        const where: any = {};
+        if (query.academicYear) where.academicYear = query.academicYear;
+        if (query.term) where.term = query.term;
+
         return this.ratingRepository.find({
+            where,
             relations: ['teacher', 'rater'],
             order: { ratingDate: 'DESC' },
         });

@@ -4,6 +4,7 @@ import { useToast } from '../../../context/ToastContext';
 import { useSystem } from '../../../context/SystemContext';
 import { examinationService, ExamGroup, GradeScale } from '../../../services/examinationService';
 import api from '../../../services/api';
+import { systemService, AcademicSession, AcademicTerm } from '../../../services/systemService';
 import ReportCardTemplate, { ReportCardData } from '../../../components/examination/ReportCardTemplate';
 
 const ResultSheetPage = () => {
@@ -12,6 +13,11 @@ const ResultSheetPage = () => {
     const [gradeScales, setGradeScales] = useState<GradeScale[]>([]);
     const [selectedGroup, setSelectedGroup] = useState('');
     const [selectedClass, setSelectedClass] = useState('');
+
+    const [sessions, setSessions] = useState<AcademicSession[]>([]);
+    const [terms, setTerms] = useState<AcademicTerm[]>([]);
+    const [selectedSession, setSelectedSession] = useState<string>('');
+    const [selectedTerm, setSelectedTerm] = useState<string>('');
 
     const [students, setStudents] = useState<ReportCardData[]>([]);
     const [loading, setLoading] = useState(false);
@@ -27,20 +33,49 @@ const ResultSheetPage = () => {
     useEffect(() => {
         const init = async () => {
             try {
-                const [g, c, s] = await Promise.all([
+                const [g, c, s, sess, t] = await Promise.all([
                     examinationService.getExamGroups(),
                     api.getClasses(),
-                    examinationService.getGradeScales()
+                    examinationService.getGradeScales(),
+                    systemService.getSessions(),
+                    systemService.getTerms()
                 ]);
-                setGroups(g || []);
+                
+                const loadedGroups = g || [];
+                setGroups(loadedGroups);
                 setClasses(c || []);
                 setGradeScales(s || []);
+                setSessions(sess || []);
+                setTerms(t || []);
+
+                // Set initial session/term from settings if available
+                const initialSession = settings?.activeSessionName || '';
+                const initialTerm = settings?.activeTermName || '';
+                setSelectedSession(initialSession);
+                setSelectedTerm(initialTerm);
+
+                // Auto-select group matching global session and term
+                if (initialSession && initialTerm && loadedGroups.length > 0) {
+                    const matchedGroup = loadedGroups.find(group => 
+                        group.academicYear === initialSession && 
+                        group.term === initialTerm
+                    );
+                    if (matchedGroup) {
+                        setSelectedGroup(matchedGroup.id);
+                    }
+                }
             } catch (e) {
                 showError('Failed to load initial data');
             }
         };
         init();
-    }, []);
+    }, [settings?.activeSessionName, settings?.activeTermName]);
+
+    // Filtered Groups for Selection
+    const filteredGroups = groups.filter(g =>
+        (!selectedSession || g.academicYear === selectedSession) &&
+        (!selectedTerm || g.term === selectedTerm)
+    );
 
     // Helper removed as we use getFullUrl from SystemContext
 
@@ -139,9 +174,9 @@ const ResultSheetPage = () => {
                         timesOpened: 127,
                         timesPresent: 109,
                         timesAbsent: 18,
-                        termBegins: settings.sessionStartDate || '20/11/2025',
-                        termEnds: '31/12/2025',
-                        nextTermBegins: '01/01/2026'
+                        termBegins: groupData.startDate ? new Date(groupData.startDate).toLocaleDateString() : (settings.sessionStartDate ? new Date(settings.sessionStartDate).toLocaleDateString() : ''),
+                        termEnds: groupData.endDate ? new Date(groupData.endDate).toLocaleDateString() : '',
+                        nextTermBegins: 'To be announced'
                     },
                     subjects: subjects,
                     summary: {
@@ -242,7 +277,41 @@ const ResultSheetPage = () => {
                 </div>
 
                 {/* Filters */}
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm grid grid-cols-1 md:grid-cols-5 gap-6 items-end">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Session</label>
+                        <select
+                            className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            value={selectedSession}
+                            onChange={(e) => {
+                                setSelectedSession(e.target.value);
+                                setSelectedGroup('');
+                            }}
+                        >
+                            <option value="">All Sessions</option>
+                            {sessions.map(s => (
+                                <option key={s.id} value={s.name}>{s.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Term</label>
+                        <select
+                            className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            value={selectedTerm}
+                            onChange={(e) => {
+                                setSelectedTerm(e.target.value);
+                                setSelectedGroup('');
+                            }}
+                        >
+                            <option value="">All Terms</option>
+                            {terms.map(t => (
+                                <option key={t.id} value={t.name}>{t.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Exam Group</label>
                         <select
@@ -251,7 +320,7 @@ const ResultSheetPage = () => {
                             onChange={(e) => setSelectedGroup(e.target.value)}
                         >
                             <option value="">Select Exam Group</option>
-                            {groups.map(g => (
+                            {filteredGroups.map(g => (
                                 <option key={g.id} value={g.id}>{g.name}</option>
                             ))}
                         </select>

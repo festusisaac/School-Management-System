@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, MapPin, Edit2, Trash2, AlertTriangle, User, Info } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
-import { examinationService, ExamGroup, Exam, ExamSchedule } from '../../../services/examinationService';
+import { examinationService, ExamGroup, Exam, ExamSchedule, AssessmentType } from '../../../services/examinationService';
 import api from '../../../services/api';
 import { DataTable } from '../../../components/ui/data-table';
 import { ColumnDef } from '@tanstack/react-table';
 import { Modal } from '../../../components/ui/modal';
+import { useSystem } from '../../../context/SystemContext';
+import { systemService, AcademicSession, AcademicTerm } from '../../../services/systemService';
 
 interface SubjectRow {
     subjectId: string;
@@ -29,7 +31,12 @@ const ExamSchedulePage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [currentSubject, setCurrentSubject] = useState<SubjectRow | null>(null);
-    const [editingId, setEditingId] = useState<string | null>(null);
+
+    const { settings } = useSystem();
+    const [sessions, setSessions] = useState<AcademicSession[]>([]);
+    const [terms, setTerms] = useState<AcademicTerm[]>([]);
+    const [selectedSession, setSelectedSession] = useState<string>(settings?.activeSessionName || '');
+    const [selectedTerm, setSelectedTerm] = useState<string>(settings?.activeTermName || '');
 
     const { showSuccess, showError } = useToast();
 
@@ -43,23 +50,62 @@ const ExamSchedulePage = () => {
         invigilatorName: ''
     });
 
+    const resetForm = () => {
+        setFormData({
+            totalMarks: 100,
+            date: '',
+            startTime: '',
+            endTime: '',
+            venue: '',
+            invigilatorName: ''
+        });
+        setIsModalOpen(false);
+    };
+
     useEffect(() => {
         const init = async () => {
             try {
-                const [groupsData, classesData] = await Promise.all([
+                const [groupsData, classesData, sessionsData, termsData] = await Promise.all([
                     examinationService.getExamGroups(),
-                    api.getClasses()
+                    api.getClasses(),
+                    systemService.getSessions(),
+                    systemService.getTerms()
                 ]);
                 setGroups(groupsData || []);
                 setClasses(classesData || []);
-                if (groupsData?.length > 0) setSelectedGroup(groupsData[0].id);
+                setSessions(sessionsData || []);
+                setTerms(termsData || []);
+
+                // Set initial class
                 if (classesData?.length > 0) setSelectedClass(classesData[0].id);
+
+                // Filter groups based on current session/term if available
+                const sessionToUse = selectedSession || settings?.activeSessionName;
+                const termToUse = selectedTerm || settings?.activeTermName;
+
+                if (groupsData?.length > 0) {
+                    const filtered = groupsData.filter(g =>
+                        (!sessionToUse || g.academicYear === sessionToUse) &&
+                        (!termToUse || g.term === termToUse)
+                    );
+                    if (filtered.length > 0) {
+                        setSelectedGroup(filtered[0].id);
+                    } else {
+                        setSelectedGroup(groupsData[0].id);
+                    }
+                }
             } catch (err) {
                 showError('Failed to load initial data');
             }
         };
         init();
     }, []);
+
+    // Filtered Groups for Selection
+    const filteredGroups = groups.filter(g =>
+        (!selectedSession || g.academicYear === selectedSession) &&
+        (!selectedTerm || g.term === selectedTerm)
+    );
 
     useEffect(() => {
         if (selectedGroup) {
@@ -312,11 +358,39 @@ const ExamSchedulePage = () => {
                 <div className="flex flex-wrap gap-4 w-full md:w-auto">
                     <select
                         className="flex-1 md:flex-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 shadow-sm"
+                        value={selectedSession}
+                        onChange={(e) => {
+                            setSelectedSession(e.target.value);
+                            setSelectedGroup('');
+                        }}
+                    >
+                        <option value="">All Sessions</option>
+                        {sessions.map(s => (
+                            <option key={s.id} value={s.name}>{s.name}</option>
+                        ))}
+                    </select>
+
+                    <select
+                        className="flex-1 md:flex-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 shadow-sm"
+                        value={selectedTerm}
+                        onChange={(e) => {
+                            setSelectedTerm(e.target.value);
+                            setSelectedGroup('');
+                        }}
+                    >
+                        <option value="">All Terms</option>
+                        {terms.map(t => (
+                            <option key={t.id} value={t.name}>{t.name}</option>
+                        ))}
+                    </select>
+
+                    <select
+                        className="flex-1 md:flex-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 shadow-sm"
                         value={selectedGroup}
                         onChange={(e) => setSelectedGroup(e.target.value)}
                     >
                         <option value="">Select Exam Group</option>
-                        {groups.map(g => (
+                        {filteredGroups.map(g => (
                             <option key={g.id} value={g.id}>{g.name}</option>
                         ))}
                     </select>

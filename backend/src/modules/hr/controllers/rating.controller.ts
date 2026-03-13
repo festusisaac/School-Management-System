@@ -6,6 +6,7 @@ import {
     Delete,
     Body,
     Param,
+    Query,
     UseGuards,
     HttpCode,
     HttpStatus,
@@ -26,8 +27,11 @@ export class RatingController {
     ) { }
 
     @Get()
-    async findAll() {
-        return this.ratingService.findAll();
+    async findAll(
+        @Query('academicYear') academicYear?: string,
+        @Query('term') term?: string,
+    ) {
+        return this.ratingService.findAll({ academicYear, term });
     }
 
     @Get('teacher/:teacherId')

@@ -163,4 +163,9 @@ export class StudentsController {
     remove(@Param('id') id: string) {
         return this.studentsService.remove(id);
     }
+
+    @Post('bulk/promote')
+    promote(@Body() dto: { studentIds: string[], classId: string, sectionId?: string }) {
+        return this.studentsService.promote(dto);
+    }
 }

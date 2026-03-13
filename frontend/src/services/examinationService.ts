@@ -13,6 +13,16 @@ export interface ExamGroup {
     isPublished: boolean;
 }
 
+export interface ResultSummary {
+    total: number;
+    drafted: number;
+    approved: number;
+    published: number;
+    isApproved?: boolean;
+    isPublished?: boolean;
+    totalStudents?: number;
+}
+
 export interface CreateExamGroupDto {
     name: string;
     description?: string;
@@ -197,7 +207,7 @@ export const examinationService = {
 
     // Control
     getResultSummary: async (classId: string, examGroupId: string) => {
-        return await api.get('/examination/control/summary', {
+        return await api.get<ResultSummary>('/examination/control/summary', {
             params: { classId, examGroupId }
         });
     },

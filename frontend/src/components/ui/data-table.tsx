@@ -17,6 +17,7 @@ interface DataTableProps<TData, TValue> {
     data: TData[]
     searchKey?: string
     placeholder?: string
+    loading?: boolean
 }
 
 export function DataTable<TData, TValue>({
@@ -24,6 +25,7 @@ export function DataTable<TData, TValue>({
     data,
     searchKey,
     placeholder = "Filter...",
+    loading
 }: DataTableProps<TData, TValue>) {
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -85,7 +87,16 @@ export function DataTable<TData, TValue>({
                             ))}
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                            {table.getRowModel().rows?.length ? (
+                            {loading ? (
+                                <tr>
+                                    <td colSpan={columns.length} className="h-32 text-center">
+                                        <div className="flex flex-col items-center gap-3">
+                                            <div className="w-8 h-8 border-4 border-primary-500/20 border-t-primary-500 rounded-full animate-spin" />
+                                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Loading records...</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : table.getRowModel().rows?.length ? (
                                 table.getRowModel().rows.map((row) => (
                                     <tr
                                         key={row.id}

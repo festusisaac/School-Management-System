@@ -10,6 +10,8 @@ import BatchPrintView from './BatchPrintView';
 import { Modal } from '../../../../components/ui/modal';
 import { DataTable } from '../../../../components/ui/data-table';
 import { ColumnDef } from '@tanstack/react-table';
+import { useSystem } from '../../../../context/SystemContext';
+import { systemService, AcademicSession, AcademicTerm } from '../../../../services/systemService';
 
 const AdmitCardPage = () => {
     const [groups, setGroups] = useState<ExamGroup[]>([]);
@@ -17,6 +19,11 @@ const AdmitCardPage = () => {
     const [admitCards, setAdmitCards] = useState<AdmitCard[]>([]);
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<'design' | 'print'>('design');
+    const { settings } = useSystem();
+    const [sessions, setSessions] = useState<AcademicSession[]>([]);
+    const [terms, setTerms] = useState<AcademicTerm[]>([]);
+    const [selectedSession, setSelectedSession] = useState<string>(settings?.activeSessionName || '');
+    const [selectedTerm, setSelectedTerm] = useState<string>(settings?.activeTermName || '');
 
     // Editor State
     const [isEditorOpen, setIsEditorOpen] = useState(false);
@@ -43,8 +50,38 @@ const AdmitCardPage = () => {
     const { showSuccess, showError } = useToast();
 
     useEffect(() => {
-        fetchGroups();
-        fetchClasses();
+        const init = async () => {
+            try {
+                const [g, c, s, t] = await Promise.all([
+                    examinationService.getExamGroups(),
+                    api.getClasses(),
+                    systemService.getSessions(),
+                    systemService.getTerms()
+                ]);
+                setGroups(g || []);
+                setClasses(c || []);
+                setSessions(s || []);
+                setTerms(t || []);
+
+                const sessionToUse = selectedSession || settings?.activeSessionName;
+                const termToUse = selectedTerm || settings?.activeTermName;
+
+                if (g?.length > 0) {
+                    const filtered = g.filter(group =>
+                        (!sessionToUse || group.academicYear === sessionToUse) &&
+                        (!termToUse || group.term === termToUse)
+                    );
+                    if (filtered.length > 0) {
+                        setSelectedGroup(filtered[0].id);
+                    } else if (!selectedGroup) {
+                        setSelectedGroup(g[0].id);
+                    }
+                }
+            } catch (error) {
+                showError('Failed to load initial data');
+            }
+        };
+        init();
     }, []);
 
     useEffect(() => {
@@ -60,24 +97,11 @@ const AdmitCardPage = () => {
         }
     }, [selectedClass]);
 
-    const fetchGroups = async () => {
-        try {
-            const data = await examinationService.getExamGroups();
-            setGroups(data || []);
-            if (data && data.length > 0 && !selectedGroup) setSelectedGroup(data[0].id);
-        } catch (error) {
-            showError('Failed to fetch exam groups');
-        }
-    };
-
-    const fetchClasses = async () => {
-        try {
-            const data = await api.getClasses();
-            setClasses(data || []);
-        } catch (error) {
-            console.error('Failed to fetch classes', error);
-        }
-    };
+    // Filtered Groups for Selection
+    const filteredGroups = groups.filter(g =>
+        (!selectedSession || g.academicYear === selectedSession) &&
+        (!selectedTerm || g.term === selectedTerm)
+    );
 
     const fetchAdmitCards = async () => {
         if (!selectedGroup) return;
@@ -270,14 +294,48 @@ const AdmitCardPage = () => {
 
                 <div className="flex items-center gap-3">
                     <div className="flex flex-col">
-                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 ml-1 mb-1">Active Exam Group</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 ml-1">Session</label>
+                        <select
+                            className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 shadow-sm min-w-[150px]"
+                            value={selectedSession}
+                            onChange={(e) => {
+                                setSelectedSession(e.target.value);
+                                setSelectedGroup('');
+                            }}
+                        >
+                            <option value="">All Sessions</option>
+                            {sessions.map(s => (
+                                <option key={s.id} value={s.name}>{s.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="flex flex-col">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 ml-1">Term</label>
+                        <select
+                            className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 shadow-sm min-w-[150px]"
+                            value={selectedTerm}
+                            onChange={(e) => {
+                                setSelectedTerm(e.target.value);
+                                setSelectedGroup('');
+                            }}
+                        >
+                            <option value="">All Terms</option>
+                            {terms.map(t => (
+                                <option key={t.id} value={t.name}>{t.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="flex flex-col">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 ml-1">Exam Group</label>
                         <select
                             className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 shadow-sm min-w-[200px]"
                             value={selectedGroup}
                             onChange={(e) => setSelectedGroup(e.target.value)}
                         >
-                            <option value="">Select Exam Group</option>
-                            {groups.map(g => (
+                            <option value="">Select Group</option>
+                            {filteredGroups.map(g => (
                                 <option key={g.id} value={g.id}>{g.name}</option>
                             ))}
                         </select>
