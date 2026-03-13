@@ -60,6 +60,29 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             const data = await systemService.getSettings();
             setSettings(data || {});
             applyColors(data?.primaryColor, data?.secondaryColor);
+            
+            // Generate full URL internally to avoid depending on getFullUrl which needs to be in useCallback scope
+            const buildUrl = (url?: string) => {
+                if (!url) return '';
+                if (url.startsWith('http')) return url;
+                const cleanUrl = url.startsWith('/') ? url : `/${url}`;
+                const apiBaseUrl = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+                const serverUrl = apiBaseUrl.split('/api')[0];
+                return `${serverUrl}${cleanUrl}`;
+            };
+
+            // Update Tab Title
+            if (data?.schoolName) {
+                document.title = data.schoolName;
+            }
+
+            // Update Favicon Tab Logo
+            if (data?.primaryLogo) {
+                const favicon = document.getElementById('favicon') as HTMLLinkElement;
+                if (favicon) {
+                    favicon.href = buildUrl(data.primaryLogo);
+                }
+            }
         } catch (error) {
             console.error('Failed to fetch system settings:', error);
         } finally {
