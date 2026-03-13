@@ -265,7 +265,7 @@ const ExamSchedulePage = () => {
                             <span className="font-semibold">{new Date(date).toLocaleDateString(undefined, { dateStyle: 'medium' })}</span>
                         </div>
                         <div className="flex items-center gap-2 text-gray-500">
-                            <Clock className="w-3.5 h-3.5 text-purple-500" />
+                            <Clock className="w-3.5 h-3.5 text-secondary-500" />
                             <span>{startTime} - {endTime}</span>
                         </div>
                         <div className="flex items-center gap-2 text-gray-500">

@@ -205,7 +205,7 @@ const DepartmentsPage = () => {
                                             <div className="flex justify-end gap-2">
                                                 <button
                                                     onClick={() => handleEdit(dept)}
-                                                    className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-blue-900/30 rounded-lg transition"
+                                                    className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/30 rounded-lg transition"
                                                 >
                                                     <Edit2 size={18} />
                                                 </button>
@@ -284,7 +284,7 @@ const DepartmentsPage = () => {
                                     <input
                                         type="checkbox"
                                         id="isActive"
-                                        className="w-4 h-4 text-primary-600 rounded accent-blue-600"
+                                        className="w-4 h-4 text-primary-600 rounded accent-primary-600"
                                         checked={formData.isActive}
                                         onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
                                     />

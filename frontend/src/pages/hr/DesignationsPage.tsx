@@ -154,7 +154,7 @@ const DesignationsPage = () => {
                                                 <tr key={desig.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-colors duration-150">
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center gap-3">
-                                                            <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg">
+                                                            <div className="p-2 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-lg">
                                                                 <ShieldCheck size={18} />
                                                             </div>
                                                             <div>
@@ -179,7 +179,7 @@ const DesignationsPage = () => {
                                                         <div className="flex justify-end gap-1">
                                                             <button
                                                                 onClick={() => handleEdit(desig)}
-                                                                className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-primary-600 dark:hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-blue-900/30 rounded transition-colors"
+                                                                className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-primary-600 dark:hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/30 rounded transition-colors"
                                                             >
                                                                 <Edit2 size={16} />
                                                             </button>
@@ -201,12 +201,12 @@ const DesignationsPage = () => {
                 </div>
 
                 <div className="space-y-4">
-                    <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+                    <div className="bg-gradient-to-br from-primary-600 to-primary-700 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-4 opacity-10">
                             <ShieldCheck size={120} />
                         </div>
                         <h4 className="text-lg font-bold mb-2 relative z-10">Role Hierarchy</h4>
-                        <p className="text-blue-100 text-sm mb-4 relative z-10">Levels define authority. Level 1 usually represents top management (Principal), while higher numbers designate subordinate roles.</p>
+                        <p className="text-primary-100 text-sm mb-4 relative z-10">Levels define authority. Level 1 usually represents top management (Principal), while higher numbers designate subordinate roles.</p>
                         <div className="space-y-3 relative z-10">
                             {designations
                                 .sort((a, b) => a.level - b.level)
@@ -221,7 +221,7 @@ const DesignationsPage = () => {
                                     </div>
                                 ))}
                             {designations.length > 3 && (
-                                <div className="text-xs text-blue-200 text-center italic">... and {designations.length - 3} more</div>
+                                <div className="text-xs text-primary-200 text-center italic">... and {designations.length - 3} more</div>
                             )}
                         </div>
                     </div>
@@ -246,7 +246,7 @@ const DesignationsPage = () => {
                     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all duration-300 border dark:border-gray-700">
                         <div className="p-6 bg-gray-50/80 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
                             <h3 className="text-lg font-extrabold text-gray-800 dark:text-white uppercase tracking-tight">{editingDesig ? 'Update Role' : 'New Designation'}</h3>
-                            <div className="px-2 py-1 bg-blue-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 rounded text-[10px] font-bold">HR/PR</div>
+                            <div className="px-2 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 rounded text-[10px] font-bold">HR/PR</div>
                         </div>
                         <form onSubmit={handleSubmit} className="p-6 space-y-5">
                             <div>
@@ -296,7 +296,7 @@ const DesignationsPage = () => {
                                 <input
                                     type="checkbox"
                                     id="isDesigActive"
-                                    className="w-5 h-5 text-primary-600 rounded-lg cursor-pointer accent-blue-600"
+                                    className="w-5 h-5 text-primary-600 rounded-lg cursor-pointer accent-primary-600"
                                     checked={formData.isActive}
                                     onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
                                 />

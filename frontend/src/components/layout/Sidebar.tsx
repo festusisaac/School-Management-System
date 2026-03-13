@@ -158,34 +158,23 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 isOpen ? "translate-x-0 w-64" : "-translate-x-full lg:translate-x-0 lg:w-20"
             )}>
                 {/* Logo Section */}
-                <div className={twMerge(
-                    "flex h-16 items-center px-6 border-b border-gray-50 dark:border-gray-800/50 overflow-hidden whitespace-nowrap",
-                    isOpen ? "justify-between" : "justify-center"
-                )}>
-                    <div className="flex items-center gap-2">
-                        <div className="flex-shrink-0">
-                            {settings.primaryLogo ? (
-                                <img
-                                    src={getFullUrl(settings.primaryLogo)}
-                                    className="w-8 h-8 object-contain"
-                                    alt="Logo"
-                                />
-                            ) : (
-                                <div className="p-2 bg-primary-600 rounded-lg flex items-center justify-center">
-                                    <School className="w-5 h-5 text-white" />
-                                </div>
-                            )}
-                        </div>
-                        <span className={twMerge(
-                            "text-xl font-bold bg-gradient-to-r from-primary-600 to-primary-600/70 bg-clip-text text-transparent transition-opacity duration-300",
-                            isOpen ? "opacity-100" : "opacity-0 lg:hidden"
-                        )}>
-                            {settings.schoolName || 'SMS Admin'}
-                        </span>
+                <div className="flex h-16 items-center px-6 border-b border-gray-50 dark:border-gray-800/50 overflow-hidden relative justify-center">
+                    <div className="flex items-center justify-center w-full">
+                        {settings.primaryLogo ? (
+                            <img
+                                src={getFullUrl(settings.primaryLogo)}
+                                className="w-10 h-10 object-contain"
+                                alt="Logo"
+                            />
+                        ) : (
+                            <div className="p-2.5 bg-primary-600 rounded-xl shadow-sm flex items-center justify-center">
+                                <School className="w-6 h-6 text-white" />
+                            </div>
+                        )}
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 lg:hidden transition-colors"
+                        className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 absolute right-4 lg:hidden transition-colors"
                     >
                         <X className="w-5 h-5" />
                     </button>

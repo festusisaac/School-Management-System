@@ -217,7 +217,7 @@ const PayrollPage: React.FC = () => {
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'Paid': return 'bg-green-100 text-green-700 border-green-200';
-            case 'Processed': return 'bg-blue-100 text-primary-700 border-blue-200';
+            case 'Processed': return 'bg-primary-100 text-primary-700 border-primary-200';
             case 'Pending': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
             case 'Cancelled': return 'bg-red-100 text-red-700 border-red-200';
             default: return 'bg-gray-100 text-gray-700 border-gray-200';
@@ -243,7 +243,7 @@ const PayrollPage: React.FC = () => {
                 <div className="flex items-center gap-3">
                     <button
                         onClick={handleBulkGenerate}
-                        className="flex items-center justify-center gap-2 bg-white dark:bg-gray-800 border-2 border-primary-600 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-blue-900/30 px-6 py-3 rounded-xl font-bold transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+                        className="flex items-center justify-center gap-2 bg-white dark:bg-gray-800 border-2 border-primary-600 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/30 px-6 py-3 rounded-xl font-bold transition-all transform hover:scale-[1.02] active:scale-[0.98]"
                     >
                         <Layers size={20} />
                         Bulk Generate
@@ -363,7 +363,7 @@ const PayrollPage: React.FC = () => {
                                     <tr key={payroll.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group">
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 flex items-center justify-center font-bold text-sm shadow-sm transition-colors">
+                                                <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 flex items-center justify-center font-bold text-sm shadow-sm transition-colors">
                                                     {payroll.staff.firstName[0]}{payroll.staff.lastName[0]}
                                                 </div>
                                                 <div>
@@ -393,7 +393,7 @@ const PayrollPage: React.FC = () => {
                                             <div className="flex items-center justify-end gap-2">
                                                 <button
                                                     onClick={() => { setSelectedPayroll(payroll); setShowSlipModal(true); }}
-                                                    className="p-2 text-gray-400 dark:text-gray-500 hover:text-primary-600 dark:hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-blue-900/30 rounded-lg transition-all"
+                                                    className="p-2 text-gray-400 dark:text-gray-500 hover:text-primary-600 dark:hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/30 rounded-lg transition-all"
                                                     title="View Payslip"
                                                 >
                                                     <Eye size={18} />
@@ -519,7 +519,7 @@ const PayrollPage: React.FC = () => {
                                         type="number"
                                         value={genForm.basicSalary}
                                         onChange={(e) => setGenForm({ ...genForm, basicSalary: Number(e.target.value) })}
-                                        className="w-full border border-gray-200 dark:border-gray-600 rounded-xl p-3 bg-primary-50 dark:bg-primary-900/30 outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-bold text-blue-800 dark:text-primary-300"
+                                        className="w-full border border-gray-200 dark:border-gray-600 rounded-xl p-3 bg-primary-50 dark:bg-primary-900/30 outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-bold text-primary-800 dark:text-primary-300"
                                     />
                                 </div>
                             </div>

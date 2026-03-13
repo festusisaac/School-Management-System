@@ -267,13 +267,13 @@ export default function DiscountsPage() {
             className="w-full pl-12 pr-6 py-4 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 outline-none transition-all shadow-sm shadow-primary-500/5"
           />
         </div>
-        <div className="flex items-center gap-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-2xl border border-blue-100/50 dark:border-blue-800/50">
+        <div className="flex items-center gap-4 bg-primary-50 dark:bg-primary-900/20 p-4 rounded-2xl border border-primary-100/50 dark:border-primary-800/50">
           <div className="p-2 bg-white dark:bg-gray-800 rounded-xl">
             <ShieldCheck className="w-5 h-5 text-primary-600" />
           </div>
           <div>
             <div className="text-sm text-primary-600/80 font-medium">Active Policies</div>
-            <div className="text-xl font-bold text-blue-900 dark:text-blue-100">{profiles.length} Total</div>
+            <div className="text-xl font-bold text-primary-900 dark:text-primary-100">{profiles.length} Total</div>
           </div>
         </div>
       </div>
@@ -337,7 +337,7 @@ export default function DiscountsPage() {
                       "px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1",
                       new Date(profile.expiryDate) < new Date()
                         ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                        : "bg-blue-100 text-primary-700 dark:bg-blue-900/30 dark:text-blue-400"
+                        : "bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400"
                     )}>
                       <Clock className="w-3 h-3" />
                       {new Date(profile.expiryDate) < new Date() ? 'EXPIRED' : `Expires: ${new Date(profile.expiryDate).toLocaleDateString()}`}
@@ -384,7 +384,7 @@ export default function DiscountsPage() {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-gray-900/80 backdrop-blur-sm animate-in fade-in zoom-in duration-200">
           <div className="bg-white dark:bg-gray-900 w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="p-8 pb-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gradient-to-br from-blue-50/50 to-white dark:from-blue-900/10 dark:to-gray-900">
+            <div className="p-8 pb-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gradient-to-br from-primary-50/50 to-white dark:from-primary-900/10 dark:to-gray-900">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                   {editingId ? 'Edit Discount Policy' : 'New Discount Policy'}
@@ -497,7 +497,7 @@ export default function DiscountsPage() {
 
                         {/* Live Preview */}
                         {rule.feeHeadId && rule.value && (
-                          <div className="col-span-12 mt-1 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100/50 dark:border-blue-800/50">
+                          <div className="col-span-12 mt-1 px-3 py-2 bg-primary-50 dark:bg-primary-900/20 rounded-xl border border-primary-100/50 dark:border-primary-800/50">
                             <div className="flex items-center gap-2 text-[10px] font-bold text-primary-600 uppercase tracking-widest">
                               <Info className="w-3 h-3" />
                               Live Preview
@@ -522,9 +522,9 @@ export default function DiscountsPage() {
                       </div>
                     ))
                   ) : (
-                    <div className="text-center py-8 bg-blue-50/50 dark:bg-blue-900/10 rounded-3xl border-2 border-dashed border-blue-100 dark:border-blue-800/50">
+                    <div className="text-center py-8 bg-primary-50/50 dark:bg-primary-900/10 rounded-3xl border-2 border-dashed border-primary-100 dark:border-primary-800/50">
                       <div className="flex flex-col items-center gap-2">
-                        <Info className="w-6 h-6 text-blue-400" />
+                        <Info className="w-6 h-6 text-primary-400" />
                         <p className="text-xs text-primary-600 font-bold uppercase tracking-widest px-8">No rules added yet. This policy will have no effect.</p>
                         <button onClick={handleAddRule} className="mt-2 text-xs font-bold text-primary-700 bg-white px-4 py-2 rounded-xl shadow-sm">Start Building Now</button>
                       </div>
@@ -635,7 +635,7 @@ export default function DiscountsPage() {
                         className={clsx(
                           "px-3 py-1.5 rounded-xl text-[10px] font-bold border transition-all",
                           assignmentData.sectionIds.includes(sec.id)
-                            ? "bg-purple-600 text-white border-purple-600 shadow-lg shadow-purple-500/20"
+                            ? "bg-secondary-600 text-white border-secondary-600 shadow-lg shadow-purple-500/20"
                             : "bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-gray-100 dark:border-gray-800/50 hover:bg-gray-100"
                         )}
                       >
@@ -730,7 +730,7 @@ export default function DiscountsPage() {
                       const student = students.find(s => s.id === id);
                       if (!student) return null;
                       return (
-                        <span key={id} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-primary-600 dark:text-blue-400 rounded-xl text-[10px] font-bold border border-blue-100 dark:border-blue-800">
+                        <span key={id} className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-xl text-[10px] font-bold border border-primary-100 dark:border-primary-800">
                           {student.firstName} {student.lastName}
                           <button onClick={() => setAssignmentData(prev => ({ ...prev, studentIds: prev.studentIds.filter(sid => sid !== id) }))}>
                             <X className="w-3 h-3 hover:text-red-500" />
@@ -791,7 +791,7 @@ export default function DiscountsPage() {
                           className={clsx(
                             "px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all border",
                             assignmentData.excludeIds.includes(student.id)
-                              ? "bg-blue-50 text-primary-600 border-blue-100 hover:bg-white"
+                              ? "bg-primary-50 text-primary-600 border-primary-100 hover:bg-white"
                               : "bg-white text-red-500 border-gray-100 hover:bg-red-50 hover:border-red-100"
                           )}
                         >
@@ -801,10 +801,10 @@ export default function DiscountsPage() {
                     ))}
                   </div>
                   {simulationResult.conflicts > 0 && (
-                    <div className="bg-blue-50/50 dark:bg-blue-900/10 p-3 rounded-2xl border border-blue-100 dark:border-blue-800/50 flex gap-3">
+                    <div className="bg-primary-50/50 dark:bg-primary-900/10 p-3 rounded-2xl border border-primary-100 dark:border-primary-800/50 flex gap-3">
                       <Info className="w-4 h-4 text-primary-500 flex-shrink-0 mt-0.5" />
-                      <p className="text-[11px] text-primary-700 dark:text-blue-300 leading-relaxed font-medium">
-                        Students with existing policies will have their current policy <span className="font-bold text-blue-800 dark:text-blue-100 underline decoration-blue-500/30">replaced</span> by this new one unless they are excluded.
+                      <p className="text-[11px] text-primary-700 dark:text-primary-300 leading-relaxed font-medium">
+                        Students with existing policies will have their current policy <span className="font-bold text-primary-800 dark:text-primary-100 underline decoration-primary-500/30">replaced</span> by this new one unless they are excluded.
                       </p>
                     </div>
                   )}

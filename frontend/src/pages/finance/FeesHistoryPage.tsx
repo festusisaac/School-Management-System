@@ -252,7 +252,7 @@ export default function FeesHistoryPage() {
 
         {/* Partial Paid */}
         <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+          <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center text-primary-600 dark:text-primary-400">
             <Clock size={20} />
           </div>
           <div>
@@ -290,9 +290,9 @@ export default function FeesHistoryPage() {
         </div>
 
         {/* Total Value */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 rounded-2xl shadow-xl shadow-primary-500/20 text-white flex items-center justify-between overflow-hidden relative">
+        <div className="bg-gradient-to-r from-primary-600 to-primary-600 p-4 rounded-2xl shadow-xl shadow-primary-500/20 text-white flex items-center justify-between overflow-hidden relative">
           <div className="relative z-10">
-            <p className="text-[10px] font-bold text-blue-100 uppercase tracking-widest font-outfit">Total Revenue</p>
+            <p className="text-[10px] font-bold text-primary-100 uppercase tracking-widest font-outfit">Total Revenue</p>
             <h5 className="text-2xl font-black font-inter tracking-tighter tabular-nums">{formatCurrency(totalAmount)}</h5>
           </div>
           <FileText size={32} className="text-white/10 -mr-1" />
@@ -417,7 +417,7 @@ export default function FeesHistoryPage() {
                   </td>
                   <td className="px-3 py-3 border-b border-gray-50 dark:border-gray-800">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center text-primary-600 dark:text-primary-400 border border-blue-100 dark:border-primary-800 flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center text-primary-600 dark:text-primary-400 border border-primary-100 dark:border-primary-800 flex-shrink-0">
                         <User size={16} />
                       </div>
                       <div className="flex flex-col">
@@ -454,7 +454,7 @@ export default function FeesHistoryPage() {
                       "inline-flex items-center px-2.5 py-1 rounded-lg border",
                       tx.type === 'REFUND'
                         ? "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-100 dark:border-red-800"
-                        : "bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 border-blue-100 dark:border-primary-800"
+                        : "bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 border-primary-100 dark:border-primary-800"
                     )}>
                       <span className="text-sm font-black">{formatCurrency(tx.amount)}</span>
                     </div>
@@ -467,7 +467,7 @@ export default function FeesHistoryPage() {
                         : tx.type === 'WAIVER'
                           ? "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800"
                           : tx.meta?.allocations?.some((a: any) => a.status === 'PARTIAL')
-                            ? "bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 border-blue-200 dark:border-primary-800"
+                            ? "bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 border-primary-200 dark:border-primary-800"
                             : "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800"
                     )}>
                       {tx.type === 'REFUND' ? 'REFUNDED' : tx.type === 'WAIVER' ? 'WAIVED' : tx.meta?.allocations?.some((a: any) => a.status === 'PARTIAL') ? 'PARTIAL' : 'PAID'}
@@ -498,7 +498,7 @@ export default function FeesHistoryPage() {
                     <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => { setSelectedTx(tx); setShowReceipt(true); }}
-                        className="p-1.5 hover:bg-primary-50 dark:hover:bg-blue-900/20 rounded text-gray-400 hover:text-primary-600 transition-colors"
+                        className="p-1.5 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded text-gray-400 hover:text-primary-600 transition-colors"
                         title="View Receipt"
                       >
                         <Eye size={14} />

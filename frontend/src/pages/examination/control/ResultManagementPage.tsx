@@ -191,12 +191,12 @@ const ResultManagementPage = () => {
 
                 {/* Step 3: Publishing */}
                 <div className={`p-6 rounded-lg border shadow-sm transition-all ${status.published
-                        ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800'
+                        ? 'bg-secondary-50 dark:bg-secondary-900/20 border-secondary-200 dark:border-secondary-800'
                         : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
                     }`}>
                     <div className="flex items-center justify-between mb-4">
                         <div className="p-3 bg-white dark:bg-gray-800 rounded-full shadow-sm">
-                            <Globe className={`w-6 h-6 ${status.published ? 'text-purple-600' : 'text-gray-400'}`} />
+                            <Globe className={`w-6 h-6 ${status.published ? 'text-secondary-600' : 'text-gray-400'}`} />
                         </div>
                         <span className="text-xs font-bold uppercase tracking-wider text-gray-500">Step 3</span>
                     </div>
@@ -208,8 +208,8 @@ const ResultManagementPage = () => {
                         onClick={handlePublish}
                         disabled={!status.approved || status.published || loading}
                         className={`w-full py-2 px-4 rounded-lg text-sm font-medium transition-all ${status.published
-                                ? 'bg-purple-100 text-purple-700 cursor-default'
-                                : 'bg-purple-600 text-white hover:bg-purple-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed'
+                                ? 'bg-secondary-100 text-secondary-700 cursor-default'
+                                : 'bg-secondary-600 text-white hover:bg-secondary-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed'
                             }`}
                     >
                         {status.published ? 'Published' : 'Publish Results'}

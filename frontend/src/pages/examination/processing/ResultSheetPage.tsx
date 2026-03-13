@@ -373,14 +373,14 @@ const ResultSheetPage = () => {
                                 {filteredStudents.map((student, idx) => {
                                     const isPassing = student.summary.averageScore >= 40;
                                     return (
-                                        <tr key={idx} className="hover:bg-primary-50/30 dark:hover:bg-blue-900/10 transition-colors cursor-pointer group" onClick={() => setSelectedStudent(student)}>
+                                        <tr key={idx} className="hover:bg-primary-50/30 dark:hover:bg-primary-900/10 transition-colors cursor-pointer group" onClick={() => setSelectedStudent(student)}>
                                             <td className="px-6 py-4 text-center text-gray-400 font-medium">{idx + 1}</td>
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
                                                     {student.student.photoUrl ? (
                                                         <img src={student.student.photoUrl} className="w-10 h-10 rounded-full object-cover border-2 border-white dark:border-gray-700 shadow-sm" alt="" />
                                                     ) : (
-                                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs shadow-sm text-center">
+                                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-secondary-600 flex items-center justify-center text-white font-bold text-xs shadow-sm text-center">
                                                             {student.student.name ? student.student.name.split(' ').filter(Boolean).map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) : '??'}
                                                         </div>
                                                     )}
@@ -410,7 +410,7 @@ const ResultSheetPage = () => {
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); setSelectedStudent(student); }}
                                                         title="View Report Card"
-                                                        className="p-2 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-lg hover:bg-primary-600 hover:text-white transition-all shadow-sm border border-blue-100 dark:border-primary-800"
+                                                        className="p-2 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-lg hover:bg-primary-600 hover:text-white transition-all shadow-sm border border-primary-100 dark:border-primary-800"
                                                     >
                                                         <Eye className="w-4 h-4" />
                                                     </button>

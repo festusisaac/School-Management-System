@@ -72,7 +72,7 @@ const TemplateBuilder: React.FC<Props> = ({ sections, onChange }) => {
                     </button>
                     <button
                         onClick={() => addSection('studentInfo')}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 text-purple-600 rounded-lg text-xs font-bold hover:bg-purple-100 transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary-50 text-secondary-600 rounded-lg text-xs font-bold hover:bg-secondary-100 transition-colors"
                     >
                         <Plus className="w-3.5 h-3.5" /> Student Info
                     </button>

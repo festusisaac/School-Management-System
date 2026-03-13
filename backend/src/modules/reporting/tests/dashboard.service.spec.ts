@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DashboardService } from '../services/dashboard.service';
 import { Student } from '../../students/entities/student.entity';
-import { StaffMember } from '../../staff/entities/staff.entity';
+import { Staff } from '../../hr/entities/staff.entity';
 import { Transaction, TransactionType } from '../../finance/entities/transaction.entity';
 
 describe('DashboardService', () => {
@@ -39,7 +39,7 @@ describe('DashboardService', () => {
             providers: [
                 DashboardService,
                 { provide: getRepositoryToken(Student), useValue: mockStudentRepo },
-                { provide: getRepositoryToken(StaffMember), useValue: mockStaffRepo },
+                { provide: getRepositoryToken(Staff), useValue: mockStaffRepo },
                 { provide: getRepositoryToken(Transaction), useValue: mockTransactionRepo },
             ],
         }).compile();

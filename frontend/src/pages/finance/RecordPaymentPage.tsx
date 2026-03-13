@@ -313,7 +313,7 @@ export default function RecordPaymentPage() {
                                 ))
                             ) : students.length > 0 ? (
                                 students.map((student) => (
-                                    <tr key={student.id} className="group hover:bg-primary-50/30 dark:hover:bg-blue-900/10 transition-colors">
+                                    <tr key={student.id} className="group hover:bg-primary-50/30 dark:hover:bg-primary-900/10 transition-colors">
                                         <td className="px-6 py-4">
                                             <span className="text-sm font-bold text-primary-600 dark:text-primary-400">{student.admissionNo}</span>
                                         </td>
@@ -335,7 +335,7 @@ export default function RecordPaymentPage() {
                                         <td className="px-6 py-4 text-right">
                                             <button
                                                 onClick={() => openCollectionModal(student)}
-                                                className="px-4 py-2 text-primary-600 hover:text-white bg-primary-50/50 hover:bg-primary-600 rounded-md text-[11px] font-black transition-all duration-300 border border-blue-100 hover:border-primary-600 flex items-center gap-2 ml-auto uppercase tracking-widest shadow-sm hover:shadow-lg hover:shadow-primary-500/20 hover:-translate-y-0.5 active:translate-y-0 active:scale-95"
+                                                className="px-4 py-2 text-primary-600 hover:text-white bg-primary-50/50 hover:bg-primary-600 rounded-md text-[11px] font-black transition-all duration-300 border border-primary-100 hover:border-primary-600 flex items-center gap-2 ml-auto uppercase tracking-widest shadow-sm hover:shadow-lg hover:shadow-primary-500/20 hover:-translate-y-0.5 active:translate-y-0 active:scale-95"
                                             >
                                                 <CreditCard size={12} />
                                                 Collect
@@ -368,7 +368,7 @@ export default function RecordPaymentPage() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-300">
                     <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-5xl w-full max-h-[95vh] overflow-hidden border border-white/20 flex flex-col animate-in zoom-in-95 duration-200">
                         {/* Modal Header */}
-                        <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-blue-50 to-white dark:from-gray-900 dark:to-gray-800">
+                        <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-primary-50 to-white dark:from-gray-900 dark:to-gray-800">
                             <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 rounded-2xl bg-primary-600 flex items-center justify-center text-white shadow-lg">
                                     <CreditCard size={24} />
@@ -386,7 +386,7 @@ export default function RecordPaymentPage() {
                                         className={clsx(
                                             "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
                                             transactionType === 'FEE_PAYMENT'
-                                                ? "bg-white dark:bg-gray-800 text-primary-600 shadow-md ring-1 ring-blue-50 dark:ring-blue-900"
+                                                ? "bg-white dark:bg-gray-800 text-primary-600 shadow-md ring-1 ring-primary-50 dark:ring-primary-900"
                                                 : "text-gray-400 hover:text-gray-600"
                                         )}
                                     >
@@ -444,7 +444,7 @@ export default function RecordPaymentPage() {
                                             <Banknote size={18} />
                                         </div>
                                         <div className="relative z-10">
-                                            <p className="text-[10px] font-bold text-blue-100 uppercase tracking-widest">Net Outstanding</p>
+                                            <p className="text-[10px] font-bold text-primary-100 uppercase tracking-widest">Net Outstanding</p>
                                             <p className="text-xl font-black text-white">
                                                 {loadingStatement ? '...' : formatCurrency(parseFloat(statement?.balance || '0'))}
                                             </p>
@@ -500,7 +500,7 @@ export default function RecordPaymentPage() {
                                                             </div>
                                                             <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2 scrollbar-none">
                                                                 {statement.assignedHeads.map((head, idx) => (
-                                                                    <div key={idx} className="flex justify-between items-center p-3 bg-gray-50/50 dark:bg-gray-900/30 rounded-2xl border border-gray-100 dark:border-gray-800 focus-within:border-blue-200 transition-colors">
+                                                                    <div key={idx} className="flex justify-between items-center p-3 bg-gray-50/50 dark:bg-gray-900/30 rounded-2xl border border-gray-100 dark:border-gray-800 focus-within:border-primary-200 transition-colors">
                                                                         <div className="flex flex-col">
                                                                             <span className="font-bold text-gray-700 dark:text-gray-300 text-xs">{head.name}</span>
                                                                             <span className="text-[8px] text-gray-400 uppercase font-black">{head.group}</span>
@@ -597,7 +597,7 @@ export default function RecordPaymentPage() {
                                                 "p-6 rounded-2xl border shadow-sm relative overflow-hidden transition-colors",
                                                 transactionType === 'WAIVER'
                                                     ? "bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-900/50"
-                                                    : "bg-white dark:bg-gray-800 border-blue-100 dark:border-blue-900/50"
+                                                    : "bg-white dark:bg-gray-800 border-primary-100 dark:border-primary-900/50"
                                             )}>
                                                 <div className="relative z-10 text-center">
                                                     <p className={clsx(

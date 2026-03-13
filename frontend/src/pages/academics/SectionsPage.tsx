@@ -223,14 +223,14 @@ const SectionsPage = () => {
                                                 <div className="flex items-center justify-end gap-2">
                                                     <button
                                                         onClick={() => handleToggleStatus(section)}
-                                                        className="p-2 text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                                                        className="p-2 text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
                                                         title={section.isActive ? 'Deactivate' : 'Activate'}
                                                     >
                                                         <Power className="w-4 h-4" />
                                                     </button>
                                                     <button
                                                         onClick={() => handleOpenModal(section)}
-                                                        className="p-2 text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                                                        className="p-2 text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
                                                         title="Edit"
                                                     >
                                                         <Edit2 className="w-4 h-4" />

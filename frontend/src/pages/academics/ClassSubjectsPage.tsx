@@ -284,7 +284,7 @@ const ClassSubjectsPage = () => {
                                         <tr key={classSubject.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex items-center">
-                                                    <div className="flex-shrink-0 h-10 w-10 bg-blue-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
+                                                    <div className="flex-shrink-0 h-10 w-10 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
                                                         <BookOpen className="h-5 w-5 text-primary-600 dark:text-primary-400" />
                                                     </div>
                                                     <div className="ml-4">
@@ -298,8 +298,8 @@ const ClassSubjectsPage = () => {
                                                 <button
                                                     onClick={() => handleToggleCore(classSubject)}
                                                     className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${classSubject.isCore
-                                                        ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 hover:bg-purple-200'
-                                                        : 'bg-blue-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 hover:bg-blue-200'
+                                                        ? 'bg-secondary-100 dark:bg-secondary-900/30 text-secondary-700 dark:text-secondary-400 hover:bg-secondary-200'
+                                                        : 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 hover:bg-primary-200'
                                                         }`}
                                                 >
                                                     {classSubject.isCore ? 'Core' : 'Elective'}
@@ -319,7 +319,7 @@ const ClassSubjectsPage = () => {
                                                 <div className="flex items-center justify-end gap-2">
                                                     <button
                                                         onClick={() => handleToggleStatus(classSubject)}
-                                                        className="p-2 text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                                                        className="p-2 text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
                                                         title={classSubject.isActive ? 'Deactivate' : 'Activate'}
                                                     >
                                                         <Power className="w-4 h-4" />
@@ -373,7 +373,7 @@ const ClassSubjectsPage = () => {
                                                     className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
                                                 />
                                                 <div className="flex items-center gap-3 flex-1">
-                                                    <div className="flex-shrink-0 h-8 w-8 bg-blue-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
+                                                    <div className="flex-shrink-0 h-8 w-8 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
                                                         <Layers className="h-4 w-4 text-primary-600 dark:text-primary-400" />
                                                     </div>
                                                     <span className="text-sm font-medium text-gray-900 dark:text-white">

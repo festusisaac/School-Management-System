@@ -129,7 +129,7 @@ const ApproveLeavePage = () => {
                                     <tr key={req.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 flex items-center justify-center font-bold text-xs transition-colors">
+                                                <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 flex items-center justify-center font-bold text-xs transition-colors">
                                                     {req.staff.firstName[0]}{req.staff.lastName[0]}
                                                 </div>
                                                 <div>
@@ -195,10 +195,10 @@ const ApproveLeavePage = () => {
 
                             <div>
                                 <p className="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500 tracking-widest mb-1">Duration & Dates</p>
-                                <div className="flex items-center gap-4 bg-primary-50/50 dark:bg-primary-900/20 p-3 rounded-xl border border-blue-100 dark:border-primary-800">
-                                    <div className="text-center bg-white dark:bg-gray-800 p-2 rounded-lg border border-blue-200 dark:border-primary-700 min-w-[80px]">
+                                <div className="flex items-center gap-4 bg-primary-50/50 dark:bg-primary-900/20 p-3 rounded-xl border border-primary-100 dark:border-primary-800">
+                                    <div className="text-center bg-white dark:bg-gray-800 p-2 rounded-lg border border-primary-200 dark:border-primary-700 min-w-[80px]">
                                         <p className="text-[10px] font-black text-primary-600 dark:text-primary-400 uppercase">Days</p>
-                                        <p className="text-2xl font-black text-blue-800 dark:text-primary-300">{selectedRequest.totalDays}</p>
+                                        <p className="text-2xl font-black text-primary-800 dark:text-primary-300">{selectedRequest.totalDays}</p>
                                     </div>
                                     <div>
                                         <p className="text-sm font-bold text-gray-800 dark:text-gray-200">From: {new Date(selectedRequest.startDate).toLocaleDateString()}</p>
@@ -215,13 +215,13 @@ const ApproveLeavePage = () => {
                             </div>
 
                             {selectedRequest.supportingDocument && (
-                                <div className="p-4 rounded-xl bg-primary-50 dark:bg-primary-900/20 border border-blue-100 dark:border-primary-800 flex items-center justify-between transition-colors">
+                                <div className="p-4 rounded-xl bg-primary-50 dark:bg-primary-900/20 border border-primary-100 dark:border-primary-800 flex items-center justify-between transition-colors">
                                     <div className="flex items-center gap-3">
                                         <div className="p-2 bg-white dark:bg-gray-700 rounded-lg text-primary-600 dark:text-primary-400">
                                             <FileText size={20} />
                                         </div>
                                         <div>
-                                            <p className="text-xs font-black uppercase tracking-wider text-blue-900 dark:text-primary-300">Supporting Document</p>
+                                            <p className="text-xs font-black uppercase tracking-wider text-primary-900 dark:text-primary-300">Supporting Document</p>
                                             <p className="text-[10px] text-primary-600 dark:text-primary-400 font-bold">Attached to request</p>
                                         </div>
                                     </div>
@@ -229,7 +229,7 @@ const ApproveLeavePage = () => {
                                         href={`http://localhost:3000${selectedRequest.supportingDocument}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="px-4 py-2 bg-white dark:bg-gray-800 text-primary-600 dark:text-primary-400 text-xs font-black uppercase tracking-wider rounded-lg border border-blue-200 dark:border-primary-700 hover:bg-primary-50 dark:hover:bg-blue-900/30 transition shadow-sm flex items-center gap-2"
+                                        className="px-4 py-2 bg-white dark:bg-gray-800 text-primary-600 dark:text-primary-400 text-xs font-black uppercase tracking-wider rounded-lg border border-primary-200 dark:border-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition shadow-sm flex items-center gap-2"
                                     >
                                         View File
                                     </a>

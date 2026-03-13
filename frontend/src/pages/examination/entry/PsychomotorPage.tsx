@@ -343,7 +343,7 @@ const PsychomotorPage = () => {
                                     <div className="flex items-center gap-1">
                                         <button
                                             onClick={() => handleEditDomain(d)}
-                                            className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-blue-900/20 rounded-md transition-all"
+                                            className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-md transition-all"
                                             title="Edit"
                                         >
                                             <Edit2 className="w-4 h-4" />

@@ -464,7 +464,7 @@ const DebtorsListPage = () => {
                       </button>
                       <button
                         onClick={() => handleViewFamily(debtor)}
-                        className="p-2 hover:bg-white dark:hover:bg-gray-700 rounded-lg text-gray-400 hover:text-purple-600 transition-all border border-transparent hover:border-purple-100 dark:hover:border-purple-800 shadow-sm"
+                        className="p-2 hover:bg-white dark:hover:bg-gray-700 rounded-lg text-gray-400 hover:text-secondary-600 transition-all border border-transparent hover:border-secondary-100 dark:hover:border-secondary-800 shadow-sm"
                         title="View Family & Siblings"
                       >
                         <Users size={16} />
@@ -602,9 +602,9 @@ const DebtorsListPage = () => {
       {showFamilyModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
           <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-white/20">
-            <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-purple-50 to-white dark:from-purple-900/30 dark:to-gray-800">
+            <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-secondary-50 to-white dark:from-secondary-900/30 dark:to-gray-800">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center text-purple-600 dark:text-purple-400 shadow-inner">
+                <div className="w-12 h-12 rounded-2xl bg-secondary-100 dark:bg-secondary-900/50 flex items-center justify-center text-secondary-600 dark:text-secondary-400 shadow-inner">
                   <Users size={24} />
                 </div>
                 <div>
@@ -620,7 +620,7 @@ const DebtorsListPage = () => {
             <div className="flex-1 overflow-y-auto p-6 space-y-8">
               {loadingFamily ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-4">
-                  <Loader2 className="w-10 h-10 text-purple-600 animate-spin" />
+                  <Loader2 className="w-10 h-10 text-secondary-600 animate-spin" />
                   <p className="text-sm text-gray-500 font-bold">Analysing Family Connections...</p>
                 </div>
               ) : familyData && (
@@ -643,12 +643,12 @@ const DebtorsListPage = () => {
                   {/* Sibling Breakdown */}
                   <div>
                     <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest mb-4 flex items-center gap-2">
-                      <Users size={16} className="text-purple-500" />
+                      <Users size={16} className="text-secondary-500" />
                       Sibling Breakdown
                     </h4>
                     <div className="grid gap-4">
                       {familyData.siblings.map((sib: any) => (
-                        <div key={sib.student.id} className="group p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-purple-200 dark:hover:border-purple-800 transition-all">
+                        <div key={sib.student.id} className="group p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-secondary-200 dark:hover:border-secondary-800 transition-all">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
                               <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-800 overflow-hidden">

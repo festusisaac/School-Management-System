@@ -333,7 +333,7 @@ const ClassTimetablePage = () => {
                         {selectedClass && (selectedSection || sections.filter(s => s.classId === selectedClass).length === 0) && (
                             <button
                                 onClick={() => setShowCopyModal(true)}
-                                className="flex items-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg shadow-sm font-medium transition-all hover:shadow-md text-sm"
+                                className="flex items-center gap-2 px-5 py-2.5 bg-secondary-600 hover:bg-secondary-700 text-white rounded-lg shadow-sm font-medium transition-all hover:shadow-md text-sm"
                             >
                                 <Copy className="w-4 h-4" />
                                 Copy
@@ -400,7 +400,7 @@ const ClassTimetablePage = () => {
                                 <div className="flex items-center gap-2 mt-1">
                                     <span className="px-2 py-0.5 rounded text-xs font-bold bg-primary-100 text-primary-700 border border-primary-200 uppercase">{selectedClassName}</span>
                                     <span className="text-gray-400">•</span>
-                                    <span className="px-2 py-0.5 rounded text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200 uppercase">{selectedSectionName}</span>
+                                    <span className="px-2 py-0.5 rounded text-xs font-bold bg-secondary-100 text-secondary-700 border border-secondary-200 uppercase">{selectedSectionName}</span>
                                 </div>
                             </div>
                         </div>
@@ -438,11 +438,11 @@ const ClassTimetablePage = () => {
                                                     style={{ minWidth: period.type === PeriodType.LESSON ? '100px' : '50px' }}
                                                 >
                                                     <div className="flex flex-col items-center justify-center h-full">
-                                                        <span className="text-[#8B0000] font-bold text-[11px] whitespace-nowrap">
+                                                        <span className="text-primary-700 dark:text-primary-400 font-bold text-[11px] whitespace-nowrap">
                                                             {formatTime(period.startTime)}
                                                         </span>
-                                                        <span className="text-[#8B0000] font-bold text-[11px]">-</span>
-                                                        <span className="text-[#8B0000] font-bold text-[11px] whitespace-nowrap">
+                                                        <span className="text-primary-700 dark:text-primary-400 font-bold text-[11px]">-</span>
+                                                        <span className="text-primary-700 dark:text-primary-400 font-bold text-[11px] whitespace-nowrap">
                                                             {formatTime(period.endTime)}
                                                         </span>
                                                     </div>
@@ -881,7 +881,7 @@ const PeriodManagementModal = ({ periods, onClose, onRefresh }: { periods: Perio
                                             <span className={`px-2 py-1 rounded text-xs ${period.type === PeriodType.LESSON ? 'bg-primary-100 text-primary-800' :
                                                 period.type === PeriodType.BREAK ? 'bg-orange-100 text-orange-800' :
                                                     period.type === PeriodType.LUNCH ? 'bg-yellow-100 text-yellow-800' :
-                                                        'bg-purple-100 text-purple-800'
+                                                        'bg-secondary-100 text-secondary-800'
                                                 }`}>
                                                 {period.type}
                                             </span>

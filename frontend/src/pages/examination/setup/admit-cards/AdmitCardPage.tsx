@@ -232,7 +232,7 @@ const AdmitCardPage = () => {
                 <div className="flex justify-end gap-1">
                     <button
                         onClick={() => handleEdit(row.original)}
-                        className="p-1.5 text-primary-600 hover:bg-primary-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                        className="p-1.5 text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
                         title="Edit Template"
                     >
                         <Edit3 className="w-4 h-4" />
@@ -378,7 +378,7 @@ const AdmitCardPage = () => {
 
                             <div className="flex flex-col">
                                 <span className="text-xs font-medium text-gray-500 mb-1">Assigned To</span>
-                                <div className="px-3 py-1 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-md text-xs font-medium border border-blue-100 dark:border-blue-900/50">
+                                <div className="px-3 py-1 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-md text-xs font-medium border border-primary-100 dark:border-primary-900/50">
                                     {groups.find(g => g.id === (editingId ? admitCards.find(c => c.id === editingId)?.examGroupId : selectedGroup))?.name || 'No Group'}
                                 </div>
                             </div>

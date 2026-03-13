@@ -11,16 +11,39 @@ interface SystemContextType {
 const SystemContext = createContext<SystemContextType | undefined>(undefined);
 
 /**
- * Converts a hex color string like "#0284c7" to space-separated RGB channels "2 132 199"
- * This format is required by Tailwind's `rgb(var(--x) / <alpha-value>)` pattern.
+ * Converts a hex color string like "#0284c7" to RGB array [2, 132, 199]
  */
-function hexToRgbChannels(hex: string): string | null {
+function hexToRgbChannels(hex: string): number[] | null {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim());
     if (!result) return null;
-    const r = parseInt(result[1], 16);
-    const g = parseInt(result[2], 16);
-    const b = parseInt(result[3], 16);
-    return `${r} ${g} ${b}`;
+    return [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)];
+}
+
+function applyThemeColors(prefix: string, hex: string | undefined, defaultChannels: number[]) {
+    const root = document.documentElement;
+    const rgb = hex ? hexToRgbChannels(hex) : defaultChannels;
+    if (!rgb) return;
+    
+    root.style.setProperty(`--color-${prefix}-rgb`, rgb.join(' '));
+    
+    const mix = (c1: number[], c2: number[], weight: number) => {
+        return c1.map((c, i) => Math.round(c * weight + c2[i] * (1 - weight)));
+    };
+    
+    const white = [255, 255, 255];
+    const black = [0, 0, 0];
+    
+    root.style.setProperty(`--color-${prefix}-50`, mix(white, rgb, 0.95).join(' '));
+    root.style.setProperty(`--color-${prefix}-100`, mix(white, rgb, 0.9).join(' '));
+    root.style.setProperty(`--color-${prefix}-200`, mix(white, rgb, 0.75).join(' '));
+    root.style.setProperty(`--color-${prefix}-300`, mix(white, rgb, 0.6).join(' '));
+    root.style.setProperty(`--color-${prefix}-400`, mix(white, rgb, 0.3).join(' '));
+    root.style.setProperty(`--color-${prefix}-500`, rgb.join(' '));
+    root.style.setProperty(`--color-${prefix}-600`, mix(black, rgb, 0.15).join(' '));
+    root.style.setProperty(`--color-${prefix}-700`, mix(black, rgb, 0.3).join(' '));
+    root.style.setProperty(`--color-${prefix}-800`, mix(black, rgb, 0.5).join(' '));
+    root.style.setProperty(`--color-${prefix}-900`, mix(black, rgb, 0.7).join(' '));
+    root.style.setProperty(`--color-${prefix}-950`, mix(black, rgb, 0.85).join(' '));
 }
 
 export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -28,21 +51,8 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const [loading, setLoading] = useState(true);
 
     const applyColors = useCallback((primaryColor?: string, secondaryColor?: string) => {
-        const root = document.documentElement;
-
-        if (primaryColor) {
-            const rgb = hexToRgbChannels(primaryColor);
-            if (rgb) root.style.setProperty('--color-primary-rgb', rgb);
-        } else {
-            root.style.removeProperty('--color-primary-rgb');
-        }
-
-        if (secondaryColor) {
-            const rgb = hexToRgbChannels(secondaryColor);
-            if (rgb) root.style.setProperty('--color-secondary-rgb', rgb);
-        } else {
-            root.style.removeProperty('--color-secondary-rgb');
-        }
+        applyThemeColors('primary', primaryColor, [2, 132, 199]);   // Default #0284c7
+        applyThemeColors('secondary', secondaryColor, [124, 58, 237]); // Default #7c3aed
     }, []);
 
     const refreshSettings = useCallback(async () => {

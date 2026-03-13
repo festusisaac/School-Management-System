@@ -302,7 +302,7 @@ export default function StudentProfile() {
                                     </div>
                                 </div>
                                 <div className="p-8 bg-gray-50/30 dark:bg-gray-800/20 border-t border-gray-50 dark:border-gray-800">
-                                    <h4 className="text-[10px] font-black text-purple-600 dark:text-purple-400 uppercase tracking-[0.2em] mb-6">Secondary Guardian Info</h4>
+                                    <h4 className="text-[10px] font-black text-secondary-600 dark:text-secondary-400 uppercase tracking-[0.2em] mb-6">Secondary Guardian Info</h4>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                                         {[
                                             { label: 'Guardian', value: student.guardianName },

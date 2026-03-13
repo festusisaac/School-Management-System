@@ -71,7 +71,7 @@ const getSubjectColor = (subjectName: string): string => {
     const colors = [
         'bg-primary-100 text-primary-800 border-primary-200',
         'bg-green-100 text-green-800 border-green-200',
-        'bg-purple-100 text-purple-800 border-purple-200',
+        'bg-secondary-100 text-secondary-800 border-secondary-200',
         'bg-orange-100 text-orange-800 border-orange-200',
         'bg-pink-100 text-pink-800 border-pink-200',
         'bg-primary-100 text-primary-800 border-primary-200',
@@ -313,7 +313,7 @@ const TeachersTimetablePage = () => {
                                         <div className="text-sm text-gray-600">Subjects Taught</div>
                                     </div>
                                     <div className="bg-white p-4 rounded-lg border border-gray-200">
-                                        <div className="text-2xl font-bold text-purple-600">
+                                        <div className="text-2xl font-bold text-secondary-600">
                                             {new Set(timetable.map(s => `${s.classId}-${s.sectionId}`)).size}
                                         </div>
                                         <div className="text-sm text-gray-600">Classes Assigned</div>

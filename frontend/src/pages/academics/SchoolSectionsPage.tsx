@@ -176,7 +176,7 @@ const SchoolSectionsPage = () => {
                                                 <div className="flex justify-end gap-2">
                                                     <button
                                                         onClick={() => handleOpenModal(section)}
-                                                        className="p-2 text-gray-400 hover:text-primary-600 dark:hover:text-indigo-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-xl transition-all"
+                                                        className="p-2 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-xl transition-all"
                                                     >
                                                         <Edit2 size={18} />
                                                     </button>

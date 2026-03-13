@@ -169,12 +169,12 @@ const DashboardPage: React.FC = () => {
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Staff</p>
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{stats?.staff?.total || 0}</h3>
             </div>
-            <div className="p-2 bg-purple-50 dark:bg-purple-900/30 rounded-lg">
-              <Users className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+            <div className="p-2 bg-secondary-50 dark:bg-secondary-900/30 rounded-lg">
+              <Users className="w-6 h-6 text-secondary-600 dark:text-secondary-400" />
             </div>
           </div>
           <div className="mt-4 flex items-center text-sm">
-            <span className="text-purple-600 font-medium bg-purple-100 px-2 py-0.5 rounded-full text-xs">
+            <span className="text-secondary-600 font-medium bg-secondary-100 px-2 py-0.5 rounded-full text-xs">
               {stats?.staff.teaching} Teaching
             </span>
             <span className="text-gray-500 ml-2 text-xs">
@@ -552,8 +552,8 @@ const DashboardPage: React.FC = () => {
             </Link>
 
             <Link to="/staff/add" className="flex items-center p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group">
-              <div className="p-2 bg-purple-50 dark:bg-purple-900/30 rounded-lg group-hover:bg-purple-100 dark:group-hover:bg-purple-900/50 transition-colors">
-                <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              <div className="p-2 bg-secondary-50 dark:bg-secondary-900/30 rounded-lg group-hover:bg-secondary-100 dark:group-hover:bg-secondary-900/50 transition-colors">
+                <Users className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
               </div>
               <div className="ml-3">
                 <p className="text-sm font-medium text-gray-900 dark:text-white">Add Staff</p>
