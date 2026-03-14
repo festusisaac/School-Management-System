@@ -17,9 +17,7 @@ const ExamGroupsPage = () => {
     const [deletingGroup, setDeletingGroup] = useState<ExamGroup | null>(null);
     const { showSuccess, showError } = useToast();
     const { settings } = useSystem();
-    const [sessions, setSessions] = useState<AcademicSession[]>([]);
     const [terms, setTerms] = useState<AcademicTerm[]>([]);
-    const [selectedSession, setSelectedSession] = useState<string>(settings?.activeSessionName || '');
     const [selectedTerm, setSelectedTerm] = useState<string>(settings?.activeTermName || '');
 
     // Form State
@@ -46,11 +44,9 @@ const ExamGroupsPage = () => {
 
     const fetchDropdownData = async () => {
         try {
-            const [s, t] = await Promise.all([
-                systemService.getSessions(),
+            const [t] = await Promise.all([
                 systemService.getTerms()
             ]);
-            setSessions(s || []);
             setTerms(t || []);
         } catch (error) {
             console.error('Failed to fetch dropdown data', error);
@@ -150,7 +146,7 @@ const ExamGroupsPage = () => {
             accessorKey: 'isActive',
             header: 'Status',
             cell: ({ row }) => (
-                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${row.original.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                <span className={`px-2 py-1 rounded-full text-sm font-semibold ${row.original.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                     {row.original.isActive ? 'Active' : 'Inactive'}
                 </span>
             ),
@@ -180,7 +176,6 @@ const ExamGroupsPage = () => {
     ];
 
     const filteredGroups = groups.filter(g =>
-        (!selectedSession || g.academicYear === selectedSession) &&
         (!selectedTerm || g.term === selectedTerm)
     );
 
@@ -189,22 +184,12 @@ const ExamGroupsPage = () => {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Exam Groups</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Manage Examination Terms and Sessions</p>
+                    <p className="text-base text-gray-500 dark:text-gray-400">Manage Examination Terms and Sessions</p>
                 </div>
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
                         <select
-                            className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
-                            value={selectedSession}
-                            onChange={(e) => setSelectedSession(e.target.value)}
-                        >
-                            <option value="">All Sessions</option>
-                            {sessions.map(s => (
-                                <option key={s.id} value={s.name}>{s.name}</option>
-                            ))}
-                        </select>
-                        <select
-                            className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                             value={selectedTerm}
                             onChange={(e) => setSelectedTerm(e.target.value)}
                         >
@@ -259,21 +244,7 @@ const ExamGroupsPage = () => {
                                         </button>
                                     </div>
                                     <div className="space-y-4">
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Academic Year</label>
-                                                <select
-                                                    required
-                                                    className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                                    value={formData.academicYear}
-                                                    onChange={(e) => setFormData({ ...formData, academicYear: e.target.value })}
-                                                >
-                                                    <option value="">Select Year</option>
-                                                    {sessions.map(s => (
-                                                        <option key={s.id} value={s.name}>{s.name}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
+                                        <div className="grid grid-cols-1 gap-4">
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Term</label>
                                                 <select

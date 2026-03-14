@@ -7,7 +7,7 @@ import { DataTable } from '../../../components/ui/data-table';
 import { ColumnDef } from '@tanstack/react-table';
 import { Modal } from '../../../components/ui/modal';
 import { useSystem } from '../../../context/SystemContext';
-import { systemService, AcademicSession, AcademicTerm } from '../../../services/systemService';
+import { systemService, AcademicTerm } from '../../../services/systemService';
 
 interface SubjectRow {
     subjectId: string;
@@ -33,9 +33,7 @@ const ExamSchedulePage = () => {
     const [currentSubject, setCurrentSubject] = useState<SubjectRow | null>(null);
 
     const { settings } = useSystem();
-    const [sessions, setSessions] = useState<AcademicSession[]>([]);
     const [terms, setTerms] = useState<AcademicTerm[]>([]);
-    const [selectedSession, setSelectedSession] = useState<string>(settings?.activeSessionName || '');
     const [selectedTerm, setSelectedTerm] = useState<string>(settings?.activeTermName || '');
 
     const { showSuccess, showError } = useToast();
@@ -50,37 +48,25 @@ const ExamSchedulePage = () => {
         invigilatorName: ''
     });
 
-    const resetForm = () => {
-        setFormData({
-            totalMarks: 100,
-            date: '',
-            startTime: '',
-            endTime: '',
-            venue: '',
-            invigilatorName: ''
-        });
-        setIsModalOpen(false);
-    };
+    // resetForm removed as it's unused
 
     useEffect(() => {
         const init = async () => {
             try {
-                const [groupsData, classesData, sessionsData, termsData] = await Promise.all([
+                const [groupsData, classesData, termsData] = await Promise.all([
                     examinationService.getExamGroups(),
                     api.getClasses(),
-                    systemService.getSessions(),
                     systemService.getTerms()
                 ]);
                 setGroups(groupsData || []);
                 setClasses(classesData || []);
-                setSessions(sessionsData || []);
                 setTerms(termsData || []);
 
                 // Set initial class
                 if (classesData?.length > 0) setSelectedClass(classesData[0].id);
 
                 // Filter groups based on current session/term if available
-                const sessionToUse = selectedSession || settings?.activeSessionName;
+                const sessionToUse = settings?.activeSessionName;
                 const termToUse = selectedTerm || settings?.activeTermName;
 
                 if (groupsData?.length > 0) {
@@ -103,7 +89,7 @@ const ExamSchedulePage = () => {
 
     // Filtered Groups for Selection
     const filteredGroups = groups.filter(g =>
-        (!selectedSession || g.academicYear === selectedSession) &&
+        (g.academicYear === settings?.activeSessionName) &&
         (!selectedTerm || g.term === selectedTerm)
     );
 
@@ -303,7 +289,7 @@ const ExamSchedulePage = () => {
             header: 'Time & Venue',
             cell: ({ row }) => {
                 if (row.original.status !== 'Scheduled' || !row.original.details) return <span className="text-gray-300 italic text-xs">No schedule set</span>;
-                const { date, startTime, endTime, venue, invigilatorName } = row.original.details;
+                const { date, startTime, endTime, venue } = row.original.details;
                 return (
                     <div className="text-xs space-y-1 py-1">
                         <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
@@ -356,19 +342,7 @@ const ExamSchedulePage = () => {
                     <p className="text-gray-500 dark:text-gray-400">Manage time table for examinations</p>
                 </div>
                 <div className="flex flex-wrap gap-4 w-full md:w-auto">
-                    <select
-                        className="flex-1 md:flex-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 shadow-sm"
-                        value={selectedSession}
-                        onChange={(e) => {
-                            setSelectedSession(e.target.value);
-                            setSelectedGroup('');
-                        }}
-                    >
-                        <option value="">All Sessions</option>
-                        {sessions.map(s => (
-                            <option key={s.id} value={s.name}>{s.name}</option>
-                        ))}
-                    </select>
+
 
                     <select
                         className="flex-1 md:flex-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 shadow-sm"

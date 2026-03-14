@@ -72,7 +72,7 @@ export function DataTable<TData, TValue>({
                                         return (
                                             <th
                                                 key={header.id}
-                                                className="h-12 px-4 text-xs font-semibold text-gray-500 dark:text-gray-400 align-middle [&:has([role=checkbox])]:pr-0 whitespace-nowrap"
+                                                className="h-12 px-4 text-sm font-bold text-gray-500 dark:text-gray-400 align-middle [&:has([role=checkbox])]:pr-0 whitespace-nowrap"
                                             >
                                                 {header.isPlaceholder
                                                     ? null
@@ -92,7 +92,7 @@ export function DataTable<TData, TValue>({
                                     <td colSpan={columns.length} className="h-32 text-center">
                                         <div className="flex flex-col items-center gap-3">
                                             <div className="w-8 h-8 border-4 border-primary-500/20 border-t-primary-500 rounded-full animate-spin" />
-                                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Loading records...</p>
+                                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Loading records...</p>
                                         </div>
                                     </td>
                                 </tr>

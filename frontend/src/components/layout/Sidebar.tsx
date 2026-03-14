@@ -277,20 +277,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 </nav>
 
                 {/* Bottom Section - User / Settings / Help */}
-                <div className="p-4 border-t border-gray-50 dark:border-gray-800/50 space-y-1">
-                    <button className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-gray-200 rounded-xl transition-all group overflow-hidden whitespace-nowrap">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0">
-                            JD
-                        </div>
-                        <div className={twMerge(
-                            "text-left transition-opacity duration-300",
-                            isOpen ? "opacity-100" : "opacity-0 lg:hidden"
-                        )}>
-                            <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 leading-none">John Doe</p>
-                            <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1 uppercase tracking-wider">Admin</p>
-                        </div>
-                    </button>
-                </div>
+
             </div>
         </>
     );

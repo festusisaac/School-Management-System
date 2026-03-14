@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, AlertTriangle, Layers } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { examinationService, ExamGroup, AssessmentType } from '../../../services/examinationService';
@@ -6,7 +6,7 @@ import { DataTable } from '../../../components/ui/data-table';
 import { ColumnDef } from '@tanstack/react-table';
 import { Modal } from '../../../components/ui/modal';
 import { useSystem } from '../../../context/SystemContext';
-import { systemService, AcademicSession, AcademicTerm } from '../../../services/systemService';
+import { systemService, AcademicTerm } from '../../../services/systemService';
 
 const AssessmentStructurePage = () => {
     const [groups, setGroups] = useState<ExamGroup[]>([]);
@@ -19,9 +19,7 @@ const AssessmentStructurePage = () => {
     const [deletingAssessment, setDeletingAssessment] = useState<AssessmentType | null>(null);
     const { showSuccess, showError } = useToast();
     const { settings } = useSystem();
-    const [sessions, setSessions] = useState<AcademicSession[]>([]);
     const [terms, setTerms] = useState<AcademicTerm[]>([]);
-    const [selectedSession, setSelectedSession] = useState<string>(settings?.activeSessionName || '');
     const [selectedTerm, setSelectedTerm] = useState<string>(settings?.activeTermName || '');
 
     // Form State
@@ -34,16 +32,14 @@ const AssessmentStructurePage = () => {
     useEffect(() => {
         const init = async () => {
             try {
-                const [g, s, t] = await Promise.all([
+                const [g, t] = await Promise.all([
                     examinationService.getExamGroups(),
-                    systemService.getSessions(),
                     systemService.getTerms()
                 ]);
                 setGroups(g || []);
-                setSessions(s || []);
                 setTerms(t || []);
 
-                const sessionToUse = selectedSession || settings?.activeSessionName;
+                const sessionToUse = settings?.activeSessionName;
                 const termToUse = selectedTerm || settings?.activeTermName;
 
                 if (g?.length > 0) {
@@ -75,7 +71,7 @@ const AssessmentStructurePage = () => {
 
     // Filtered Groups for Selection
     const filteredGroups = groups.filter(g =>
-        (!selectedSession || g.academicYear === selectedSession) &&
+        (g.academicYear === settings?.activeSessionName) &&
         (!selectedTerm || g.term === selectedTerm)
     );
 
@@ -199,19 +195,7 @@ const AssessmentStructurePage = () => {
                     <p className="text-gray-500 dark:text-gray-400">Define CA and Exam weightage for each term</p>
                 </div>
                 <div className="flex flex-wrap gap-4 items-center">
-                    <select
-                        className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-sm"
-                        value={selectedSession}
-                        onChange={(e) => {
-                            setSelectedSession(e.target.value);
-                            setSelectedGroup('');
-                        }}
-                    >
-                        <option value="">All Sessions</option>
-                        {sessions.map(s => (
-                            <option key={s.id} value={s.name}>{s.name}</option>
-                        ))}
-                    </select>
+
 
                     <select
                         className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-sm"

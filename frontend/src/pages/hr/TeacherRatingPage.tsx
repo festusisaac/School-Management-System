@@ -9,7 +9,6 @@ import RatingModal from '../../components/hr/RatingModal';
 import { format } from 'date-fns';
 import { useToast } from '../../context/ToastContext';
 import { useSystem } from '../../context/SystemContext';
-import { systemService, AcademicSession } from '../../services/systemService';
 import { DataTable } from '../../components/ui/data-table';
 import { ColumnDef } from '@tanstack/react-table';
 
@@ -43,39 +42,27 @@ export default function TeacherRatingPage() {
     const toast = useToast();
     const { settings } = useSystem();
 
-    const [availableSessions, setAvailableSessions] = useState<AcademicSession[]>([]);
-    const [selectedSession, setSelectedSession] = useState('');
     const [selectedTerm, setSelectedTerm] = useState('');
 
-    useEffect(() => {
-        const loadInitial = async () => {
-            try {
-                const sess = await systemService.getSessions();
-                setAvailableSessions(sess || []);
-            } catch (e) {
-                console.error('Failed to load sessions');
-            }
-        };
-        loadInitial();
-    }, []);
+    // Removed session loader
+
 
     useEffect(() => {
         if (settings) {
-            setSelectedSession(settings.activeSessionName || '');
             setSelectedTerm(settings.activeTermName || '');
         }
     }, [settings]);
 
     useEffect(() => {
         fetchData();
-    }, [selectedSession, selectedTerm]);
+    }, [selectedTerm]);
 
     const fetchData = async () => {
         try {
             setLoading(true);
             const [ratingsData, staffData] = await Promise.all([
                 api.getRatings({
-                    academicYear: selectedSession || undefined,
+                    academicYear: settings?.activeSessionName || undefined,
                     term: selectedTerm || undefined
                 }),
                 api.getStaff()
@@ -228,19 +215,8 @@ export default function TeacherRatingPage() {
                          <h2 className="text-sm font-bold text-gray-700 dark:text-gray-200">Performance Records</h2>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                        <div className="relative">
-                            <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
-                            <select
-                                className="pl-8 pr-3 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-[11px] font-bold outline-none focus:ring-2 focus:ring-primary-500 transition-all cursor-pointer"
-                                value={selectedSession}
-                                onChange={e => setSelectedSession(e.target.value)}
-                            >
-                                <option value="">All Sessions</option>
-                                {availableSessions.map(s => (
-                                    <option key={s.id} value={s.name}>{s.name}</option>
-                                ))}
-                            </select>
-                        </div>
+                        {/* Redundant Session Selector removed */}
+
                         <select
                             className="px-3 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-[11px] font-bold outline-none focus:ring-2 focus:ring-primary-500 transition-all cursor-pointer"
                             value={selectedTerm}

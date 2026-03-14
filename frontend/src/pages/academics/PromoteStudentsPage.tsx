@@ -66,6 +66,7 @@ export default function PromoteStudentsPage() {
     }
   }, [settings]);
 
+
   const fetchInitialData = async () => {
     setLoading(true);
     try {

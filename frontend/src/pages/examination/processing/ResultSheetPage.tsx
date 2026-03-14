@@ -4,19 +4,16 @@ import { useToast } from '../../../context/ToastContext';
 import { useSystem } from '../../../context/SystemContext';
 import { examinationService, ExamGroup, GradeScale } from '../../../services/examinationService';
 import api from '../../../services/api';
-import { systemService, AcademicSession, AcademicTerm } from '../../../services/systemService';
+import { systemService, AcademicTerm } from '../../../services/systemService';
 import ReportCardTemplate, { ReportCardData } from '../../../components/examination/ReportCardTemplate';
 
 const ResultSheetPage = () => {
     const [groups, setGroups] = useState<ExamGroup[]>([]);
     const [classes, setClasses] = useState<any[]>([]);
-    const [gradeScales, setGradeScales] = useState<GradeScale[]>([]);
     const [selectedGroup, setSelectedGroup] = useState('');
     const [selectedClass, setSelectedClass] = useState('');
 
-    const [sessions, setSessions] = useState<AcademicSession[]>([]);
     const [terms, setTerms] = useState<AcademicTerm[]>([]);
-    const [selectedSession, setSelectedSession] = useState<string>('');
     const [selectedTerm, setSelectedTerm] = useState<string>('');
 
     const [students, setStudents] = useState<ReportCardData[]>([]);
@@ -33,11 +30,10 @@ const ResultSheetPage = () => {
     useEffect(() => {
         const init = async () => {
             try {
-                const [g, c, s, sess, t] = await Promise.all([
+                const [g, c, s, t] = await Promise.all([
                     examinationService.getExamGroups(),
                     api.getClasses(),
                     examinationService.getGradeScales(),
-                    systemService.getSessions(),
                     systemService.getTerms()
                 ]);
                 
@@ -45,13 +41,11 @@ const ResultSheetPage = () => {
                 setGroups(loadedGroups);
                 setClasses(c || []);
                 setGradeScales(s || []);
-                setSessions(sess || []);
                 setTerms(t || []);
 
                 // Set initial session/term from settings if available
                 const initialSession = settings?.activeSessionName || '';
                 const initialTerm = settings?.activeTermName || '';
-                setSelectedSession(initialSession);
                 setSelectedTerm(initialTerm);
 
                 // Auto-select group matching global session and term
@@ -73,7 +67,7 @@ const ResultSheetPage = () => {
 
     // Filtered Groups for Selection
     const filteredGroups = groups.filter(g =>
-        (!selectedSession || g.academicYear === selectedSession) &&
+        (g.academicYear === settings?.activeSessionName) &&
         (!selectedTerm || g.term === selectedTerm)
     );
 
@@ -88,18 +82,18 @@ const ResultSheetPage = () => {
             const [studentsData, groupData, broadsheetResponse, assessments] = await Promise.all([
                 api.getStudents({ classId: selectedClass, limit: 1000 }),
                 groups.find(g => g.id === selectedGroup),
-                examinationService.getBroadsheet(selectedClass, selectedGroup).catch(() => ({ results: [], subjectScores: [] })),
+                examinationService.getBroadsheet(selectedClass, selectedGroup).catch(() => ({ results: [], subjectScores: [] })) as any,
                 examinationService.getAssessmentTypes(selectedGroup)
             ]);
 
             if (!groupData) throw new Error("Exam Group not found");
 
-            const broadsheetData = broadsheetResponse?.results || [];
+            const broadsheetData = (broadsheetResponse as any)?.results || [];
 
             // 2. Fetch Detailed Marks for breakdown (Optimized: Single Batch Call)
             const [exams, allClassMarks] = await Promise.all([
                 examinationService.getExams(selectedGroup),
-                examinationService.getClassMarks(selectedClass, selectedGroup)
+                examinationService.getClassMarks(selectedClass, selectedGroup) as any
             ]);
             const classExams = exams.filter(e => e.classId === selectedClass);
 
@@ -115,7 +109,7 @@ const ResultSheetPage = () => {
 
             // 4. Build Report Card Data Objects
             const reports: ReportCardData[] = studentsData.map((student: any) => {
-                const broadsheetRecord = broadsheetData.find((b: any) => (b.studentId === student.id) || (b.student?.id === student.id));
+                const broadsheetRecord = broadsheetData.find((b: any) => (b.studentId === student.id) || (b.studentId === student.id));
                 const studentPersonalMarks = studentMarksMap[student.id] || [];
 
                 const subjects = classExams.map(exam => {
@@ -277,23 +271,8 @@ const ResultSheetPage = () => {
                 </div>
 
                 {/* Filters */}
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm grid grid-cols-1 md:grid-cols-5 gap-6 items-end">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Session</label>
-                        <select
-                            className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                            value={selectedSession}
-                            onChange={(e) => {
-                                setSelectedSession(e.target.value);
-                                setSelectedGroup('');
-                            }}
-                        >
-                            <option value="">All Sessions</option>
-                            {sessions.map(s => (
-                                <option key={s.id} value={s.name}>{s.name}</option>
-                            ))}
-                        </select>
-                    </div>
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Term</label>

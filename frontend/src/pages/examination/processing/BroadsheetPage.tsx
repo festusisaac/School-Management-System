@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Download, Search, Filter } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { examinationService, ExamGroup } from '../../../services/examinationService';
 import api from '../../../services/api';
 import { utils, writeFile } from 'xlsx';
 import { useSystem } from '../../../context/SystemContext';
-import { systemService, AcademicSession, AcademicTerm } from '../../../services/systemService';
+import { systemService, AcademicTerm } from '../../../services/systemService';
 
 interface BroadsheetRow {
     studentId: string;
@@ -25,9 +25,7 @@ const BroadsheetPage = () => {
     const [selectedClass, setSelectedClass] = useState('');
 
     const { settings } = useSystem();
-    const [sessions, setSessions] = useState<AcademicSession[]>([]);
     const [terms, setTerms] = useState<AcademicTerm[]>([]);
-    const [selectedSession, setSelectedSession] = useState<string>(settings?.activeSessionName || '');
     const [selectedTerm, setSelectedTerm] = useState<string>(settings?.activeTermName || '');
 
     const [rows, setRows] = useState<BroadsheetRow[]>([]);
@@ -39,19 +37,17 @@ const BroadsheetPage = () => {
     useEffect(() => {
         const init = async () => {
             try {
-                const [g, c, s, t] = await Promise.all([
+                const [g, c, t] = await Promise.all([
                     examinationService.getExamGroups(),
                     api.getClasses(),
-                    systemService.getSessions(),
                     systemService.getTerms()
                 ]);
                 setGroups(g || []);
                 setClasses(c || []);
-                setSessions(s || []);
                 setTerms(t || []);
 
                 // Select matching group if possible
-                const sessionToUse = selectedSession || settings?.activeSessionName;
+                const sessionToUse = settings?.activeSessionName;
                 const termToUse = selectedTerm || settings?.activeTermName;
 
                 if (g?.length > 0) {
@@ -74,7 +70,7 @@ const BroadsheetPage = () => {
 
     // Filtered Groups for Selection
     const filteredGroups = groups.filter(g =>
-        (!selectedSession || g.academicYear === selectedSession) &&
+        (g.academicYear === settings?.activeSessionName) &&
         (!selectedTerm || g.term === selectedTerm)
     );
 
@@ -216,23 +212,8 @@ const BroadsheetPage = () => {
             </div>
 
             {/* Filters */}
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Session</label>
-                    <select
-                        className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        value={selectedSession}
-                        onChange={(e) => {
-                            setSelectedSession(e.target.value);
-                            setSelectedGroup('');
-                        }}
-                    >
-                        <option value="">All Sessions</option>
-                        {sessions.map(s => (
-                            <option key={s.id} value={s.name}>{s.name}</option>
-                        ))}
-                    </select>
-                </div>
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6">
+
 
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Term</label>

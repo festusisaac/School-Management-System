@@ -1,22 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
     ArrowLeft,
     Trash2,
     Search,
-    Calendar,
-    Filter,
     Loader2,
-    AlertCircle,
-    CheckCircle2,
     History,
-    X
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { formatCurrency } from '../../utils/currency';
-import { clsx } from 'clsx';
-import { systemService, AcademicSession } from '../../services/systemService';
 import { useSystem } from '../../context/SystemContext';
 
 interface CarryForwardRecord {
@@ -41,38 +34,22 @@ const CarryForwardHistoryPage = () => {
     const [records, setRecords] = useState<CarryForwardRecord[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedYear, setSelectedYear] = useState('');
-    const [page, setPage] = useState(1);
-    const [total, setTotal] = useState(0);
-    const [availableSessions, setAvailableSessions] = useState<AcademicSession[]>([]);
+    const [page] = useState(1);
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
     const { settings } = useSystem();
-    const activeSessionName = settings?.activeSessionName;
 
     const limit = 20;
 
-    useEffect(() => {
-        const loadSessions = async () => {
-            try {
-                const sessions = await systemService.getSessions();
-                setAvailableSessions(sessions || []);
-            } catch (e) {
-                console.error('Failed to load sessions');
-            }
-        };
-        loadSessions();
-    }, []);
+    // Removed session loader
 
-    useEffect(() => {
-        if (!selectedYear && activeSessionName) {
-            setSelectedYear(activeSessionName);
-        }
-    }, [activeSessionName]);
+
+    // Removed selectedYear auto-setter
+
 
     useEffect(() => {
         fetchHistory();
-    }, [page, selectedYear]);
+    }, [page]);
 
     // Debounced search
     useEffect(() => {
@@ -90,7 +67,7 @@ const CarryForwardHistoryPage = () => {
             const response = await api.listCarryForwards({
                 page,
                 limit,
-                academicYear: selectedYear || undefined,
+                academicYear: settings?.activeSessionName || undefined,
                 // search is difficult with current backend implementation unless I implemented it.
                 // The backend I wrote supports filtering by studentId and academicYear.
                 // To support search efficiently I would need backend changes, but for now filtering by year is key.
@@ -112,7 +89,6 @@ const CarryForwardHistoryPage = () => {
             await api.deleteCarryForward(id);
             showSuccess('Record deleted successfully');
             setRecords(prev => prev.filter(r => r.id !== id));
-            setTotal(prev => prev - 1);
         } catch (error) {
             showError('Failed to delete record');
         } finally {
@@ -147,19 +123,8 @@ const CarryForwardHistoryPage = () => {
                         onChange={e => setSearchQuery(e.target.value)}
                     />
                 </div>
-                <div className="relative w-full sm:w-48">
-                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                    <select
-                        className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary-500 appearance-none font-medium text-gray-600 dark:text-gray-300"
-                        value={selectedYear}
-                        onChange={e => setSelectedYear(e.target.value)}
-                    >
-                        <option value="">All Years</option>
-                        {availableSessions.map(s => (
-                            <option key={s.id} value={s.name}>{s.name}</option>
-                        ))}
-                    </select>
-                </div>
+                {/* Redundant Session Selector removed */}
+
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">

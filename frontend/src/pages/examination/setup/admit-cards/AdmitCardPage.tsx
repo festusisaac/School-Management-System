@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Layout, Printer, Save, Trash2, Edit3 } from 'lucide-react';
 import { examinationService, ExamGroup, AdmitCard } from '../../../../services/examinationService';
 import api from '../../../../services/api';
@@ -11,7 +11,7 @@ import { Modal } from '../../../../components/ui/modal';
 import { DataTable } from '../../../../components/ui/data-table';
 import { ColumnDef } from '@tanstack/react-table';
 import { useSystem } from '../../../../context/SystemContext';
-import { systemService, AcademicSession, AcademicTerm } from '../../../../services/systemService';
+import { systemService, AcademicTerm } from '../../../../services/systemService';
 
 const AdmitCardPage = () => {
     const [groups, setGroups] = useState<ExamGroup[]>([]);
@@ -20,9 +20,7 @@ const AdmitCardPage = () => {
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<'design' | 'print'>('design');
     const { settings } = useSystem();
-    const [sessions, setSessions] = useState<AcademicSession[]>([]);
     const [terms, setTerms] = useState<AcademicTerm[]>([]);
-    const [selectedSession, setSelectedSession] = useState<string>(settings?.activeSessionName || '');
     const [selectedTerm, setSelectedTerm] = useState<string>(settings?.activeTermName || '');
 
     // Editor State
@@ -52,18 +50,16 @@ const AdmitCardPage = () => {
     useEffect(() => {
         const init = async () => {
             try {
-                const [g, c, s, t] = await Promise.all([
+                const [g, c, t] = await Promise.all([
                     examinationService.getExamGroups(),
                     api.getClasses(),
-                    systemService.getSessions(),
                     systemService.getTerms()
                 ]);
                 setGroups(g || []);
                 setClasses(c || []);
-                setSessions(s || []);
                 setTerms(t || []);
 
-                const sessionToUse = selectedSession || settings?.activeSessionName;
+                const sessionToUse = settings?.activeSessionName;
                 const termToUse = selectedTerm || settings?.activeTermName;
 
                 if (g?.length > 0) {
@@ -99,7 +95,7 @@ const AdmitCardPage = () => {
 
     // Filtered Groups for Selection
     const filteredGroups = groups.filter(g =>
-        (!selectedSession || g.academicYear === selectedSession) &&
+        (g.academicYear === settings?.activeSessionName) &&
         (!selectedTerm || g.term === selectedTerm)
     );
 
@@ -293,22 +289,7 @@ const AdmitCardPage = () => {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <div className="flex flex-col">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 ml-1">Session</label>
-                        <select
-                            className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 shadow-sm min-w-[150px]"
-                            value={selectedSession}
-                            onChange={(e) => {
-                                setSelectedSession(e.target.value);
-                                setSelectedGroup('');
-                            }}
-                        >
-                            <option value="">All Sessions</option>
-                            {sessions.map(s => (
-                                <option key={s.id} value={s.name}>{s.name}</option>
-                            ))}
-                        </select>
-                    </div>
+
 
                     <div className="flex flex-col">
                         <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 ml-1">Term</label>

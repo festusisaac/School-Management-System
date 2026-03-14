@@ -4,7 +4,7 @@ import { useToast } from '../../../context/ToastContext';
 import { examinationService, ExamGroup } from '../../../services/examinationService';
 import api from '../../../services/api';
 import { useSystem } from '../../../context/SystemContext';
-import { systemService, AcademicSession, AcademicTerm } from '../../../services/systemService';
+import { systemService, AcademicTerm } from '../../../services/systemService';
 
 const PublishPage = () => {
     const [groups, setGroups] = useState<ExamGroup[]>([]);
@@ -13,9 +13,7 @@ const PublishPage = () => {
     const [selectedClass, setSelectedClass] = useState('');
 
     const { settings } = useSystem();
-    const [sessions, setSessions] = useState<AcademicSession[]>([]);
     const [terms, setTerms] = useState<AcademicTerm[]>([]);
-    const [selectedSession, setSelectedSession] = useState<string>(settings?.activeSessionName || '');
     const [selectedTerm, setSelectedTerm] = useState<string>(settings?.activeTermName || '');
     const [summary, setSummary] = useState<any>(null);
     const [loading, setLoading] = useState(false);
@@ -26,19 +24,17 @@ const PublishPage = () => {
     useEffect(() => {
         const init = async () => {
             try {
-                const [g, c, s, t] = await Promise.all([
+                const [g, c, t] = await Promise.all([
                     examinationService.getExamGroups(),
                     api.getClasses(),
-                    systemService.getSessions(),
                     systemService.getTerms()
                 ]);
                 setGroups(g || []);
                 setClasses(c || []);
-                setSessions(s || []);
                 setTerms(t || []);
 
                 // Select matching group if possible
-                const sessionToUse = selectedSession || settings?.activeSessionName;
+                const sessionToUse = settings?.activeSessionName;
                 const termToUse = selectedTerm || settings?.activeTermName;
 
                 if (g?.length > 0) {
@@ -59,7 +55,7 @@ const PublishPage = () => {
 
     // Filtered Groups for Selection
     const filteredGroups = groups.filter(g =>
-        (!selectedSession || g.academicYear === selectedSession) &&
+        (g.academicYear === settings?.activeSessionName) &&
         (!selectedTerm || g.term === selectedTerm)
     );
 
@@ -105,20 +101,8 @@ const PublishPage = () => {
                 <p className="text-gray-500 dark:text-gray-400">Release approved results to portals.</p>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm grid grid-cols-1 md:grid-cols-4 gap-4">
-                <select
-                    className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    value={selectedSession}
-                    onChange={(e) => {
-                        setSelectedSession(e.target.value);
-                        setSelectedGroup('');
-                    }}
-                >
-                    <option value="">All Sessions</option>
-                    {sessions.map(s => (
-                        <option key={s.id} value={s.name}>{s.name}</option>
-                    ))}
-                </select>
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm grid grid-cols-1 md:grid-cols-3 gap-4">
+
 
                 <select
                     className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
