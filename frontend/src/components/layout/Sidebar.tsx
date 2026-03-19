@@ -160,7 +160,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 // On Desktop: integrate into flex flow properly
                 "lg:relative lg:translate-x-0 lg:shadow-none lg:z-10",
                 // Width Logic
-                isOpen ? "translate-x-0 w-72 shadow-2xl" : "-translate-x-full lg:w-20 lg:translate-x-0"
+                isOpen ? "translate-x-0 w-64 shadow-2xl" : "-translate-x-full lg:w-20 lg:translate-x-0"
             )}>
                 {/* Logo Section */}
                 <div className="flex h-16 items-center px-6 border-b border-gray-50 dark:border-gray-800/50 overflow-hidden relative justify-center">
@@ -195,7 +195,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                                     <button
                                         onClick={() => toggleSubmenu(item.path)}
                                         className={clsx(
-                                            "w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group overflow-hidden whitespace-nowrap",
+                                            "w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 group overflow-hidden whitespace-nowrap",
                                             expandedMenu === item.path
                                                 ? "bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white"
                                                 : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-gray-200"
@@ -255,7 +255,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                                 <NavLink
                                     to={item.path}
                                     className={({ isActive }) => clsx(
-                                        "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group overflow-hidden whitespace-nowrap",
+                                        "flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 group overflow-hidden whitespace-nowrap",
                                         isActive
                                             ? "bg-primary-600 text-white shadow-lg shadow-primary-600/25"
                                             : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-gray-200"

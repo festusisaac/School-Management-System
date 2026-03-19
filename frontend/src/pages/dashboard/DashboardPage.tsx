@@ -119,12 +119,12 @@ const DashboardPage: React.FC = () => {
     ];
 
   return (
-    <div className="space-y-8 overflow-x-hidden">
+    <div className="space-y-6 overflow-x-hidden">
 
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
         <div>
-          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Admin Dashboard</h1>
+          <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">Admin Dashboard</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Overview of school performance and activities.</p>
         </div>
         <div className="flex space-x-3 mt-4 md:mt-0">
@@ -140,13 +140,13 @@ const DashboardPage: React.FC = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {/* Total Students */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Students</p>
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{stats?.students?.total || 0}</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mt-1">{stats?.students?.total || 0}</h3>
             </div>
             <div className="p-2 bg-primary-50 dark:bg-primary-900/30 rounded-lg">
               <GraduationCap className="w-6 h-6 text-primary-600 dark:text-primary-400" />
@@ -163,11 +163,11 @@ const DashboardPage: React.FC = () => {
         </div>
 
         {/* Total Staff */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Staff</p>
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{stats?.staff?.total || 0}</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mt-1">{stats?.staff?.total || 0}</h3>
             </div>
             <div className="p-2 bg-secondary-50 dark:bg-secondary-900/30 rounded-lg">
               <Users className="w-6 h-6 text-secondary-600 dark:text-secondary-400" />
@@ -184,11 +184,11 @@ const DashboardPage: React.FC = () => {
         </div>
 
         {/* Total Revenue */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Revenue</p>
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{formatCurrency(stats?.finance?.totalRevenue)}</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mt-1">{formatCurrency(stats?.finance?.totalRevenue)}</h3>
             </div>
             <div className="p-2 bg-green-50 dark:bg-green-900/30 rounded-lg">
               <CreditCard className="w-6 h-6 text-green-600 dark:text-green-400" />
@@ -204,11 +204,11 @@ const DashboardPage: React.FC = () => {
         </div>
 
         {/* Outstanding Fees */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Outstanding Fees</p>
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{formatCurrency(stats?.finance?.outstandingFees)}</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mt-1">{formatCurrency(stats?.finance?.outstandingFees)}</h3>
             </div>
             <div className="p-2 bg-orange-50 dark:bg-orange-900/30 rounded-lg shrink-0">
               <Banknote className="w-6 h-6 text-orange-600 dark:text-orange-400" />
@@ -222,7 +222,7 @@ const DashboardPage: React.FC = () => {
         </div>
 
         {/* Fees Overview */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
           <h3 className="text-gray-500 dark:text-gray-400 text-sm font-bold uppercase mb-4">Fees Overview</h3>
           <div className="space-y-4">
             {/* Unpaid */}
@@ -274,7 +274,7 @@ const DashboardPage: React.FC = () => {
         </div>
 
         {/* Academic Health */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
           <h3 className="text-gray-500 dark:text-gray-400 text-sm font-bold uppercase mb-4">Academic Health</h3>
           <div className="space-y-4">
             {/* Teachers Yet to Submit */}
@@ -321,7 +321,7 @@ const DashboardPage: React.FC = () => {
 
 
         {/* Student Performance Analytics */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
           <h3 className="text-gray-500 dark:text-gray-400 text-sm font-bold uppercase mb-4">Student Performance</h3>
           <div className="space-y-4">
             <div className="flex justify-between items-center text-sm p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
@@ -360,7 +360,7 @@ const DashboardPage: React.FC = () => {
         </div>
 
         {/* Accounting Summary */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
           <h3 className="text-gray-500 dark:text-gray-400 text-sm font-bold uppercase mb-4">Financial Overview</h3>
           <div className="space-y-4">
             <div className="flex flex-wrap justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg gap-2">
@@ -392,9 +392,9 @@ const DashboardPage: React.FC = () => {
       </div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Main Chart: Enrollment Trends */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 xl:col-span-2">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700 xl:col-span-2">
           <div className="flex justify-between items-center mb-6">
             <div>
               <h2 className="text-lg font-bold text-gray-900 dark:text-white">Enrollment Trends</h2>
@@ -421,7 +421,7 @@ const DashboardPage: React.FC = () => {
         </div>
 
         {/* Gender Distribution Chart */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700">
           <div className="mb-6">
             <h2 className="text-lg font-bold text-gray-900 dark:text-white">Gender Distribution</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">Student composition by gender</p>
@@ -468,9 +468,9 @@ const DashboardPage: React.FC = () => {
       </div>
 
       {/* Activity Feed & Quick Actions */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Recent Activities */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 xl:col-span-2">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700 xl:col-span-2">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-lg font-bold text-gray-900 dark:text-white">Recent Activities</h2>
             <Link to="/activity-log" className="text-sm text-primary-600 font-medium hover:text-primary-700">View All</Link>
@@ -528,7 +528,7 @@ const DashboardPage: React.FC = () => {
         </div>
 
         {/* Quick Actions / System Status */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Quick Actions</h2>
           <div className="space-y-3">
             <Link to="/students/register" className="flex items-center p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group">
