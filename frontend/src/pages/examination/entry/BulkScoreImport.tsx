@@ -3,6 +3,7 @@ import { Upload, X, FileSpreadsheet, AlertTriangle, Check, Loader2, Download } f
 import * as XLSX from 'xlsx';
 import { useToast } from '../../../context/ToastContext';
 import { AssessmentType } from '../../../services/examinationService';
+import { useSystem } from '../../../context/SystemContext';
 
 interface BulkScoreImportProps {
     isOpen: boolean;
@@ -20,13 +21,21 @@ const BulkScoreImport: React.FC<BulkScoreImportProps> = ({ isOpen, onClose, onIm
     const [loading, setLoading] = useState(false);
     const [step, setStep] = useState<'upload' | 'map' | 'preview'>('upload');
 
-    const { showError } = useToast();
+    const { showError, showWarning } = useToast();
+    const { settings } = useSystem();
 
     if (!isOpen) return null;
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+
+        const maxMB = settings?.maxFileUploadSizeMb || 2;
+        if (file.size > maxMB * 1024 * 1024) {
+            showWarning(`File size exceeds ${maxMB}MB limit.`);
+            e.target.value = '';
+            return;
+        }
 
         const reader = new FileReader();
         reader.onload = (evt) => {

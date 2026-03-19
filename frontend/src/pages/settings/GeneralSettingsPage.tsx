@@ -23,6 +23,8 @@ const LogoUploader = ({
 }) => {
     const [uploading, setUploading] = useState(false);
     const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
+    const toast = useToast();
+    const { settings } = useSystem();
 
     const getFullUrl = (url?: string) => {
         if (!url) return '';
@@ -47,8 +49,14 @@ const LogoUploader = ({
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
+            const file = e.target.files[0];
+            const maxMB = settings?.maxFileUploadSizeMb || 2;
+            if (file.size > maxMB * 1024 * 1024) {
+                toast.showWarning(`File size exceeds ${maxMB}MB limit.`);
+                return;
+            }
             setUploading(true);
-            await onUpload(type, e.target.files[0]);
+            await onUpload(type, file);
             setUploading(false);
         }
     };

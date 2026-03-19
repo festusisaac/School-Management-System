@@ -388,7 +388,7 @@ export default function StudentAdmission() {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
-            const maxSizeMb = settings?.maxFileUploadSizeMb || 5;
+            const maxSizeMb = settings?.maxFileUploadSizeMb || 2;
             if (file.size > maxSizeMb * 1024 * 1024) {
                 toast.showWarning(`File size exceeds ${maxSizeMb}MB limit. Please choose a smaller file.`);
                 e.target.value = '';

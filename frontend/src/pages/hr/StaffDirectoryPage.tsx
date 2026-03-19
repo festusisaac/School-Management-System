@@ -108,7 +108,7 @@ const StaffDirectoryPage = () => {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, files, multiple } = e.target;
         if (files && files.length > 0) {
-            const maxSizeMb = settings?.maxFileUploadSizeMb || 5;
+            const maxSizeMb = settings?.maxFileUploadSizeMb || 2;
             const oversized = Array.from(files).find(f => f.size > maxSizeMb * 1024 * 1024);
             if (oversized) {
                 toast.showWarning(`File "${oversized.name}" exceeds ${maxSizeMb}MB limit. Please choose a smaller file.`);

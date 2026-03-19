@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Calendar, FileText, Send, Clock, AlertCircle, FilePlus, Bookmark } from 'lucide-react';
+import { Calendar, FileText, Send, Clock, AlertCircle, FilePlus, Bookmark, Upload } from 'lucide-react';
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import { useSystem } from '../../context/SystemContext';
 import { format } from 'date-fns';
 
 interface LeaveType {
@@ -29,6 +30,7 @@ const ApplyLeavePage = () => {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const toast = useToast();
+    const { settings } = useSystem();
 
     // Form state
     const [selectedType, setSelectedType] = useState('');
@@ -69,7 +71,13 @@ const ApplyLeavePage = () => {
 
         const fileInput = (formElement.elements.namedItem('document') as HTMLInputElement);
         if (fileInput?.files?.length) {
-            form.append('document', fileInput.files[0]);
+            const file = fileInput.files[0];
+            const maxSizeMb = settings?.maxFileUploadSizeMb || 2;
+            if (file.size > maxSizeMb * 1024 * 1024) {
+                toast.showWarning(`File size exceeds ${maxSizeMb}MB limit.`);
+                return;
+            }
+            form.append('document', file);
         }
 
         try {
@@ -202,9 +210,19 @@ const ApplyLeavePage = () => {
                                         name="document"
                                         required
                                         accept=".pdf,.jpg,.jpeg,.png"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                                const maxSizeMb = settings?.maxFileUploadSizeMb || 2;
+                                                if (file.size > maxSizeMb * 1024 * 1024) {
+                                                    toast.showWarning(`File size exceeds ${maxSizeMb}MB limit.`);
+                                                    e.target.value = '';
+                                                }
+                                            }
+                                        }}
                                         className="w-full text-xs text-gray-500 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-primary-600 file:text-white file:cursor-pointer hover:file:bg-primary-700 transition-all outline-none"
                                     />
-                                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1.5 ml-1 italic">Accepted: PDF, JPG, PNG. Max 5MB</p>
+                                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1.5 ml-1 italic">Accepted: PDF, JPG, PNG. Max {settings?.maxFileUploadSizeMb || 2}MB</p>
                                 </div>
                             )}
 

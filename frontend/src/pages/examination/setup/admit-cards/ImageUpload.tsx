@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Upload, X, Loader2 } from 'lucide-react';
 import api from '../../../../services/api';
 import { useToast } from '../../../../context/ToastContext';
+import { useSystem } from '../../../../context/SystemContext';
 
 interface Props {
     value?: string;
@@ -12,7 +13,8 @@ interface Props {
 
 const ImageUpload: React.FC<Props> = ({ value, onChange, label, description }) => {
     const [uploading, setUploading] = useState(false);
-    const { showError, showSuccess } = useToast();
+    const { showError, showSuccess, showWarning } = useToast();
+    const { settings } = useSystem();
 
     // Construct the server base URL from environment variable
     // If VITE_API_BASE_URL is 'http://localhost:3000/api/v1', we extract 'http://localhost:3000'
@@ -24,8 +26,9 @@ const ImageUpload: React.FC<Props> = ({ value, onChange, label, description }) =
             const file = e.target.files[0];
 
             // Basic validation
-            if (file.size > 5 * 1024 * 1024) {
-                showError('File is too large. Max 5MB allowed.');
+            const maxMB = settings?.maxFileUploadSizeMb || 2;
+            if (file.size > maxMB * 1024 * 1024) {
+                showWarning(`File size exceeds ${maxMB}MB limit.`);
                 return;
             }
 
