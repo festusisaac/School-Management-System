@@ -40,6 +40,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', className
             <div className={clsx(
                 "relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 transform",
                 sizeClasses[size],
+                "max-h-[90vh]",
                 className
             )}>
                 <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between shrink-0">

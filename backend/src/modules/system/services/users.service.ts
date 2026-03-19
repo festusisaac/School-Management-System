@@ -1,17 +1,60 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { User } from '../../auth/entities/user.entity';
+import { Role } from '../../auth/entities/role.entity';
 import { CreateUserDto, UpdateUserDto, UserResponseDto } from '../dtos/users.dto';
 
 @Injectable()
-export class UsersService {
+export class UsersService implements OnModuleInit {
   constructor(
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
+    @InjectRepository(Role)
+    private readonly roleRepository: Repository<Role>,
   ) {}
+
+  async onModuleInit() {
+    await this.seedInitialAdmin();
+  }
+
+  private async seedInitialAdmin() {
+    const userCount = await this.usersRepository.count();
+    if (userCount === 0) {
+      console.log('👤 No users found, seeding initial admin user...');
+      
+      // Find the Super Administrator role (created by RolesPermissionsService)
+      let adminRole = await this.roleRepository.findOne({ where: { name: 'Super Administrator' } });
+      
+      // If role doesn't exist yet (race condition), we'll just set the role string for now
+      // The roleObject can be linked later or we can create it here
+      if (!adminRole) {
+        adminRole = this.roleRepository.create({
+          name: 'Super Administrator',
+          description: 'Complete system access and management',
+          isSystem: true
+        });
+        await this.roleRepository.save(adminRole);
+      }
+
+      const hashedPassword = await bcrypt.hash('Admin@12345', 10);
+      const adminUser = this.usersRepository.create({
+        email: 'admin@sms.school',
+        password: hashedPassword,
+        firstName: 'System',
+        lastName: 'Administrator',
+        role: 'admin',
+        roleId: adminRole.id,
+        isActive: true,
+        tenantId: uuidv4(),
+      });
+
+      await this.usersRepository.save(adminUser);
+      console.log('✓ Initial admin user created: admin@sms.school / Admin@12345');
+    }
+  }
 
   async findAll(): Promise<User[]> {
     return this.usersRepository.find({

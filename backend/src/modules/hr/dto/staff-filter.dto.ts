@@ -10,9 +10,6 @@ export class StaffFilterDto {
     @IsOptional()
     departmentId?: string;
 
-    @IsString()
-    @IsOptional()
-    designationId?: string;
 
     @IsEnum(StaffStatus)
     @IsOptional()

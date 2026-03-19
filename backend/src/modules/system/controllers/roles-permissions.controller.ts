@@ -18,7 +18,7 @@ import { Roles } from '../../../decorators/roles.decorator';
 @Controller('system/roles')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
-@Roles('admin') // Restrict to admin only
+@Roles('admin', 'principal', 'staff') // Allow administrative roles
 export class RolesPermissionsController {
   constructor(private readonly rolesPermissionsService: RolesPermissionsService) {}
 

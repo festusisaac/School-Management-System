@@ -1,6 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { Department } from './department.entity';
-import { Designation } from './designation.entity';
 import { StaffAttendance } from './staff-attendance.entity';
 import { LeaveRequest } from './leave-request.entity';
 import { Payroll } from './payroll.entity';
@@ -113,8 +112,6 @@ export class Staff {
     @Column({ name: 'department_id' })
     departmentId!: string;
 
-    @Column({ name: 'designation_id', nullable: true })
-    designationId?: string;
 
     @Column({ type: 'enum', enum: EmploymentType, name: 'employment_type' })
     employmentType!: EmploymentType;
@@ -206,9 +203,6 @@ export class Staff {
     @JoinColumn({ name: 'department_id' })
     department!: Department;
 
-    @ManyToOne(() => Designation, designation => designation.staff)
-    @JoinColumn({ name: 'designation_id' })
-    designation!: Designation;
 
     @OneToMany(() => StaffAttendance, attendance => attendance.staff)
     attendanceRecords!: StaffAttendance[];

@@ -4,6 +4,7 @@ import { DataSource } from 'typeorm';
 import { User } from '../../modules/auth/entities/user.entity';
 import { Student } from '../../modules/students/entities/student.entity';
 import { Staff } from '../../modules/hr/entities/staff.entity';
+import { seedRoles } from './roles.seed';
 
 // Some faker typings vary between versions; keep a short alias to avoid TS issues
 const F: any = faker;
@@ -23,7 +24,8 @@ export class SeedDatabase {
       await userRepository.delete({});
       console.log('✓ Cleared existing data');
 
-      // Seed Users
+      // Seed Roles
+      await seedRoles(dataSource);
       const users: User[] = [];
 
       // Admin users

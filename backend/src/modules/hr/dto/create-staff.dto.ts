@@ -69,8 +69,8 @@ export class CreateStaffDto {
 
     @IsOptional()
     @Transform(({ value }) => {
-        if (value === 'true' || value === true) return true;
-        if (value === 'false' || value === false) return false;
+        if (value === 'true' || value === true || value === 'on') return true;
+        if (value === 'false' || value === false || value === '' || value === null) return false;
         return value;
     })
     @IsBoolean()
@@ -86,9 +86,6 @@ export class CreateStaffDto {
 
     @IsString()
     departmentId!: string;
-
-    @IsString()
-    designationId!: string;
 
     @IsEnum(EmploymentType)
     employmentType!: EmploymentType;
@@ -128,8 +125,8 @@ export class CreateStaffDto {
 
     @IsOptional()
     @Transform(({ value }) => {
-        if (value === 'true' || value === true) return true;
-        if (value === 'false' || value === false) return false;
+        if (value === 'true' || value === true || value === 'on') return true;
+        if (value === 'false' || value === false || value === '' || value === null) return false;
         return value;
     })
     @IsBoolean()

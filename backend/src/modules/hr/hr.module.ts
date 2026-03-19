@@ -7,7 +7,6 @@ import { extname } from 'path';
 // Entities
 import {
     Department,
-    Designation,
     Staff,
     StaffAttendance,
     LeaveType,
@@ -19,7 +18,6 @@ import {
 
 // Services
 import { DepartmentService } from './services/department.service';
-import { DesignationService } from './services/designation.service';
 import { StaffService } from './services/staff.service';
 import { AttendanceService } from './services/attendance.service';
 import { LeaveService } from './services/leave.service';
@@ -28,7 +26,6 @@ import { RatingService } from './services/rating.service';
 
 // Controllers
 import { DepartmentController } from './controllers/department.controller';
-import { DesignationController } from './controllers/designation.controller';
 import { StaffController } from './controllers/staff.controller';
 import { AttendanceController } from './controllers/attendance.controller';
 import { LeaveController } from './controllers/leave.controller';
@@ -46,7 +43,6 @@ import { SystemModule } from '../system/system.module';
         SystemModule,
         TypeOrmModule.forFeature([
             Department,
-            Designation,
             Staff,
             StaffAttendance,
             LeaveType,
@@ -67,7 +63,6 @@ import { SystemModule } from '../system/system.module';
     ],
     controllers: [
         DepartmentController,
-        DesignationController,
         StaffController,
         AttendanceController,
         LeaveController,
@@ -76,7 +71,6 @@ import { SystemModule } from '../system/system.module';
     ],
     providers: [
         DepartmentService,
-        DesignationService,
         StaffService,
         AttendanceService,
         LeaveService,
@@ -87,7 +81,6 @@ import { SystemModule } from '../system/system.module';
         // Export services for use in other modules
         StaffService,
         DepartmentService,
-        DesignationService,
         AttendanceService,
         LeaveService,
         PayrollService,

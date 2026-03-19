@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, OnModuleInit, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Role } from '../../auth/entities/role.entity';
@@ -6,13 +6,49 @@ import { Permission } from '../../auth/entities/permission.entity';
 import { CreateRoleDto, UpdateRoleDto } from '../dtos/roles.dto';
 
 @Injectable()
-export class RolesPermissionsService {
+export class RolesPermissionsService implements OnModuleInit {
   constructor(
     @InjectRepository(Role)
     private readonly roleRepository: Repository<Role>,
     @InjectRepository(Permission)
     private readonly permissionRepository: Repository<Permission>,
   ) {}
+  
+  async onModuleInit() {
+    await this.renameAdminToSuperAdmin();
+    await this.seedDefaultRoles();
+  }
+
+  private async renameAdminToSuperAdmin() {
+    try {
+      const adminRole = await this.roleRepository.findOne({ where: { name: 'Admin' } });
+      if (adminRole) {
+        adminRole.name = 'Super Administrator';
+        adminRole.description = 'Complete system access and management';
+        adminRole.isSystem = true;
+        await this.roleRepository.save(adminRole);
+        console.log('✓ Renamed legacy "Admin" role to "Super Administrator"');
+      }
+    } catch (error) {
+      console.error('Error renaming admin role:', error);
+    }
+  }
+
+  private async seedDefaultRoles() {
+    const count = await this.roleRepository.count();
+    if (count === 0) {
+      console.log('🌱 No roles found, seeding default roles...');
+      const defaultRoles = [
+        { name: 'Super Administrator', description: 'Complete system access and management', isSystem: true },
+      ];
+
+      for (const roleData of defaultRoles) {
+        const role = this.roleRepository.create(roleData);
+        await this.roleRepository.save(role);
+      }
+      console.log('✓ Default roles seeded successfully');
+    }
+  }
 
   async findAllRoles(): Promise<Role[]> {
     return this.roleRepository.find({ relations: ['permissions'] });
@@ -31,6 +67,13 @@ export class RolesPermissionsService {
 
   async createRole(createRoleDto: CreateRoleDto): Promise<Role> {
     const { permissionIds, ...roleData } = createRoleDto;
+
+    // Check if role name already exists
+    const existingRole = await this.roleRepository.findOne({ where: { name: roleData.name } });
+    if (existingRole) {
+      throw new ConflictException(`Role with name "${roleData.name}" already exists`);
+    }
+
     const permissions = permissionIds
       ? await this.permissionRepository.find({ where: { id: In(permissionIds) } })
       : [];

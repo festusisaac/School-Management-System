@@ -7,7 +7,6 @@ import { UsersService } from '../../system/services/users.service';
 export interface StaffFilters {
     search?: string;
     departmentId?: string;
-    designationId?: string;
     status?: StaffStatus;
     employmentType?: string;
 }
@@ -23,7 +22,7 @@ export class StaffService {
     async findAll(filters?: StaffFilters): Promise<Staff[]> {
         const query = this.staffRepository.createQueryBuilder('staff')
             .leftJoinAndSelect('staff.department', 'department')
-            .leftJoinAndSelect('staff.designation', 'designation');
+            .leftJoinAndSelect('staff.department', 'department');
 
         // Apply filters
         if (filters?.search) {
@@ -37,9 +36,6 @@ export class StaffService {
             query.andWhere('staff.departmentId = :departmentId', { departmentId: filters.departmentId });
         }
 
-        if (filters?.designationId) {
-            query.andWhere('staff.designationId = :designationId', { designationId: filters.designationId });
-        }
 
         if (filters?.status) {
             query.andWhere('staff.status = :status', { status: filters.status });
@@ -57,7 +53,7 @@ export class StaffService {
     async findOne(id: string): Promise<Staff> {
         const staff = await this.staffRepository.findOne({
             where: { id },
-            relations: ['department', 'designation', 'leaveRequests'],
+            relations: ['department', 'attendanceRecords', 'leaveRequests', 'payrollRecords'],
         });
 
         if (!staff) {
@@ -70,7 +66,7 @@ export class StaffService {
     async findByEmail(email: string): Promise<Staff> {
         const staff = await this.staffRepository.findOne({
             where: { email },
-            relations: ['department', 'designation'],
+            relations: ['department'],
         });
 
         if (!staff) {
@@ -83,7 +79,7 @@ export class StaffService {
     async findByEmployeeId(employeeId: string): Promise<Staff> {
         const staff = await this.staffRepository.findOne({
             where: { employeeId },
-            relations: ['department', 'designation'],
+            relations: ['department'],
         });
 
         if (!staff) {
@@ -132,10 +128,6 @@ export class StaffService {
         }
 
         const staffData = { ...data };
-
-        if (staffData.designationId === '') {
-            staffData.designationId = null as any;
-        }
 
         if (staffData.departmentId === '') {
             staffData.departmentId = null as any;
@@ -219,10 +211,6 @@ export class StaffService {
         }
 
         const updateData = { ...data };
-
-        if (updateData.designationId === '') {
-            updateData.designationId = null as any;
-        }
 
         if (updateData.departmentId === '') {
             updateData.departmentId = null as any;
