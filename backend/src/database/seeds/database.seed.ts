@@ -34,7 +34,7 @@ export class SeedDatabase {
         password: await bcrypt.hash('Admin@12345', 10),
         firstName: 'John',
         lastName: 'Administrator',
-        role: 'admin',
+        role: 'super administrator',
         isActive: true,
       });
       users.push(admin);

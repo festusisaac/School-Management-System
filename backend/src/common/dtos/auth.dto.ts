@@ -2,6 +2,7 @@ import { IsEmail, IsString, MinLength, IsEnum } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export enum UserRole {
+  SUPER_ADMIN = 'super administrator',
   ADMIN = 'admin',
   PRINCIPAL = 'principal',
   TEACHER = 'teacher',

@@ -45,7 +45,7 @@ export class UsersService implements OnModuleInit {
         password: hashedPassword,
         firstName: 'System',
         lastName: 'Administrator',
-        role: 'admin',
+        role: 'super administrator',
         roleId: adminRole.id,
         isActive: true,
         tenantId: uuidv4(),

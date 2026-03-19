@@ -27,7 +27,13 @@ export class RolesPermissionsService implements OnModuleInit {
         adminRole.description = 'Complete system access and management';
         adminRole.isSystem = true;
         await this.roleRepository.save(adminRole);
-        console.log('✓ Renamed legacy "Admin" role to "Super Administrator"');
+        
+        // Also update the role string in the users table for consistency
+        await this.roleRepository.manager.query(
+          `UPDATE users SET role = 'super administrator' WHERE role = 'admin'`
+        );
+        
+        console.log('✓ Renamed legacy "Admin" role to "Super Administrator" and updated user roles');
       }
     } catch (error) {
       console.error('Error renaming admin role:', error);
