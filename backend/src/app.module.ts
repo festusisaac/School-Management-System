@@ -3,9 +3,11 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bull';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { APP_GUARD } from '@nestjs/core';
 import { join } from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { MaintenanceGuard } from './guards/maintenance.guard';
 
 // Modules
 import { AuthModule } from '@modules/auth/auth.module';
@@ -75,6 +77,12 @@ import { SystemModule } from '@modules/system/system.module';
     SystemModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: MaintenanceGuard,
+    },
+  ],
 })
 export class AppModule { }

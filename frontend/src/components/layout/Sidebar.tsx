@@ -139,6 +139,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 { label: 'General Settings', path: '/settings/general' },
                 { label: 'Academic Sessions', path: '/settings/sessions' },
                 { label: 'Academic Terms', path: '/settings/terms' },
+                { label: 'Roles & Permissions', path: '/settings/roles' },
             ]
         },
     ];

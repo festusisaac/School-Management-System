@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
@@ -8,6 +8,8 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { User } from './entities/user.entity';
+import { Role } from './entities/role.entity';
+import { Permission } from './entities/permission.entity';
 import { CommunicationModule } from '@modules/communication/communication.module';
 
 @Module({
@@ -15,6 +17,7 @@ import { CommunicationModule } from '@modules/communication/communication.module
     PassportModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
+      global: true,
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get('JWT_SECRET'),
         signOptions: {
@@ -22,11 +25,11 @@ import { CommunicationModule } from '@modules/communication/communication.module
         },
       }),
     }),
-    TypeOrmModule.forFeature([User]),
-    CommunicationModule,
+    TypeOrmModule.forFeature([User, Role, Permission]),
+    forwardRef(() => CommunicationModule),
   ],
   providers: [AuthService, JwtStrategy],
   controllers: [AuthController],
   exports: [AuthService, JwtModule],
 })
-export class AuthModule {}
+export class AuthModule { }

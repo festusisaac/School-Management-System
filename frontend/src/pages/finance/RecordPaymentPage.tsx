@@ -18,6 +18,7 @@ import { formatCurrency, CURRENCY_SYMBOL } from '../../utils/currency';
 import { clsx } from 'clsx';
 import { createRoot } from 'react-dom/client';
 import { ReceiptTemplate } from './components/ReceiptTemplate';
+import { useSystem } from '../../context/SystemContext';
 
 const scrollbarHideStyle = `
   .scrollbar-none::-webkit-scrollbar {
@@ -61,6 +62,7 @@ interface FinancialStatement {
 
 export default function RecordPaymentPage() {
     const { showError, showSuccess } = useToast();
+    const { getSchoolInfo } = useSystem();
 
     const [keyword, setKeyword] = useState('');
     const [debouncedKeyword, setDebouncedKeyword] = useState('');
@@ -245,6 +247,55 @@ export default function RecordPaymentPage() {
     };
 
 
+
+    const handlePrintReceipt = (transaction: any) => {
+        // Get school info
+        const schoolInfo = getSchoolInfo();
+
+        const receiptDiv = document.createElement('div');
+        receiptDiv.style.display = 'none';
+        document.body.appendChild(receiptDiv);
+
+        const root = createRoot(receiptDiv);
+        root.render(<ReceiptTemplate transaction={transaction} schoolInfo={schoolInfo} />);
+
+        // Wait for render to commit to DOM
+        setTimeout(() => {
+            const html = receiptDiv.innerHTML;
+            root.unmount();
+            document.body.removeChild(receiptDiv);
+
+            if (!html || html.length < 100) {
+                showError('Failed to generate receipt');
+                return;
+            }
+
+            const printWindow = window.open('', '', 'width=800,height=600');
+            if (!printWindow) {
+                showError('Popup blocked');
+                return;
+            }
+
+            printWindow.document.write(`
+                <html>
+                    <head>
+                        <title>Receipt - ${transaction.id}</title>
+                        <script src="https://cdn.tailwindcss.com"></script>
+                    </head>
+                    <body>
+                        ${html}
+                        <script>
+                            window.onload = () => {
+                                window.print();
+                                window.close();
+                            };
+                        </script>
+                    </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }, 500);
+    };
 
     return (
         <div className="max-w-[1600px] mx-auto space-y-6 animate-in fade-in duration-500 pb-20">
@@ -760,68 +811,3 @@ export default function RecordPaymentPage() {
         </div>
     );
 }
-
-const handlePrintReceipt = (transaction: any) => {
-    // Get school info
-    const schoolInfo = {
-        name: 'Minerva Academy Int\'l',
-        address: '45 Wisdom Way, Victoria Island, Lagos',
-        phone: '+234 800 MINERVA',
-        email: 'bursar@minerva.edu',
-        logo: 'https://img.freepik.com/free-vector/school-logo-template-design_23-2149635603.jpg'
-    };
-
-    const receiptDiv = document.createElement('div');
-    receiptDiv.style.display = 'none';
-    document.body.appendChild(receiptDiv);
-
-    const root = createRoot(receiptDiv);
-    root.render(<ReceiptTemplate transaction={transaction} schoolInfo={schoolInfo} />);
-
-    // Wait for render to commit to DOM
-    setTimeout(() => {
-        const html = receiptDiv.innerHTML;
-        root.unmount();
-        document.body.removeChild(receiptDiv);
-
-        if (!html || html.length < 100) {
-            alert("Error generating receipt content. Please try again.");
-            return;
-        }
-
-        const printWindow = window.open('', '_blank');
-        if (!printWindow) return;
-
-        printWindow.document.write(`
-            <html>
-                <head>
-                    <title>Payment Receipt - ${transaction.id}</title>
-                    <script src="https://cdn.tailwindcss.com"></script>
-                    <style>
-                        @media print {
-                            body { margin: 0; padding: 0; overflow: visible !important; }
-                            html { height: auto !important; overflow: visible !important; }
-                        }
-                        body { margin: 0; font-family: sans-serif; overflow: visible !important; background: white; }
-                        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-                    </style>
-                </head>
-                <body>
-                    <div class="print-container">
-                        ${html}
-                    </div>
-                    <script>
-                        window.onload = () => {
-                            // Give Tailwind CDN extra time
-                            setTimeout(() => {
-                                window.print();
-                                window.close();
-                            }, 1000);
-                        };
-                    </script>
-                </body>
-            </html>
-        `);
-        printWindow.document.close();
-    }, 1200);
-};

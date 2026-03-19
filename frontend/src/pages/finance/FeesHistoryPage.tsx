@@ -79,7 +79,7 @@ export default function FeesHistoryPage() {
   const [method, setMethod] = useState('');
   const [type, setType] = useState('');
 
-  const { settings } = useSystem();
+  const { settings, getSchoolInfo } = useSystem();
 
   // Actions
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
@@ -206,12 +206,7 @@ export default function FeesHistoryPage() {
     root.render(
       <ReceiptTemplate
         transaction={tx}
-        schoolInfo={{
-          name: 'YOUR SCHOOL NAME', // This should ostensibly come from a settings context
-          address: '123 Education Lane, Knowledge City',
-          phone: '+1 234 567 890',
-          email: 'admin@school.com'
-        }}
+        schoolInfo={getSchoolInfo()}
       />
     );
   };
@@ -662,12 +657,7 @@ export default function FeesHistoryPage() {
             </div>
             <ReceiptTemplate
               transaction={selectedTx}
-              schoolInfo={{
-                name: 'YOUR SCHOOL NAME',
-                address: '123 Education Lane',
-                phone: '+1 234 567 890',
-                email: 'school@example.com'
-              }}
+              schoolInfo={getSchoolInfo()}
             />
           </div>
         </div>

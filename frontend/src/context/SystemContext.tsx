@@ -1,11 +1,24 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { systemService, SystemSetting } from '../services/systemService';
+import { updateCurrencyConfig, formatCurrency as genericFormatCurrency, formatCurrencyCompact as genericFormatCurrencyCompact } from '../utils/currency';
+
+interface SchoolInfo {
+    name: string;
+    address: string;
+    phone: string;
+    email: string;
+    logo: string;
+    invoicePrefix?: string;
+}
 
 interface SystemContextType {
     settings: SystemSetting;
     loading: boolean;
     refreshSettings: () => Promise<void>;
     getFullUrl: (path?: string) => string;
+    formatCurrency: (amount: number | string | undefined | null, includeSymbol?: boolean) => string;
+    formatCurrencyCompact: (amount: number | string | undefined | null) => string;
+    getSchoolInfo: () => SchoolInfo;
 }
 
 const SystemContext = createContext<SystemContextType | undefined>(undefined);
@@ -79,6 +92,11 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             
             setSettings(data || {});
             applyColors(data?.primaryColor, data?.secondaryColor);
+
+            // Update global currency config
+            if (data?.currencySymbol && data?.currencyCode) {
+                updateCurrencyConfig(data.currencySymbol, data.currencyCode);
+            }
             
             // Generate full URL internally to avoid depending on getFullUrl which needs to be in useCallback scope
             const buildUrl = (url?: string) => {
@@ -123,8 +141,35 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         return `${serverUrl}${cleanUrl}`;
     };
 
+    const formatCurrency = useCallback((amount: number | string | undefined | null, includeSymbol: boolean = true) => {
+        return genericFormatCurrency(amount, includeSymbol);
+    }, [settings.currencySymbol, settings.currencyCode]);
+
+    const formatCurrencyCompact = useCallback((amount: number | string | undefined | null) => {
+        return genericFormatCurrencyCompact(amount);
+    }, [settings.currencySymbol, settings.currencyCode]);
+
+    const getSchoolInfo = useCallback((): SchoolInfo => {
+        return {
+            name: settings.schoolName || 'YOUR SCHOOL NAME',
+            address: settings.schoolAddress || '123 Education Lane',
+            phone: settings.schoolPhone || '+1 234 567 890',
+            email: settings.schoolEmail || 'school@example.com',
+            logo: getFullUrl(settings.invoiceLogo || settings.primaryLogo),
+            invoicePrefix: settings.invoicePrefix
+        };
+    }, [settings, getFullUrl]);
+
     return (
-        <SystemContext.Provider value={{ settings, loading, refreshSettings, getFullUrl }}>
+        <SystemContext.Provider value={{ 
+            settings, 
+            loading, 
+            refreshSettings, 
+            getFullUrl, 
+            formatCurrency, 
+            formatCurrencyCompact,
+            getSchoolInfo
+        }}>
             {children}
         </SystemContext.Provider>
     );

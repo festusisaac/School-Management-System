@@ -5,7 +5,10 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Index,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { Role } from './role.entity';
 
 @Entity('users')
 export class User {
@@ -27,8 +30,16 @@ export class User {
   @Column({
     type: 'enum',
     enum: ['admin', 'principal', 'teacher', 'student', 'parent', 'staff'],
+    nullable: true
   })
   role!: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  roleId!: string;
+
+  @ManyToOne(() => Role, (role) => role.users)
+  @JoinColumn({ name: 'roleId' })
+  roleObject!: Role;
 
   @Index()
   @Column({ type: 'uuid', nullable: true })

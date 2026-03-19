@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bull';
 import { EmailService } from './email.service';
 import { SmsService } from './sms.service';
@@ -6,7 +6,7 @@ import { SystemModule } from '../system/system.module';
 
 @Module({
   imports: [
-    SystemModule,
+    forwardRef(() => SystemModule),
     BullModule.registerQueue({
       name: 'email',
     }),

@@ -11,6 +11,9 @@ interface ReceiptProps {
         phone: string;
         email: string;
         logo?: string;
+        currencyName?: string;
+        subunitName?: string;
+        invoicePrefix?: string;
     };
 }
 
@@ -86,7 +89,7 @@ export const ReceiptTemplate = forwardRef<HTMLDivElement, ReceiptProps>(({ trans
                         )}>
                             {type === 'WAIVER' ? 'FEE WAIVER / ADJUSTMENT' : 'OFFICIAL RECEIPT'}
                         </h2>
-                        <p className="text-sm font-bold text-gray-600">No: <span className="font-bold text-black">{transaction.id.slice(0, 8).toUpperCase()}</span></p>
+                        <p className="text-sm font-bold text-gray-600">No: <span className="font-bold text-black">{(schoolInfo?.invoicePrefix || '') + transaction.id.slice(0, 8).toUpperCase()}</span></p>
                     </div>
                 </div>
 
@@ -189,7 +192,7 @@ export const ReceiptTemplate = forwardRef<HTMLDivElement, ReceiptProps>(({ trans
                 <div className="mb-8 border border-gray-200 bg-gray-50 p-4 rounded-lg">
                     <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Amount in Words</p>
                     <p className="text-sm italic font-bold text-gray-900 capitalize">
-                        {numberToWords(amount)}
+                        {numberToWords(amount, schoolInfo?.currencyName, schoolInfo?.subunitName)}
                     </p>
                 </div>
 

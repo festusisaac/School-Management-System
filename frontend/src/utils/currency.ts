@@ -1,14 +1,35 @@
 /**
  * Currency Configuration
- * To change the system currency, update these values.
+ * These values can be updated dynamically via updateCurrencyConfig.
  */
-export const CURRENCY_CONFIG = {
+export let CURRENCY_CONFIG = {
     SYMBOL: '₦',
     CODE: 'NGN',
     LOCALE: 'en-NG',
 };
 
-export const CURRENCY_SYMBOL = CURRENCY_CONFIG.SYMBOL;
+export let CURRENCY_SYMBOL = CURRENCY_CONFIG.SYMBOL;
+
+/**
+ * Updates the global currency configuration.
+ */
+export const updateCurrencyConfig = (symbol: string, code: string) => {
+    CURRENCY_CONFIG.SYMBOL = symbol;
+    CURRENCY_CONFIG.CODE = code;
+    CURRENCY_SYMBOL = symbol;
+    
+    // Attempt to guess locale based on code, or default to en-US if unknown
+    // This is a simple mapping; for a real app, you might want a more comprehensive list.
+    const localeMap: Record<string, string> = {
+        'NGN': 'en-NG',
+        'USD': 'en-US',
+        'GBP': 'en-GB',
+        'EUR': 'de-DE',
+        'GHS': 'en-GH',
+        'KES': 'en-KE',
+    };
+    CURRENCY_CONFIG.LOCALE = localeMap[code] || 'en-US';
+};
 
 /**
  * Formats a number as a currency string.

@@ -68,6 +68,22 @@ export interface AcademicTerm {
     updatedAt?: string;
 }
 
+export interface Permission {
+    id: string;
+    slug: string;
+    name: string;
+    module: string;
+    description?: string;
+}
+
+export interface Role {
+    id: string;
+    name: string;
+    description?: string;
+    isSystem: boolean;
+    permissions: Permission[];
+}
+
 export const systemService = {
     // System Settings
     getSettings: async () => {
@@ -150,6 +166,37 @@ export const systemService = {
 
     deleteTerm: async (id: string) => {
         const response = await api.delete(`/system/academic-terms/${id}`);
+        return response;
+    },
+
+    // Roles & Permissions
+    getRoles: async () => {
+        const response = await api.get<Role[]>('/system/roles');
+        return response;
+    },
+
+    getPermissions: async () => {
+        const response = await api.get<Permission[]>('/system/roles/permissions');
+        return response;
+    },
+
+    getRole: async (id: string) => {
+        const response = await api.get<Role>(`/system/roles/${id}`);
+        return response;
+    },
+
+    createRole: async (data: any) => {
+        const response = await api.post<Role>('/system/roles', data);
+        return response;
+    },
+
+    updateRole: async (id: string, data: any) => {
+        const response = await api.put<Role>(`/system/roles/${id}`, data);
+        return response;
+    },
+
+    deleteRole: async (id: string) => {
+        const response = await api.delete(`/system/roles/${id}`);
         return response;
     },
 };

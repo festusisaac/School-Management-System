@@ -3,6 +3,7 @@ import { Plus, Search, Users, UserCheck, UserX, Download, Upload, Trash2, Edit2,
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import { useSystem } from '../../context/SystemContext';
 import { formatCurrency, CURRENCY_SYMBOL } from '../../utils/currency';
 
 interface Department {
@@ -100,10 +101,20 @@ const StaffDirectoryPage = () => {
     });
     const [selectedFiles, setSelectedFiles] = useState<Record<string, string | string[]>>({});
     const toast = useToast();
+    const { settings } = useSystem();
+
+    const [employeeIdField, setEmployeeIdField] = useState('');
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, files, multiple } = e.target;
         if (files && files.length > 0) {
+            const maxSizeMb = settings?.maxFileUploadSizeMb || 5;
+            const oversized = Array.from(files).find(f => f.size > maxSizeMb * 1024 * 1024);
+            if (oversized) {
+                toast.showWarning(`File "${oversized.name}" exceeds ${maxSizeMb}MB limit. Please choose a smaller file.`);
+                e.target.value = '';
+                return;
+            }
             if (multiple) {
                 const names = Array.from(files).map(f => f.name);
                 setSelectedFiles(prev => ({ ...prev, [name]: names }));
@@ -120,6 +131,21 @@ const StaffDirectoryPage = () => {
     useEffect(() => {
         filterStaff();
     }, [searchTerm, selectedDepartment, selectedDesignation, selectedStatus, staff]);
+
+    // Handle Prefix for New Staff
+    useEffect(() => {
+        if (!editingStaff && showModal && settings?.staffIdPrefix && !employeeIdField) {
+            setEmployeeIdField(settings.staffIdPrefix);
+        }
+    }, [showModal, editingStaff, settings?.staffIdPrefix]);
+
+    useEffect(() => {
+        if (editingStaff) {
+            setEmployeeIdField(editingStaff.employeeId);
+        } else if (!showModal) {
+            setEmployeeIdField('');
+        }
+    }, [editingStaff, showModal]);
 
     const fetchData = async () => {
         try {
@@ -459,7 +485,24 @@ const StaffDirectoryPage = () => {
                                                     {/* Row 1 */}
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Staff ID *</label>
-                                                        <input name="employeeId" defaultValue={editingStaff?.employeeId} required className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                                        <div className="flex">
+                                                            {settings?.staffIdPrefix && (
+                                                                <span className="inline-flex items-center px-3 py-2 rounded-l-lg border border-r-0 border-gray-300 dark:border-gray-600 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-sm font-bold select-none whitespace-nowrap">
+                                                                    {settings.staffIdPrefix}
+                                                                </span>
+                                                            )}
+                                                            <input
+                                                                name="employeeId"
+                                                                value={settings?.staffIdPrefix ? employeeIdField.replace(settings.staffIdPrefix, '') : employeeIdField}
+                                                                required
+                                                                onChange={(e) => {
+                                                                    const prefix = settings?.staffIdPrefix || '';
+                                                                    setEmployeeIdField(prefix + e.target.value);
+                                                                }}
+                                                                placeholder="e.g. 001"
+                                                                className={`w-full border border-gray-300 dark:border-gray-600 p-2 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${settings?.staffIdPrefix ? 'rounded-r-lg' : 'rounded-lg'}`}
+                                                            />
+                                                        </div>
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Role</label>

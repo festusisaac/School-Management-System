@@ -1,13 +1,19 @@
-
 /**
- * Converts a number to words (for Naira currency format).
- * Handles numbers up to trillions.
+ * Converts a number to words.
+ * @param amount The number or string to convert
+ * @param currencyName The name of the currency (default: Naira)
+ * @param subunitName The name of the currency subunit (default: Kobo)
+ * @returns Amount in words string
  */
-export function numberToWords(amount: number | string): string {
+export function numberToWords(
+    amount: number | string,
+    currencyName: string = 'Naira',
+    subunitName: string = 'Kobo'
+): string {
     const num = typeof amount === 'string' ? parseFloat(amount) : amount;
 
     if (isNaN(num)) return '';
-    if (num === 0) return 'Zero Naira Only';
+    if (num === 0) return `Zero ${currencyName} Only`;
 
     const units = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
     const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
@@ -35,10 +41,10 @@ export function numberToWords(amount: number | string): string {
         }
     }
 
-    words += ' Naira';
+    words += ` ${currencyName}`;
 
     if (decimalPart > 0) {
-        words += ` and ${convertChunk(decimalPart)} Kobo`;
+        words += ` and ${convertChunk(decimalPart)} ${subunitName}`;
     }
 
     return words + ' Only';

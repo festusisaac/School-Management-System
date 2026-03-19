@@ -2,12 +2,17 @@ import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
+import { useSessionTimeout } from '../../hooks/useSessionTimeout';
 
 export function MainLayout() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const { WarningModal } = useSessionTimeout();
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex">
+            {/* Session Timeout Warning */}
+            {WarningModal}
+
             {/* Sidebar */}
             <Sidebar
                 isOpen={isSidebarOpen}
@@ -27,3 +32,4 @@ export function MainLayout() {
         </div>
     );
 }
+

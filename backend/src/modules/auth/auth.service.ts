@@ -61,6 +61,7 @@ export class AuthService {
 
     const user = await this.usersRepository.findOne({
       where: { email: loginDto.email },
+      relations: ['roleObject', 'roleObject.permissions'],
     });
 
     if (!user) {
@@ -106,6 +107,7 @@ export class AuthService {
 
       const user = await this.usersRepository.findOne({
         where: { id: payload.sub },
+        relations: ['roleObject', 'roleObject.permissions'],
       });
 
       if (!user) {
@@ -125,10 +127,12 @@ export class AuthService {
   }
 
   private async generateTokens(user: User) {
+    const permissions = user.roleObject?.permissions?.map(p => p.slug) || [];
     const payload = {
       sub: user.id,
       email: user.email,
-      role: user.role,
+      role: user.roleObject?.name?.toLowerCase() || user.role,
+      permissions,
       tenantId: user.tenantId,
     };
 

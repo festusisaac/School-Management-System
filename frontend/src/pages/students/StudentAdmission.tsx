@@ -4,12 +4,14 @@ import { clsx } from 'clsx';
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
+import { useSystem } from '../../context/SystemContext';
 
 const API_Base_URL = 'http://localhost:3000';
 
 export default function StudentAdmission() {
     const navigate = useNavigate();
     const toast = useToast();
+    const { settings } = useSystem();
     const [searchParams] = useSearchParams();
     const { id: routeId } = useParams();
     const id = searchParams.get('id') || routeId;
@@ -98,6 +100,16 @@ export default function StudentAdmission() {
 
     // Documents State
     const [documents, setDocuments] = useState<any[]>([]);
+
+    // Apply Admission Number Prefix
+    useEffect(() => {
+        if (!isEditMode && settings?.admissionNumberPrefix && !formData.admissionNo) {
+            setFormData(prev => ({
+                ...prev,
+                admissionNo: settings.admissionNumberPrefix
+            }));
+        }
+    }, [settings?.admissionNumberPrefix, isEditMode]);
 
 
     // Debounced Search Logic
@@ -376,6 +388,12 @@ export default function StudentAdmission() {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
+            const maxSizeMb = settings?.maxFileUploadSizeMb || 5;
+            if (file.size > maxSizeMb * 1024 * 1024) {
+                toast.showWarning(`File size exceeds ${maxSizeMb}MB limit. Please choose a smaller file.`);
+                e.target.value = '';
+                return;
+            }
             setFormData(prev => ({
                 ...prev,
                 studentPhoto: file,
@@ -401,6 +419,14 @@ export default function StudentAdmission() {
             // If studentPhoto is present, we MUST use FormData.
 
             const { studentPhotoPreview, siblingName, ...submissionData } = formData;
+
+            // Enforce Admission Prefix
+            const prefix = settings?.admissionNumberPrefix || '';
+            let finalAdmissionNo = submissionData.admissionNo;
+            if (prefix && !finalAdmissionNo.startsWith(prefix)) {
+                finalAdmissionNo = prefix + finalAdmissionNo;
+                submissionData.admissionNo = finalAdmissionNo;
+            }
 
             // We'll use FormData if there are ANY files (photo or documents)
             const hasDocuments = documents.some(d => d.isNew && d.file);
@@ -527,7 +553,27 @@ export default function StudentAdmission() {
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     <div className="space-y-1.5">
                                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Admission No *</label>
-                                        <input name="admissionNo" value={formData.admissionNo} onChange={handleChange} type="text" className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800" />
+                                        <div className="flex">
+                                            {settings?.admissionNumberPrefix && (
+                                                <span className="inline-flex items-center px-3 py-2 rounded-l-lg border border-r-0 border-gray-300 dark:border-gray-800/50 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-sm font-bold select-none whitespace-nowrap">
+                                                    {settings.admissionNumberPrefix}
+                                                </span>
+                                            )}
+                                            <input
+                                                name="admissionNo"
+                                                value={settings?.admissionNumberPrefix ? formData.admissionNo.replace(settings.admissionNumberPrefix, '') : formData.admissionNo}
+                                                onChange={(e) => {
+                                                    const prefix = settings?.admissionNumberPrefix || '';
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        admissionNo: prefix + e.target.value
+                                                    }));
+                                                }}
+                                                type="text"
+                                                placeholder="e.g. 001"
+                                                className={`w-full px-3 py-2 border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 ${settings?.admissionNumberPrefix ? 'rounded-r-lg' : 'rounded-lg'}`}
+                                            />
+                                        </div>
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Roll No</label>
