@@ -68,7 +68,6 @@ function AppRoutes() {
             <Route path="hr">
               <Route path="staff" element={<HR.StaffDirectoryPage />} />
               <Route path="departments" element={<HR.DepartmentsPage />} />
-              <Route path="designations" element={<HR.DesignationsPage />} />
               <Route path="attendance" element={<HR.StaffAttendancePage />} />
               <Route path="leave-types" element={<HR.LeaveTypesPage />} />
               <Route path="leave/approve" element={<HR.ApproveLeavePage />} />
@@ -136,6 +135,7 @@ function AppRoutes() {
               <Route path="sessions" element={<Settings.SessionsPage />} />
               <Route path="terms" element={<Settings.TermsPage />} />
               <Route path="roles" element={<Settings.RolesPermissionsPage />} />
+              <Route path="users" element={<Settings.UsersPage />} />
             </Route>
           </Route>
         )}

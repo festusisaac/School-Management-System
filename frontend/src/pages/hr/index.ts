@@ -1,6 +1,5 @@
 export { default as StaffDirectoryPage } from './StaffDirectoryPage';
 export { default as DepartmentsPage } from './DepartmentsPage';
-export { default as DesignationsPage } from './DesignationsPage';
 export { default as StaffAttendancePage } from './StaffAttendancePage';
 export { default as LeaveTypesPage } from './LeaveTypesPage';
 export { default as ApproveLeavePage } from './ApproveLeavePage';

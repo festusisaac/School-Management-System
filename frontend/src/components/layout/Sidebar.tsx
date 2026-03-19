@@ -59,7 +59,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             children: [
                 { label: 'Staff Directory', path: '/hr/staff' },
                 { label: 'Department', path: '/hr/departments' },
-                { label: 'Designation', path: '/hr/designations' },
                 { label: 'Staff Attendance', path: '/hr/attendance' },
                 { label: 'Payroll', path: '/hr/payroll' },
                 { label: 'Approve Leave Request', path: '/hr/leave/approve' },
@@ -140,6 +139,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 { label: 'Academic Sessions', path: '/settings/sessions' },
                 { label: 'Academic Terms', path: '/settings/terms' },
                 { label: 'Roles & Permissions', path: '/settings/roles' },
+                { label: 'User Management', path: '/settings/users' },
             ]
         },
     ];

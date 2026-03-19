@@ -113,8 +113,8 @@ export class Staff {
     @Column({ name: 'department_id' })
     departmentId!: string;
 
-    @Column({ name: 'designation_id' })
-    designationId!: string;
+    @Column({ name: 'designation_id', nullable: true })
+    designationId?: string;
 
     @Column({ type: 'enum', enum: EmploymentType, name: 'employment_type' })
     employmentType!: EmploymentType;

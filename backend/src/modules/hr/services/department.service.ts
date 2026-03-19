@@ -40,6 +40,9 @@ export class DepartmentService {
         if (existing) {
             throw new ConflictException(`Department with code ${data.code} already exists`);
         }
+        if (data.headOfDepartmentId === '') {
+            data.headOfDepartmentId = null as any;
+        }
 
         const department = this.departmentRepository.create(data);
         const saved = await this.departmentRepository.save(department);

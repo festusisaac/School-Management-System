@@ -124,6 +124,24 @@ export class CreateStaffDto {
 
     @IsString()
     @IsOptional()
+    roleId?: string;
+
+    @IsOptional()
+    @Transform(({ value }) => {
+        if (value === 'true' || value === true) return true;
+        if (value === 'false' || value === false) return false;
+        return value;
+    })
+    @IsBoolean()
+    enableLogin?: boolean;
+
+    @IsString()
+    @IsOptional()
+    @MinLength(6)
+    password?: string;
+
+    @IsString()
+    @IsOptional()
     fatherName?: string;
 
     @IsString()

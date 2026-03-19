@@ -13,6 +13,9 @@ import { RolesPermissionsController } from './controllers/roles-permissions.cont
 import { Role } from '../auth/entities/role.entity';
 import { Permission } from '../auth/entities/permission.entity';
 import { RolesPermissionsService } from './services/roles-permissions.service';
+import { UsersService } from './services/users.service';
+import { UsersController } from './controllers/users.controller';
+import { User } from '../auth/entities/user.entity';
 import { AuthModule } from '../auth/auth.module';
 import { forwardRef } from '@nestjs/common';
 
@@ -24,6 +27,7 @@ import { forwardRef } from '@nestjs/common';
             AcademicTerm,
             Role,
             Permission,
+            User,
         ]),
         forwardRef(() => AuthModule),
     ],
@@ -32,18 +36,21 @@ import { forwardRef } from '@nestjs/common';
         AcademicSessionsController,
         AcademicTermsController,
         RolesPermissionsController,
+        UsersController,
     ],
     providers: [
         SystemSettingsService,
         AcademicSessionsService,
         AcademicTermsService,
         RolesPermissionsService,
+        UsersService,
     ],
     exports: [
         SystemSettingsService,
         AcademicSessionsService,
         AcademicTermsService,
         RolesPermissionsService,
+        UsersService,
     ],
 })
 export class SystemModule { }

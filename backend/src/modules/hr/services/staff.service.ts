@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ConflictException, BadRequestException }
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
 import { Staff, StaffStatus } from '../entities/staff.entity';
+import { UsersService } from '../../system/services/users.service';
 
 export interface StaffFilters {
     search?: string;
@@ -16,6 +17,7 @@ export class StaffService {
     constructor(
         @InjectRepository(Staff)
         private readonly staffRepository: Repository<Staff>,
+        private readonly usersService: UsersService,
     ) { }
 
     async findAll(filters?: StaffFilters): Promise<Staff[]> {
@@ -131,6 +133,14 @@ export class StaffService {
 
         const staffData = { ...data };
 
+        if (staffData.designationId === '') {
+            staffData.designationId = null as any;
+        }
+
+        if (staffData.departmentId === '') {
+            staffData.departmentId = null as any;
+        }
+
         if (files) {
             if (files.photo?.[0]) staffData.photo = `/uploads/staff/${files.photo[0].filename}`;
             if (files.resume?.[0]) staffData.resume = `/uploads/staff/${files.resume[0].filename}`;
@@ -146,7 +156,22 @@ export class StaffService {
         }
 
         const staff = this.staffRepository.create(staffData);
-        return this.staffRepository.save(staff);
+        const savedStaff = await this.staffRepository.save(staff);
+
+        // Handle user account creation if role/enableLogin is provided
+        const staffDto = data as any;
+        if (staffDto.enableLogin || staffDto.roleId || staffDto.role) {
+            await this.usersService.findOrCreateUser(savedStaff.email, {
+                firstName: savedStaff.firstName,
+                lastName: savedStaff.lastName,
+                roleId: staffDto.roleId,
+                role: staffDto.role || (staffDto.roleId ? undefined : 'staff'),
+                password: staffDto.password,
+                isActive: true,
+            });
+        }
+
+        return savedStaff;
     }
 
     async update(id: string, data: Partial<Staff>, files?: {
@@ -195,6 +220,14 @@ export class StaffService {
 
         const updateData = { ...data };
 
+        if (updateData.designationId === '') {
+            updateData.designationId = null as any;
+        }
+
+        if (updateData.departmentId === '') {
+            updateData.departmentId = null as any;
+        }
+
         if (files) {
             if (files.photo?.[0]) updateData.photo = `/uploads/staff/${files.photo[0].filename}`;
             if (files.resume?.[0]) updateData.resume = `/uploads/staff/${files.resume[0].filename}`;
@@ -210,7 +243,22 @@ export class StaffService {
         }
 
         Object.assign(staff, updateData);
-        return this.staffRepository.save(staff);
+        const savedStaff = await this.staffRepository.save(staff);
+
+        // Handle user account updates if role/enableLogin is provided
+        const staffDto = data as any;
+        if (staffDto.enableLogin || staffDto.roleId || staffDto.role) {
+            await this.usersService.findOrCreateUser(savedStaff.email, {
+                firstName: savedStaff.firstName,
+                lastName: savedStaff.lastName,
+                roleId: staffDto.roleId,
+                role: staffDto.role,
+                password: staffDto.password,
+                isActive: true,
+            });
+        }
+
+        return savedStaff;
     }
 
     async remove(id: string): Promise<void> {

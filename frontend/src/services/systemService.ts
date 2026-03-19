@@ -199,4 +199,25 @@ export const systemService = {
         const response = await api.delete(`/system/roles/${id}`);
         return response;
     },
+
+    // User Management
+    getUsers: async () => {
+        const response = await api.get<any[]>('/system/users');
+        return response;
+    },
+
+    createUser: async (data: any) => {
+        const response = await api.post<any>('/system/users', data);
+        return response;
+    },
+
+    updateUser: async (id: string, data: any) => {
+        const response = await api.put<any>(`/system/users/${id}`, data);
+        return response;
+    },
+
+    deleteUser: async (id: string) => {
+        const response = await api.delete(`/system/users/${id}`);
+        return response;
+    },
 };

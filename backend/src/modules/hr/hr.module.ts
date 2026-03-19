@@ -37,11 +37,13 @@ import { RatingController } from './controllers/rating.controller';
 
 import { AuthModule } from '../auth/auth.module';
 import { StudentsModule } from '../students/students.module';
+import { SystemModule } from '../system/system.module';
 
 @Module({
     imports: [
         AuthModule,
         StudentsModule,
+        SystemModule,
         TypeOrmModule.forFeature([
             Department,
             Designation,

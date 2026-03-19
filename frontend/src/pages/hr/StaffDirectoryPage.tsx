@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Users, UserCheck, UserX, Download, Upload, Trash2, Edit2, Eye, Facebook, Twitter, Linkedin, Instagram, FileText, History as HistoryIcon, Calendar, TrendingUp } from 'lucide-react';
+import { Plus, Search, Users, UserCheck, UserX, Download, Upload, Trash2, Edit2, Eye, Facebook, Twitter, Linkedin, Instagram, FileText, History as HistoryIcon, Calendar, TrendingUp, Filter, MoreVertical, Mail, Phone, MapPin, Briefcase, User as UserIcon, Shield, Clock, CheckCircle2, XCircle, Lock, Unlock } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import api from '../../services/api';
+import { staffService } from '../../services/hrService';
+import { systemService, Role } from '../../services/systemService';
 import { useToast } from '../../context/ToastContext';
 import { useSystem } from '../../context/SystemContext';
 import { formatCurrency, CURRENCY_SYMBOL } from '../../utils/currency';
@@ -9,12 +10,6 @@ import { formatCurrency, CURRENCY_SYMBOL } from '../../utils/currency';
 interface Department {
     id: string;
     name: string;
-    code: string;
-}
-
-interface Designation {
-    id: string;
-    title: string;
     code: string;
 }
 
@@ -26,9 +21,7 @@ interface Staff {
     email: string;
     phone: string;
     department: Department;
-    designation: Designation;
     departmentId?: string;
-    designationId?: string;
     employmentType: string;
     status: string;
     photo?: string;
@@ -42,6 +35,7 @@ interface Staff {
 
     // Extended fields
     role?: string;
+    roleId?: string; // Added roleId
     isTeachingStaff?: boolean;
     fatherName?: string;
     motherName?: string;
@@ -82,11 +76,10 @@ const StaffDirectoryPage = () => {
     const [staff, setStaff] = useState<Staff[]>([]);
     const [filteredStaff, setFilteredStaff] = useState<Staff[]>([]);
     const [departments, setDepartments] = useState<Department[]>([]);
-    const [designations, setDesignations] = useState<Designation[]>([]);
+    const [roles, setRoles] = useState<Role[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedDepartment, setSelectedDepartment] = useState('');
-    const [selectedDesignation, setSelectedDesignation] = useState('');
     const [selectedStatus, setSelectedStatus] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [showViewModal, setShowViewModal] = useState(false);
@@ -100,6 +93,7 @@ const StaffDirectoryPage = () => {
         onLeave: 0,
     });
     const [selectedFiles, setSelectedFiles] = useState<Record<string, string | string[]>>({});
+    const [enableLogin, setEnableLogin] = useState(false);
     const toast = useToast();
     const { settings } = useSystem();
 
@@ -130,7 +124,7 @@ const StaffDirectoryPage = () => {
 
     useEffect(() => {
         filterStaff();
-    }, [searchTerm, selectedDepartment, selectedDesignation, selectedStatus, staff]);
+    }, [searchTerm, selectedDepartment, selectedStatus, staff]);
 
     // Handle Prefix for New Staff
     useEffect(() => {
@@ -145,21 +139,21 @@ const StaffDirectoryPage = () => {
         } else if (!showModal) {
             setEmployeeIdField('');
         }
-    }, [editingStaff, showModal]);
+    }, [editingStaff, showModal, enableLogin]);
 
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [staffData, deptData, desigData, stats] = await Promise.all([
-                api.getStaff(),
-                api.getDepartments().catch(() => []),
-                api.getDesignations().catch(() => []),
-                api.getStaffStatistics().catch(() => ({ total: 0, active: 0, onLeave: 0 }))
+            const [staffData, depts, rolesData, stats] = await Promise.all([
+                staffService.getAllStaff(),
+                staffService.getDepartments().catch(() => []),
+                systemService.getRoles().catch(() => []),
+                staffService.getStaffStatistics().catch(() => ({ total: 0, active: 0, onLeave: 0 }))
             ]);
 
             setStaff(staffData || []);
-            setDepartments(deptData || []);
-            setDesignations(desigData || []);
+            setDepartments(depts || []);
+            setRoles(rolesData || []);
             setStatistics(stats);
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -184,10 +178,6 @@ const StaffDirectoryPage = () => {
             filtered = filtered.filter(s => s.department?.id === selectedDepartment);
         }
 
-        if (selectedDesignation) {
-            filtered = filtered.filter(s => s.designation?.id === selectedDesignation);
-        }
-
         if (selectedStatus) {
             filtered = filtered.filter(s => s.status === selectedStatus);
         }
@@ -198,12 +188,13 @@ const StaffDirectoryPage = () => {
     const handleEdit = (staffMember: Staff) => {
         setEditingStaff(staffMember);
         setSelectedFiles({});
+        setEnableLogin(false); // Reset enableLogin when editing existing staff
         setShowModal(true);
     };
 
     const fetchSalaryHistory = async (staffId: string) => {
         try {
-            const data = await api.getPayrolls({ staffId });
+            const data = await staffService.getPayrolls({ staffId });
             // Sort by year/month descending for table, ascending for chart
             setSalaryHistory(data);
         } catch (error) {
@@ -222,7 +213,7 @@ const StaffDirectoryPage = () => {
     const handleDelete = async (id: string) => {
         if (!confirm('Are you sure you want to delete this staff member?')) return;
         try {
-            await api.deleteStaff(id);
+            await staffService.deleteStaff(id);
             toast.showSuccess('Staff member deleted successfully!');
             fetchData();
         } catch (error) {
@@ -257,7 +248,7 @@ const StaffDirectoryPage = () => {
                         Export
                     </button>
                     <button
-                        onClick={() => { setEditingStaff(null); setSelectedFiles({}); setShowModal(true); }}
+                        onClick={() => { setEditingStaff(null); setSelectedFiles({}); setEnableLogin(false); setShowModal(true); }}
                         className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
                     >
                         <Plus size={20} />
@@ -328,16 +319,6 @@ const StaffDirectoryPage = () => {
                     </select>
                     <select
                         className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        value={selectedDesignation}
-                        onChange={(e) => setSelectedDesignation(e.target.value)}
-                    >
-                        <option value="">All Designations</option>
-                        {designations.map(desig => (
-                            <option key={desig.id} value={desig.id}>{desig.title}</option>
-                        ))}
-                    </select>
-                    <select
-                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         value={selectedStatus}
                         onChange={(e) => setSelectedStatus(e.target.value)}
                     >
@@ -367,7 +348,6 @@ const StaffDirectoryPage = () => {
                                     <th className="px-6 py-4 text-sm font-semibold text-gray-900 dark:text-gray-200">Staff Member</th>
                                     <th className="px-6 py-4 text-sm font-semibold text-gray-900 dark:text-gray-200">ID</th>
                                     <th className="px-6 py-4 text-sm font-semibold text-gray-900 dark:text-gray-200">Department</th>
-                                    <th className="px-6 py-4 text-sm font-semibold text-gray-900 dark:text-gray-200">Designation</th>
                                     <th className="px-6 py-4 text-sm font-semibold text-gray-900 dark:text-gray-200">Status</th>
                                     <th className="px-6 py-4 text-sm font-semibold text-gray-900 dark:text-gray-200 text-right">Actions</th>
                                 </tr>
@@ -395,9 +375,6 @@ const StaffDirectoryPage = () => {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
                                             {member.department?.name || 'N/A'}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
-                                            {member.designation?.title || 'N/A'}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(member.status)}`}>
@@ -447,10 +424,10 @@ const StaffDirectoryPage = () => {
                                     try {
                                         if (editingStaff) {
                                             // TODO: Editing with files requires backend update support
-                                            await api.updateStaff(editingStaff.id, formData);
+                                            await staffService.updateStaff(editingStaff.id, formData);
                                             toast.showSuccess('Staff member updated successfully!');
                                         } else {
-                                            await api.createStaff(formData);
+                                            await staffService.createStaff(formData);
                                             toast.showSuccess('Staff member created successfully!');
                                         }
                                         setShowModal(false);
@@ -506,31 +483,20 @@ const StaffDirectoryPage = () => {
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Role</label>
-                                                        <select name="role" defaultValue={editingStaff?.role} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                                        <select
+                                                            name="roleId"
+                                                            defaultValue={editingStaff?.roleId}
+                                                            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                                            onChange={(e) => {
+                                                                // Automatically enable login if a role is selected
+                                                                if (e.target.value) setEnableLogin(true);
+                                                            }}
+                                                        >
                                                             <option value="">Select Role</option>
-                                                            <option value="Admin">Admin</option>
-                                                            <option value="Staff">Staff</option>
-                                                            <option value="Teacher">Teacher</option>
+                                                            {roles.map(role => (
+                                                                <option key={role.id} value={role.id}>{role.name}</option>
+                                                            ))}
                                                         </select>
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Designation</label>
-                                                        <select name="designationId" defaultValue={editingStaff?.designationId} required className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                                                            <option value="">Select</option>
-                                                            {designations.map(d => <option key={d.id} value={d.id}>{d.title}</option>)}
-                                                        </select>
-                                                        <div className="flex items-center mt-2">
-                                                            <label className="flex items-center gap-2 cursor-pointer">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    name="isTeachingStaff"
-                                                                    value="true"
-                                                                    defaultChecked={editingStaff?.isTeachingStaff}
-                                                                    className="w-4 h-4 text-primary-600 rounded border-gray-300 dark:border-gray-600 focus:ring-primary-500"
-                                                                />
-                                                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Teaching Staff?</span>
-                                                            </label>
-                                                        </div>
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Department</label>
@@ -872,6 +838,50 @@ const StaffDirectoryPage = () => {
                                                             </div>
                                                         </div>
                                                     </div>
+
+                                                    {/* Login Credentials */}
+                                                    {!editingStaff && (
+                                                        <div className="bg-primary-50/50 dark:bg-primary-900/10 p-6 rounded-xl border border-primary-100 dark:border-primary-900/30">
+                                                            <h4 className="font-bold text-gray-800 dark:text-gray-200 border-b border-primary-100 dark:border-primary-900/30 pb-2 mb-4 flex items-center gap-2">
+                                                                <Lock size={18} className="text-primary-600 dark:text-primary-400" />
+                                                                System Login Access
+                                                            </h4>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                                <div className="flex items-center">
+                                                                    <label className="relative inline-flex items-center cursor-pointer group">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            name="enableLogin"
+                                                                            className="sr-only peer"
+                                                                            checked={enableLogin}
+                                                                            onChange={(e) => setEnableLogin(e.target.checked)}
+                                                                        />
+                                                                        <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                                                                        <span className="ml-4 text-sm font-bold text-gray-700 dark:text-gray-300 group-hover:text-primary-600 transition-colors">Enable System Login</span>
+                                                                    </label>
+                                                                </div>
+
+                                                                {enableLogin && (
+                                                                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                                                                        <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Initial Password *</label>
+                                                                        <div className="relative">
+                                                                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-500" size={16} />
+                                                                            <input
+                                                                                type="password"
+                                                                                name="password"
+                                                                                required={enableLogin}
+                                                                                placeholder="Enter a secure password"
+                                                                                className="w-full pl-10 pr-4 py-2.5 border border-primary-200 dark:border-primary-900/50 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm"
+                                                                            />
+                                                                        </div>
+                                                                        <p className="text-[10px] text-gray-500 dark:text-gray-400 italic flex items-center gap-1">
+                                                                            <Shield size={10} /> Min. 6 characters. User can change this later.
+                                                                        </p>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -952,7 +962,6 @@ const StaffDirectoryPage = () => {
                                                         </div>
                                                     )}
                                                     <h4 className="text-xl font-bold text-gray-900 dark:text-white">{viewingStaff.firstName} {viewingStaff.lastName}</h4>
-                                                    <p className="text-gray-500 dark:text-gray-400 mb-2">{viewingStaff.designation?.title || 'No Designation'}</p>
                                                     <span className={`px-3 py-1 text-xs font-bold rounded-full ${getStatusColor(viewingStaff.status)}`}>
                                                         {viewingStaff.status}
                                                     </span>
