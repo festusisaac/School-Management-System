@@ -81,6 +81,54 @@ export class SystemSetting {
     @Column({ type: 'varchar', nullable: true })
     documentLogo!: string;
 
+    // --- NEW FIELDS ---
+
+    // Financial Settings
+    @Column({ type: 'varchar', default: '₦' })
+    currencySymbol!: string;
+
+    @Column({ type: 'varchar', default: 'NGN' })
+    currencyCode!: string;
+
+    @Column({ type: 'varchar', nullable: true })
+    taxNumber!: string;
+
+    @Column({ type: 'varchar', default: 'INV-' })
+    invoicePrefix!: string;
+
+    // Student & Staff Prefixes
+    @Column({ type: 'varchar', default: 'SCH/' })
+    admissionNumberPrefix!: string;
+
+    @Column({ type: 'varchar', default: 'STF/' })
+    staffIdPrefix!: string;
+
+    // Enhanced Contact/Social
+    @Column({ type: 'varchar', nullable: true })
+    officialWebsite!: string;
+
+    @Column({ type: 'varchar', nullable: true })
+    whatsappNumber!: string;
+
+    @Column({ type: 'varchar', nullable: true })
+    emailFromName!: string;
+
+    @Column({ type: 'varchar', nullable: true })
+    socialYoutube!: string;
+
+    @Column({ type: 'varchar', nullable: true })
+    socialLinkedin!: string;
+
+    // System/Security
+    @Column({ type: 'boolean', default: false })
+    isMaintenanceMode!: boolean;
+
+    @Column({ type: 'int', default: 60 }) // in minutes
+    sessionTimeoutMinutes!: number;
+
+    @Column({ type: 'int', default: 2 }) // in MB
+    maxFileUploadSizeMb!: number;
+
     @CreateDateColumn()
     createdAt!: Date;
 

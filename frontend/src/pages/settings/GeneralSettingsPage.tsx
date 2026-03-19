@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Upload, Image as ImageIcon, Globe, Settings, MapPin, Calendar, Clock, Phone, Mail, Trash2, Facebook, Twitter, Instagram, Palette } from 'lucide-react';
+import { Save, Upload, Image as ImageIcon, Globe, Settings, MapPin, Calendar, Clock, Phone, Mail, Trash2, Facebook, Twitter, Instagram, Palette, Coins, IdCard, ShieldCheck, Youtube, Linkedin, Link, MessageSquare } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { useSystem } from '../../context/SystemContext';
 import { systemService, SystemSetting, AcademicSession, AcademicTerm } from '../../services/systemService';
@@ -458,6 +458,144 @@ const GeneralSettingsPage = () => {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Financial Settings Section */}
+                        <div>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-6 border-b border-gray-100 dark:border-gray-700 pb-3 mt-8">
+                                <Coins className="w-5 h-5 text-amber-500" />
+                                Financial & Payment Settings
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Currency Symbol</label>
+                                    <input
+                                        type="text"
+                                        name="currencySymbol"
+                                        value={settings.currencySymbol || ''}
+                                        onChange={handleChange}
+                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                        placeholder="e.g. $, ₦, £"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Currency ISO Code</label>
+                                    <input
+                                        type="text"
+                                        name="currencyCode"
+                                        value={settings.currencyCode || ''}
+                                        onChange={handleChange}
+                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                        placeholder="e.g. USD, NGN"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tax / VAT Number</label>
+                                    <input
+                                        type="text"
+                                        name="taxNumber"
+                                        value={settings.taxNumber || ''}
+                                        onChange={handleChange}
+                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Invoice/Receipt Prefix</label>
+                                    <input
+                                        type="text"
+                                        name="invoicePrefix"
+                                        value={settings.invoicePrefix || ''}
+                                        onChange={handleChange}
+                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                        placeholder="e.g. INV-"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Identification Prefixes */}
+                        <div>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-6 border-b border-gray-100 dark:border-gray-700 pb-3 mt-8">
+                                <IdCard className="w-5 h-5 text-indigo-500" />
+                                Identification Prefixes
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Admission Number Prefix</label>
+                                    <input
+                                        type="text"
+                                        name="admissionNumberPrefix"
+                                        value={settings.admissionNumberPrefix || ''}
+                                        onChange={handleChange}
+                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                        placeholder="e.g. SCH/"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Staff ID Prefix</label>
+                                    <input
+                                        type="text"
+                                        name="staffIdPrefix"
+                                        value={settings.staffIdPrefix || ''}
+                                        onChange={handleChange}
+                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                        placeholder="e.g. STF/"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* System & Security */}
+                        <div>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-6 border-b border-gray-100 dark:border-gray-700 pb-3 mt-8">
+                                <ShieldCheck className="w-5 h-5 text-rose-500" />
+                                System & Security
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Maintenance Mode</label>
+                                    <div className="flex items-center gap-3 h-10">
+                                        <button
+                                            type="button"
+                                            onClick={() => setSettings(prev => ({ ...prev, isMaintenanceMode: !prev.isMaintenanceMode }))}
+                                            className={twMerge(
+                                                "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2",
+                                                settings.isMaintenanceMode ? "bg-primary-600" : "bg-gray-200 dark:bg-gray-700"
+                                            )}
+                                        >
+                                            <span
+                                                className={twMerge(
+                                                    "inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                                                    settings.isMaintenanceMode ? "translate-x-5" : "translate-x-0"
+                                                )}
+                                            />
+                                        </button>
+                                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                                            {settings.isMaintenanceMode ? 'Enabled' : 'Disabled'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Session Timeout (Mins)</label>
+                                    <input
+                                        type="number"
+                                        name="sessionTimeoutMinutes"
+                                        value={settings.sessionTimeoutMinutes || ''}
+                                        onChange={handleChange}
+                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Max Upload Size (MB)</label>
+                                    <input
+                                        type="number"
+                                        name="maxFileUploadSizeMb"
+                                        value={settings.maxFileUploadSizeMb || ''}
+                                        onChange={handleChange}
+                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                    />
+                                </div>
+                            </div>
+                        </div>
                     </form>
                 ) : (
                     <div className="p-6 md:p-8 space-y-10">
@@ -624,6 +762,71 @@ const GeneralSettingsPage = () => {
                                         onChange={handleChange}
                                         className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                                         placeholder="https://instagram.com/yourschool"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
+                                        <Youtube className="w-4 h-4 text-red-600" /> YouTube URL
+                                    </label>
+                                    <input
+                                        type="url"
+                                        name="socialYoutube"
+                                        value={settings.socialYoutube || ''}
+                                        onChange={handleChange}
+                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                        placeholder="https://youtube.com/@yourschool"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
+                                        <Linkedin className="w-4 h-4 text-blue-700" /> LinkedIn URL
+                                    </label>
+                                    <input
+                                        type="url"
+                                        name="socialLinkedin"
+                                        value={settings.socialLinkedin || ''}
+                                        onChange={handleChange}
+                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                        placeholder="https://linkedin.com/school/yourschool"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
+                                        <MessageSquare className="w-4 h-4 text-green-500" /> WhatsApp Number
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="whatsappNumber"
+                                        value={settings.whatsappNumber || ''}
+                                        onChange={handleChange}
+                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                        placeholder="+234 800 000 0000"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
+                                        <Link className="w-4 h-4 text-gray-500" /> Official Website URL
+                                    </label>
+                                    <input
+                                        type="url"
+                                        name="officialWebsite"
+                                        value={settings.officialWebsite || ''}
+                                        onChange={handleChange}
+                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                        placeholder="https://yourschool.edu"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
+                                        <Mail className="w-4 h-4 text-orange-500" /> Email "From" Name
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="emailFromName"
+                                        value={settings.emailFromName || ''}
+                                        onChange={handleChange}
+                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                        placeholder="e.g. Greenwood Academy Admin"
                                     />
                                 </div>
                             </div>

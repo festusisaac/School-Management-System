@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsUUID, IsNumber, IsDateString, ValidateIf } from 'class-validator';
+import { IsString, IsOptional, IsUUID, IsNumber, IsDateString, ValidateIf, IsBoolean, IsUrl } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateSystemSettingDto {
@@ -98,6 +98,66 @@ export class CreateSystemSettingDto {
     @IsOptional()
     @ValidateIf((o, v) => v !== null)
     documentLogo?: string | null;
+
+    // Financial Settings
+    @IsString()
+    @IsOptional()
+    currencySymbol?: string;
+
+    @IsString()
+    @IsOptional()
+    currencyCode?: string;
+
+    @IsString()
+    @IsOptional()
+    taxNumber?: string;
+
+    @IsString()
+    @IsOptional()
+    invoicePrefix?: string;
+
+    // Student & Staff Prefixes
+    @IsString()
+    @IsOptional()
+    admissionNumberPrefix?: string;
+
+    @IsString()
+    @IsOptional()
+    staffIdPrefix?: string;
+
+    // Enhanced Contact/Social
+    @IsUrl()
+    @IsOptional()
+    officialWebsite?: string;
+
+    @IsString()
+    @IsOptional()
+    whatsappNumber?: string;
+
+    @IsString()
+    @IsOptional()
+    emailFromName?: string;
+
+    @IsUrl()
+    @IsOptional()
+    socialYoutube?: string;
+
+    @IsUrl()
+    @IsOptional()
+    socialLinkedin?: string;
+
+    // System/Security
+    @IsBoolean()
+    @IsOptional()
+    isMaintenanceMode?: boolean;
+
+    @IsNumber()
+    @IsOptional()
+    sessionTimeoutMinutes?: number;
+
+    @IsNumber()
+    @IsOptional()
+    maxFileUploadSizeMb?: number;
 
     @IsOptional()
     createdAt?: string | Date;

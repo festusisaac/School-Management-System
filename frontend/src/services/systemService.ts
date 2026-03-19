@@ -25,6 +25,24 @@ export interface SystemSetting {
     printLogo?: string;
     invoiceLogo?: string;
     documentLogo?: string;
+    // Financial Settings
+    currencySymbol?: string;
+    currencyCode?: string;
+    taxNumber?: string;
+    invoicePrefix?: string;
+    // Student & Staff Prefixes
+    admissionNumberPrefix?: string;
+    staffIdPrefix?: string;
+    // Enhanced Contact/Social
+    officialWebsite?: string;
+    whatsappNumber?: string;
+    emailFromName?: string;
+    socialYoutube?: string;
+    socialLinkedin?: string;
+    // System/Security
+    isMaintenanceMode?: boolean;
+    sessionTimeoutMinutes?: number;
+    maxFileUploadSizeMb?: number;
     createdAt?: string;
     updatedAt?: string;
 }
