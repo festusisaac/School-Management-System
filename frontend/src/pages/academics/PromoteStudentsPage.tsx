@@ -64,7 +64,10 @@ export default function PromoteStudentsPage() {
     if (!fromSession && settings?.activeSessionName) {
       setFromSession(settings.activeSessionName);
     }
-  }, [settings]);
+    if (!toSession && settings?.activeSessionName) {
+      setToSession(settings.activeSessionName);
+    }
+  }, [settings, fromSession, toSession]);
 
 
   const fetchInitialData = async () => {

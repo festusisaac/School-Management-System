@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Save, AlertCircle, FileText, Calendar, Info } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { examinationService, ExamGroup, Exam, AssessmentType } from '../../../services/examinationService';
@@ -54,6 +54,12 @@ const ScoresheetPage = () => {
         };
         init();
     }, []);
+
+    useEffect(() => {
+        if (!selectedTerm && settings?.activeTermName) {
+            setSelectedTerm(settings.activeTermName);
+        }
+    }, [settings?.activeTermName, selectedTerm]);
 
     const filteredGroups = groups.filter(g =>
         (g.academicYear === settings?.activeSessionName) &&

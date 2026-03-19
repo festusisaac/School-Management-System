@@ -115,6 +115,21 @@ const LogoUploader = ({
     );
 };
 
+const CURRENCIES = [
+    { code: 'USD', symbol: '$', name: 'US Dollar ($)' },
+    { code: 'EUR', symbol: '€', name: 'Euro (€)' },
+    { code: 'GBP', symbol: '£', name: 'British Pound (£)' },
+    { code: 'NGN', symbol: '₦', name: 'Nigerian Naira (₦)' },
+    { code: 'INR', symbol: '₹', name: 'Indian Rupee (₹)' },
+    { code: 'JPY', symbol: '¥', name: 'Japanese Yen (¥)' },
+    { code: 'CAD', symbol: '$', name: 'Canadian Dollar ($)' },
+    { code: 'AUD', symbol: '$', name: 'Australian Dollar ($)' },
+    { code: 'ZAR', symbol: 'R', name: 'South African Rand (R)' },
+    { code: 'GHS', symbol: 'GH₵', name: 'Ghanaian Cedi (GH₵)' },
+    { code: 'KES', symbol: 'KSh', name: 'Kenyan Shilling (KSh)' },
+    { code: 'CNY', symbol: '¥', name: 'Chinese Yuan (¥)' },
+];
+
 const GeneralSettingsPage = () => {
     const { showSuccess, showError } = useToast();
     const { refreshSettings } = useSystem();
@@ -467,25 +482,36 @@ const GeneralSettingsPage = () => {
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Currency Symbol</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">System Currency</label>
+                                    <select
+                                        name="currencyCode"
+                                        value={settings.currencyCode || 'NGN'}
+                                        onChange={(e) => {
+                                            const selected = CURRENCIES.find(c => c.code === e.target.value);
+                                            if (selected) {
+                                                setSettings(prev => ({
+                                                    ...prev,
+                                                    currencyCode: selected.code,
+                                                    currencySymbol: selected.symbol
+                                                }));
+                                            }
+                                        }}
+                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                    >
+                                        {CURRENCIES.map(c => (
+                                            <option key={c.code} value={c.code}>{c.name}</option>
+                                        ))}
+                                    </select>
+                                    <p className="mt-1 text-xs text-gray-500">Select the primary currency for fees and payments.</p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Currency Symbol (Preview)</label>
                                     <input
                                         type="text"
                                         name="currencySymbol"
                                         value={settings.currencySymbol || ''}
-                                        onChange={handleChange}
-                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                        placeholder="e.g. $, ₦, £"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Currency ISO Code</label>
-                                    <input
-                                        type="text"
-                                        name="currencyCode"
-                                        value={settings.currencyCode || ''}
-                                        onChange={handleChange}
-                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                        placeholder="e.g. USD, NGN"
+                                        readOnly
+                                        className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 px-4 py-2.5 text-sm font-mono cursor-not-allowed"
                                     />
                                 </div>
                                 <div>

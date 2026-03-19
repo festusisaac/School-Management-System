@@ -6,7 +6,7 @@ import { examinationService, ExamGroup } from '../../../services/examinationServ
 import { DataTable } from '../../../components/ui/data-table';
 import { ColumnDef } from '@tanstack/react-table';
 import { Modal } from '../../../components/ui/modal';
-import { systemService, AcademicSession, AcademicTerm } from '../../../services/systemService';
+import { systemService, AcademicTerm } from '../../../services/systemService';
 
 const ExamGroupsPage = () => {
     const [groups, setGroups] = useState<ExamGroup[]>([]);
@@ -57,6 +57,23 @@ const ExamGroupsPage = () => {
         fetchGroups();
         fetchDropdownData();
     }, []);
+
+    useEffect(() => {
+        if (!selectedTerm && settings?.activeTermName) {
+            setSelectedTerm(settings.activeTermName);
+        }
+        
+        setFormData(prev => {
+            const updates: any = {};
+            if (!prev.term && settings?.activeTermName) updates.term = settings.activeTermName;
+            if (!prev.academicYear && settings?.activeSessionName) updates.academicYear = settings.activeSessionName;
+            
+            if (Object.keys(updates).length > 0) {
+                return { ...prev, ...updates };
+            }
+            return prev;
+        });
+    }, [settings, selectedTerm]);
 
     const resetForm = () => {
         setFormData({ 

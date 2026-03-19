@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { CheckCircle, AlertTriangle } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { examinationService, ExamGroup } from '../../../services/examinationService';
@@ -52,6 +52,12 @@ const ApprovalPage = () => {
         };
         init();
     }, []);
+
+    useEffect(() => {
+        if (!selectedTerm && settings?.activeTermName) {
+            setSelectedTerm(settings.activeTermName);
+        }
+    }, [settings?.activeTermName, selectedTerm]);
 
     // Filtered Groups for Selection
     const filteredGroups = groups.filter(g =>

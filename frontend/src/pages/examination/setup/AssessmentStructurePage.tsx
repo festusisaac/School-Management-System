@@ -61,6 +61,12 @@ const AssessmentStructurePage = () => {
     }, []);
 
     useEffect(() => {
+        if (!selectedTerm && settings?.activeTermName) {
+            setSelectedTerm(settings.activeTermName);
+        }
+    }, [settings?.activeTermName, selectedTerm]);
+
+    useEffect(() => {
         if (selectedGroup) {
             fetchAssessments(selectedGroup);
             setFormData(prev => ({ ...prev, examGroupId: selectedGroup }));

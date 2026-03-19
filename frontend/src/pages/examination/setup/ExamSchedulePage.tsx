@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { Calendar, Clock, MapPin, Edit2, Trash2, AlertTriangle, User, Info } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { examinationService, ExamGroup, Exam, ExamSchedule, AssessmentType } from '../../../services/examinationService';
@@ -34,9 +34,16 @@ const ExamSchedulePage = () => {
 
     const { settings } = useSystem();
     const [terms, setTerms] = useState<AcademicTerm[]>([]);
-    const [selectedTerm, setSelectedTerm] = useState<string>(settings?.activeTermName || '');
+    const [selectedTerm, setSelectedTerm] = useState<string>('');
 
     const { showSuccess, showError } = useToast();
+
+    // Initialize selectedTerm when settings load
+    useEffect(() => {
+        if (!selectedTerm && settings?.activeTermName) {
+            setSelectedTerm(settings.activeTermName);
+        }
+    }, [settings?.activeTermName, selectedTerm]);
 
     // Modal Form State
     const [formData, setFormData] = useState({
@@ -181,7 +188,7 @@ const ExamSchedulePage = () => {
         setIsModalOpen(true);
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         if (!currentSubject) return;
 
@@ -353,7 +360,7 @@ const ExamSchedulePage = () => {
                         }}
                     >
                         <option value="">All Terms</option>
-                        {terms.map(t => (
+                        {terms.map((t: AcademicTerm) => (
                             <option key={t.id} value={t.name}>{t.name}</option>
                         ))}
                     </select>

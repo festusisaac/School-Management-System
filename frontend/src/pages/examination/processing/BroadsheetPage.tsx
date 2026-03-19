@@ -68,6 +68,12 @@ const BroadsheetPage = () => {
         init();
     }, []);
 
+    useEffect(() => {
+        if (!selectedTerm && settings?.activeTermName) {
+            setSelectedTerm(settings.activeTermName);
+        }
+    }, [settings?.activeTermName, selectedTerm]);
+
     // Filtered Groups for Selection
     const filteredGroups = groups.filter(g =>
         (g.academicYear === settings?.activeSessionName) &&

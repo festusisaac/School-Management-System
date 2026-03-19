@@ -81,6 +81,12 @@ const AdmitCardPage = () => {
     }, []);
 
     useEffect(() => {
+        if (!selectedTerm && settings?.activeTermName) {
+            setSelectedTerm(settings.activeTermName);
+        }
+    }, [settings?.activeTermName, selectedTerm]);
+
+    useEffect(() => {
         if (selectedGroup) {
             fetchAdmitCards();
             fetchSchedules();

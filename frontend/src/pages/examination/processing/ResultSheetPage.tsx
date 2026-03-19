@@ -65,6 +65,13 @@ const ResultSheetPage = () => {
         init();
     }, [settings?.activeSessionName, settings?.activeTermName]);
 
+    // Update selected term if settings load later
+    useEffect(() => {
+        if (!selectedTerm && settings?.activeTermName) {
+            setSelectedTerm(settings.activeTermName);
+        }
+    }, [settings?.activeTermName, selectedTerm]);
+
     // Filtered Groups for Selection
     const filteredGroups = groups.filter(g =>
         (g.academicYear === settings?.activeSessionName) &&

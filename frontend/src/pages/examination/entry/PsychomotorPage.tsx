@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Save, Plus, Settings, Edit2, Trash2, AlertTriangle, Activity } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { examinationService, ExamGroup, PsychomotorDomain } from '../../../services/examinationService';
@@ -72,6 +72,12 @@ const PsychomotorPage = () => {
         };
         init();
     }, []);
+
+    useEffect(() => {
+        if (!selectedTerm && settings?.activeTermName) {
+            setSelectedTerm(settings.activeTermName);
+        }
+    }, [settings?.activeTermName, selectedTerm]);
 
     // Filtered Groups for Selection
     const filteredGroups = groups.filter(g =>
