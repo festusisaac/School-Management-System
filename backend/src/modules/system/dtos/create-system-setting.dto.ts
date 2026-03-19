@@ -38,6 +38,7 @@ export class CreateSystemSettingDto {
 
     @IsDateString()
     @IsOptional()
+    @ValidateIf((o, v) => v !== '' && v !== null)
     sessionStartDate?: Date;
 
     // Localization
@@ -116,7 +117,7 @@ export class CreateSystemSettingDto {
     @IsOptional()
     invoicePrefix?: string;
 
-    // Student & Staff Prefixes
+    // Identification Prefixes
     @IsString()
     @IsOptional()
     admissionNumberPrefix?: string;
@@ -126,7 +127,7 @@ export class CreateSystemSettingDto {
     staffIdPrefix?: string;
 
     // Enhanced Contact/Social
-    @IsUrl()
+    @IsString()
     @IsOptional()
     officialWebsite?: string;
 
@@ -138,11 +139,11 @@ export class CreateSystemSettingDto {
     @IsOptional()
     emailFromName?: string;
 
-    @IsUrl()
+    @IsString()
     @IsOptional()
     socialYoutube?: string;
 
-    @IsUrl()
+    @IsString()
     @IsOptional()
     socialLinkedin?: string;
 
@@ -151,10 +152,12 @@ export class CreateSystemSettingDto {
     @IsOptional()
     isMaintenanceMode?: boolean;
 
+    @Type(() => Number)
     @IsNumber()
     @IsOptional()
     sessionTimeoutMinutes?: number;
 
+    @Type(() => Number)
     @IsNumber()
     @IsOptional()
     maxFileUploadSizeMb?: number;

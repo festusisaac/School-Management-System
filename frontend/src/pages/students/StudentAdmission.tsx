@@ -1110,12 +1110,19 @@ export default function StudentAdmission() {
                                                             <div className="flex items-center gap-2 w-full">
                                                                 <label className="cursor-pointer text-xs bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-2 py-1 rounded border border-primary-100 dark:border-primary-800 hover:bg-primary-100 transition-colors">
                                                                     {doc.file ? 'Change file' : 'Select file'}
-                                                                    <input
+                                                                     <input
                                                                         type="file"
                                                                         className="hidden"
                                                                         onChange={(e) => {
                                                                             if (e.target.files && e.target.files[0]) {
-                                                                                handleDocumentChange(index, 'file', e.target.files[0]);
+                                                                                const file = e.target.files[0];
+                                                                                const maxSizeMb = settings?.maxFileUploadSizeMb || 2;
+                                                                                if (file.size > maxSizeMb * 1024 * 1024) {
+                                                                                    toast.showWarning(`File size exceeds ${maxSizeMb}MB limit. Please choose a smaller file.`);
+                                                                                    e.target.value = '';
+                                                                                    return;
+                                                                                }
+                                                                                handleDocumentChange(index, 'file', file);
                                                                             }
                                                                         }}
                                                                     />
