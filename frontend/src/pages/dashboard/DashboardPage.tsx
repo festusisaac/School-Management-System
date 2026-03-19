@@ -119,7 +119,7 @@ const DashboardPage: React.FC = () => {
     ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 overflow-x-hidden">
 
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
@@ -140,7 +140,7 @@ const DashboardPage: React.FC = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {/* Total Students */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
           <div className="flex justify-between items-start">
@@ -210,11 +210,11 @@ const DashboardPage: React.FC = () => {
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Outstanding Fees</p>
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{formatCurrency(stats?.finance?.outstandingFees)}</h3>
             </div>
-            <div className="p-2 bg-orange-50 dark:bg-orange-900/30 rounded-lg">
+            <div className="p-2 bg-orange-50 dark:bg-orange-900/30 rounded-lg shrink-0">
               <Banknote className="w-6 h-6 text-orange-600 dark:text-orange-400" />
             </div>
           </div>
-          <div className="mt-4 flex items-center text-sm">
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
             <span className="text-orange-600 font-medium text-xs bg-orange-100 px-2 py-0.5 rounded-full">
               Action Required
             </span>
@@ -227,9 +227,9 @@ const DashboardPage: React.FC = () => {
           <div className="space-y-4">
             {/* Unpaid */}
             <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-700 dark:text-gray-300">{stats?.feesOverview?.unpaid || 0} UNPAID</span>
-                <span className="text-gray-900 dark:text-white font-bold">
+              <div className="flex flex-wrap justify-between text-sm mb-1 gap-1">
+                <span className="text-gray-700 dark:text-gray-300 truncate">{stats?.feesOverview?.unpaid || 0} UNPAID</span>
+                <span className="text-gray-900 dark:text-white font-bold ml-auto">
                   {stats?.feesOverview ? ((stats.feesOverview.unpaid / (stats.feesOverview.unpaid + stats.feesOverview.partial + stats.feesOverview.paid)) * 100).toFixed(2) : 0}%
                 </span>
               </div>
@@ -242,9 +242,9 @@ const DashboardPage: React.FC = () => {
             </div>
             {/* Partial */}
             <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-700 dark:text-gray-300">{stats?.feesOverview?.partial || 0} PARTIAL</span>
-                <span className="text-gray-900 dark:text-white font-bold">
+              <div className="flex flex-wrap justify-between text-sm mb-1 gap-1">
+                <span className="text-gray-700 dark:text-gray-300 truncate">{stats?.feesOverview?.partial || 0} PARTIAL</span>
+                <span className="text-gray-900 dark:text-white font-bold ml-auto">
                   {stats?.feesOverview ? ((stats.feesOverview.partial / (stats.feesOverview.unpaid + stats.feesOverview.partial + stats.feesOverview.paid)) * 100).toFixed(2) : 0}%
                 </span>
               </div>
@@ -257,9 +257,9 @@ const DashboardPage: React.FC = () => {
             </div>
             {/* Paid */}
             <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-700 dark:text-gray-300">{stats?.feesOverview?.paid || 0} PAID</span>
-                <span className="text-gray-900 dark:text-white font-bold">
+              <div className="flex flex-wrap justify-between text-sm mb-1 gap-1">
+                <span className="text-gray-700 dark:text-gray-300 truncate">{stats?.feesOverview?.paid || 0} PAID</span>
+                <span className="text-gray-900 dark:text-white font-bold ml-auto">
                   {stats?.feesOverview ? ((stats.feesOverview.paid / (stats.feesOverview.unpaid + stats.feesOverview.partial + stats.feesOverview.paid)) * 100).toFixed(2) : 0}%
                 </span>
               </div>
@@ -363,14 +363,14 @@ const DashboardPage: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
           <h3 className="text-gray-500 dark:text-gray-400 text-sm font-bold uppercase mb-4">Financial Overview</h3>
           <div className="space-y-4">
-            <div className="flex justify-between items-center text-sm p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-700 dark:text-gray-300 font-medium">Net Balance</span>
-              <span className="text-green-600 dark:text-green-400 font-bold text-lg">{formatCurrency(stats?.accounting?.netBalance)}</span>
+            <div className="flex flex-wrap justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg gap-2">
+              <span className="text-gray-700 dark:text-gray-300 font-medium shrink-0">Net Balance</span>
+              <span className="text-green-600 dark:text-green-400 font-bold text-lg ml-auto">{formatCurrency(stats?.accounting?.netBalance)}</span>
             </div>
 
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-gray-600 dark:text-gray-400">Total Expenses</span>
-              <span className="font-bold text-red-500 dark:text-red-400">-{formatCurrency(stats?.accounting?.totalExpenses)}</span>
+            <div className="flex flex-wrap justify-between items-center text-sm gap-2">
+              <span className="text-gray-600 dark:text-gray-400 shrink-0">Total Expenses</span>
+              <span className="font-bold text-red-500 dark:text-red-400 ml-auto">-{formatCurrency(stats?.accounting?.totalExpenses)}</span>
             </div>
 
             <div className="flex items-center justify-between p-2 border border-dashed border-gray-200 dark:border-gray-700 rounded-lg">

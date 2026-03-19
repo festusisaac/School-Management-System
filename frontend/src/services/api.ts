@@ -39,8 +39,10 @@ class ApiService {
       },
       async (error) => {
         const originalRequest = error.config
+        const isLoginRequest = originalRequest.url?.includes('/auth/login')
+        const isRefreshRequest = originalRequest.url?.includes('/auth/refresh')
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        if (error.response?.status === 401 && !originalRequest._retry && !isLoginRequest && !isRefreshRequest) {
           if (this.isRefreshing) {
             return new Promise((resolve, reject) => {
               this.failedQueue.push({

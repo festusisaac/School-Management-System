@@ -153,13 +153,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 />
             )}
 
-            {/* Sidebar */}
+            {/* Sidebar Container */}
             <div className={twMerge(
                 "fixed inset-y-0 left-0 z-50 bg-white/80 dark:bg-gray-900/80 border-r border-gray-100 dark:border-gray-800 backdrop-blur-xl transition-all duration-300 ease-in-out flex flex-col print:hidden",
-                // Desktop: sticky positioning with fixed height
-                "lg:sticky lg:top-0 lg:h-screen lg:shadow-none",
+                // On Desktop: integrate into flex flow properly
+                "lg:relative lg:translate-x-0 lg:shadow-none lg:z-10",
                 // Width Logic
-                isOpen ? "translate-x-0 w-80" : "-translate-x-full lg:translate-x-0 lg:w-20"
+                isOpen ? "translate-x-0 w-72 shadow-2xl" : "-translate-x-full lg:w-20 lg:translate-x-0"
             )}>
                 {/* Logo Section */}
                 <div className="flex h-16 items-center px-6 border-b border-gray-50 dark:border-gray-800/50 overflow-hidden relative justify-center">
