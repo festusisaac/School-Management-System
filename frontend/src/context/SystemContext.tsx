@@ -96,11 +96,12 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             }
 
             // Update Favicon Tab Logo
-            if (data?.primaryLogo) {
-                const favicon = document.getElementById('favicon') as HTMLLinkElement;
-                if (favicon) {
-                    favicon.href = buildUrl(data.primaryLogo);
-                }
+            const faviconUrl = data?.favicon;
+            const favicon = document.getElementById('favicon') as HTMLLinkElement;
+            if (favicon) {
+                // Append timestamp as cache buster if updatedAt is available
+                const cacheBuster = data?.updatedAt ? `?v=${new Date(data.updatedAt).getTime()}` : '';
+                favicon.href = faviconUrl ? `${buildUrl(faviconUrl)}${cacheBuster}` : '/vite.svg';
             }
         } catch (error) {
             console.error('Failed to fetch system settings:', error);

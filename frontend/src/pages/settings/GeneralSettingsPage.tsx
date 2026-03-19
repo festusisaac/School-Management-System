@@ -3,7 +3,6 @@ import { Save, Upload, Image as ImageIcon, Globe, Settings, MapPin, Calendar, Cl
 import { useToast } from '../../context/ToastContext';
 import { useSystem } from '../../context/SystemContext';
 import { systemService, SystemSetting, AcademicSession, AcademicTerm } from '../../services/systemService';
-import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
 // Helper for file uploads
@@ -29,7 +28,9 @@ const LogoUploader = ({
         if (!url) return '';
         if (url.startsWith('http')) return url;
         const cleanUrl = url.startsWith('/') ? url : `/${url}`;
-        return `http://localhost:3000${cleanUrl}`;
+        const apiBaseUrl = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+        const serverUrl = apiBaseUrl.split('/api')[0];
+        return `${serverUrl}${cleanUrl}`;
     };
 
     useEffect(() => {
