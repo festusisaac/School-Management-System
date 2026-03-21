@@ -42,6 +42,26 @@ const permissionsData = [
   { slug: 'settings:general', name: 'General Settings', module: 'Settings' },
   { slug: 'settings:roles_permissions', name: 'Roles & Permissions', module: 'Settings' },
   { slug: 'settings:backups', name: 'Manage Backups', module: 'Settings' },
+
+  // Library
+  { slug: 'library:view_books', name: 'View Books', module: 'Library' },
+  { slug: 'library:manage_books', name: 'Manage Books', module: 'Library' },
+  { slug: 'library:issue_return', name: 'Issue/Return Books', module: 'Library' },
+
+  // Dormitory
+  { slug: 'dormitory:manage_hostels', name: 'Manage Hostels', module: 'Dormitory' },
+  { slug: 'dormitory:manage_rooms', name: 'Manage Rooms', module: 'Dormitory' },
+  { slug: 'dormitory:assign_rooms', name: 'Assign Rooms', module: 'Dormitory' },
+
+  // Communication
+  { slug: 'communication:send_sms', name: 'Send SMS', module: 'Communication' },
+  { slug: 'communication:send_email', name: 'Send Email', module: 'Communication' },
+  { slug: 'communication:notice_board', name: 'Notice Board', module: 'Communication' },
+
+  // Reporting
+  { slug: 'reports:attendance', name: 'Attendance Reports', module: 'Reporting' },
+  { slug: 'reports:academic', name: 'Academic Reports', module: 'Reporting' },
+  { slug: 'reports:financial', name: 'Financial Reports', module: 'Reporting' },
 ];
 
 async function seed() {
