@@ -21,7 +21,6 @@ export class StaffService {
 
     async findAll(filters?: StaffFilters): Promise<Staff[]> {
         const query = this.staffRepository.createQueryBuilder('staff')
-            .leftJoinAndSelect('staff.department', 'department')
             .leftJoinAndSelect('staff.department', 'department');
 
         // Apply filters

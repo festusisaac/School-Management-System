@@ -44,7 +44,7 @@ export class AttendanceService {
     async getAttendanceByDate(date: string): Promise<StaffAttendance[]> {
         return this.attendanceRepository.find({
             where: { date: new Date(date) },
-            relations: ['staff', 'staff.department', 'staff.designation']
+            relations: ['staff', 'staff.department']
         });
     }
 

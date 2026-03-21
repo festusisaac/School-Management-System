@@ -214,7 +214,6 @@ export class PayrollService {
     async findAll(filters?: { month?: number; year?: number; staffId?: string }): Promise<Payroll[]> {
         const query = this.payrollRepository.createQueryBuilder('payroll')
             .leftJoinAndSelect('payroll.staff', 'staff')
-            .leftJoinAndSelect('staff.designation', 'designation')
             .leftJoinAndSelect('staff.department', 'department');
 
         if (filters?.month) {
@@ -234,7 +233,7 @@ export class PayrollService {
     async findOne(id: string): Promise<Payroll> {
         const payroll = await this.payrollRepository.findOne({
             where: { id },
-            relations: ['staff', 'staff.designation', 'staff.department']
+            relations: ['staff', 'staff.department']
         });
 
         if (!payroll) {

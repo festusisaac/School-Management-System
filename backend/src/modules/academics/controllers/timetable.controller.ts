@@ -32,14 +32,7 @@ export class TimetableController {
 
     @Get('periods')
     getAllPeriods(@Request() req: any) {
-        try {
-            if (!req.user || !req.user.tenantId) {
-                throw new Error('User not authenticated or tenant ID missing');
-            }
-            return this.timetableService.getAllPeriods(req.user.tenantId);
-        } catch (error: any) {
-            throw error;
-        }
+        return this.timetableService.getAllPeriods(req.user.tenantId);
     }
 
     @Get('periods/initialize')

@@ -70,14 +70,14 @@ export class SubjectTeacherService {
                 classId,
                 sectionId: sectionId || IsNull()
             },
-            relations: ['subject', 'teacher', 'teacher.designation'],
+            relations: ['subject', 'teacher'],
         });
     }
 
     async getTeachersForSection(sectionId: string, tenantId: string) {
         return this.subjectTeacherRepository.find({
             where: { sectionId, tenantId },
-            relations: ['subject', 'teacher', 'teacher.designation'],
+            relations: ['subject', 'teacher'],
         });
     }
 }

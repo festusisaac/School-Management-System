@@ -46,12 +46,9 @@ export class TimetableService {
         return s1 < e2 && e1 > s2;
     }
 
-    async getAllPeriods(tenantId: string): Promise<TimetablePeriod[]> {
-        if (!tenantId) {
-            throw new BadRequestException('Tenant ID is required');
-        }
+    async getAllPeriods(tenantId: string | null): Promise<TimetablePeriod[]> {
         return this.periodRepository.find({
-            where: { tenantId },
+            where: { tenantId: tenantId || IsNull() },
             order: { periodOrder: 'ASC' },
         });
     }

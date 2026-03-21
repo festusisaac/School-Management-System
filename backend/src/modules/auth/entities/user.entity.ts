@@ -28,8 +28,7 @@ export class User {
   lastName!: string;
 
   @Column({
-    type: 'enum',
-    enum: ['super administrator', 'admin', 'principal', 'teacher', 'student', 'parent', 'staff'],
+    type: 'varchar',
     nullable: true
   })
   role!: string;
