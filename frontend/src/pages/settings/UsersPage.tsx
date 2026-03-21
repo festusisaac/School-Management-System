@@ -156,7 +156,7 @@ const UsersPage = () => {
                         onChange={(e) => setSelectedRole(e.target.value)}
                     >
                         <option value="">All Roles</option>
-                        {roles.map(role => (
+                        {roles.filter(r => r.name !== 'Super Administrator').map(role => (
                             <option key={role.id} value={role.id}>{role.name}</option>
                         ))}
                     </select>
@@ -314,7 +314,7 @@ const UsersPage = () => {
                                 <label className="text-xs font-bold text-gray-500 uppercase">System Role</label>
                                 <select name="roleId" defaultValue={editingUser?.roleId || editingUser?.role} required className="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 bg-white">
                                     <option value="">Assign a role</option>
-                                    {roles.map(role => (
+                                    {roles.filter(r => r.name !== 'Super Administrator').map(role => (
                                         <option key={role.id} value={role.id}>{role.name}</option>
                                     ))}
                                 </select>

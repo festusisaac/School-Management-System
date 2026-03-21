@@ -348,6 +348,7 @@ const StaffDirectoryPage = () => {
                                     <th className="px-6 py-4 text-sm font-semibold text-gray-900 dark:text-gray-200">Staff Member</th>
                                     <th className="px-6 py-4 text-sm font-semibold text-gray-900 dark:text-gray-200">ID</th>
                                     <th className="px-6 py-4 text-sm font-semibold text-gray-900 dark:text-gray-200">Department</th>
+                                    <th className="px-6 py-4 text-sm font-semibold text-gray-900 dark:text-gray-200">Role</th>
                                     <th className="px-6 py-4 text-sm font-semibold text-gray-900 dark:text-gray-200">Status</th>
                                     <th className="px-6 py-4 text-sm font-semibold text-gray-900 dark:text-gray-200 text-right">Actions</th>
                                 </tr>
@@ -375,6 +376,12 @@ const StaffDirectoryPage = () => {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
                                             {member.department?.name || 'N/A'}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 flex items-center gap-1 w-fit">
+                                                <Shield size={12} />
+                                                {roles.find(r => r.id === member.roleId)?.name || member.role || 'N/A'}
+                                            </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(member.status)}`}>
@@ -493,7 +500,7 @@ const StaffDirectoryPage = () => {
                                                             }}
                                                         >
                                                             <option value="">Select Role</option>
-                                                            {roles.map(role => (
+                                                            {roles.filter(r => r.name !== 'Super Administrator').map(role => (
                                                                 <option key={role.id} value={role.id}>{role.name}</option>
                                                             ))}
                                                         </select>
@@ -973,7 +980,7 @@ const StaffDirectoryPage = () => {
                                                         </div>
                                                         <div>
                                                             <p className="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold">Role</p>
-                                                            <p className="text-sm font-medium dark:text-gray-200">{viewingStaff.role || 'N/A'}</p>
+                                                            <p className="text-sm font-medium dark:text-gray-200">{roles.find(r => r.id === viewingStaff.roleId)?.name || viewingStaff.role || 'N/A'}</p>
                                                         </div>
                                                     </div>
                                                 </div>

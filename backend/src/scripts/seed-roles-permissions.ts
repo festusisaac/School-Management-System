@@ -35,8 +35,12 @@ const permissionsData = [
 
   // Examination
   { slug: 'exams:manage_setup', name: 'Manage Exam Setup', module: 'Examination' },
+  { slug: 'exams:manage_schedule', name: 'Manage Exam Schedule', module: 'Examination' },
+  { slug: 'exams:manage_grades', name: 'Manage Grade Scales', module: 'Examination' },
   { slug: 'exams:enter_marks', name: 'Enter Marks', module: 'Examination' },
+  { slug: 'exams:manage_admit_cards', name: 'Manage Admit Cards', module: 'Examination' },
   { slug: 'exams:publish_results', name: 'Publish Results', module: 'Examination' },
+  { slug: 'exams:manage_domains', name: 'Manage Behavioral Domains', module: 'Examination' },
 
   // Settings
   { slug: 'settings:general', name: 'General Settings', module: 'Settings' },
