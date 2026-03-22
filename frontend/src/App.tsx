@@ -3,6 +3,7 @@ import LoginPage from '@pages/auth/LoginPage'
 import RegisterPage from '@pages/auth/RegisterPage'
 import DashboardPage from '@pages/dashboard/DashboardPage'
 import MaintenancePage from '@pages/MaintenancePage'
+import LandingPage from './pages/public/LandingPage'
 import { MainLayout } from './components/layout/MainLayout'
 import { ThemeProvider } from './context/ThemeContext'
 import { ToastProvider } from './context/ToastContext'
@@ -140,7 +141,7 @@ function AppRoutes() {
           </Route>
         )}
 
-        <Route path="/" element={<LoginPage />} />
+        <Route path="/" element={<LandingPage />} />
       </Routes>
     </Router>
   );

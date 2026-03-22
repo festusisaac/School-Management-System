@@ -105,7 +105,7 @@ export default function StudentAdmission() {
         if (!isEditMode && settings?.admissionNumberPrefix && !formData.admissionNo) {
             setFormData(prev => ({
                 ...prev,
-                admissionNo: settings.admissionNumberPrefix
+                admissionNo: settings.admissionNumberPrefix || ''
             }));
         }
     }, [settings?.admissionNumberPrefix, isEditMode]);
@@ -1135,7 +1135,7 @@ export default function StudentAdmission() {
                                                                     Uploaded
                                                                 </span>
                                                                 <a
-                                                                    href={`${API_Base_URL}/${doc.filePath}`}
+                                                                    href={getFileUrl(doc.filePath)}
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
                                                                     className="text-xs text-primary-500 hover:underline flex items-center gap-1"

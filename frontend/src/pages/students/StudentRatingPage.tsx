@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
     Star,
     Search,
-    Plus,
-    User,
     Award,
     CheckCircle2
 } from 'lucide-react';
