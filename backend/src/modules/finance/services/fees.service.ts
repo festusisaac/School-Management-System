@@ -886,4 +886,105 @@ export class FeesService {
       students: affectedStudents
     };
   }
+
+  async bulkAssignFeeGroup(groupId: string, dto: { classIds?: string[], sectionIds?: string[], categoryIds?: string[], studentIds?: string[], excludeIds?: string[] }) {
+    const query = this.studentRepo.createQueryBuilder('student')
+      .where('student.isActive = :isActive', { isActive: true });
+
+    if (dto.studentIds && dto.studentIds.length > 0) {
+      query.andWhere('student.id IN (:...studentIds)', { studentIds: dto.studentIds });
+    } else {
+      if (dto.classIds && dto.classIds.length > 0) {
+        query.andWhere('student.classId IN (:...classIds)', { classIds: dto.classIds });
+      }
+      if (dto.sectionIds && dto.sectionIds.length > 0) {
+        query.andWhere('student.sectionId IN (:...sectionIds)', { sectionIds: dto.sectionIds });
+      }
+      if (dto.categoryIds && dto.categoryIds.length > 0) {
+        query.andWhere('student.categoryId IN (:...categoryIds)', { categoryIds: dto.categoryIds });
+      }
+    }
+
+    let students = await query.getMany();
+    if (dto.excludeIds && dto.excludeIds.length > 0) {
+      const excludeSet = new Set(dto.excludeIds);
+      students = students.filter(s => !excludeSet.has(s.id));
+    }
+
+    // Filter out students who already have this group assigned
+    const existingAssignments = await this.assignmentRepo.find({
+      where: {
+        feeGroupId: groupId,
+        studentId: In(students.map(s => s.id)),
+        isActive: true
+      }
+    });
+    const alreadyAssignedIds = new Set(existingAssignments.map(a => a.studentId));
+    const studentsToAssign = students.filter(s => !alreadyAssignedIds.has(s.id));
+
+    if (studentsToAssign.length === 0) return { updatedCount: 0, skippedCount: alreadyAssignedIds.size };
+
+    const session = new Date().getFullYear().toString();
+    const assignments = studentsToAssign.map(s => this.assignmentRepo.create({
+      studentId: s.id,
+      feeGroupId: groupId,
+      session,
+      isActive: true
+    }));
+
+    await this.assignmentRepo.save(assignments);
+
+    return { 
+      updatedCount: assignments.length, 
+      skippedCount: alreadyAssignedIds.size 
+    };
+  }
+
+  async simulateBulkFeeAssignment(groupId: string, dto: { classIds?: string[], sectionIds?: string[], categoryIds?: string[], studentIds?: string[] }) {
+    const query = this.studentRepo.createQueryBuilder('student')
+      .leftJoinAndSelect('student.class', 'class')
+      .leftJoinAndSelect('student.section', 'section')
+      .leftJoinAndSelect('student.category', 'category')
+      .where('student.isActive = :isActive', { isActive: true });
+
+    if (dto.studentIds && dto.studentIds.length > 0) {
+      query.andWhere('student.id IN (:...studentIds)', { studentIds: dto.studentIds });
+    } else {
+      if (dto.classIds && dto.classIds.length > 0) {
+        query.andWhere('student.classId IN (:...classIds)', { classIds: dto.classIds });
+      }
+      if (dto.sectionIds && dto.sectionIds.length > 0) {
+        query.andWhere('student.sectionId IN (:...sectionIds)', { sectionIds: dto.sectionIds });
+      }
+      if (dto.categoryIds && dto.categoryIds.length > 0) {
+        query.andWhere('student.categoryIds IN (:...categoryIds)', { categoryIds: dto.categoryIds });
+      }
+    }
+
+    const students = await query.getMany();
+    
+    // Find existing assignments
+    const existingAssignments = await this.assignmentRepo.find({
+      where: {
+        feeGroupId: groupId,
+        studentId: In(students.map(s => s.id)),
+        isActive: true
+      }
+    });
+    const alreadyAssignedIds = new Set(existingAssignments.map(a => a.studentId));
+
+    const affectedStudents = students.map(s => ({
+      id: s.id,
+      name: `${s.firstName} ${s.lastName}`,
+      admissionNo: s.admissionNo,
+      className: `${s.class?.name || 'No Class'} ${s.section?.name || ''}`.trim(),
+      alreadyHasFee: alreadyAssignedIds.has(s.id)
+    }));
+
+    return {
+      total: affectedStudents.length,
+      conflicts: alreadyAssignedIds.size,
+      students: affectedStudents
+    };
+  }
 }

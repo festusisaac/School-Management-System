@@ -226,7 +226,7 @@ export class StudentsService {
 
     async findOne(id: string): Promise<Student & { feeGroupIds?: string[] }> {
         const student = await this.studentsRepository.findOne({
-            where: { id },
+            where: [{ id }, { userId: id }],
             relations: ['class', 'section', 'category', 'house', 'deactivateReason', 'parent', 'parent.students', 'parent.students.class', 'documents'],
         });
         if (!student) throw new NotFoundException(`Student with ID ${id} not found`);

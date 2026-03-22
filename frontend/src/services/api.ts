@@ -223,6 +223,14 @@ class ApiService {
     return this.patch<any>(`/finance/groups/${id}`, data)
   }
 
+  async bulkAssignFeeGroup(id: string, data: { classIds?: string[], sectionIds?: string[], categoryIds?: string[], studentIds?: string[], excludeIds?: string[] }) {
+    return this.post<any>(`/finance/groups/${id}/assign`, data)
+  }
+
+  async simulateFeeGroup(id: string, data: { classIds?: string[], sectionIds?: string[], categoryIds?: string[], studentIds?: string[] }) {
+    return this.post<any>(`/finance/groups/${id}/simulate`, data)
+  }
+
 
   async getDiscounts() {
     return this.get<any[]>('/finance/discounts')

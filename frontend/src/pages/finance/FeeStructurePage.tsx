@@ -9,9 +9,9 @@ import {
   LayoutGrid
 } from 'lucide-react';
 import { formatCurrency, CURRENCY_SYMBOL } from '../../utils/currency';
-import api from '../../services/api';
-import { useToast } from '../../context/ToastContext';
 import { clsx } from 'clsx';
+import { useToast } from '../../context/ToastContext';
+import BulkFeeAssignmentModal from './components/BulkFeeAssignmentModal';
 
 interface FeeHead {
   id: string;
@@ -61,6 +61,9 @@ export default function FeeStructurePage() {
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<FeeGroup | null>(null);
   const [newGroup, setNewGroup] = useState({ name: '', description: '', headIds: [] as string[] });
+
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [assigningGroup, setAssigningGroup] = useState<FeeGroup | null>(null);
 
 
   useEffect(() => {
@@ -328,6 +331,15 @@ export default function FeeStructurePage() {
                       Edit Components
                     </button>
                     <button
+                      onClick={() => {
+                        setAssigningGroup(group);
+                        setIsAssignModalOpen(true);
+                      }}
+                      className="text-xs font-bold text-primary-600 hover:text-primary-700 transition-colors uppercase tracking-widest"
+                    >
+                      Assign Group
+                    </button>
+                    <button
                       onClick={() => handleDeleteGroup(group.id)}
                       className="text-xs font-bold text-gray-400 hover:text-red-500 transition-colors uppercase tracking-widest"
                     >
@@ -504,6 +516,19 @@ export default function FeeStructurePage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Assignment Modal */}
+      {assigningGroup && (
+        <BulkFeeAssignmentModal
+          isOpen={isAssignModalOpen}
+          onClose={() => {
+            setIsAssignModalOpen(false);
+            setAssigningGroup(null);
+          }}
+          feeGroupId={assigningGroup.id}
+          feeGroupName={assigningGroup.name}
+        />
       )}
     </div>
   );

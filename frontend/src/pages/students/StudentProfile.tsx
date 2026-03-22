@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useToast } from '../../context/ToastContext';
@@ -6,17 +5,28 @@ import {
     ArrowLeft, MapPin, BookOpen, User, Building2,
     Users, Printer, Edit, DollarSign,
     FileText, GraduationCap, ClipboardList, Clock,
-    QrCode as QrCodeIcon, Barcode as BarcodeIcon, ShieldAlert, ShieldCheck
+    QrCode as QrCodeIcon, Barcode as BarcodeIcon, ShieldAlert, ShieldCheck,
+    Phone, Mail, Calendar, Hash, Award, Shield, CheckCircle2, AlertCircle, CreditCard
 } from 'lucide-react';
 import api, { getFileUrl } from '../../services/api';
+import { formatCurrency } from '../../utils/currency';
+import { clsx } from 'clsx';
+import { FeeNoticeTemplate } from '../finance/components/FeeNoticeTemplate';
+import { createRoot } from 'react-dom/client';
+import { useSystem } from '../../context/SystemContext';
 
 export default function StudentProfile() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { showSuccess } = useToast();
+    const { getSchoolInfo } = useSystem();
     const [student, setStudent] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('Profile');
+    const [statement, setStatement] = useState<any>(null);
+    const [loadingStatement, setLoadingStatement] = useState(false);
+    const [txPage, setTxPage] = useState(1);
+    const txItemsPerPage = 5;
 
     const handlePrint = () => {
         window.print();
@@ -36,6 +46,65 @@ export default function StudentProfile() {
         };
         fetchStudent();
     }, [id]);
+
+    useEffect(() => {
+        if (activeTab === 'Fees' && id && !statement) {
+            fetchStatement();
+        }
+    }, [activeTab, id]);
+
+    const fetchStatement = async () => {
+        if (!id) return;
+        setLoadingStatement(true);
+        try {
+            const data = await api.getStudentStatement(id);
+            setStatement(data);
+        } catch (error) {
+            console.error("Failed to fetch statement", error);
+        } finally {
+            setLoadingStatement(false);
+        }
+    };
+
+    const handlePrintNotice = () => {
+        if (!student || !statement) return;
+        
+        const schoolInfo = getSchoolInfo();
+        const printDiv = document.createElement('div');
+        printDiv.style.display = 'none';
+        document.body.appendChild(printDiv);
+
+        const root = createRoot(printDiv);
+        root.render(<FeeNoticeTemplate student={student} statement={statement} schoolInfo={schoolInfo} />);
+
+        setTimeout(() => {
+            const html = printDiv.innerHTML;
+            root.unmount();
+            document.body.removeChild(printDiv);
+
+            const printWindow = window.open('', '', 'width=800,height=600');
+            if (printWindow) {
+                printWindow.document.write(`
+                    <html>
+                        <head>
+                            <title>Fee Notice - ${student.firstName} ${student.lastName}</title>
+                            <script src="https://cdn.tailwindcss.com"></script>
+                        </head>
+                        <body>
+                            ${html}
+                            <script>
+                                window.onload = () => {
+                                    window.print();
+                                    window.close();
+                                };
+                            </script>
+                        </body>
+                    </html>
+                `);
+                printWindow.document.close();
+            }
+        }, 500);
+    };
 
     if (loading) {
         return (
@@ -72,49 +141,55 @@ export default function StudentProfile() {
 
 
     const SectionHeader = ({ title, icon: Icon }: { title: string, icon?: any }) => (
-        <div className="flex items-center gap-3 px-6 py-4 bg-gray-50/50 dark:bg-gray-800/30 border-b border-gray-100 dark:border-gray-800/50">
-            {Icon && <Icon className="w-4 h-4 text-orange-600 dark:text-orange-500" />}
-            <h3 className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em] font-heading">{title}</h3>
+        <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/80">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center">
+                {Icon && <Icon className="w-5 h-5 mr-2 text-primary-600" />}
+                {title}
+            </h2>
         </div>
     );
 
     const DataRow = ({ label, value, isLast = false }: { label: string, value: any, isLast?: boolean }) => (
-        <div className={`grid grid-cols-[160px_1fr] items-center gap-6 py-3.5 px-6 border-b border-gray-50 dark:border-gray-800/50 last:border-0 ${isLast ? 'border-b-0' : ''}`}>
-            <span className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-tight">{label}</span>
-            <span className="text-sm font-black text-gray-900 dark:text-gray-100 truncate">{value || '-'}</span>
+        <div className={`grid grid-cols-[160px_1fr] items-center gap-6 py-4 px-6 border-b border-gray-50 dark:border-gray-700/50 last:border-0 ${isLast ? 'border-b-0' : ''}`}>
+            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{label}</span>
+            <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{value || '-'}</span>
         </div>
     );
 
-    const InfoCard = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
-        <div className={`bg-white dark:bg-gray-900 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800/50 overflow-hidden ${className}`}>
+    const InfoCard = ({ children, className = "", noBg = false }: { children: React.ReactNode, className?: string, noBg?: boolean }) => (
+        <div className={clsx(
+            "rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden",
+            !noBg && "bg-white dark:bg-gray-800",
+            className
+        )}>
             {children}
         </div>
     );
 
     return (
-        <div className="w-full px-4 md:px-10 pb-16 space-y-6 bg-[#F9FAFB] dark:bg-gray-950 min-h-screen font-sans">
+        <div className="space-y-6">
             {/* Professional Sticky Navigation Header */}
-            <div className="sticky top-4 z-50 flex items-center justify-between bg-white/80 dark:bg-gray-900/80 p-2 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-800 backdrop-blur-xl no-print transition-all">
-                <div className="flex items-center gap-2">
+            <div className="sticky top-4 z-50 flex items-center justify-between bg-white/80 dark:bg-gray-800/90 p-2 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 backdrop-blur-xl no-print transition-all">
+                <div className="flex items-center gap-2 w-full overflow-x-auto scrollbar-hide">
                     <button
                         onClick={() => navigate(-1)}
-                        className="p-3 bg-gray-50 dark:bg-gray-800 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm rounded-xl border border-transparent hover:border-gray-200 dark:hover:border-gray-600 transition-all text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-gray-100 group"
+                        className="p-2.5 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-xl transition-all text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 flex-shrink-0"
                     >
-                        <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
+                        <ArrowLeft className="w-5 h-5" />
                     </button>
-                    <div className="h-10 w-px bg-gray-100 dark:bg-gray-800 mx-1" />
-                    <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
+                    <div className="h-8 w-px bg-gray-200 dark:bg-gray-700 mx-1 flex-shrink-0" />
+                    <div className="flex items-center gap-1">
                         {tabs.map((tab) => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`flex items-center gap-2 px-4 py-2.5 text-xs font-black transition-all rounded-xl whitespace-nowrap ${activeTab === tab.id
-                                    ? 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-500/10'
-                                    : 'text-gray-500 dark:text-gray-500 hover:text-gray-900 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all rounded-xl whitespace-nowrap ${activeTab === tab.id
+                                    ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-500/10'
+                                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50'
                                     }`}
                             >
-                                <tab.icon className={`w-3.5 h-3.5 ${activeTab === tab.id ? 'text-orange-600' : 'text-gray-400'}`} />
-                                <span className="uppercase tracking-wider">{tab.label}</span>
+                                <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'}`} />
+                                <span>{tab.label}</span>
                             </button>
                         ))}
                     </div>
@@ -127,62 +202,62 @@ export default function StudentProfile() {
                 <div className="lg:col-span-4 flex flex-col gap-6">
                     {/* Primary Avatar & ID Card */}
                     <InfoCard className="p-8 flex flex-col items-center text-center">
-                        <div className="relative mb-6">
-                            <div className="w-40 h-40 rounded-[2.5rem] bg-gray-50 dark:bg-gray-800 overflow-hidden ring-4 ring-gray-100 dark:ring-gray-800 shadow-xl">
+                        <div className="relative mb-6 flex justify-center">
+                            <div className="w-32 h-32 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden ring-4 ring-white dark:ring-gray-800 shadow-lg">
                                 {student.studentPhoto ? (
                                     <img src={getFileUrl(student.studentPhoto)} alt={student.firstName} className="w-full h-full object-cover" />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-5xl font-black text-gray-200 dark:text-gray-700">
+                                    <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-gray-300 dark:text-gray-600">
                                         {student.firstName[0]}{student.lastName?.[0]}
                                     </div>
                                 )}
                             </div>
-                            <div className="absolute -bottom-2 -right-2 bg-white dark:bg-gray-900 p-2.5 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800">
-                                <QrCodeIcon className="w-6 h-6 text-gray-400 dark:text-gray-500" />
+                            <div className="absolute bottom-0 right-1/2 translate-x-[3.5rem] bg-white dark:bg-gray-800 p-2 rounded-full shadow-md border border-gray-100 dark:border-gray-700">
+                                <QrCodeIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                             </div>
                         </div>
 
-                        <h2 className="text-2xl font-black text-gray-900 dark:text-white font-heading mb-2">{student.firstName} {student.lastName}</h2>
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{student.firstName} {student.lastName}</h2>
 
                         <div className="flex flex-wrap justify-center gap-2 mb-6">
-                            <span className="px-3 py-1 bg-primary-50 dark:bg-primary-500/10 border border-primary-100 dark:border-primary-500/20 text-primary-600 dark:text-primary-400 text-[10px] font-black uppercase tracking-widest rounded-lg">
+                            <span className="px-3 py-1.5 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 text-xs font-semibold rounded-full border border-primary-100 dark:border-primary-800/30">
                                 {student.class?.name || 'Academic'}
                             </span>
-                            <span className="px-3 py-1 bg-orange-50 dark:bg-orange-500/10 border border-orange-100 dark:border-orange-500/20 text-orange-600 dark:text-orange-400 text-[10px] font-black uppercase tracking-widest rounded-lg">
+                            <span className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-semibold rounded-full border border-gray-200 dark:border-gray-600">
                                 {student.gender}
                             </span>
                         </div>
 
-                        <div className="w-full space-y-4 pt-6 border-t border-gray-50 dark:border-gray-800">
+                        <div className="w-full space-y-4 pt-6 border-t border-gray-100 dark:border-gray-700">
                             {[
                                 { label: 'Admission No', value: student.admissionNo, icon: ShieldCheck },
                                 { label: 'Roll Number', value: student.rollNo, icon: GraduationCap },
                                 { label: 'Category', value: student.category?.category, icon: BookOpen }
                             ].map((item, i) => (
                                 <div key={i} className="flex justify-between items-center text-sm">
-                                    <div className="flex items-center gap-3 text-gray-400 dark:text-gray-500">
+                                    <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
                                         <item.icon className="w-4 h-4" />
-                                        <span className="font-bold uppercase text-[10px] tracking-widest">{item.label}</span>
+                                        <span className="font-medium">{item.label}</span>
                                     </div>
-                                    <span className="font-black text-gray-900 dark:text-gray-100">{item.value || '-'}</span>
+                                    <span className="font-semibold text-gray-900 dark:text-gray-100">{item.value || '-'}</span>
                                 </div>
                             ))}
                         </div>
 
-                        <div className="w-full pt-8 grid grid-cols-2 gap-3">
+                        <div className="w-full pt-8 grid grid-cols-2 gap-3 mt-auto">
                             <button
                                 onClick={() => navigate(`/students/admission?id=${student.id}&edit=true`)}
-                                className="flex items-center justify-center gap-2 py-3.5 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white rounded-2xl text-[10px] font-black transition-all border border-gray-100 dark:border-gray-700 group"
+                                className="flex items-center justify-center gap-2 py-2.5 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition shadow-sm"
                             >
-                                <Edit className="w-3.5 h-3.5 text-gray-400 group-hover:text-primary-500 transition-colors" />
-                                <span className="uppercase tracking-widest">Edit</span>
+                                <Edit className="w-4 h-4" />
+                                <span>Edit</span>
                             </button>
                             <button
                                 onClick={handlePrint}
-                                className="flex items-center justify-center gap-2 py-3.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl text-[10px] font-black transition-all shadow-lg hover:scale-[1.02] active:scale-95 group"
+                                className="flex items-center justify-center gap-2 py-2.5 bg-primary-600 text-white font-medium rounded-xl hover:bg-primary-700 transition shadow-sm"
                             >
-                                <Printer className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
-                                <span className="uppercase tracking-widest">Print</span>
+                                <Printer className="w-4 h-4" />
+                                <span>Print</span>
                             </button>
                         </div>
                     </InfoCard>
@@ -190,7 +265,7 @@ export default function StudentProfile() {
                     {/* Siblings: Structured Header & List */}
                     <InfoCard>
                         <SectionHeader title="Sibling Connection" icon={Users} />
-                        <div className="p-4 space-y-3">
+                        <div className="p-4 space-y-2">
                             {((student.parent?.students || []).filter((s: any) => s.id !== student.id)).length > 0 ? (
                                 student.parent.students.filter((s: any) => s.id !== student.id).map((sibling: any) => (
                                     <div
@@ -199,26 +274,26 @@ export default function StudentProfile() {
                                             navigate(`/students/profile/${sibling.id}`);
                                             showSuccess(`Switched to ${sibling.firstName}'s Profile`);
                                         }}
-                                        className="flex items-center gap-4 p-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-all border border-transparent hover:border-gray-100 dark:hover:border-gray-800 group"
+                                        className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors border border-transparent hover:border-gray-100 dark:hover:border-gray-700 group"
                                     >
-                                        <div className="w-12 h-12 rounded-xl bg-gray-50 dark:bg-gray-800 overflow-hidden ring-1 ring-gray-100 dark:ring-gray-700">
+                                        <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden ring-2 ring-white dark:ring-gray-800">
                                             {sibling.studentPhoto ? (
                                                 <img src={getFileUrl(sibling.studentPhoto)} alt={sibling.firstName} className="w-full h-full object-cover" />
                                             ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-xs font-black text-gray-400 uppercase">
+                                                <div className="w-full h-full flex items-center justify-center text-sm font-bold text-gray-400">
                                                     {sibling.firstName[0]}
                                                 </div>
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-black text-gray-900 dark:text-white truncate group-hover:text-primary-500 transition-colors uppercase font-heading">{sibling.firstName} {sibling.lastName}</p>
-                                            <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">{sibling.class?.name || 'Class N/A'}</p>
+                                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">{sibling.firstName} {sibling.lastName}</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">{sibling.class?.name || 'Class N/A'}</p>
                                         </div>
                                     </div>
                                 ))
                             ) : (
-                                <div className="text-center py-8">
-                                    <p className="text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest italic">No Siblings Registered</p>
+                                <div className="text-center py-6">
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 italic">No Siblings Registered</p>
                                 </div>
                             )}
                         </div>
@@ -226,8 +301,8 @@ export default function StudentProfile() {
 
                     {/* Barcode Identity */}
                     <InfoCard className="p-6 flex flex-col items-center gap-3">
-                        <BarcodeIcon className="w-full h-12 text-gray-800 dark:text-gray-300 opacity-60" />
-                        <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Access Identity {student.admissionNo}</p>
+                        <BarcodeIcon className="w-full h-12 text-gray-400 dark:text-gray-500" />
+                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Access Identity {student.admissionNo}</p>
                     </InfoCard>
                 </div>
 
@@ -261,57 +336,57 @@ export default function StudentProfile() {
                             {/* Parent & Guardian Info */}
                             <InfoCard>
                                 <SectionHeader title="Family & Guardianship" icon={Users} />
-                                <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-10">
+                                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
                                     <div className="space-y-6">
-                                        <h4 className="text-[10px] font-black text-orange-600 dark:text-orange-500 uppercase tracking-[0.2em] mb-4">Paternal Details</h4>
+                                        <h4 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-100 dark:border-gray-700 pb-2">Paternal Details</h4>
                                         <div className="space-y-4">
                                             <div>
-                                                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-1">Father's Name</p>
-                                                <p className="text-sm font-black text-gray-900 dark:text-gray-100">{student.fatherName || '-'}</p>
+                                                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Father's Name</p>
+                                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{student.fatherName || '-'}</p>
                                             </div>
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div>
-                                                    <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-1">Phone</p>
-                                                    <p className="text-sm font-black text-gray-900 dark:text-gray-100">{student.fatherPhone || '-'}</p>
+                                                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Phone</p>
+                                                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{student.fatherPhone || '-'}</p>
                                                 </div>
                                                 <div>
-                                                    <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-1">Occupation</p>
-                                                    <p className="text-sm font-black text-gray-900 dark:text-gray-100">{student.fatherOccupation || '-'}</p>
+                                                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Occupation</p>
+                                                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{student.fatherOccupation || '-'}</p>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                     <div className="space-y-6">
-                                        <h4 className="text-[10px] font-black text-primary-600 dark:text-primary-500 uppercase tracking-[0.2em] mb-4">Maternal Details</h4>
+                                        <h4 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-100 dark:border-gray-700 pb-2">Maternal Details</h4>
                                         <div className="space-y-4">
                                             <div>
-                                                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-1">Mother's Name</p>
-                                                <p className="text-sm font-black text-gray-900 dark:text-gray-100">{student.motherName || '-'}</p>
+                                                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Mother's Name</p>
+                                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{student.motherName || '-'}</p>
                                             </div>
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div>
-                                                    <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-1">Phone</p>
-                                                    <p className="text-sm font-black text-gray-900 dark:text-gray-100">{student.motherPhone || '-'}</p>
+                                                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Phone</p>
+                                                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{student.motherPhone || '-'}</p>
                                                 </div>
                                                 <div>
-                                                    <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-1">Occupation</p>
-                                                    <p className="text-sm font-black text-gray-900 dark:text-gray-100">{student.motherOccupation || '-'}</p>
+                                                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Occupation</p>
+                                                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{student.motherOccupation || '-'}</p>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="p-8 bg-gray-50/30 dark:bg-gray-800/20 border-t border-gray-50 dark:border-gray-800">
-                                    <h4 className="text-[10px] font-black text-secondary-600 dark:text-secondary-400 uppercase tracking-[0.2em] mb-6">Secondary Guardian Info</h4>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                <div className="p-6 bg-gray-50/50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-700">
+                                    <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-4">Secondary Guardian Info</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                         {[
                                             { label: 'Guardian', value: student.guardianName },
                                             { label: 'Relation', value: student.guardianRelation },
                                             { label: 'Contact', value: student.guardianPhone }
                                         ].map((item, i) => (
                                             <div key={i}>
-                                                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-1">{item.label}</p>
-                                                <p className="text-sm font-black text-gray-900 dark:text-gray-100">{item.value || '-'}</p>
+                                                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{item.label}</p>
+                                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{item.value || '-'}</p>
                                             </div>
                                         ))}
                                     </div>
@@ -324,12 +399,12 @@ export default function StudentProfile() {
                                     <SectionHeader title="Residential Info" icon={MapPin} />
                                     <div className="p-6 space-y-6">
                                         <div>
-                                            <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-2">Current Address</p>
-                                            <p className="text-sm font-black text-gray-900 dark:text-gray-200 leading-relaxed">{student.currentAddress || 'N/A'}</p>
+                                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Current Address</p>
+                                            <p className="text-sm font-medium text-gray-900 dark:text-gray-200 leading-relaxed">{student.currentAddress || 'N/A'}</p>
                                         </div>
-                                        <div className="pt-6 border-t border-gray-50 dark:border-gray-800">
-                                            <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-2">Permanent Address</p>
-                                            <p className="text-sm font-black text-gray-900 dark:text-gray-200 leading-relaxed">{student.permanentAddress || student.currentAddress || 'N/A'}</p>
+                                        <div className="pt-6 border-t border-gray-100 dark:border-gray-700">
+                                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Permanent Address</p>
+                                            <p className="text-sm font-medium text-gray-900 dark:text-gray-200 leading-relaxed">{student.permanentAddress || student.currentAddress || 'N/A'}</p>
                                         </div>
                                     </div>
                                 </InfoCard>
@@ -344,14 +419,14 @@ export default function StudentProfile() {
                                                 { label: 'Hostel', value: student.hostelName }
                                             ].map((item, i) => (
                                                 <div key={i}>
-                                                    <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-1">{item.label}</p>
-                                                    <p className="text-sm font-black text-gray-900 dark:text-gray-100">{item.value || 'N/A'}</p>
+                                                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{item.label}</p>
+                                                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{item.value || 'N/A'}</p>
                                                 </div>
                                             ))}
                                         </div>
-                                        <div className="pt-6 border-t border-gray-50 dark:border-gray-800">
-                                            <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-1">Room Assignment</p>
-                                            <p className="text-sm font-black text-gray-900 dark:text-gray-100">
+                                        <div className="pt-6 border-t border-gray-100 dark:border-gray-700">
+                                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Room Assignment</p>
+                                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                                                 {student.roomNumber ? `Room ${student.roomNumber} (${student.roomType || 'Standard'})` : 'No Hostel Room Assigned'}
                                             </p>
                                         </div>
@@ -359,13 +434,171 @@ export default function StudentProfile() {
                                 </InfoCard>
                             </div>
                         </>
-                    ) : (
-                        <InfoCard className="flex flex-col items-center justify-center py-40 min-h-[600px]">
-                            <div className="w-24 h-24 bg-gray-50 dark:bg-gray-800 rounded-3xl flex items-center justify-center border border-gray-100 dark:border-gray-800 mb-6">
-                                <ClipboardList className="w-10 h-10 text-orange-200/50 dark:text-orange-500/10" />
+                    ) : activeTab === 'Fees' ? (
+                        <div className="space-y-6">
+                            {/* Financial Summary Cards */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <InfoCard className="p-6 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border-l-4 border-l-primary-500">
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Total Due</p>
+                                    <h3 className="text-2xl font-black text-gray-900 dark:text-white">
+                                        {loadingStatement ? '...' : formatCurrency(parseFloat(statement?.totalDue || '0'))}
+                                    </h3>
+                                </InfoCard>
+                                <InfoCard className="p-6 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border-l-4 border-l-emerald-500">
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Total Paid</p>
+                                    <h3 className="text-2xl font-black text-emerald-600">
+                                        {loadingStatement ? '...' : formatCurrency(parseFloat(statement?.totalPaid || '0'))}
+                                    </h3>
+                                </InfoCard>
+                                <InfoCard noBg className="p-6 bg-primary-600 border-none shadow-lg shadow-primary-500/20">
+                                    <p className="text-xs font-bold text-primary-100 uppercase tracking-widest mb-1">Net Balance</p>
+                                    <h3 className="text-2xl font-black text-white">
+                                        {loadingStatement ? '...' : formatCurrency(parseFloat(statement?.balance || '0'))}
+                                    </h3>
+                                </InfoCard>
                             </div>
-                            <h4 className="text-xl font-black text-gray-900 dark:text-white tracking-widest">{activeTab} Record</h4>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 font-bold max-w-xs text-center leading-relaxed">System is currently synchronizing historical data for this module. Please check back shortly.</p>
+
+                            {/* Assigned Fee Groups */}
+                            <InfoCard>
+                                <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700">
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-2 bg-primary-50 dark:bg-primary-900/30 rounded-lg">
+                                            <DollarSign className="w-5 h-5 text-primary-600" />
+                                        </div>
+                                        <h3 className="text-base font-bold text-gray-900 dark:text-white">Assigned Fee Components</h3>
+                                    </div>
+                                    <button 
+                                        onClick={handlePrintNotice}
+                                        className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-primary-500/20 transition-all active:scale-95"
+                                    >
+                                        <Printer className="w-4 h-4" />
+                                        Print Fee Notice
+                                    </button>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left">
+                                        <thead className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700">
+                                            <tr>
+                                                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Fee Head</th>
+                                                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Amount</th>
+                                                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Balance</th>
+                                                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Status</th>
+                                                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
+                                            {loadingStatement ? (
+                                                <tr><td colSpan={5} className="p-10 text-center text-gray-400">Loading components...</td></tr>
+                                            ) : statement?.assignedHeads?.length > 0 ? (
+                                                statement.assignedHeads.map((head: any) => (
+                                                    <tr key={head.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-900/30 transition-colors">
+                                                        <td className="px-6 py-4">
+                                                            <div className="flex flex-col">
+                                                                <span className="text-sm font-bold text-gray-900 dark:text-white">{head.name}</span>
+                                                                <span className="text-[10px] text-gray-400 font-black uppercase tracking-tighter">{head.group}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-4 text-right text-sm font-medium text-gray-500">{formatCurrency(parseFloat(head.amount))}</td>
+                                                        <td className="px-6 py-4 text-right text-sm font-black text-primary-600">{formatCurrency(parseFloat(head.balance))}</td>
+                                                        <td className="px-6 py-4 text-center">
+                                                            <span className={clsx(
+                                                                "px-2 py-1 rounded text-[10px] font-black uppercase tracking-tighter",
+                                                                parseFloat(head.balance) === 0 ? "bg-emerald-100 text-emerald-700" :
+                                                                parseFloat(head.balance) < parseFloat(head.amount) ? "bg-amber-100 text-amber-700" :
+                                                                "bg-red-100 text-red-700"
+                                                            )}>
+                                                                {parseFloat(head.balance) === 0 ? 'PAID' : parseFloat(head.balance) < parseFloat(head.amount) ? 'PARTIAL' : 'DUE'}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-4 text-right">
+                                                            <button 
+                                                                className="text-xs font-bold text-primary-600 hover:text-primary-700 flex items-center gap-1 ml-auto"
+                                                                onClick={() => {
+                                                                    // We'll implement individual notice printing if needed
+                                                                    window.alert("Generate individual fee notice feature coming soon!");
+                                                                }}
+                                                            >
+                                                                <Printer className="w-3.5 h-3.5" />
+                                                                Notice
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            ) : (
+                                                <tr><td colSpan={5} className="p-10 text-center text-gray-400 italic">No fees assigned.</td></tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </InfoCard>
+
+                            {/* Recent Payments */}
+                            <InfoCard>
+                                <SectionHeader title="Recent Transactions" icon={ClipboardList} />
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left">
+                                        <thead className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700">
+                                            <tr>
+                                                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Date</th>
+                                                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Reference</th>
+                                                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Method</th>
+                                                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Amount</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
+                                            {statement?.transactions?.length > 0 ? (
+                                                (() => {
+                                                    const start = (txPage - 1) * txItemsPerPage;
+                                                    const paginatedTxs = statement.transactions.slice(start, start + txItemsPerPage);
+                                                    return paginatedTxs.map((tx: any) => (
+                                                        <tr key={tx.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-900/30 transition-colors">
+                                                            <td className="px-6 py-4 text-sm font-medium text-gray-500">{new Date(tx.createdAt).toLocaleDateString()}</td>
+                                                            <td className="px-6 py-4 text-sm font-bold text-gray-900 dark:text-white uppercase">{tx.reference || 'N/A'}</td>
+                                                            <td className="px-6 py-4">
+                                                                <span className="text-[10px] font-black text-gray-400 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded uppercase">{tx.paymentMethod || 'CASH'}</span>
+                                                            </td>
+                                                            <td className="px-6 py-4 text-right text-sm font-black text-emerald-600">{formatCurrency(Math.abs(parseFloat(tx.amount)))}</td>
+                                                        </tr>
+                                                    ));
+                                                })()
+                                            ) : (
+                                                <tr><td colSpan={4} className="p-10 text-center text-gray-400 italic">No transactions found.</td></tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {statement?.transactions?.length > txItemsPerPage && (
+                                    <div className="p-6 border-t border-gray-50 dark:border-gray-800 flex items-center justify-between">
+                                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                                            Showing {Math.min(statement.transactions.length, (txPage - 1) * txItemsPerPage + 1)} to {Math.min(statement.transactions.length, txPage * txItemsPerPage)} of {statement.transactions.length}
+                                        </p>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => setTxPage(p => Math.max(1, p - 1))}
+                                                disabled={txPage === 1}
+                                                className="px-4 py-2 bg-gray-50 dark:bg-gray-900 text-gray-500 rounded-xl text-xs font-black uppercase tracking-widest disabled:opacity-50 transition-all border border-gray-100 dark:border-gray-800"
+                                            >
+                                                Prev
+                                            </button>
+                                            <button
+                                                onClick={() => setTxPage(p => Math.min(Math.ceil(statement.transactions.length / txItemsPerPage), p + 1))}
+                                                disabled={txPage === Math.ceil(statement.transactions.length / txItemsPerPage)}
+                                                className="px-4 py-2 bg-gray-50 dark:bg-gray-900 text-gray-500 rounded-xl text-xs font-black uppercase tracking-widest disabled:opacity-50 transition-all border border-gray-100 dark:border-gray-800"
+                                            >
+                                                Next
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </InfoCard>
+                        </div>
+                    ) : (
+                        <InfoCard className="flex flex-col items-center justify-center py-20 min-h-[400px]">
+                            <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800/50 rounded-2xl flex items-center justify-center mb-4">
+                                <ClipboardList className="w-8 h-8 text-gray-400" />
+                            </div>
+                            <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{activeTab} Record</h4>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-[280px]">System is currently synchronizing historical data for this module. Please check back shortly.</p>
                         </InfoCard>
                     )}
                 </div>

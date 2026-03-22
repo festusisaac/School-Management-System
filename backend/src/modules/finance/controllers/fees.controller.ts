@@ -116,6 +116,16 @@ export class FeesController {
     return this.feesService.updateGroup(id, dto);
   }
 
+  @Post('groups/:id/assign')
+  assignGroupBulk(@Param('id') id: string, @Body() dto: { classIds?: string[], sectionIds?: string[], categoryIds?: string[], studentIds?: string[], excludeIds?: string[] }) {
+    return this.feesService.bulkAssignFeeGroup(id, dto);
+  }
+
+  @Post('groups/:id/simulate')
+  simulateGroupBulk(@Param('id') id: string, @Body() dto: { classIds?: string[], sectionIds?: string[], categoryIds?: string[], studentIds?: string[] }) {
+    return this.feesService.simulateBulkFeeAssignment(id, dto);
+  }
+
 
   // --- Discounts ---
   @Post('discounts')
