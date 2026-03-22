@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import apiService from '../../services/api'
+import { useAuthStore } from '../../stores/authStore'
+import StudentDashboard from './StudentDashboard'
+
 import { Link } from 'react-router-dom'
 import {
   Users,
@@ -65,6 +68,10 @@ interface RecentActivity {
 const COLORS = ['#3B82F6', '#EC4899', '#10B981', '#F59E0B'];
 
 const DashboardPage: React.FC = () => {
+  const { user } = useAuthStore()
+  const userRole = (user?.roleObject?.name || user?.role || '').toLowerCase()
+  const isStudentOrParent = userRole === 'student' || userRole === 'parent'
+
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [activities, setActivities] = useState<RecentActivity | null>(null)
   const [charts, setCharts] = useState<BasicChartData | null>(null)
@@ -72,6 +79,10 @@ const DashboardPage: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (isStudentOrParent) {
+          setLoading(false);
+          return;
+      }
       try {
         const [statsData, activitiesData, chartsData] = await Promise.all([
           apiService.getAdminStats(),
@@ -97,6 +108,10 @@ const DashboardPage: React.FC = () => {
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
       </div>
     )
+  }
+
+  if (isStudentOrParent) {
+     return <StudentDashboard />;
   }
 
   // Fallback data for charts if API returns empty

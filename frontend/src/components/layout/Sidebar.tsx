@@ -8,12 +8,16 @@ import {
     X,
     School,
     BookOpen,
-    ChevronDown
+    ChevronDown,
+    User as UserIcon,
+    Calendar,
+    Clock
 } from 'lucide-react';
 import { useState } from 'react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useSystem } from '../../context/SystemContext';
+import { useAuthStore } from '../../stores/authStore';
 
 interface SidebarProps {
     isOpen: boolean;
@@ -23,16 +27,35 @@ interface SidebarProps {
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
     const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
     const { settings, getFullUrl } = useSystem();
+    const { user } = useAuthStore();
+    const userRole = (user?.roleObject?.name || user?.role || 'student').toLowerCase();
+    const isStudentOrParent = userRole === 'student' || userRole === 'parent';
 
     const toggleSubmenu = (path: string) => {
         if (!isOpen) {
-            // If collapsed, opening a submenu should probably expand the sidebar first or logic changes
-            // For now, let's keep it simple: expansion logic inside
+            // Expansion logic inside
         }
         setExpandedMenu(expandedMenu === path ? null : path);
     };
 
-    const navItems = [
+    const studentNavItems = [
+        { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
+        { label: 'My Profile', icon: UserIcon, path: `/students/profile/${user?.id || 'me'}` },
+        { label: 'Finance', icon: CreditCard, path: '/finance/payments' },
+        { label: 'Class Timetable', icon: Calendar, path: '/academics/class-timetable' },
+        { label: 'Attendance', icon: Clock, path: '/students/attendance' },
+        {
+            label: 'Examination',
+            icon: BookOpen,
+            path: '/examination',
+            children: [
+                { label: 'Admit Card', path: '/examination/setup/admit-cards' },
+                { label: 'Check Result', path: '/examination/processing/result-sheet' },
+            ]
+        }
+    ];
+
+    const adminNavItems = [
         { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
         {
             label: 'Academics',
@@ -99,7 +122,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         },
         {
             label: 'Examination',
-            icon: BookOpen, // Or FileText if imported
+            icon: BookOpen,
             path: '/examination',
             children: [
                 // Setup
@@ -143,6 +166,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             ]
         },
     ];
+
+    const navItems = isStudentOrParent ? studentNavItems : adminNavItems;
+
 
     return (
         <>

@@ -4,10 +4,13 @@ import { useToast } from '../../context/ToastContext';
 import { useSystem } from '../../context/SystemContext';
 import api from '../../services/api';
 import { Mail, Lock, LogIn, School, AlertCircle, Loader2 } from 'lucide-react';
+import { useAuthStore } from '../../stores/authStore';
+
 
 export default function LoginPage() {
   const navigate = useNavigate()
   const { settings, getFullUrl } = useSystem();
+  const { setToken, setRefreshToken, setUser } = useAuthStore();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -56,10 +59,10 @@ export default function LoginPage() {
       const response = await api.post<{ access_token: string; refresh_token: string; user: any }>('/auth/login', formData)
       console.log('Login successful:', response)
 
-      // Store tokens and user info
-      localStorage.setItem('access_token', response.access_token)
-      localStorage.setItem('refresh_token', response.refresh_token)
-      localStorage.setItem('user', JSON.stringify(response.user))
+      // Store tokens and user info in global state (which also handles localStorage)
+      setToken(response.access_token)
+      setRefreshToken(response.refresh_token)
+      setUser(response.user)
 
       // Redirect to dashboard
       navigate('/dashboard')

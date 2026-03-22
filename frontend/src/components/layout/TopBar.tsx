@@ -3,6 +3,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useSystem } from '../../context/SystemContext';
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../../stores/authStore';
 
 interface TopBarProps {
     onMenuClick: () => void;
@@ -15,17 +16,13 @@ export function TopBar({ onMenuClick }: TopBarProps) {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    // Get user info from localStorage
-    const userStr = localStorage.getItem('user');
-    const user = userStr ? JSON.parse(userStr) : null;
+    const { user, logout } = useAuthStore();
     const userName = user ? `${user.firstName} ${user.lastName}` : 'User';
-    const userRole = user ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Staff';
+    const userRole = user ? (user.roleObject?.name || user.role).charAt(0).toUpperCase() + (user.roleObject?.name || user.role).slice(1) : 'Staff';
     const initials = user ? `${user.firstName.charAt(0)}${user.lastName.charAt(0)}` : 'U';
 
     const handleLogout = () => {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('user');
+        logout();
         navigate('/login');
     };
 
