@@ -21,7 +21,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { formatCurrency } from '../../utils/currency';
-import api from '../../services/api';
+import api, { getFileUrl } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { clsx } from 'clsx';
 import { useNavigate } from 'react-router-dom';
@@ -392,7 +392,7 @@ const DebtorsListPage = () => {
                       <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-100 dark:border-gray-700">
                         {debtor.student.photo ? (
                           <img
-                            src={`${new URL(import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000').origin}/${debtor.student.photo}`}
+                            src={getFileUrl(debtor.student.photo)}
                             alt=""
                             className="w-full h-full object-cover"
                             onError={(e) => {
@@ -654,7 +654,7 @@ const DebtorsListPage = () => {
                               <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-800 overflow-hidden">
                                 {sib.student.photo ? (
                                   <img
-                                    src={`${new URL(import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000').origin}/${sib.student.photo}`}
+                                    src={getFileUrl(sib.student.photo)}
                                     className="w-full h-full object-cover"
                                     alt=""
                                     onError={(e) => {

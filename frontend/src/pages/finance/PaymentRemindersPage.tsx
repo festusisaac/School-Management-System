@@ -18,7 +18,7 @@ import {
   SendHorizontal
 } from 'lucide-react';
 import { formatCurrency } from '../../utils/currency';
-import api from '../../services/api';
+import api, { getFileUrl } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { clsx } from 'clsx';
 
@@ -282,9 +282,7 @@ const PaymentRemindersPage = () => {
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
-                              {d.student.photo ? (
-                                <img src={`${new URL((import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:3000').origin}/${d.student.photo}`} alt="" className="w-full h-full object-cover" />
-                              ) : <User size={14} className="text-gray-400" />}
+                                 <img src={getFileUrl(d.student.photo)} alt="" className="w-full h-full object-cover" />
                             </div>
                             <div>
                               <div className="text-sm font-bold text-gray-900 dark:text-white">{d.student.firstName} {d.student.lastName}</div>

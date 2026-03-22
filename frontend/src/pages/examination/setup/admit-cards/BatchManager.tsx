@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Search, UserCheck, Users, Printer } from 'lucide-react';
+import { getFileUrl } from '../../../../services/api';
 
 interface Props {
     students: any[];
@@ -11,13 +12,7 @@ const BatchManager: React.FC<Props> = ({ students, onPrintBatch, loading }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-    const getAbsoluteUrl = (url: string) => {
-        if (!url) return '';
-        if (url.startsWith('http')) return url;
-        const apiBaseUrl = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
-        const serverUrl = apiBaseUrl.split('/api')[0];
-        return `${serverUrl}/${url.startsWith('/') ? url.slice(1) : url}`;
-    };
+    const getAbsoluteUrl = (url: string) => getFileUrl(url || '');
 
     const filteredStudents = students.filter(s =>
         `${s.firstName} ${s.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||

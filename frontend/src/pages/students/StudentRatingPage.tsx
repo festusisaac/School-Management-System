@@ -7,7 +7,7 @@ import {
     Award,
     CheckCircle2
 } from 'lucide-react';
-import api from '../../services/api';
+import api, { getFileUrl } from '../../services/api';
 import RatingModal from '../../components/hr/RatingModal';
 import { useToast } from '../../context/ToastContext';
 
@@ -113,7 +113,7 @@ const StudentRatingPage: React.FC = () => {
                         <div key={teacher.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all p-6 flex flex-col items-center">
                             <div className="w-24 h-24 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 mb-4 overflow-hidden border-2 border-white shadow-inner">
                                 {teacher.photo ? (
-                                    <img src={teacher.photo.startsWith('http') ? teacher.photo : `http://localhost:3000${teacher.photo}`} alt="" className="w-full h-full object-cover" />
+                                    <img src={getFileUrl(teacher.photo)} alt="" className="w-full h-full object-cover" />
                                 ) : (
                                     <span className="text-2xl font-bold">{teacher.firstName[0]}{teacher.lastName[0]}</span>
                                 )}

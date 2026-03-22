@@ -3,6 +3,7 @@ import { Plus, Search, Users, UserCheck, UserX, Download, Upload, Trash2, Edit2,
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { staffService } from '../../services/hrService';
 import { systemService, Role } from '../../services/systemService';
+import { getFileUrl } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { useSystem } from '../../context/SystemContext';
 import { formatCurrency, CURRENCY_SYMBOL } from '../../utils/currency';
@@ -359,7 +360,7 @@ const StaffDirectoryPage = () => {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 {member.photo ? (
-                                                    <img src={member.photo.startsWith('http') ? member.photo : `http://localhost:3000${member.photo}`} alt="" className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-700" />
+                                                    <img src={getFileUrl(member.photo)} alt="" className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-700" />
                                                 ) : (
                                                     <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-full flex items-center justify-center font-bold">
                                                         {member.firstName[0]}{member.lastName[0]}
@@ -391,7 +392,7 @@ const StaffDirectoryPage = () => {
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <div className="flex justify-end gap-2">
                                                 {member.resume && (
-                                                    <a href={member.resume.startsWith('http') ? member.resume : `http://localhost:3000${member.resume}`} target="_blank" rel="noreferrer" className="p-1 text-green-600 hover:bg-green-50 rounded" title="Download Resume">
+                                                    <a href={getFileUrl(member.resume)} target="_blank" rel="noreferrer" className="p-1 text-green-600 hover:bg-green-50 rounded" title="Download Resume">
                                                         <FileText size={18} />
                                                     </a>
                                                 )}
@@ -577,7 +578,7 @@ const StaffDirectoryPage = () => {
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Photo</label>
                                                         <div className="flex items-center gap-3">
                                                             {editingStaff?.photo && (
-                                                                <img src={editingStaff.photo.startsWith('http') ? editingStaff.photo : `http://localhost:3000${editingStaff.photo}`} alt="Current" className="w-10 h-10 rounded-full object-cover border dark:border-gray-700" />
+                                                                <img src={getFileUrl(editingStaff.photo)} alt="Current" className="w-10 h-10 rounded-full object-cover border dark:border-gray-700" />
                                                             )}
                                                             <div className="relative flex-1 border border-gray-300 dark:border-gray-600 rounded-lg p-1 bg-gray-50 dark:bg-gray-700/50 flex items-center justify-center h-10">
                                                                 <input type="file" name="photo" accept="image/*" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
@@ -712,7 +713,7 @@ const StaffDirectoryPage = () => {
                                                             <div className="flex justify-between items-center mb-1">
                                                                 <label className="block text-sm font-semibold text-gray-900 dark:text-white">Resume</label>
                                                                 {editingStaff?.resume && (
-                                                                    <a href={`http://localhost:3000${editingStaff.resume}`} target="_blank" rel="noreferrer" className="text-xs text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1">
+                                                                    <a href={getFileUrl(editingStaff.resume)} target="_blank" rel="noreferrer" className="text-xs text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1">
                                                                         <Eye size={12} /> View Current
                                                                     </a>
                                                                 )}
@@ -733,7 +734,7 @@ const StaffDirectoryPage = () => {
                                                             <div className="flex justify-between items-center mb-1">
                                                                 <label className="block text-sm font-semibold text-gray-900 dark:text-white">Joining Letter</label>
                                                                 {editingStaff?.joiningLetter && (
-                                                                    <a href={`http://localhost:3000${editingStaff.joiningLetter}`} target="_blank" rel="noreferrer" className="text-xs text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1">
+                                                                    <a href={getFileUrl(editingStaff.joiningLetter)} target="_blank" rel="noreferrer" className="text-xs text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1">
                                                                         <Eye size={12} /> View Current
                                                                     </a>
                                                                 )}
@@ -754,7 +755,7 @@ const StaffDirectoryPage = () => {
                                                             <div className="flex justify-between items-center mb-1">
                                                                 <label className="block text-sm font-semibold text-gray-900 dark:text-white">Resignation Letter</label>
                                                                 {editingStaff?.resignationLetter && (
-                                                                    <a href={`http://localhost:3000${editingStaff.resignationLetter}`} target="_blank" rel="noreferrer" className="text-xs text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1">
+                                                                    <a href={getFileUrl(editingStaff.resignationLetter)} target="_blank" rel="noreferrer" className="text-xs text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1">
                                                                         <Eye size={12} /> View Current
                                                                     </a>
                                                                 )}
@@ -802,7 +803,7 @@ const StaffDirectoryPage = () => {
                                                             <div className="flex justify-between items-center mb-1">
                                                                 <label className="block text-sm font-semibold text-gray-900 dark:text-white">ID Proof</label>
                                                                 {editingStaff?.idProof && (
-                                                                    <a href={`http://localhost:3000${editingStaff.idProof}`} target="_blank" rel="noreferrer" className="text-xs text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1">
+                                                                    <a href={getFileUrl(editingStaff.idProof)} target="_blank" rel="noreferrer" className="text-xs text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1">
                                                                         <Eye size={12} /> View Current
                                                                     </a>
                                                                 )}
@@ -959,7 +960,7 @@ const StaffDirectoryPage = () => {
                                                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm text-center">
                                                     {viewingStaff.photo ? (
                                                         <img
-                                                            src={viewingStaff.photo.startsWith('http') ? viewingStaff.photo : `http://localhost:3000${viewingStaff.photo}`}
+                                                            src={getFileUrl(viewingStaff.photo)}
                                                             alt="Profile"
                                                             className="w-32 h-32 rounded-full object-cover mx-auto border-4 border-primary-50 dark:border-gray-700 shadow-md mb-4"
                                                         />
@@ -1147,7 +1148,7 @@ const StaffDirectoryPage = () => {
                                                     </h5>
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         {viewingStaff.resume && (
-                                                            <a href={`http://localhost:3000${viewingStaff.resume}`} target="_blank" rel="noreferrer" className="flex items-center justify-between p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 group">
+                                                            <a href={getFileUrl(viewingStaff.resume)} target="_blank" rel="noreferrer" className="flex items-center justify-between p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 group">
                                                                 <div className="flex items-center gap-2">
                                                                     <div className="w-8 h-8 rounded bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 dark:text-red-400 font-bold text-xs">PDF</div>
                                                                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Staff Resume</span>
@@ -1156,7 +1157,7 @@ const StaffDirectoryPage = () => {
                                                             </a>
                                                         )}
                                                         {viewingStaff.joiningLetter && (
-                                                            <a href={`http://localhost:3000${viewingStaff.joiningLetter}`} target="_blank" rel="noreferrer" className="flex items-center justify-between p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 group">
+                                                            <a href={getFileUrl(viewingStaff.joiningLetter)} target="_blank" rel="noreferrer" className="flex items-center justify-between p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 group">
                                                                 <div className="flex items-center gap-2">
                                                                     <div className="w-8 h-8 rounded bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 font-bold text-xs">DOC</div>
                                                                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Joining Letter</span>
@@ -1165,7 +1166,7 @@ const StaffDirectoryPage = () => {
                                                             </a>
                                                         )}
                                                         {viewingStaff.idProof && (
-                                                            <a href={`http://localhost:3000${viewingStaff.idProof}`} target="_blank" rel="noreferrer" className="flex items-center justify-between p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 group">
+                                                            <a href={getFileUrl(viewingStaff.idProof)} target="_blank" rel="noreferrer" className="flex items-center justify-between p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 group">
                                                                 <div className="flex items-center gap-2">
                                                                     <div className="w-8 h-8 rounded bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400 font-bold text-xs">ID</div>
                                                                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Identity Proof</span>
@@ -1174,7 +1175,7 @@ const StaffDirectoryPage = () => {
                                                             </a>
                                                         )}
                                                         {viewingStaff.certificates?.map((cert, idx) => (
-                                                            <a key={idx} href={`http://localhost:3000${cert}`} target="_blank" rel="noreferrer" className="flex items-center justify-between p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 group">
+                                                            <a key={idx} href={getFileUrl(cert)} target="_blank" rel="noreferrer" className="flex items-center justify-between p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 group">
                                                                 <div className="flex items-center gap-2">
                                                                     <div className="w-8 h-8 rounded bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center text-yellow-600 dark:text-yellow-400 font-bold text-xs">CERT</div>
                                                                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Certificate {idx + 1}</span>
@@ -1183,7 +1184,7 @@ const StaffDirectoryPage = () => {
                                                             </a>
                                                         ))}
                                                         {viewingStaff.otherDocuments?.map((doc, idx) => (
-                                                            <a key={idx} href={`http://localhost:3000${doc}`} target="_blank" rel="noreferrer" className="flex items-center justify-between p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 group">
+                                                            <a key={idx} href={getFileUrl(doc)} target="_blank" rel="noreferrer" className="flex items-center justify-between p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 group">
                                                                 <div className="flex items-center gap-2">
                                                                     <div className="w-8 h-8 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-400 font-bold text-xs">DOC</div>
                                                                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Other Doc {idx + 1}</span>

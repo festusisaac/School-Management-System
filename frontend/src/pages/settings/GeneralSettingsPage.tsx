@@ -3,6 +3,7 @@ import { Save, Upload, Image as ImageIcon, Globe, Settings, MapPin, Calendar, Cl
 import { useToast } from '../../context/ToastContext';
 import { useSystem } from '../../context/SystemContext';
 import { systemService, SystemSetting, AcademicSession, AcademicTerm } from '../../services/systemService';
+import { getFileUrl } from '../../services/api';
 import { twMerge } from 'tailwind-merge';
 
 // Helper for file uploads
@@ -26,14 +27,7 @@ const LogoUploader = ({
     const toast = useToast();
     const { settings } = useSystem();
 
-    const getFullUrl = (url?: string) => {
-        if (!url) return '';
-        if (url.startsWith('http')) return url;
-        const cleanUrl = url.startsWith('/') ? url : `/${url}`;
-        const apiBaseUrl = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
-        const serverUrl = apiBaseUrl.split('/api')[0];
-        return `${serverUrl}${cleanUrl}`;
-    };
+    const getFullUrl = (url?: string) => getFileUrl(url || '');
 
     useEffect(() => {
         if (currentUrl) {

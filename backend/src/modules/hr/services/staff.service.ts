@@ -21,7 +21,8 @@ export class StaffService {
 
     async findAll(filters?: StaffFilters): Promise<Staff[]> {
         const query = this.staffRepository.createQueryBuilder('staff')
-            .leftJoinAndSelect('staff.department', 'department');
+            .leftJoinAndSelect('staff.department', 'department')
+            .leftJoinAndSelect('staff.roleObject', 'roleObject');
 
         // Apply filters
         if (filters?.search) {
@@ -52,7 +53,7 @@ export class StaffService {
     async findOne(id: string): Promise<Staff> {
         const staff = await this.staffRepository.findOne({
             where: { id },
-            relations: ['department', 'attendanceRecords', 'leaveRequests', 'payrollRecords'],
+            relations: ['department', 'roleObject', 'attendanceRecords', 'leaveRequests', 'payrollRecords'],
         });
 
         if (!staff) {

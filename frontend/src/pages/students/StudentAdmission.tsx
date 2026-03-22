@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Save, Upload, Search, Users, X, Plus, FileText, Trash2, AlertCircle } from 'lucide-react';
 import { clsx } from 'clsx';
-import api from '../../services/api';
+import api, { getFileUrl } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { useSystem } from '../../context/SystemContext';
 
-const API_Base_URL = 'http://localhost:3000';
 
 export default function StudentAdmission() {
     const navigate = useNavigate();
@@ -260,7 +259,7 @@ export default function StudentAdmission() {
                             email: student.email || '',
                             admissionDate: student.admissionDate ? new Date(student.admissionDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
                             studentPhoto: null,
-                            studentPhotoPreview: student.studentPhoto ? `${API_Base_URL}/${student.studentPhoto}` : '',
+                            studentPhotoPreview: student.studentPhoto ? getFileUrl(student.studentPhoto) : '',
                             // Parent
                             fatherName: student.fatherName || '',
                             fatherPhone: student.fatherPhone || '',

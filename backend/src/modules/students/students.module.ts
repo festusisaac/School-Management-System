@@ -9,7 +9,10 @@ import { DeactivateReason } from './entities/deactivate-reason.entity';
 import { OnlineAdmission } from './entities/online-admission.entity';
 import { Parent } from './entities/parent.entity';
 import { StudentDocument } from './entities/student-document.entity';
+import { Role } from '../auth/entities/role.entity';
 import { FinanceModule } from '../finance/finance.module';
+import { SystemModule } from '../system/system.module';
+import { CommunicationModule } from '../communication/communication.module';
 
 @Module({
   imports: [
@@ -20,9 +23,12 @@ import { FinanceModule } from '../finance/finance.module';
       StudentCategory,
       StudentHouse,
       DeactivateReason,
-      OnlineAdmission
+      OnlineAdmission,
+      Role
     ]),
     FinanceModule,
+    SystemModule,
+    CommunicationModule,
   ],
   controllers: [StudentsController],
   providers: [StudentsService],

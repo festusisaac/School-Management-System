@@ -17,6 +17,9 @@ import { OnlineAdmission } from '../entities/online-admission.entity';
 import { Parent } from '../entities/parent.entity';
 import { StudentDocument } from '../entities/student-document.entity';
 import { FeesService } from '../../finance/services/fees.service';
+import { UsersService } from '../../system/services/users.service';
+import { Role } from '../../auth/entities/role.entity';
+import { EmailService } from '../../communication/email.service';
 
 @Injectable()
 export class StudentsService {
@@ -35,7 +38,11 @@ export class StudentsService {
         private deactivateReasonRepository: Repository<DeactivateReason>,
         @InjectRepository(OnlineAdmission)
         private onlineAdmissionRepository: Repository<OnlineAdmission>,
+        @InjectRepository(Role)
+        private roleRepository: Repository<Role>,
         private feesService: FeesService,
+        private usersService: UsersService,
+        private emailService: EmailService,
     ) { }
 
     // --- Students ---
@@ -116,6 +123,57 @@ export class StudentsService {
         // --- Simplified Fee Allocation for MVP ---
         if (feeGroupIds && Array.isArray(feeGroupIds) && feeGroupIds.length > 0) {
             await this.feesService.assignFeesToStudent(savedStudent.id, feeGroupIds, feeExclusions);
+        }
+
+        // 5. Automated User Creation
+        try {
+            const studentRole = await this.roleRepository.findOne({ where: { name: 'Student' } });
+            const parentRole = await this.roleRepository.findOne({ where: { name: 'Parent' } });
+
+            // Create Student User (Prioritize email, fallback to admission no)
+            const studentEmail = savedStudent.email || `${savedStudent.admissionNo.toLowerCase()}@student.sms`;
+            const studentUser = await this.usersService.findOrCreateUser(studentEmail, {
+                firstName: savedStudent.firstName,
+                lastName: savedStudent.lastName || '',
+                password: `Student@${savedStudent.admissionNo}`,
+                role: 'student',
+                roleId: studentRole?.id
+            });
+            await this.studentsRepository.update(savedStudent.id, { userId: studentUser.id });
+
+            // Create Parent User (Prioritize guardian email, fallback to phone)
+            const parentEmail = parent?.guardianEmail || (parent?.guardianPhone ? `${parent.guardianPhone.replace(/\s+/g, '')}@parent.sms` : null);
+            
+            if (parent && parentEmail && !parent.userId) {
+                const parentUser = await this.usersService.findOrCreateUser(parentEmail, {
+                    firstName: parent.guardianName || parent.fatherName || 'Parent',
+                    lastName: '',
+                    password: `Parent@${parent.guardianPhone?.slice(-4) || '1234'}`,
+                    role: 'parent',
+                    roleId: parentRole?.id
+                });
+                await this.parentRepository.update(parent.id, { userId: parentUser.id });
+                
+                // Send Parent Welcome Email
+                await this.emailService.sendAdmissionWelcomeEmail(
+                    parentUser.email,
+                    parentUser.firstName,
+                    parentUser.email,
+                    `Parent@${parent.guardianPhone?.slice(-4) || '1234'}`,
+                    'Parent'
+                );
+            }
+
+            // Send Student Welcome Email
+            await this.emailService.sendAdmissionWelcomeEmail(
+                studentUser.email,
+                studentUser.firstName,
+                studentUser.email,
+                `Student@${savedStudent.admissionNo}`,
+                'Student'
+            );
+        } catch (error) {
+            console.error('Failed to auto-provision user accounts or send welcome emails:', error);
         }
 
         return savedStudent;

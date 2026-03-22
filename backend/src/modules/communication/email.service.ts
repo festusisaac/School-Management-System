@@ -78,6 +78,51 @@ export class EmailService {
     }
   }
 
+  async sendAdmissionWelcomeEmail(
+    email: string,
+    firstName: string,
+    username: string,
+    password: string,
+    role: 'Student' | 'Parent'
+  ): Promise<boolean> {
+    try {
+      const schoolName = await this.getSchoolName();
+      const loginUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+      const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px;">
+          <h2 style="color: #2c3e50;">Welcome to ${schoolName}!</h2>
+          <p>Hi ${firstName},</p>
+          <p>Your ${role} account has been successfully created. You can now log in to the school portal to view your details, fees, and results.</p>
+          
+          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 6px; margin: 20px 0;">
+            <p style="margin: 0;"><strong>Username:</strong> ${username}</p>
+            <p style="margin: 5px 0;"><strong>Default Password:</strong> ${password}</p>
+            <p style="margin: 15px 0 0 0;">
+              <a href="${loginUrl}/login" style="display: inline-block; background-color: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">
+                Log In to Portal
+              </a>
+            </p>
+          </div>
+          
+          <p style="color: #e74c3c;"><strong>Note:</strong> For security reasons, please change your password after your first login.</p>
+          <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+          <p style="color: #666; font-size: 12px; text-align: center;">
+            ${schoolName} Management System
+          </p>
+        </div>
+      `;
+
+      return await this.sendEmail({
+        to: email,
+        subject: `Welcome to ${schoolName} - Your Login Details`,
+        html,
+      });
+    } catch (error) {
+      this.logger.error(`Failed to send welcome email to ${email}:`, error);
+      return false;
+    }
+  }
+
   async sendPasswordResetEmail(email: string, firstName: string, resetLink: string): Promise<boolean> {
     try {
       const schoolName = await this.getSchoolName();

@@ -17,6 +17,7 @@ export class RolesPermissionsService implements OnModuleInit {
   async onModuleInit() {
     await this.renameAdminToSuperAdmin();
     await this.seedDefaultRoles();
+    await this.seedSelfServicePermissions();
   }
 
   private async renameAdminToSuperAdmin() {
@@ -41,18 +42,58 @@ export class RolesPermissionsService implements OnModuleInit {
   }
 
   private async seedDefaultRoles() {
-    const count = await this.roleRepository.count();
-    if (count === 0) {
-      console.log('🌱 No roles found, seeding default roles...');
-      const defaultRoles = [
-        { name: 'Super Administrator', description: 'Complete system access and management', isSystem: true },
-      ];
+    const defaultRoles = [
+      { name: 'Super Administrator', description: 'Complete system access and management', isSystem: true },
+      { name: 'Student', description: 'Regular student access', isSystem: true },
+      { name: 'Parent', description: 'Parent/Guardian access', isSystem: true },
+    ];
 
-      for (const roleData of defaultRoles) {
+    for (const roleData of defaultRoles) {
+      const existing = await this.roleRepository.findOne({ where: { name: roleData.name } });
+      if (!existing) {
+        console.log(`🌱 Seeding default role: ${roleData.name}`);
         const role = this.roleRepository.create(roleData);
         await this.roleRepository.save(role);
       }
-      console.log('✓ Default roles seeded successfully');
+    }
+  }
+
+  private async seedSelfServicePermissions() {
+    const studentPermissions = [
+      { slug: 'students:view_self', name: 'View Own Profile', module: 'Students' },
+      { slug: 'finance:view_self_fees', name: 'View Own Fees', module: 'Finance' },
+      { slug: 'exams:view_self_results', name: 'View Own Results', module: 'Examination' },
+    ];
+
+    const parentPermissions = [
+      { slug: 'students:view_children', name: 'View Children Profiles', module: 'Students' },
+      { slug: 'finance:view_children_fees', name: 'View Children Fees', module: 'Finance' },
+      { slug: 'exams:view_children_results', name: 'View Children Results', module: 'Examination' },
+    ];
+
+    const allSelfService = [...studentPermissions, ...parentPermissions];
+    for (const p of allSelfService) {
+      await this.createPermission(p.slug, p.name, p.module);
+    }
+
+    // Assign to Student Role
+    const studentRole = await this.roleRepository.findOne({ where: { name: 'Student' }, relations: ['permissions'] });
+    if (studentRole) {
+      const perms = await this.permissionRepository.find({
+        where: { slug: In(['students:view_self', 'finance:view_self_fees', 'exams:view_self_results', 'academics:view_timetable', 'communication:notice_board']) }
+      });
+      studentRole.permissions = perms;
+      await this.roleRepository.save(studentRole);
+    }
+
+    // Assign to Parent Role
+    const parentRole = await this.roleRepository.findOne({ where: { name: 'Parent' }, relations: ['permissions'] });
+    if (parentRole) {
+      const perms = await this.permissionRepository.find({
+        where: { slug: In(['students:view_children', 'finance:view_children_fees', 'exams:view_children_results', 'communication:notice_board']) }
+      });
+      parentRole.permissions = perms;
+      await this.roleRepository.save(parentRole);
     }
   }
 

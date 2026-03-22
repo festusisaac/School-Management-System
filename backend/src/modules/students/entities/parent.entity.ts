@@ -42,6 +42,9 @@ export class Parent {
     @Column({ nullable: true })
     emergencyContact?: string;
 
+    @Column({ type: 'uuid', nullable: true })
+    userId?: string;
+
     @OneToMany(() => Student, (student) => student.parent)
     students?: Student[];
 

@@ -3,7 +3,7 @@ import { DataTable } from '../../components/ui/data-table';
 import { ColumnDef } from '@tanstack/react-table';
 import { Eye, Edit, Trash2, LayoutGrid, List as ListIcon, Search, MoreVertical, Phone } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import api from '../../services/api';
+import api, { getFileUrl } from '../../services/api';
 import { clsx } from 'clsx';
 
 // Type definition matching the backend entity
@@ -99,7 +99,7 @@ export default function StudentDirectory() {
                 <div className="flex items-center gap-3">
                     {row.original.studentPhoto ? (
                         <img
-                            src={`http://localhost:3000/${row.original.studentPhoto}`}
+                            src={getFileUrl(row.original.studentPhoto)}
                             alt={row.original.firstName}
                             className="w-9 h-9 rounded-full object-cover shadow-sm border border-gray-200"
                         />
@@ -321,7 +321,7 @@ export default function StudentDirectory() {
                             <div className="flex flex-col items-center">
                                 {student.studentPhoto ? (
                                     <img
-                                        src={`http://localhost:3000/${student.studentPhoto}`}
+                                        src={getFileUrl(student.studentPhoto)}
                                         alt={student.firstName}
                                         className="w-20 h-20 rounded-full object-cover mb-4 shadow-sm border-2 border-white dark:border-gray-800"
                                     />

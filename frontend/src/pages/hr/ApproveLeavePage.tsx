@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Search, Calendar, CheckCircle, XCircle, FileText } from 'lucide-react';
-import api from '../../services/api';
+import api, { getFileUrl } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 
 interface LeaveRequest {
@@ -226,7 +226,7 @@ const ApproveLeavePage = () => {
                                         </div>
                                     </div>
                                     <a
-                                        href={`http://localhost:3000${selectedRequest.supportingDocument}`}
+                                        href={getFileUrl(selectedRequest.supportingDocument)}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="px-4 py-2 bg-white dark:bg-gray-800 text-primary-600 dark:text-primary-400 text-xs font-black uppercase tracking-wider rounded-lg border border-primary-200 dark:border-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition shadow-sm flex items-center gap-2"

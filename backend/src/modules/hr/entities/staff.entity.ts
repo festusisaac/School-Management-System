@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { Department } from './department.entity';
+import { Role } from '../../auth/entities/role.entity';
 import { StaffAttendance } from './staff-attendance.entity';
 import { LeaveRequest } from './leave-request.entity';
 import { Payroll } from './payroll.entity';
@@ -153,6 +154,13 @@ export class Staff {
     // --- Extended Fields ---
     @Column({ nullable: true })
     role!: string;
+
+    @Column({ type: 'uuid', nullable: true, name: 'role_id' })
+    roleId!: string;
+
+    @ManyToOne(() => Role)
+    @JoinColumn({ name: 'role_id' })
+    roleObject!: Role;
 
     @Column({ name: 'father_name', nullable: true })
     fatherName!: string;

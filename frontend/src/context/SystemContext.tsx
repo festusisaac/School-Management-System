@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { systemService, SystemSetting } from '../services/systemService';
+import { getFileUrl } from '../services/api';
 import { updateCurrencyConfig, formatCurrency as genericFormatCurrency, formatCurrencyCompact as genericFormatCurrencyCompact } from '../utils/currency';
 
 interface SchoolInfo {
@@ -99,14 +100,7 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             }
             
             // Generate full URL internally to avoid depending on getFullUrl which needs to be in useCallback scope
-            const buildUrl = (url?: string) => {
-                if (!url) return '';
-                if (url.startsWith('http')) return url;
-                const cleanUrl = url.startsWith('/') ? url : `/${url}`;
-                const apiBaseUrl = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
-                const serverUrl = apiBaseUrl.split('/api')[0];
-                return `${serverUrl}${cleanUrl}`;
-            };
+            const buildUrl = (url?: string) => getFileUrl(url || '');
 
             // Update Tab Title
             if (data?.schoolName) {
@@ -132,14 +126,7 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         refreshSettings();
     }, [refreshSettings]);
 
-    const getFullUrl = (url?: string) => {
-        if (!url) return '';
-        if (url.startsWith('http')) return url;
-        const cleanUrl = url.startsWith('/') ? url : `/${url}`;
-        const apiBaseUrl = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
-        const serverUrl = apiBaseUrl.split('/api')[0];
-        return `${serverUrl}${cleanUrl}`;
-    };
+    const getFullUrl = (url?: string) => getFileUrl(url || '');
 
     const formatCurrency = useCallback((amount: number | string | undefined | null, includeSymbol: boolean = true) => {
         return genericFormatCurrency(amount, includeSymbol);

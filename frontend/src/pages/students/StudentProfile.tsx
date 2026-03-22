@@ -8,7 +8,7 @@ import {
     FileText, GraduationCap, ClipboardList, Clock,
     QrCode as QrCodeIcon, Barcode as BarcodeIcon, ShieldAlert, ShieldCheck
 } from 'lucide-react';
-import api from '../../services/api';
+import api, { getFileUrl } from '../../services/api';
 
 export default function StudentProfile() {
     const { id } = useParams();
@@ -130,7 +130,7 @@ export default function StudentProfile() {
                         <div className="relative mb-6">
                             <div className="w-40 h-40 rounded-[2.5rem] bg-gray-50 dark:bg-gray-800 overflow-hidden ring-4 ring-gray-100 dark:ring-gray-800 shadow-xl">
                                 {student.studentPhoto ? (
-                                    <img src={`http://localhost:3000/${student.studentPhoto}`} alt={student.firstName} className="w-full h-full object-cover" />
+                                    <img src={getFileUrl(student.studentPhoto)} alt={student.firstName} className="w-full h-full object-cover" />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-5xl font-black text-gray-200 dark:text-gray-700">
                                         {student.firstName[0]}{student.lastName?.[0]}
@@ -203,7 +203,7 @@ export default function StudentProfile() {
                                     >
                                         <div className="w-12 h-12 rounded-xl bg-gray-50 dark:bg-gray-800 overflow-hidden ring-1 ring-gray-100 dark:ring-gray-700">
                                             {sibling.studentPhoto ? (
-                                                <img src={`http://localhost:3000/${sibling.studentPhoto}`} alt={sibling.firstName} className="w-full h-full object-cover" />
+                                                <img src={getFileUrl(sibling.studentPhoto)} alt={sibling.firstName} className="w-full h-full object-cover" />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center text-xs font-black text-gray-400 uppercase">
                                                     {sibling.firstName[0]}
@@ -384,7 +384,7 @@ export default function StudentProfile() {
                         {/* Photo */}
                         <div className="w-24 h-24 border-2 border-black flex-shrink-0 p-1">
                             {student.studentPhoto ? (
-                                <img src={`http://localhost:3000/${student.studentPhoto}`} alt={student.firstName} className="w-full h-full object-cover" />
+                                <img src={getFileUrl(student.studentPhoto)} alt={student.firstName} className="w-full h-full object-cover" />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold uppercase text-[8px] text-center font-serif">Passport Photo</div>
                             )}

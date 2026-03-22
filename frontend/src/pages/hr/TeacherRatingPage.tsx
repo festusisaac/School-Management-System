@@ -4,7 +4,7 @@ import {
     Star,
     Calendar,
 } from 'lucide-react';
-import api from '../../services/api';
+import api, { getFileUrl } from '../../services/api';
 import RatingModal from '../../components/hr/RatingModal';
 import { format } from 'date-fns';
 import { useToast } from '../../context/ToastContext';
@@ -110,7 +110,7 @@ export default function TeacherRatingPage() {
                 <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full bg-primary-50 dark:bg-primary-900/40 flex items-center justify-center text-primary-600 dark:text-primary-400 font-bold border-2 border-white dark:border-gray-800 shadow-sm overflow-hidden">
                         {row.original.teacher.photo ? (
-                            <img src={row.original.teacher.photo.startsWith('http') ? row.original.teacher.photo : `http://localhost:3000${row.original.teacher.photo}`} alt="" className="w-full h-full object-cover" />
+                            <img src={getFileUrl(row.original.teacher.photo)} alt="" className="w-full h-full object-cover" />
                         ) : (
                             <span className="text-sm">{row.original.teacher.firstName[0]}{row.original.teacher.lastName[0]}</span>
                         )}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Upload, X, Loader2 } from 'lucide-react';
-import api from '../../../../services/api';
+import api, { getFileUrl } from '../../../../services/api';
 import { useToast } from '../../../../context/ToastContext';
 import { useSystem } from '../../../../context/SystemContext';
 
@@ -16,10 +16,6 @@ const ImageUpload: React.FC<Props> = ({ value, onChange, label, description }) =
     const { showError, showSuccess, showWarning } = useToast();
     const { settings } = useSystem();
 
-    // Construct the server base URL from environment variable
-    // If VITE_API_BASE_URL is 'http://localhost:3000/api/v1', we extract 'http://localhost:3000'
-    const apiBaseUrl = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
-    const SERVER_URL = apiBaseUrl.split('/api')[0];
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -44,7 +40,7 @@ const ImageUpload: React.FC<Props> = ({ value, onChange, label, description }) =
                 if (response && response.url) {
                     const fullUrl = response.url.startsWith('http')
                         ? response.url
-                        : `${SERVER_URL}/${response.url}`;
+                        : getFileUrl(response.url);
 
                     onChange(fullUrl);
                     showSuccess('Image uploaded successfully');

@@ -1,4 +1,5 @@
 import React from 'react';
+import { getFileUrl } from '../../../../services/api';
 
 
 export interface Section {
@@ -31,14 +32,7 @@ const AdmitCardRenderer: React.FC<Props> = ({ sections, config, student, schedul
         watermarkText = ''
     } = config || {};
 
-    const getAbsoluteUrl = (url: string) => {
-        if (!url) return '';
-        if (url.startsWith('http')) return url;
-
-        const apiBaseUrl = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
-        const serverUrl = apiBaseUrl.split('/api')[0];
-        return `${serverUrl}/${url.startsWith('/') ? url.slice(1) : url}`;
-    };
+    const getAbsoluteUrl = (url: string) => getFileUrl(url || '');
 
     const renderSection = (section: Section) => {
         switch (section.type) {
