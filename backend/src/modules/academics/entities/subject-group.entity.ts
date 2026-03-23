@@ -24,8 +24,8 @@ export class SubjectGroup {
     @Column({ type: 'boolean', default: true })
     isActive!: boolean;
 
-    @Column({ nullable: true })
-    tenantId?: string;
+    @Column({ nullable: false })
+    tenantId!: string;
 
     @CreateDateColumn()
     createdAt!: Date;

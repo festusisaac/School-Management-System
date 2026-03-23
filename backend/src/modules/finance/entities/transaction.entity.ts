@@ -44,8 +44,8 @@ export class Transaction {
   feeGroup?: FeeGroup;
 
   @Index()
-  @Column({ type: 'varchar', nullable: true })
-  tenantId?: string;
+  @Column({ type: 'varchar', nullable: false })
+  tenantId!: string;
 
   @Column({ type: 'varchar', nullable: true })
   reference!: string | null;

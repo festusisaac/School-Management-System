@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { Student } from './student.entity';
 
 @Entity('student_documents')
@@ -21,6 +21,10 @@ export class StudentDocument {
     @ManyToOne(() => Student, (student) => student.documents, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'studentId' })
     student?: Student;
+
+    @Index()
+    @Column({ nullable: false })
+    tenantId!: string;
 
     @CreateDateColumn()
     createdAt!: Date;

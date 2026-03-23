@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany, Index } from 'typeorm';
 import { Department } from './department.entity';
 import { Role } from '../../auth/entities/role.entity';
 import { StaffAttendance } from './staff-attendance.entity';
@@ -220,6 +220,10 @@ export class Staff {
 
     @OneToMany(() => Payroll, payroll => payroll.staff)
     payrollRecords!: Payroll[];
+
+    @Index()
+    @Column({ nullable: false })
+    tenantId!: string;
 
     @CreateDateColumn({ name: 'created_at' })
     createdAt!: Date;

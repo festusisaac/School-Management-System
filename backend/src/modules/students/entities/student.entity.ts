@@ -188,15 +188,14 @@ export class Student {
   @Column({ nullable: true })
   discountProfileId?: string;
 
-  @Column({ nullable: true, type: 'text' })
-  note?: string;
 
-  @Column({ nullable: true })
-  previousSchool?: string;
+    @Index()
+    @Column({ nullable: false })
+    tenantId!: string;
 
-  @CreateDateColumn()
-  createdAt!: Date;
+    @CreateDateColumn()
+    createdAt!: Date;
 
-  @UpdateDateColumn()
-  updatedAt!: Date;
+    @UpdateDateColumn()
+    updatedAt!: Date;
 }

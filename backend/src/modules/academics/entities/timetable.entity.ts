@@ -54,8 +54,8 @@ export class Timetable {
     @Column({ type: 'varchar', nullable: true })
     roomNumber!: string | null; // Optional classroom/room number
 
-    @Column({ nullable: true })
-    tenantId?: string;
+    @Column({ nullable: false })
+    tenantId!: string;
 
     @CreateDateColumn()
     createdAt!: Date;

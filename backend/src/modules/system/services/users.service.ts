@@ -118,7 +118,7 @@ export class UsersService implements OnModuleInit {
 
   // Helper for Staff/Student integration
   async findOrCreateUser(email: string, details: Partial<CreateUserDto>): Promise<User> {
-    let user = await this.findByEmail(email);
+    const user = await this.findByEmail(email);
     
     if (user) {
       // Update existing user role if provided

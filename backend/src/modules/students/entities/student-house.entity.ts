@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 
 @Entity('student_houses')
 export class StudentHouse {
@@ -10,6 +10,10 @@ export class StudentHouse {
 
     @Column({ nullable: true })
     description?: string;
+
+    @Index()
+    @Column({ nullable: false })
+    tenantId!: string;
 
     @CreateDateColumn()
     createdAt!: Date;

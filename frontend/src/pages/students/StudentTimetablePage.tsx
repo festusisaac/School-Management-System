@@ -51,7 +51,7 @@ export default function StudentTimetablePage() {
         setLoading(true);
         try {
             // 1. Get Student Profile to find Class/Section
-            const studentData = await api.getStudentById(user.id);
+            const studentData = await api.getStudentProfile();
             setStudent(studentData);
 
             if (studentData.classId) {

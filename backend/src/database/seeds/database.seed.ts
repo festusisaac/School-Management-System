@@ -36,6 +36,7 @@ export class SeedDatabase {
         lastName: 'Administrator',
         role: 'super administrator',
         isActive: true,
+        tenantId: '00000000-0000-0000-0000-000000000001',
       });
       users.push(admin);
 

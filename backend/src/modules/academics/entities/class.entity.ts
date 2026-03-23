@@ -40,8 +40,8 @@ export class Class {
     @JoinColumn({ name: 'classTeacherId' })
     classTeacher?: Staff;
 
-    @Column({ nullable: true })
-    tenantId?: string;
+    @Column({ nullable: false })
+    tenantId!: string;
 
     @CreateDateColumn()
     createdAt!: Date;

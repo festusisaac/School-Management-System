@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
 import { ClassSubject } from '../entities/class-subject.entity';
+import { Class } from '../entities/class.entity';
 import { CreateClassSubjectDto, BulkAssignClassSubjectsDto, UpdateClassSubjectDto } from '../dto/class-subject.dto';
 
 @Injectable()
@@ -9,6 +10,8 @@ export class ClassSubjectService {
     constructor(
         @InjectRepository(ClassSubject)
         private classSubjectRepository: Repository<ClassSubject>,
+        @InjectRepository(Class)
+        private classRepository: Repository<Class>,
     ) { }
 
     async findByClass(classId: string, tenantId: string, sectionId?: string): Promise<ClassSubject[]> {
@@ -45,13 +48,23 @@ export class ClassSubjectService {
     }
 
     async create(dto: CreateClassSubjectDto, tenantId: string): Promise<ClassSubject> {
+        // Fallback: If tenantId is missing from user, get it from the class
+        let targetTenantId = tenantId;
+        if (!targetTenantId) {
+            const cls = await this.classRepository.findOne({ where: { id: dto.classId } });
+            if (!cls?.tenantId) {
+                throw new BadRequestException('Tenant ID could not be determined for this class');
+            }
+            targetTenantId = cls.tenantId;
+        }
+
         // Check if already exists
         const existing = await this.classSubjectRepository.findOne({
             where: {
                 classId: dto.classId,
                 sectionId: dto.sectionId || IsNull(),
                 subjectId: dto.subjectId,
-                tenantId,
+                tenantId: targetTenantId,
             },
         });
 
@@ -61,15 +74,25 @@ export class ClassSubjectService {
 
         const classSubject = this.classSubjectRepository.create({
             ...dto,
-            tenantId,
+            tenantId: targetTenantId,
         });
 
         const saved = await this.classSubjectRepository.save(classSubject);
-        return this.findOne(saved.id, tenantId);
+        return this.findOne(saved.id, targetTenantId);
     }
 
     async bulkAssign(dto: BulkAssignClassSubjectsDto, tenantId: string): Promise<ClassSubject[]> {
         const results: ClassSubject[] = [];
+
+        // Fallback: If tenantId is missing from user, get it from the class
+        let targetTenantId = tenantId;
+        if (!targetTenantId) {
+            const cls = await this.classRepository.findOne({ where: { id: dto.classId } });
+            if (!cls?.tenantId) {
+                throw new BadRequestException('Tenant ID could not be determined for this class');
+            }
+            targetTenantId = cls.tenantId;
+        }
 
         for (const subjectId of dto.subjectIds) {
             // Check if already exists
@@ -78,7 +101,7 @@ export class ClassSubjectService {
                     classId: dto.classId,
                     sectionId: dto.sectionId || IsNull(),
                     subjectId,
-                    tenantId,
+                    tenantId: targetTenantId,
                 },
             });
 
@@ -88,11 +111,11 @@ export class ClassSubjectService {
                     sectionId: dto.sectionId,
                     subjectId,
                     isCore: dto.isCore ?? true,
-                    tenantId,
+                    tenantId: targetTenantId,
                 });
 
                 const saved = await this.classSubjectRepository.save(classSubject);
-                results.push(await this.findOne(saved.id, tenantId));
+                results.push(await this.findOne(saved.id, targetTenantId));
             }
         }
 

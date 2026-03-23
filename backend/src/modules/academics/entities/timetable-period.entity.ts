@@ -33,8 +33,8 @@ export class TimetablePeriod {
     @Column('int')
     periodOrder!: number;
 
-    @Column({ nullable: true })
-    tenantId?: string;
+    @Column({ nullable: false })
+    tenantId!: string;
 
     @CreateDateColumn()
     createdAt: Date = new Date();

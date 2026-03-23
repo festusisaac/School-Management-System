@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 
 @Entity('online_admissions')
 export class OnlineAdmission {
@@ -40,6 +40,10 @@ export class OnlineAdmission {
 
     @Column({ default: 'pending' })
     status!: string;
+
+    @Index()
+    @Column({ nullable: false })
+    tenantId!: string;
 
     @CreateDateColumn()
     createdAt!: Date;

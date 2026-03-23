@@ -10,17 +10,17 @@ export class DepartmentService {
         private readonly departmentRepository: Repository<Department>,
     ) { }
 
-    async findAll(): Promise<Department[]> {
+    async findAll(tenantId: string): Promise<Department[]> {
         return this.departmentRepository.find({
-            where: { isActive: true },
+            where: { isActive: true, tenantId },
             relations: ['staff', 'headOfDepartment'],
             order: { name: 'ASC' },
         });
     }
 
-    async findOne(id: string): Promise<Department> {
+    async findOne(id: string, tenantId: string): Promise<Department> {
         const department = await this.departmentRepository.findOne({
-            where: { id },
+            where: { id, tenantId },
             relations: ['staff', 'headOfDepartment'],
         });
 
@@ -31,10 +31,10 @@ export class DepartmentService {
         return department;
     }
 
-    async create(data: Partial<Department>): Promise<Department> {
+    async create(data: Partial<Department>, tenantId: string): Promise<Department> {
         // Check for duplicate code
         const existing = await this.departmentRepository.findOne({
-            where: { code: data.code },
+            where: { code: data.code, tenantId },
         });
 
         if (existing) {
@@ -44,18 +44,18 @@ export class DepartmentService {
             data.headOfDepartmentId = null as any;
         }
 
-        const department = this.departmentRepository.create(data);
+        const department = this.departmentRepository.create({ ...data, tenantId });
         const saved = await this.departmentRepository.save(department);
-        return this.findOne(saved.id);
+        return this.findOne(saved.id, tenantId);
     }
 
-    async update(id: string, data: Partial<Department>): Promise<Department> {
-        const department = await this.findOne(id);
+    async update(id: string, data: Partial<Department>, tenantId: string): Promise<Department> {
+        const department = await this.findOne(id, tenantId);
 
         // Check for duplicate code if code is being updated
         if (data.code && data.code !== department.code) {
             const existing = await this.departmentRepository.findOne({
-                where: { code: data.code },
+                where: { code: data.code, tenantId },
             });
 
             if (existing) {
@@ -74,19 +74,19 @@ export class DepartmentService {
 
         Object.assign(department, data);
         await this.departmentRepository.save(department);
-        return this.findOne(id);
+        return this.findOne(id, tenantId);
     }
 
-    async remove(id: string): Promise<void> {
-        const department = await this.findOne(id);
+    async remove(id: string, tenantId: string): Promise<void> {
+        const department = await this.findOne(id, tenantId);
         department.isActive = false;
         await this.departmentRepository.save(department);
     }
 
-    async assignHead(departmentId: string, staffId: string): Promise<Department> {
-        const department = await this.findOne(departmentId);
+    async assignHead(departmentId: string, staffId: string, tenantId: string): Promise<Department> {
+        const department = await this.findOne(departmentId, tenantId);
         department.headOfDepartmentId = staffId;
         await this.departmentRepository.save(department);
-        return this.findOne(departmentId);
+        return this.findOne(departmentId, tenantId);
     }
 }

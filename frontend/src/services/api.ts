@@ -844,6 +844,10 @@ class ApiService {
     return this.get<any>(`/students/${id}`)
   }
 
+  async getStudentProfile() {
+    return this.get<any>('/students/profile/me')
+  }
+
   async updateStudent(id: string, data: any) {
     if (data instanceof FormData) {
       return this.patch<any>(`/students/${id}`, data, {

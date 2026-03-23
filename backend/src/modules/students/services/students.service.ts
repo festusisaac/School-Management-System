@@ -47,17 +47,17 @@ export class StudentsService {
 
     // --- Students ---
 
-    async create(createStudentDto: CreateStudentDto, documentFiles?: Express.Multer.File[]): Promise<Student> {
+    async create(createStudentDto: CreateStudentDto, tenantId: string, documentFiles?: Express.Multer.File[]): Promise<Student> {
         let parent: Parent | null = null;
 
         // 1. Check for Sibling or Parent Link
         if (createStudentDto.parentId) {
             parent = await this.parentRepository.findOne({
-                where: { id: createStudentDto.parentId }
+                where: { id: createStudentDto.parentId, tenantId }
             });
         } else if (createStudentDto.siblingId) {
             const sibling = await this.studentsRepository.findOne({
-                where: { id: createStudentDto.siblingId },
+                where: { id: createStudentDto.siblingId, tenantId },
                 relations: ['parent']
             });
             if (sibling && sibling.parent) {
@@ -80,6 +80,7 @@ export class StudentsService {
                 guardianEmail: createStudentDto.guardianEmail,
                 guardianAddress: createStudentDto.guardianAddress,
                 emergencyContact: createStudentDto.emergencyContact,
+                tenantId: tenantId,
             });
             parent = await this.parentRepository.save(parentData);
         }
@@ -96,7 +97,8 @@ export class StudentsService {
         }
         const student = this.studentsRepository.create({
             ...studentData,
-            parent: parent
+            parent: parent,
+            tenantId: tenantId
         });
         const savedStudent = await this.studentsRepository.save(student);
 
@@ -114,7 +116,8 @@ export class StudentsService {
                     title: titles[index] || file.originalname,
                     filePath: file.path,
                     fileType: extname(file.originalname).substring(1),
-                    studentId: savedStudent.id
+                    studentId: savedStudent.id,
+                    tenantId: tenantId
                 });
             });
             await this.documentRepository.save(docs);
@@ -179,9 +182,9 @@ export class StudentsService {
         return savedStudent;
     }
 
-    async findAll(query: any): Promise<Student[]> {
+    async findAll(query: any, tenantId: string): Promise<Student[]> {
         const where: any[] = [];
-        const baseWhere: any = { isActive: true };
+        const baseWhere: any = { isActive: true, tenantId };
 
         if (query.classId && query.classId !== 'undefined' && query.classId !== '') {
             baseWhere.classId = query.classId;
@@ -216,17 +219,20 @@ export class StudentsService {
         return results;
     }
 
-    async findDeactivatedStudents(): Promise<Student[]> {
+    async findDeactivatedStudents(tenantId: string): Promise<Student[]> {
         return this.studentsRepository.find({
-            where: { isActive: false },
+            where: { isActive: false, tenantId },
             relations: ['class', 'section', 'deactivateReason'],
             order: { deactivatedAt: 'DESC' },
         });
     }
 
-    async findOne(id: string): Promise<Student & { feeGroupIds?: string[] }> {
+    async findOne(id: string, tenantId: string): Promise<Student & { feeGroupIds?: string[] }> {
         const student = await this.studentsRepository.findOne({
-            where: [{ id }, { userId: id }],
+            where: [
+                { id, tenantId },
+                { userId: id, tenantId }
+            ],
             relations: ['class', 'section', 'category', 'house', 'deactivateReason', 'parent', 'parent.students', 'parent.students.class', 'documents'],
         });
         if (!student) throw new NotFoundException(`Student with ID ${id} not found`);
@@ -247,9 +253,9 @@ export class StudentsService {
         return student;
     }
 
-    async update(id: string, updateStudentDto: UpdateStudentDto, documentFiles?: Express.Multer.File[]): Promise<Student> {
+    async update(id: string, updateStudentDto: UpdateStudentDto, tenantId: string, documentFiles?: Express.Multer.File[]): Promise<Student> {
         // 1. Fetch the existing student with all relations
-        const student = await this.findOne(id);
+        const student = await this.findOne(id, tenantId);
 
         console.log(`=== BACKEND UPDATE START [ID: ${id}] ===`);
 
@@ -318,7 +324,8 @@ export class StudentsService {
                     title: titles[index] || file.originalname,
                     filePath: file.path,
                     fileType: extname(file.originalname).substring(1),
-                    studentId: id
+                    studentId: id,
+                    tenantId: tenantId
                 });
             });
             await this.documentRepository.save(docs);
@@ -330,16 +337,16 @@ export class StudentsService {
         }
 
         // Return the refreshed student with all relations correctly loaded
-        return (await this.findOne(id)) as Student;
+        return (await this.findOne(id, tenantId)) as Student;
     }
 
-    async remove(id: string): Promise<void> {
-        const student = await this.findOne(id);
+    async remove(id: string, tenantId: string): Promise<void> {
+        const student = await this.findOne(id, tenantId);
         await this.studentsRepository.remove(student);
     }
 
-    async removeDocument(id: string): Promise<void> {
-        const doc = await this.documentRepository.findOne({ where: { id } });
+    async removeDocument(id: string, tenantId: string): Promise<void> {
+        const doc = await this.documentRepository.findOne({ where: { id, tenantId } });
         if (!doc) throw new NotFoundException(`Document with ID ${id} not found`);
         await this.documentRepository.remove(doc);
     }
@@ -353,9 +360,9 @@ export class StudentsService {
 
     // --- Categories ---
 
-    async createCategory(dto: CreateStudentCategoryDto): Promise<StudentCategory> {
+    async createCategory(dto: CreateStudentCategoryDto, tenantId: string): Promise<StudentCategory> {
         try {
-            const category = this.categoryRepository.create(dto);
+            const category = this.categoryRepository.create({ ...dto, tenantId });
             return await this.categoryRepository.save(category);
         } catch (error: any) {
             if (error.code === '23505' || error.errno === 19 || error.code === 'ER_DUP_ENTRY') { // Postgres unique_violation or SQLite constraint or MySQL
@@ -365,9 +372,9 @@ export class StudentsService {
         }
     }
 
-    async findAllCategories(): Promise<StudentCategory[]> {
+    async findAllCategories(tenantId: string): Promise<StudentCategory[]> {
         try {
-            const categories = await this.categoryRepository.find();
+            const categories = await this.categoryRepository.find({ where: { tenantId } });
             console.log('Fetched Categories:', categories);
             return categories;
         } catch (error) {
@@ -376,67 +383,68 @@ export class StudentsService {
         }
     }
 
-    async removeCategory(id: string): Promise<void> {
-        await this.categoryRepository.delete(id);
+    async removeCategory(id: string, tenantId: string): Promise<void> {
+        await this.categoryRepository.delete({ id, tenantId });
     }
 
     // --- Houses ---
 
-    async createHouse(dto: CreateStudentHouseDto): Promise<StudentHouse> {
-        const house = this.houseRepository.create(dto);
+    async createHouse(dto: CreateStudentHouseDto, tenantId: string): Promise<StudentHouse> {
+        const house = this.houseRepository.create({ ...dto, tenantId });
         return this.houseRepository.save(house);
     }
 
-    async findAllHouses(): Promise<StudentHouse[]> {
-        return this.houseRepository.find();
+    async findAllHouses(tenantId: string): Promise<StudentHouse[]> {
+        return this.houseRepository.find({ where: { tenantId } });
     }
 
-    async removeHouse(id: string): Promise<void> {
-        await this.houseRepository.delete(id);
+    async removeHouse(id: string, tenantId: string): Promise<void> {
+        await this.houseRepository.delete({ id, tenantId });
     }
 
     // --- Deactivate Reasons ---
 
-    async createDeactivateReason(dto: CreateDeactivateReasonDto): Promise<DeactivateReason> {
-        const reason = this.deactivateReasonRepository.create(dto);
+    async createDeactivateReason(dto: CreateDeactivateReasonDto, tenantId: string): Promise<DeactivateReason> {
+        const reason = this.deactivateReasonRepository.create({ ...dto, tenantId });
         return this.deactivateReasonRepository.save(reason);
     }
 
-    async findAllDeactivateReasons(): Promise<DeactivateReason[]> {
-        return this.deactivateReasonRepository.find();
+    async findAllDeactivateReasons(tenantId: string): Promise<DeactivateReason[]> {
+        return this.deactivateReasonRepository.find({ where: { tenantId } });
     }
 
-    async removeDeactivateReason(id: string): Promise<void> {
-        await this.deactivateReasonRepository.delete(id);
+    async removeDeactivateReason(id: string, tenantId: string): Promise<void> {
+        await this.deactivateReasonRepository.delete({ id, tenantId });
     }
 
     // --- Online Admission ---
 
-    async createOnlineAdmission(dto: CreateOnlineAdmissionDto): Promise<OnlineAdmission> {
-        const admission = this.onlineAdmissionRepository.create(dto);
+    async createOnlineAdmission(dto: CreateOnlineAdmissionDto, tenantId: string): Promise<OnlineAdmission> {
+        const admission = this.onlineAdmissionRepository.create({ ...dto, tenantId });
         return this.onlineAdmissionRepository.save(admission);
     }
 
-    async findAllOnlineAdmissions(): Promise<OnlineAdmission[]> {
+    async findAllOnlineAdmissions(tenantId: string): Promise<OnlineAdmission[]> {
         return this.onlineAdmissionRepository.find({
+            where: { tenantId },
             order: { createdAt: 'DESC' },
         });
     }
 
-    async findOneOnlineAdmission(id: string): Promise<OnlineAdmission> {
-        const admission = await this.onlineAdmissionRepository.findOne({ where: { id } });
+    async findOneOnlineAdmission(id: string, tenantId: string): Promise<OnlineAdmission> {
+        const admission = await this.onlineAdmissionRepository.findOne({ where: { id, tenantId } });
         if (!admission) throw new NotFoundException(`Online admission with ID ${id} not found`);
         return admission;
     }
 
-    async updateOnlineAdmissionStatus(id: string, dto: UpdateOnlineAdmissionStatusDto): Promise<OnlineAdmission> {
-        const admission = await this.findOneOnlineAdmission(id);
+    async updateOnlineAdmissionStatus(id: string, dto: UpdateOnlineAdmissionStatusDto, tenantId: string): Promise<OnlineAdmission> {
+        const admission = await this.findOneOnlineAdmission(id, tenantId);
         admission.status = dto.status;
         return this.onlineAdmissionRepository.save(admission);
     }
 
-    async approveOnlineAdmission(id: string): Promise<Student> {
-        const admission = await this.findOneOnlineAdmission(id);
+    async approveOnlineAdmission(id: string, tenantId: string): Promise<Student> {
+        const admission = await this.findOneOnlineAdmission(id, tenantId);
         if (admission.status === 'approved') {
             throw new Error('Admission already approved');
         }
@@ -466,7 +474,7 @@ export class StudentsService {
         };
 
         // Reuse existing create logic which handles parent creation/linking
-        const student = await this.create(createStudentDto);
+        const student = await this.create(createStudentDto, tenantId);
 
         // Update admission status
         admission.status = 'approved';
@@ -475,10 +483,10 @@ export class StudentsService {
         return student;
     }
 
-    async promote(data: { studentIds: string[], classId: string, sectionId?: string }): Promise<void> {
+    async promote(data: { studentIds: string[], classId: string, sectionId?: string }, tenantId: string): Promise<void> {
         if (!data.studentIds || data.studentIds.length === 0) return;
         
-        await this.studentsRepository.update(data.studentIds, {
+        await this.studentsRepository.update({ id: Like(data.studentIds as any), tenantId }, {
             classId: data.classId,
             sectionId: (data.sectionId || undefined) as any
         });

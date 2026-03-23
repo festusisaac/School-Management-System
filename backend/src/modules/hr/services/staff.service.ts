@@ -19,10 +19,11 @@ export class StaffService {
         private readonly usersService: UsersService,
     ) { }
 
-    async findAll(filters?: StaffFilters): Promise<Staff[]> {
+    async findAll(filters: StaffFilters = {}, tenantId: string): Promise<Staff[]> {
         const query = this.staffRepository.createQueryBuilder('staff')
             .leftJoinAndSelect('staff.department', 'department')
-            .leftJoinAndSelect('staff.roleObject', 'roleObject');
+            .leftJoinAndSelect('staff.roleObject', 'roleObject')
+            .where('staff.tenantId = :tenantId', { tenantId });
 
         // Apply filters
         if (filters?.search) {
@@ -50,9 +51,9 @@ export class StaffService {
         return query.getMany();
     }
 
-    async findOne(id: string): Promise<Staff> {
+    async findOne(id: string, tenantId: string): Promise<Staff> {
         const staff = await this.staffRepository.findOne({
-            where: { id },
+            where: { id, tenantId },
             relations: ['department', 'roleObject', 'attendanceRecords', 'leaveRequests', 'payrollRecords'],
         });
 
@@ -89,7 +90,7 @@ export class StaffService {
         return staff;
     }
 
-    async create(data: Partial<Staff>, files?: {
+    async create(data: Partial<Staff>, tenantId: string, files?: {
         photo?: Express.Multer.File[],
         resume?: Express.Multer.File[],
         joiningLetter?: Express.Multer.File[],
@@ -100,7 +101,7 @@ export class StaffService {
     }): Promise<Staff> {
         // Check for duplicate employee ID
         const existingByEmployeeId = await this.staffRepository.findOne({
-            where: { employeeId: data.employeeId },
+            where: { employeeId: data.employeeId, tenantId },
         });
 
         if (existingByEmployeeId) {
@@ -109,7 +110,7 @@ export class StaffService {
 
         // Check for duplicate email
         const existingByEmail = await this.staffRepository.findOne({
-            where: { email: data.email },
+            where: { email: data.email, tenantId },
         });
 
         if (existingByEmail) {
@@ -119,7 +120,7 @@ export class StaffService {
         // Check for duplicate biometric ID if provided
         if (data.biometricId) {
             const existingByBiometric = await this.staffRepository.findOne({
-                where: { biometricId: data.biometricId },
+                where: { biometricId: data.biometricId, tenantId },
             });
 
             if (existingByBiometric) {
@@ -127,7 +128,7 @@ export class StaffService {
             }
         }
 
-        const staffData = { ...data };
+        const staffData = { ...data, tenantId };
 
         if (staffData.departmentId === '') {
             staffData.departmentId = null as any;
@@ -166,7 +167,7 @@ export class StaffService {
         return savedStaff;
     }
 
-    async update(id: string, data: Partial<Staff>, files?: {
+    async update(id: string, data: Partial<Staff>, tenantId: string, files?: {
         photo?: Express.Multer.File[],
         resume?: Express.Multer.File[],
         joiningLetter?: Express.Multer.File[],
@@ -175,12 +176,12 @@ export class StaffService {
         certificates?: Express.Multer.File[],
         idProof?: Express.Multer.File[]
     }): Promise<Staff> {
-        const staff = await this.findOne(id);
+        const staff = await this.findOne(id, tenantId);
 
         // Check for duplicate employee ID if being updated
         if (data.employeeId && data.employeeId !== staff.employeeId) {
             const existing = await this.staffRepository.findOne({
-                where: { employeeId: data.employeeId },
+                where: { employeeId: data.employeeId, tenantId },
             });
 
             if (existing) {
@@ -191,7 +192,7 @@ export class StaffService {
         // Check for duplicate email if being updated
         if (data.email && data.email !== staff.email) {
             const existing = await this.staffRepository.findOne({
-                where: { email: data.email },
+                where: { email: data.email, tenantId },
             });
 
             if (existing) {
@@ -202,7 +203,7 @@ export class StaffService {
         // Check for duplicate biometric ID if being updated
         if (data.biometricId && data.biometricId !== staff.biometricId) {
             const existing = await this.staffRepository.findOne({
-                where: { biometricId: data.biometricId },
+                where: { biometricId: data.biometricId, tenantId },
             });
 
             if (existing) {
@@ -249,17 +250,16 @@ export class StaffService {
         return savedStaff;
     }
 
-    async remove(id: string): Promise<void> {
-        const staff = await this.findOne(id);
+    async remove(id: string, tenantId: string): Promise<void> {
+        const staff = await this.findOne(id, tenantId);
         staff.status = StaffStatus.INACTIVE;
         await this.staffRepository.save(staff);
     }
 
-
-    async getStatistics() {
-        const total = await this.staffRepository.count();
-        const active = await this.staffRepository.count({ where: { status: StaffStatus.ACTIVE } });
-        const onLeave = await this.staffRepository.count({ where: { status: StaffStatus.ON_LEAVE } });
+    async getStatistics(tenantId: string) {
+        const total = await this.staffRepository.count({ where: { tenantId } });
+        const active = await this.staffRepository.count({ where: { status: StaffStatus.ACTIVE, tenantId } });
+        const onLeave = await this.staffRepository.count({ where: { status: StaffStatus.ON_LEAVE, tenantId } });
         return {
             total,
             active,

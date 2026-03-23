@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseInterceptors, UploadedFiles } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseInterceptors, UploadedFiles, UseGuards, Request } from '@nestjs/common';
+import { JwtAuthGuard } from '@guards/jwt-auth.guard';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -12,6 +13,7 @@ import { CreateOnlineAdmissionDto } from '../dtos/create-online-admission.dto';
 import { UpdateOnlineAdmissionStatusDto } from '../dtos/update-online-admission-status.dto';
 
 @Controller('students')
+@UseGuards(JwtAuthGuard)
 export class StudentsController {
     constructor(private readonly studentsService: StudentsService) { }
 
@@ -32,107 +34,111 @@ export class StudentsController {
     }))
     create(
         @Body() createStudentDto: CreateStudentDto,
-        @UploadedFiles() files: { studentPhoto?: Express.Multer.File[], documentFiles?: Express.Multer.File[] }
+        @UploadedFiles() files: { studentPhoto?: Express.Multer.File[], documentFiles?: Express.Multer.File[] },
+        @Request() req: any
     ) {
         if (files?.studentPhoto && files.studentPhoto[0]) {
             createStudentDto.studentPhoto = files.studentPhoto[0].path;
         }
-        return this.studentsService.create(createStudentDto, files?.documentFiles);
+        return this.studentsService.create(createStudentDto, req.user.tenantId, files?.documentFiles);
     }
 
     @Get()
-    findAll(@Query() query: any) {
-        return this.studentsService.findAll(query);
+    findAll(@Query() query: any, @Request() req: any) {
+        return this.studentsService.findAll(query, req.user.tenantId);
     }
 
-    @Get('deactivated')
-    findDeactivated() {
-        return this.studentsService.findDeactivatedStudents();
+    findDeactivated(@Request() req: any) {
+        return this.studentsService.findDeactivatedStudents(req.user.tenantId);
+    }
+
+    @Get('profile/me')
+    @UseGuards(JwtAuthGuard)
+    getProfile(@Request() req: any) {
+        return this.studentsService.findByUserId(req.user.id);
     }
 
     // --- Categories ---
 
-    @Post('categories')
-    createCategory(@Body() dto: CreateStudentCategoryDto) {
-        return this.studentsService.createCategory(dto);
+    createCategory(@Body() dto: CreateStudentCategoryDto, @Request() req: any) {
+        return this.studentsService.createCategory(dto, req.user.tenantId);
     }
 
     @Get('categories')
-    findAllCategories() {
-        return this.studentsService.findAllCategories();
+    findAllCategories(@Request() req: any) {
+        return this.studentsService.findAllCategories(req.user.tenantId);
     }
 
     @Delete('categories/:id')
-    removeCategory(@Param('id') id: string) {
-        return this.studentsService.removeCategory(id);
+    removeCategory(@Param('id') id: string, @Request() req: any) {
+        return this.studentsService.removeCategory(id, req.user.tenantId);
     }
 
     // --- Houses ---
 
     @Post('houses')
-    createHouse(@Body() dto: CreateStudentHouseDto) {
-        return this.studentsService.createHouse(dto);
+    createHouse(@Body() dto: CreateStudentHouseDto, @Request() req: any) {
+        return this.studentsService.createHouse(dto, req.user.tenantId);
     }
 
     @Get('houses')
-    findAllHouses() {
-        return this.studentsService.findAllHouses();
+    findAllHouses(@Request() req: any) {
+        return this.studentsService.findAllHouses(req.user.tenantId);
     }
 
     @Delete('houses/:id')
-    removeHouse(@Param('id') id: string) {
-        return this.studentsService.removeHouse(id);
+    removeHouse(@Param('id') id: string, @Request() req: any) {
+        return this.studentsService.removeHouse(id, req.user.tenantId);
     }
 
     // --- Deactivate Reasons ---
 
     @Post('deactivate-reasons')
-    createDeactivateReason(@Body() dto: CreateDeactivateReasonDto) {
-        return this.studentsService.createDeactivateReason(dto);
+    createDeactivateReason(@Body() dto: CreateDeactivateReasonDto, @Request() req: any) {
+        return this.studentsService.createDeactivateReason(dto, req.user.tenantId);
     }
 
     @Get('deactivate-reasons/all')
-    findAllDeactivateReasons() {
-        return this.studentsService.findAllDeactivateReasons();
+    findAllDeactivateReasons(@Request() req: any) {
+        return this.studentsService.findAllDeactivateReasons(req.user.tenantId);
     }
 
     @Delete('deactivate-reasons/:id')
-    removeDeactivateReason(@Param('id') id: string) {
-        return this.studentsService.removeDeactivateReason(id);
+    removeDeactivateReason(@Param('id') id: string, @Request() req: any) {
+        return this.studentsService.removeDeactivateReason(id, req.user.tenantId);
     }
 
     // --- Online Admission ---
 
-    @Post('online-admissions')
-    createOnlineAdmission(@Body() dto: CreateOnlineAdmissionDto) {
-        return this.studentsService.createOnlineAdmission(dto);
+    createOnlineAdmission(@Body() dto: CreateOnlineAdmissionDto, @Request() req: any) {
+        return this.studentsService.createOnlineAdmission(dto, req.user.tenantId);
     }
 
     @Get('online-admissions')
-    findAllOnlineAdmissions() {
-        return this.studentsService.findAllOnlineAdmissions();
+    findAllOnlineAdmissions(@Request() req: any) {
+        return this.studentsService.findAllOnlineAdmissions(req.user.tenantId);
     }
 
     @Get('online-admissions/:id')
-    findOneOnlineAdmission(@Param('id') id: string) {
-        return this.studentsService.findOneOnlineAdmission(id);
+    findOneOnlineAdmission(@Param('id') id: string, @Request() req: any) {
+        return this.studentsService.findOneOnlineAdmission(id, req.user.tenantId);
     }
 
     @Patch('online-admissions/:id/status')
-    updateOnlineAdmissionStatus(@Param('id') id: string, @Body() dto: UpdateOnlineAdmissionStatusDto) {
-        return this.studentsService.updateOnlineAdmissionStatus(id, dto);
+    updateOnlineAdmissionStatus(@Param('id') id: string, @Body() dto: UpdateOnlineAdmissionStatusDto, @Request() req: any) {
+        return this.studentsService.updateOnlineAdmissionStatus(id, dto, req.user.tenantId);
     }
 
     @Post('online-admissions/:id/approve')
-    approveOnlineAdmission(@Param('id') id: string) {
-        return this.studentsService.approveOnlineAdmission(id);
+    approveOnlineAdmission(@Param('id') id: string, @Request() req: any) {
+        return this.studentsService.approveOnlineAdmission(id, req.user.tenantId);
     }
 
     // --- Students (Generic Routes) ---
 
     @Get(':id')
-    findOne(@Param('id') id: string) {
-        return this.studentsService.findOne(id);
+    findOne(@Param('id') id: string, @Request() req: any) {
+        return this.studentsService.findOne(id, req.user.tenantId);
     }
 
     @Patch(':id')
@@ -151,26 +157,27 @@ export class StudentsController {
     update(
         @Param('id') id: string,
         @Body() updateStudentDto: UpdateStudentDto,
-        @UploadedFiles() files: { studentPhoto?: Express.Multer.File[], documentFiles?: Express.Multer.File[] }
+        @UploadedFiles() files: { studentPhoto?: Express.Multer.File[], documentFiles?: Express.Multer.File[] },
+        @Request() req: any
     ) {
         if (files?.studentPhoto && files.studentPhoto[0]) {
             updateStudentDto.studentPhoto = files.studentPhoto[0].path;
         }
-        return this.studentsService.update(id, updateStudentDto, files?.documentFiles);
+        return this.studentsService.update(id, updateStudentDto, req.user.tenantId, files?.documentFiles);
     }
 
     @Delete(':id')
-    remove(@Param('id') id: string) {
-        return this.studentsService.remove(id);
+    remove(@Param('id') id: string, @Request() req: any) {
+        return this.studentsService.remove(id, req.user.tenantId);
     }
 
     @Delete('documents/:id')
-    removeDocument(@Param('id') id: string) {
-        return this.studentsService.removeDocument(id);
+    removeDocument(@Param('id') id: string, @Request() req: any) {
+        return this.studentsService.removeDocument(id, req.user.tenantId);
     }
 
     @Post('bulk/promote')
-    promote(@Body() dto: { studentIds: string[], classId: string, sectionId?: string }) {
-        return this.studentsService.promote(dto);
+    promote(@Body() dto: { studentIds: string[], classId: string, sectionId?: string }, @Request() req: any) {
+        return this.studentsService.promote(dto, req.user.tenantId);
     }
 }

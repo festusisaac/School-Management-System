@@ -12,6 +12,7 @@ import {
     HttpStatus,
     UseInterceptors,
     UploadedFiles,
+    Request,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -28,19 +29,19 @@ export class StaffController {
     constructor(private readonly staffService: StaffService) { }
 
     @Get()
-    async findAll(@Query() filters: StaffFilterDto) {
-        return this.staffService.findAll(filters);
+    async findAll(@Query() filters: StaffFilterDto, @Request() req: any) {
+        return this.staffService.findAll(filters, req.user.tenantId);
     }
 
     @Get('statistics')
-    async getStatistics() {
-        return this.staffService.getStatistics();
+    async getStatistics(@Request() req: any) {
+        return this.staffService.getStatistics(req.user.tenantId);
     }
 
 
     @Get(':id')
-    async findOne(@Param('id') id: string) {
-        return this.staffService.findOne(id);
+    async findOne(@Param('id') id: string, @Request() req: any) {
+        return this.staffService.findOne(id, req.user.tenantId);
     }
 
     @Post()
@@ -73,9 +74,10 @@ export class StaffController {
             otherDocuments?: Express.Multer.File[],
             certificates?: Express.Multer.File[],
             idProof?: Express.Multer.File[]
-        }
+        },
+        @Request() req: any
     ) {
-        return this.staffService.create(createStaffDto, files);
+        return this.staffService.create(createStaffDto, req.user.tenantId, files);
     }
 
     @Put(':id')
@@ -108,15 +110,16 @@ export class StaffController {
             otherDocuments?: Express.Multer.File[],
             certificates?: Express.Multer.File[],
             idProof?: Express.Multer.File[]
-        }
+        },
+        @Request() req: any
     ) {
-        return this.staffService.update(id, updateStaffDto, files);
+        return this.staffService.update(id, updateStaffDto, req.user.tenantId, files);
     }
 
 
     @Delete(':id')
     @HttpCode(HttpStatus.NO_CONTENT)
-    async remove(@Param('id') id: string) {
-        await this.staffService.remove(id);
+    async remove(@Param('id') id: string, @Request() req: any) {
+        await this.staffService.remove(id, req.user.tenantId);
     }
 }

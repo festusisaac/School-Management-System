@@ -1302,7 +1302,7 @@ export class FeesService {
           }
 
           const metaStr = data.meta || fwData.data.meta || {};
-          let metaObj = { ...metaStr };
+          const metaObj = { ...metaStr };
           if (typeof metaObj.allocations === 'string') {
              try { metaObj.allocations = JSON.parse(metaObj.allocations); } catch (e) {}
           }

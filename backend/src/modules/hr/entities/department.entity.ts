@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { Staff } from './staff.entity';
 
 @Entity('departments')
@@ -27,6 +27,10 @@ export class Department {
 
     @OneToMany(() => Staff, staff => staff.department)
     staff!: Staff[];
+
+    @Index()
+    @Column({ nullable: false })
+    tenantId!: string;
 
     @CreateDateColumn({ name: 'created_at' })
     createdAt!: Date;
