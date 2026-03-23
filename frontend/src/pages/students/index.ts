@@ -7,3 +7,4 @@ export { default as StudentCategories } from './StudentCategories';
 export { default as StudentHouses } from './StudentHouses';
 export { default as DeactivateReasons } from './DeactivateReasons';
 export { default as StudentProfile } from './StudentProfile';
+export { default as StudentTimetablePage } from './StudentTimetablePage';

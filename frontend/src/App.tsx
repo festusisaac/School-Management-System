@@ -89,6 +89,7 @@ function AppRoutes() {
               <Route path="houses" element={<Students.StudentHouses />} />
               <Route path="deactivate-reasons" element={<Students.DeactivateReasons />} />
               <Route path="profile/:id" element={<Students.StudentProfile />} />
+              <Route path="timetable" element={<Students.StudentTimetablePage />} />
               <Route path="finance" element={<Finance.StudentFinancePage />} />
             </Route>
 
