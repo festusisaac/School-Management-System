@@ -108,16 +108,27 @@ export class FeesService {
   }
 
   async getStudentStatement(studentId: string) {
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(studentId);
+    
+    // If not a UUID, we can't find by ID/UserID directly as UUID columns. 
+    // This handles the "me" case or other non-UUID slugs gracefully.
+    if (!isUUID) {
+      throw new NotFoundException('Invalid Student Identifier');
+    }
+
     const student = await this.studentRepo.findOne({
-      where: { id: studentId },
+      where: [{ id: studentId }, { userId: studentId }],
       relations: ['class'],
     });
 
     if (!student) throw new NotFoundException('Student not found');
+    
+    // Always use the primary Student ID for all queries
+    const resolvedStudentId = student.id;
 
     // 1. Get all transactions for student
     const transactions = await this.transactionRepo.find({
-      where: { studentId },
+      where: { studentId: resolvedStudentId },
       order: { createdAt: 'DESC' },
     });
 
@@ -137,12 +148,12 @@ export class FeesService {
 
     // 3. Get Carry Forwards
     const carryForwards = await this.carryRepo.find({
-      where: { studentId },
+      where: { studentId: resolvedStudentId },
     });
 
     // 4. Get Assignments & Calculate Dues
     const assignments = await this.assignmentRepo.find({
-      where: { studentId, isActive: true },
+      where: { studentId: resolvedStudentId, isActive: true },
       relations: ['feeGroup', 'feeGroup.heads'],
     });
 
@@ -220,7 +231,13 @@ export class FeesService {
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(options.studentId);
 
       if (isUUID) {
-        q.andWhere('t.studentId = :studentId', { studentId: options.studentId });
+        // Find the student to get the real studentId (it might be a userId)
+        const student = await this.studentRepo.findOne({
+          where: [{ id: options.studentId }, { userId: options.studentId }]
+        });
+        
+        const resolvedId = student ? student.id : options.studentId;
+        q.andWhere('t.studentId = :studentId', { studentId: resolvedId });
       } else {
         // Fuzzy search on student details
         q.andWhere(
@@ -455,7 +472,12 @@ export class FeesService {
   }
 
   async getFamilyFinancials(studentId: string) {
-    const student = await this.studentRepo.findOne({ where: { id: studentId } });
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(studentId);
+    if (!isUUID) throw new NotFoundException('Invalid Student Identifier');
+
+    const student = await this.studentRepo.findOne({ 
+      where: [{ id: studentId }, { userId: studentId }] 
+    });
     if (!student) throw new NotFoundException('Student not found');
 
     let siblings: Student[] = [student];

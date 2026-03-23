@@ -851,6 +851,10 @@ class ApiService {
     return this.delete<any>(`/students/${id}`)
   }
 
+  async deleteStudentDocument(id: string) {
+    return this.delete<any>(`/students/documents/${id}`)
+  }
+
   async createOnlineAdmission(data: any) {
     return this.post<any>('/students/online-admissions', data)
   }
@@ -889,6 +893,15 @@ class ApiService {
 
   async approveOnlineAdmission(id: string) {
     return this.post<any>(`/students/online-admissions/${id}/approve`, {})
+  }
+
+  // Examination Student API
+  async getStudentExamDashboard(studentId: string) {
+    return this.get<any>(`/examination/student/${studentId}/dashboard`)
+  }
+
+  async verifyStudentResult(studentId: string, data: { pin: string; examGroupId: string }) {
+    return this.post<any>(`/examination/student/${studentId}/verify-result`, data)
   }
 }
 

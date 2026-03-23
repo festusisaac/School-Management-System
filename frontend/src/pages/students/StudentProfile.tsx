@@ -4,11 +4,14 @@ import { useToast } from '../../context/ToastContext';
 import {
     ArrowLeft, MapPin, BookOpen, User, Building2,
     Users, Printer, Edit, DollarSign,
-    FileText, GraduationCap, ClipboardList, Clock,
+    FileText, GraduationCap, ClipboardList, Clock, CheckCircle2,
     QrCode as QrCodeIcon, Barcode as BarcodeIcon, ShieldAlert, ShieldCheck,
-    Phone, Mail, Calendar, Hash, Award, Shield, CheckCircle2, AlertCircle, CreditCard
+    KeySquare, CalendarDays, CreditCard, ArrowRight, MapPinned,
+    Trash2, Download, Upload
 } from 'lucide-react';
 import api, { getFileUrl } from '../../services/api';
+import { ResultVerificationModal } from './components/ResultVerificationModal';
+import { PaymentModal } from './components/PaymentModal';
 import { formatCurrency } from '../../utils/currency';
 import { clsx } from 'clsx';
 import { FeeNoticeTemplate } from '../finance/components/FeeNoticeTemplate';
@@ -18,7 +21,7 @@ import { useSystem } from '../../context/SystemContext';
 export default function StudentProfile() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { showSuccess } = useToast();
+    const toast = useToast();
     const { getSchoolInfo } = useSystem();
     const [student, setStudent] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -26,10 +29,89 @@ export default function StudentProfile() {
     const [statement, setStatement] = useState<any>(null);
     const [loadingStatement, setLoadingStatement] = useState(false);
     const [txPage, setTxPage] = useState(1);
+    const [examData, setExamData] = useState<any>(null);
+    const [examLoading, setExamLoading] = useState(false);
+    const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
+    const [verifiedResult, setVerifiedResult] = useState<any>(null);
+
+    // Document States
+    const [isUploadingDoc, setIsUploadingDoc] = useState(false);
+    const [newDocTitle, setNewDocTitle] = useState('');
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const txItemsPerPage = 5;
+
+    // Fee Payment State
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [selectedFeeHead, setSelectedFeeHead] = useState<any>(null);
+    
+    // Check if user is student
+    const userRole = (() => {
+        try {
+            const token = localStorage.getItem('access_token');
+            if (!token) return null;
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            return payload?.role || null;
+        } catch {
+            return null;
+        }
+    })();
+    const isStudent = userRole?.toLowerCase() === 'student';
 
     const handlePrint = () => {
         window.print();
+    };
+
+    const handlePrintAdmitCard = (examGroup: any) => {
+        // Logic to print admit card - for now just window.print with a flag or special view
+        // In a real app, this might open a new tab with a printable template
+        toast.showInfo(`Generating admit card for ${examGroup.name}...`);
+        setTimeout(() => window.print(), 500);
+    };
+
+    const handleUploadDocument = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedFile || !newDocTitle) {
+            toast.showWarning('Please select a file and enter a title');
+            return;
+        }
+
+        setIsUploadingDoc(true);
+        try {
+            const formData = new FormData();
+            formData.append('documentFiles', selectedFile);
+            formData.append('documentTitles', JSON.stringify([newDocTitle]));
+
+            await api.updateStudent(student.id, formData);
+            toast.showSuccess('Document uploaded successfully');
+            
+            // Reset and Refresh
+            setNewDocTitle('');
+            setSelectedFile(null);
+            const updatedStudent = await api.getStudentById(student.id);
+            setStudent(updatedStudent);
+        } catch (error: any) {
+            toast.showError('Failed to upload document: ' + (error.response?.data?.message || error.message));
+        } finally {
+            setIsUploadingDoc(false);
+        }
+    };
+
+    const handleDeleteDocument = async (docId: string) => {
+        if (isStudent) {
+            toast.showError('Students are not permitted to delete documents');
+            return;
+        }
+        if (!window.confirm('Are you sure you want to delete this document?')) return;
+
+        try {
+            await api.deleteStudentDocument(docId);
+            toast.showSuccess('Document deleted successfully');
+            // Refresh student data
+            const updatedStudent = await api.getStudentById(student.id);
+            setStudent(updatedStudent);
+        } catch (error: any) {
+            toast.showError('Failed to delete document: ' + (error.response?.data?.message || error.message));
+        }
     };
 
     useEffect(() => {
@@ -52,6 +134,25 @@ export default function StudentProfile() {
             fetchStatement();
         }
     }, [activeTab, id]);
+
+    useEffect(() => {
+        if (activeTab === 'Exam' && id && !examData) {
+            fetchExamData();
+        }
+    }, [activeTab, id]);
+
+    const fetchExamData = async () => {
+        if (!id) return;
+        setExamLoading(true);
+        try {
+            const data = await api.getStudentExamDashboard(id);
+            setExamData(data);
+        } catch (error) {
+            console.error("Failed to fetch exam dashboard", error);
+        } finally {
+            setExamLoading(false);
+        }
+    };
 
     const fetchStatement = async () => {
         if (!id) return;
@@ -141,7 +242,7 @@ export default function StudentProfile() {
 
 
     const SectionHeader = ({ title, icon: Icon }: { title: string, icon?: any }) => (
-        <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/80">
+        <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/80">
             <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center">
                 {Icon && <Icon className="w-5 h-5 mr-2 text-primary-600" />}
                 {title}
@@ -150,9 +251,9 @@ export default function StudentProfile() {
     );
 
     const DataRow = ({ label, value, isLast = false }: { label: string, value: any, isLast?: boolean }) => (
-        <div className={`grid grid-cols-[160px_1fr] items-center gap-6 py-4 px-6 border-b border-gray-50 dark:border-gray-700/50 last:border-0 ${isLast ? 'border-b-0' : ''}`}>
-            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{label}</span>
-            <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{value || '-'}</span>
+        <div className={`flex flex-col sm:grid sm:grid-cols-[160px_1fr] sm:items-center gap-1 sm:gap-6 py-4 px-4 sm:px-6 border-b border-gray-50 dark:border-gray-700/50 last:border-0 ${isLast ? 'border-b-0' : ''}`}>
+            <span className="text-xs sm:text-sm font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider sm:normal-case sm:text-gray-500">{label}</span>
+            <span className="text-sm sm:text-sm font-semibold sm:font-medium text-gray-900 dark:text-gray-100 truncate">{value || '-'}</span>
         </div>
     );
 
@@ -167,41 +268,42 @@ export default function StudentProfile() {
     );
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 p-4 sm:p-6 lg:p-8 pb-20 bg-gray-50/50 dark:bg-transparent min-h-screen">
             {/* Professional Sticky Navigation Header */}
-            <div className="sticky top-4 z-50 flex items-center justify-between bg-white/80 dark:bg-gray-800/90 p-2 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 backdrop-blur-xl no-print transition-all">
-                <div className="flex items-center gap-2 w-full overflow-x-auto scrollbar-hide">
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="p-2.5 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-xl transition-all text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 flex-shrink-0"
-                    >
-                        <ArrowLeft className="w-5 h-5" />
-                    </button>
-                    <div className="h-8 w-px bg-gray-200 dark:bg-gray-700 mx-1 flex-shrink-0" />
-                    <div className="flex items-center gap-1">
-                        {tabs.map((tab) => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all rounded-xl whitespace-nowrap ${activeTab === tab.id
-                                    ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-500/10'
-                                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                                    }`}
-                            >
-                                <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'}`} />
-                                <span>{tab.label}</span>
-                            </button>
-                        ))}
+            <div className="sticky top-4 z-40 flex items-center justify-between bg-white/90 dark:bg-gray-800/90 p-1.5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 backdrop-blur-xl no-print transition-all">
+                <div className="flex items-center justify-between w-full overflow-hidden">
+                    <div className="flex items-center gap-2 w-full overflow-x-auto scrollbar-hide">
+                        <button
+                            onClick={() => navigate(-1)}
+                            className="p-2.5 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-xl transition-all text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 flex-shrink-0"
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                        </button>
+                        <div className="h-8 w-px bg-gray-200 dark:bg-gray-700 mx-1 flex-shrink-0" />
+                        <div className="flex items-center gap-1">
+                            {tabs.map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all rounded-xl whitespace-nowrap ${activeTab === tab.id
+                                        ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-500/10'
+                                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                                        }`}
+                                >
+                                    <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'}`} />
+                                    <span>{tab.label}</span>
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
-
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 outline-none no-print">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 outline-none no-print mt-6">
                 {/* Left Column: Identity Sidebar (Fixed Width) */}
                 <div className="lg:col-span-4 flex flex-col gap-6">
                     {/* Primary Avatar & ID Card */}
-                    <InfoCard className="p-8 flex flex-col items-center text-center">
+                    <InfoCard className="p-6 sm:p-8 flex flex-col items-center text-center">
                         <div className="relative mb-6 flex justify-center">
                             <div className="w-32 h-32 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden ring-4 ring-white dark:ring-gray-800 shadow-lg">
                                 {student.studentPhoto ? (
@@ -272,7 +374,7 @@ export default function StudentProfile() {
                                         key={sibling.id}
                                         onClick={() => {
                                             navigate(`/students/profile/${sibling.id}`);
-                                            showSuccess(`Switched to ${sibling.firstName}'s Profile`);
+                                            toast.showSuccess(`Switched to ${sibling.firstName}'s Profile`);
                                         }}
                                         className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors border border-transparent hover:border-gray-100 dark:hover:border-gray-700 group"
                                     >
@@ -460,7 +562,7 @@ export default function StudentProfile() {
 
                             {/* Assigned Fee Groups */}
                             <InfoCard>
-                                <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 gap-4">
                                     <div className="flex items-center gap-2">
                                         <div className="p-2 bg-primary-50 dark:bg-primary-900/30 rounded-lg">
                                             <DollarSign className="w-5 h-5 text-primary-600" />
@@ -469,14 +571,14 @@ export default function StudentProfile() {
                                     </div>
                                     <button 
                                         onClick={handlePrintNotice}
-                                        className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-primary-500/20 transition-all active:scale-95"
+                                        className="w-full sm:w-auto px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-primary-500/20 transition-all active:scale-95"
                                     >
                                         <Printer className="w-4 h-4" />
                                         Print Fee Notice
                                     </button>
                                 </div>
                                 <div className="overflow-x-auto">
-                                    <table className="w-full text-left">
+                                    <table className="w-full text-left min-w-[600px] sm:min-w-0">
                                         <thead className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700">
                                             <tr>
                                                 <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Fee Head</th>
@@ -492,12 +594,7 @@ export default function StudentProfile() {
                                             ) : statement?.assignedHeads?.length > 0 ? (
                                                 statement.assignedHeads.map((head: any) => (
                                                     <tr key={head.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-900/30 transition-colors">
-                                                        <td className="px-6 py-4">
-                                                            <div className="flex flex-col">
-                                                                <span className="text-sm font-bold text-gray-900 dark:text-white">{head.name}</span>
-                                                                <span className="text-[10px] text-gray-400 font-black uppercase tracking-tighter">{head.group}</span>
-                                                            </div>
-                                                        </td>
+                                                        <td className="px-6 py-4 text-sm font-bold text-gray-900 dark:text-white">{head.name}</td>
                                                         <td className="px-6 py-4 text-right text-sm font-medium text-gray-500">{formatCurrency(parseFloat(head.amount))}</td>
                                                         <td className="px-6 py-4 text-right text-sm font-black text-primary-600">{formatCurrency(parseFloat(head.balance))}</td>
                                                         <td className="px-6 py-4 text-center">
@@ -511,16 +608,25 @@ export default function StudentProfile() {
                                                             </span>
                                                         </td>
                                                         <td className="px-6 py-4 text-right">
-                                                            <button 
-                                                                className="text-xs font-bold text-primary-600 hover:text-primary-700 flex items-center gap-1 ml-auto"
-                                                                onClick={() => {
-                                                                    // We'll implement individual notice printing if needed
-                                                                    window.alert("Generate individual fee notice feature coming soon!");
-                                                                }}
-                                                            >
-                                                                <Printer className="w-3.5 h-3.5" />
-                                                                Notice
-                                                            </button>
+                                                            {isStudent && parseFloat(head.balance) > 0 ? (
+                                                                <button
+                                                                    className="px-3 py-1.5 bg-primary-50 hover:bg-primary-600 text-primary-600 hover:text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border border-primary-100 hover:border-primary-600 ml-auto flex items-center gap-1.5"
+                                                                    onClick={() => {
+                                                                        setSelectedFeeHead(head);
+                                                                        setShowPaymentModal(true);
+                                                                    }}
+                                                                >
+                                                                    <CreditCard size={12} />
+                                                                    Pay Now
+                                                                </button>
+                                                            ) : (
+                                                                <button 
+                                                                    className="text-xs font-bold text-primary-600 hover:text-primary-700 ml-auto"
+                                                                    onClick={() => window.alert("Fee details feature coming soon!")}
+                                                                >
+                                                                    Details
+                                                                </button>
+                                                            )}
                                                         </td>
                                                     </tr>
                                                 ))
@@ -536,7 +642,7 @@ export default function StudentProfile() {
                             <InfoCard>
                                 <SectionHeader title="Recent Transactions" icon={ClipboardList} />
                                 <div className="overflow-x-auto">
-                                    <table className="w-full text-left">
+                                    <table className="w-full text-left min-w-[500px] sm:min-w-0">
                                         <thead className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700">
                                             <tr>
                                                 <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Date</th>
@@ -592,6 +698,271 @@ export default function StudentProfile() {
                                 )}
                             </InfoCard>
                         </div>
+                    ) : activeTab === 'Exam' ? (
+                        <div className="space-y-6">
+                            {examLoading ? (
+                                <InfoCard className="flex flex-col items-center justify-center py-20 min-h-[400px]">
+                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mb-4"></div>
+                                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Loading Examination Data...</h4>
+                                </InfoCard>
+                            ) : (
+                                <>
+                                    {/* Action Cards */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {/* Result Checker Card */}
+                                        <div 
+                                            onClick={() => setIsVerifyModalOpen(true)}
+                                            className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all cursor-pointer group relative overflow-hidden"
+                                        >
+                                            <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/5 -mr-16 -mt-16 rounded-full group-hover:bg-primary-500/10 transition-colors" />
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-14 h-14 bg-primary-50 dark:bg-primary-900/20 rounded-xl flex items-center justify-center text-primary-600 dark:text-primary-400">
+                                                    <KeySquare className="w-7 h-7" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-lg font-bold text-gray-900 dark:text-white">Check Terminal Result</h4>
+                                                    <p className="text-sm text-gray-500 dark:text-gray-400">Enter Scratch Card PIN to view results</p>
+                                                </div>
+                                            </div>
+                                            <div className="mt-4 flex items-center text-primary-600 font-bold text-sm">
+                                                Check Now <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                                            </div>
+                                        </div>
+
+                                        {/* Exam Status Card */}
+                                        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-14 h-14 bg-green-50 dark:bg-green-900/20 rounded-xl flex items-center justify-center text-green-600 dark:text-green-400">
+                                                    <CalendarDays className="w-7 h-7" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-lg font-bold text-gray-900 dark:text-white">Examination Status</h4>
+                                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                                        {examData?.examGroups?.length > 0 
+                                                            ? `${examData.examGroups[0].name} Ongoing` 
+                                                            : 'No Active Examination'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="mt-4 flex items-center gap-2">
+                                                <div className="px-3 py-1 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-full text-xs font-bold uppercase tracking-wider">
+                                                    All Clear
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Verified Result Section */}
+                                    {verifiedResult && (
+                                        <InfoCard className="border-2 border-primary-100 dark:border-primary-900/50 bg-primary-50/10">
+                                            <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-gray-700 mb-6">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/40 rounded-full flex items-center justify-center">
+                                                        <CheckCircle2 className="w-6 h-6 text-primary-600" />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="text-lg font-bold text-gray-900 dark:text-white uppercase tracking-tight">Verified Result: {examData?.examGroups?.find((g: any) => g.id === verifiedResult.summary.examGroupId)?.name}</h3>
+                                                        <p className="text-xs text-gray-500 font-medium">Session: 2023/2024 • Average: {verifiedResult.summary.averageScore.toFixed(2)}%</p>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    onClick={() => setVerifiedResult(null)}
+                                                    className="text-xs text-red-500 font-bold hover:underline"
+                                                >
+                                                    Close Result
+                                                </button>
+                                            </div>
+
+                                            <div className="overflow-x-auto -mx-6">
+                                                <div className="inline-block min-w-full align-middle px-6">
+                                                    <table className="w-full text-left min-w-[400px] sm:min-w-0">
+                                                        <thead className="bg-gray-50 dark:bg-gray-800/50">
+                                                            <tr>
+                                                                <th className="px-4 py-3 text-xs font-black uppercase tracking-widest text-gray-500">Subject</th>
+                                                                <th className="px-4 py-3 text-xs font-black uppercase tracking-widest text-gray-500">Score</th>
+                                                                <th className="px-4 py-3 text-xs font-black uppercase tracking-widest text-gray-500 text-right">Status</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                                                            {verifiedResult.subjectScores.map((score: any, idx: number) => (
+                                                                <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
+                                                                    <td className="px-4 py-4 text-sm font-bold text-gray-900 dark:text-white uppercase tracking-tight">{score.subjectId}</td>
+                                                                    <td className="px-4 py-4 text-sm font-black text-primary-600">{score.totalSubjectScore}</td>
+                                                                    <td className="px-4 py-4 text-right">
+                                                                        <span className="px-2 py-1 bg-green-100 text-green-700 rounded-md text-[10px] font-bold uppercase">Pass</span>
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </InfoCard>
+                                    )}
+
+                                    {/* Exam Timetable */}
+                                    <InfoCard>
+                                        <SectionHeader title="Examination Timetable" icon={CalendarDays} />
+                                        <div className="p-0">
+                                            {examData?.schedules?.length > 0 ? (
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full text-left min-w-[500px] sm:min-w-0">
+                                                    <thead className="bg-gray-50 dark:bg-gray-800/30 border-b border-gray-100 dark:border-gray-700">
+                                                        <tr>
+                                                            <th className="px-4 py-3 text-xs font-black uppercase tracking-widest text-gray-500">Subject</th>
+                                                            <th className="px-4 py-3 text-xs font-black uppercase tracking-widest text-gray-500">Date</th>
+                                                            <th className="px-4 py-3 text-xs font-black uppercase tracking-widest text-gray-500">Time</th>
+                                                            <th className="px-4 py-3 text-xs font-black uppercase tracking-widest text-gray-500 text-right">Room</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                                                        {examData.schedules.map((item: any, idx: number) => (
+                                                            <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
+                                                                <td className="px-4 py-4 text-sm font-bold text-gray-900 dark:text-white uppercase tracking-tight">{item.exam?.subject?.name}</td>
+                                                                <td className="px-4 py-4 text-sm font-medium text-gray-600 dark:text-gray-300">
+                                                                    {new Date(item.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                                                                </td>
+                                                                <td className="px-4 py-4 text-sm font-black text-primary-600">
+                                                                    {item.startTime} - {item.endTime}
+                                                                </td>
+                                                                <td className="px-4 py-4 text-sm font-medium text-gray-500 dark:text-gray-400 text-right uppercase">
+                                                                    {item.room || 'TBA'}
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        ) : (
+                                            <div className="py-12 flex flex-col items-center justify-center text-gray-500">
+                                                <ClipboardList className="w-12 h-12 mb-3 opacity-20" />
+                                                <p className="text-sm font-medium">No exam schedule released yet.</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </InfoCard>
+
+                                    {/* Admit Cards Section */}
+                                    <InfoCard>
+                                        <SectionHeader title="Examination Permits (Admit Cards)" icon={FileText} />
+                                        <div className="p-6">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {examData?.admitCards?.map((card: any, idx: number) => (
+                                                <div key={idx} className="p-4 border border-gray-100 dark:border-gray-700 rounded-xl flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 bg-primary-50 dark:bg-primary-900/20 rounded-lg flex items-center justify-center text-primary-600">
+                                                            <MapPinned className="w-5 h-5" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-tight">Admit Card: {examData.examGroups.find((g:any) => g.id === card.examGroupId)?.name}</p>
+                                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Digital Permit Available</p>
+                                                        </div>
+                                                    </div>
+                                                    <button 
+                                                        onClick={() => handlePrintAdmitCard(examData.examGroups.find((g:any) => g.id === card.examGroupId))}
+                                                        className="p-2 text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/40 rounded-lg transition-colors"
+                                                    >
+                                                        <Printer className="w-5 h-5" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            </div>
+                                        </div>
+                                    </InfoCard>
+                                </>
+                            )}
+                        </div>
+                    ) : activeTab === 'Documents' ? (
+                        <div className="space-y-6">
+                            {/* Upload New Document Section */}
+                            <InfoCard>
+                                <SectionHeader title="Upload New Document" icon={Upload} />
+                                <form onSubmit={handleUploadDocument} className="p-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Document Title</label>
+                                            <input 
+                                                type="text" 
+                                                value={newDocTitle}
+                                                onChange={(e) => setNewDocTitle(e.target.value)}
+                                                placeholder="e.g. Birth Certificate"
+                                                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 transition-all outline-none"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Select File</label>
+                                            <input 
+                                                type="file" 
+                                                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                                                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2 flex justify-end">
+                                            <button 
+                                                type="submit"
+                                                disabled={isUploadingDoc}
+                                                className="btn btn-primary bg-primary-600 text-white px-6 py-2.5 rounded-xl flex items-center gap-2 font-medium hover:bg-primary-700 transition-all shadow-lg shadow-primary-600/20 disabled:opacity-50"
+                                            >
+                                                {isUploadingDoc ? (
+                                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                ) : <Upload className="w-4 h-4" />}
+                                                {isUploadingDoc ? 'Uploading...' : 'Upload Document'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </InfoCard>
+
+                            {/* Documents List */}
+                            <InfoCard>
+                                <SectionHeader title="Stored Documents" icon={FileText} />
+                                <div className="p-0">
+                                    {(student.documents && student.documents.length > 0) ? (
+                                        <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                                            {student.documents.map((doc: any) => (
+                                                <div key={doc.id} className="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center text-gray-500 group-hover:bg-primary-50 dark:group-hover:bg-primary-900/20 group-hover:text-primary-600 transition-colors">
+                                                            <FileText className="w-6 h-6" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-bold text-gray-900 dark:text-white">{doc.title}</p>
+                                                            <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">{doc.fileType || 'Document'}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <a 
+                                                            href={getFileUrl(doc.filePath)} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer"
+                                                            className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/40 rounded-lg transition-all"
+                                                            title="Download/View"
+                                                        >
+                                                            <Download className="w-5 h-5" />
+                                                        </a>
+                                                        {!isStudent && (
+                                                            <button 
+                                                                onClick={() => handleDeleteDocument(doc.id)}
+                                                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/40 rounded-lg transition-all"
+                                                                title="Delete"
+                                                            >
+                                                                <Trash2 className="w-5 h-5" />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="py-20 flex flex-col items-center justify-center text-gray-400">
+                                            <FileText className="w-16 h-16 mb-4 opacity-10" />
+                                            <p className="text-lg font-medium">No documents uploaded yet</p>
+                                            <p className="text-sm">Uploaded files will be listed here for quick access.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </InfoCard>
+                        </div>
                     ) : (
                         <InfoCard className="flex flex-col items-center justify-center py-20 min-h-[400px]">
                             <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800/50 rounded-2xl flex items-center justify-center mb-4">
@@ -603,6 +974,30 @@ export default function StudentProfile() {
                     )}
                 </div>
             </div>
+
+            <ResultVerificationModal 
+                isOpen={isVerifyModalOpen}
+                onClose={() => setIsVerifyModalOpen(false)}
+                studentId={student.id}
+                examGroups={examData?.examGroups || []}
+                onSuccess={(data) => setVerifiedResult(data)}
+            />
+
+            {/* Payment Modal for Students */}
+            {isStudent && student && (
+                <PaymentModal
+                    isOpen={showPaymentModal}
+                    onClose={() => {
+                        setShowPaymentModal(false);
+                        setSelectedFeeHead(null);
+                    }}
+                    student={student}
+                    feeHead={selectedFeeHead}
+                    onSuccess={() => {
+                        fetchStatement(); // Refresh financial data
+                    }}
+                />
+            )}
 
             {/* Simple Print Template */}
             <div className="hidden print:block print:relative print:bg-white p-4 font-serif w-full print:m-0">
@@ -846,7 +1241,7 @@ export default function StudentProfile() {
                     html, body { height: 100% !important; overflow: hidden !important; }
                 }
             `}</style>
-        </div >
+        </div>
     );
 }
 

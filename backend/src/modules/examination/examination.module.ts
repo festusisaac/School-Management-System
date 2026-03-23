@@ -8,6 +8,8 @@ import { ExamSetupController } from './controllers/exam-setup.controller';
 import { ScoreEntryController } from './controllers/score-entry.controller';
 import { ResultProcessingController } from './controllers/result-processing.controller';
 import { ResultControlController } from './controllers/result-control.controller';
+import { StudentExamController } from './controllers/student-exam.controller';
+import { Student } from '../students/entities/student.entity';
 import { ExamGroup } from './entities/exam-group.entity';
 import { AssessmentType } from './entities/assessment-type.entity';
 import { GradeScale } from './entities/grade-scale.entity';
@@ -40,13 +42,15 @@ import { ScratchCard } from './entities/scratch-card.entity';
             StudentPsychomotor,
             StudentSkill,
             ScratchCard,
+            Student,
         ]),
     ],
     controllers: [
         ExamSetupController,
         ScoreEntryController,
         ResultProcessingController,
-        ResultControlController
+        ResultControlController,
+        StudentExamController,
     ],
     providers: [
         ExamSetupService,

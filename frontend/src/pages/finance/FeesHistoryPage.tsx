@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Search,
   Filter,
@@ -22,12 +23,14 @@ import {
   X
 } from 'lucide-react';
 import { ReceiptTemplate } from './components/ReceiptTemplate';
+import StudentFinancePage from './StudentFinancePage';
 import ReactDOM from 'react-dom/client';
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { clsx } from 'clsx';
 import { formatCurrency, CURRENCY_SYMBOL } from '../../utils/currency';
 import { useSystem } from '../../context/SystemContext';
+import { useAuthStore } from '../../stores/authStore';
 
 interface Transaction {
   id: string;
@@ -57,7 +60,8 @@ interface Transaction {
 
 
 export default function FeesHistoryPage() {
-
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
   const { showError, showSuccess } = useToast();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,6 +75,10 @@ export default function FeesHistoryPage() {
   });
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
+
+  // User Role Check
+  const currentUserRole = (user?.roleObject?.name || user?.role || 'student').toLowerCase();
+  const isStudent = currentUserRole === 'student' || currentUserRole === 'parent';
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -211,15 +219,6 @@ export default function FeesHistoryPage() {
     );
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'FEE_PAYMENT': return <CheckCircle2 size={14} className="text-green-500" />;
-      case 'REFUND': return <XCircle size={14} className="text-red-500" />;
-      case 'WAIVER': return <FileText size={14} className="text-amber-500" />;
-      default: return <Clock size={14} className="text-primary-500" />;
-    }
-  };
-
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-10">
       {/* Header */}
@@ -229,6 +228,15 @@ export default function FeesHistoryPage() {
           <p className="text-gray-500 dark:text-gray-400 text-sm">Monitor and manage all financial transactions.</p>
         </div>
         <div className="flex items-center gap-3">
+          {isStudent && (
+              <button
+                onClick={() => navigate(`/students/profile/${user?.id}`)}
+                className="flex items-center gap-2 px-4 py-2 bg-primary-600 border border-primary-600 rounded-xl text-sm font-semibold text-white hover:bg-primary-700 transition-all shadow-sm"
+              >
+                <CreditCard size={18} />
+                Make Payment
+              </button>
+          )}
           <button
             onClick={handleExportCSV}
             className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all shadow-sm"

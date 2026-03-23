@@ -338,6 +338,12 @@ export class StudentsService {
         await this.studentsRepository.remove(student);
     }
 
+    async removeDocument(id: string): Promise<void> {
+        const doc = await this.documentRepository.findOne({ where: { id } });
+        if (!doc) throw new NotFoundException(`Document with ID ${id} not found`);
+        await this.documentRepository.remove(doc);
+    }
+
     async findByUserId(userId: string): Promise<Student | null> {
         return this.studentsRepository.findOne({
             where: { userId },
