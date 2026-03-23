@@ -1100,6 +1100,13 @@ export class FeesService {
         if (data.status && data.data.status === 'success') {
           const amountPaid = data.data.amount / 100; // Paystack amount is in kobo
           
+          // --- Security: Currency Validation ---
+          const settings = await this.systemSettingsService.getSettings();
+          const expectedCurrency = settings.currencyCode || 'NGN';
+          if (data.data.currency !== expectedCurrency) {
+            throw new BadRequestException(`Currency mismatch. Expected ${expectedCurrency}, got ${data.data.currency}`);
+          }
+
           // Ensure this reference hasn't been recorded yet
           const existingTx = await manager.findOne(Transaction, { where: { reference } });
           if (existingTx) {
@@ -1144,9 +1151,16 @@ export class FeesService {
         if (data.status === 'success' && data.data.status === 'successful') {
           const amountPaid = data.data.amount;
           
+          // --- Security: Currency Validation ---
+          const settings = await this.systemSettingsService.getSettings();
+          const expectedCurrency = settings.currencyCode || 'NGN';
+          if (data.data.currency !== expectedCurrency) {
+            throw new BadRequestException(`Currency mismatch. Expected ${expectedCurrency}, got ${data.data.currency}`);
+          }
+
           // Use the tx_ref as reference
           const reference = data.data.tx_ref;
-
+          
           // Acquire lock
           await manager.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [reference]);
 
@@ -1196,21 +1210,39 @@ export class FeesService {
       const reference = data.reference;
       
       return this.transactionRepo.manager.transaction(async (manager) => {
-        // Acquire lock
+        // --- Security: Lock first ---
         await manager.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [reference]);
+
+        // --- Security: Re-verify with Paystack API (Double check signed payload) ---
+        const response = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
+          headers: {
+            Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+          },
+        });
+        const psVerify = response.data;
+        if (!psVerify.status || psVerify.data.status !== 'success') {
+          return { message: 'Verification failed' };
+        }
 
         const existingTx = await manager.findOne(Transaction, { where: { reference } });
         if (existingTx) {
           return { message: 'Already processed' };
         }
 
-        const meta = data.metadata || {};
+        // --- Security: Currency Validation ---
+        const settings = await this.systemSettingsService.getSettings();
+        const expectedCurrency = settings.currencyCode || 'NGN';
+        if (psVerify.data.currency !== expectedCurrency) {
+           return { message: 'Currency mismatch' };
+        }
+
+        const meta = psVerify.data.metadata || {};
         const studentId = meta.studentId;
         if (!studentId) {
            return { message: 'No studentId attached' }; 
         }
 
-        const amountPaid = data.amount / 100;
+        const amountPaid = psVerify.data.amount / 100;
         
         await this.recordPayment({
           studentId,
@@ -1221,7 +1253,7 @@ export class FeesService {
           meta: {
             ...meta,
             gateway: 'PAYSTACK_WEBHOOK',
-            paystackData: data,
+            paystackData: psVerify.data,
           }
         });
 
@@ -1255,20 +1287,28 @@ export class FeesService {
 
         const fwData = response.data;
         if (fwData.status === 'success' && fwData.data.status === 'successful') {
+          const amountPaid = fwData.data.amount;
+          
+          // --- Security: Currency Validation ---
+          const settings = await this.systemSettingsService.getSettings();
+          const expectedCurrency = settings.currencyCode || 'NGN';
+          if (fwData.data.currency !== expectedCurrency) {
+             return { message: 'Currency mismatch' };
+          }
+
           const existingTx = await manager.findOne(Transaction, { where: { reference } });
           if (existingTx) {
             return { message: 'Already processed' }; 
           }
 
           const metaStr = data.meta || fwData.data.meta || {};
-          const studentId = metaStr.studentId;
-          if (!studentId) return { message: 'No studentId attached' }; 
-
-          const amountPaid = fwData.data.amount;
           let metaObj = { ...metaStr };
           if (typeof metaObj.allocations === 'string') {
              try { metaObj.allocations = JSON.parse(metaObj.allocations); } catch (e) {}
           }
+
+          const studentId = metaObj.studentId;
+          if (!studentId) return { message: 'No studentId attached' }; 
           
           await this.recordPayment({
             studentId,
