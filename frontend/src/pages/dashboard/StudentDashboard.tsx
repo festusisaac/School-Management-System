@@ -132,7 +132,7 @@ const StudentDashboard: React.FC = () => {
                             <Calendar className="w-5 h-5 mr-2 text-primary-600" />
                             Today's Classes
                         </h2>
-                        <Link to="/academics/class-timetable" className="text-sm text-primary-600 font-bold hover:text-primary-700 hover:underline flex items-center">
+                        <Link to="/students/timetable" className="text-sm text-primary-600 font-bold hover:text-primary-700 hover:underline flex items-center">
                             Full Week <ChevronRight className="w-4 h-4 ml-1" />
                         </Link>
                     </div>

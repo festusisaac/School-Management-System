@@ -42,7 +42,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
         { label: 'My Profile', icon: UserIcon, path: `/students/profile/${user?.id || 'me'}` },
         { label: 'Finance', icon: CreditCard, path: '/students/finance' },
-        { label: 'Class Timetable', icon: Calendar, path: '/academics/class-timetable' },
+        { label: 'Class Timetable', icon: Calendar, path: '/students/timetable' },
         { label: 'Attendance', icon: Clock, path: '/students/attendance' },
         {
             label: 'Examination',
