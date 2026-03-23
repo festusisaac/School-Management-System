@@ -125,7 +125,7 @@ export class StudentsService {
 
         // --- Simplified Fee Allocation for MVP ---
         if (feeGroupIds && Array.isArray(feeGroupIds) && feeGroupIds.length > 0) {
-            await this.feesService.assignFeesToStudent(savedStudent.id, feeGroupIds, feeExclusions);
+            await this.feesService.assignFeesToStudent(savedStudent.id, feeGroupIds, tenantId, feeExclusions);
         }
 
         // 5. Automated User Creation
@@ -238,7 +238,7 @@ export class StudentsService {
         if (!student) throw new NotFoundException(`Student with ID ${id} not found`);
 
         // Fetch Fee Assignments
-        const assignments = await this.feesService.getAssignmentsByStudent(student.id);
+        const assignments = await this.feesService.getAssignmentsByStudent(student.id, tenantId);
         (student as any).feeGroupIds = assignments.map(a => a.feeGroupId);
 
         // Returnexclusions as well
@@ -333,7 +333,7 @@ export class StudentsService {
 
         // --- Simplified Fee Allocation for MVP ---
         if (feeGroupIds && Array.isArray(feeGroupIds) && feeGroupIds.length > 0) {
-            await this.feesService.assignFeesToStudent(id, feeGroupIds, feeExclusions);
+            await this.feesService.assignFeesToStudent(id, feeGroupIds, tenantId, feeExclusions);
         }
 
         // Return the refreshed student with all relations correctly loaded

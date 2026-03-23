@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, Index } from 'typeorm';
 import { DiscountRule } from './discount-rule.entity';
 
 @Entity({ name: 'discount_profiles' })
@@ -20,6 +20,10 @@ export class DiscountProfile {
 
     @Column({ type: 'timestamp', nullable: true })
     expiryDate!: Date | null;
+
+    @Index()
+    @Column({ nullable: true })
+    tenantId?: string;
 
     @CreateDateColumn()
     createdAt!: Date;

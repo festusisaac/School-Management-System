@@ -15,9 +15,9 @@ export class ResultControlService {
         private termResultRepo: Repository<StudentTermResult>,
     ) { }
 
-    async getResultSummary(examGroupId: string, classId: string) {
+    async getResultSummary(examGroupId: string, classId: string, tenantId: string) {
         const results = await this.termResultRepo.find({
-            where: { examGroupId, classId },
+            where: { examGroupId, classId, tenantId },
             relations: ['student'],
         });
 
@@ -29,24 +29,24 @@ export class ResultControlService {
         return { total, drafted, approved, published, results };
     }
 
-    async approveResults(examGroupId: string, classId: string) {
+    async approveResults(examGroupId: string, classId: string, tenantId: string) {
         await this.termResultRepo.update(
-            { examGroupId, classId, status: 'DRAFT' },
+            { examGroupId, classId, status: 'DRAFT', tenantId },
             { status: 'APPROVED' }
         );
         return { message: 'Results approved successfully' };
     }
 
-    async publishResults(examGroupId: string, classId: string) {
+    async publishResults(examGroupId: string, classId: string, tenantId: string) {
         await this.termResultRepo.update(
-            { examGroupId, classId, status: 'APPROVED' },
+            { examGroupId, classId, status: 'APPROVED', tenantId },
             { status: 'PUBLISHED' }
         );
         return { message: 'Results published successfully' };
     }
 
 
-    async generateScratchCards(dto: GenerateScratchCardDto) {
+    async generateScratchCards(dto: GenerateScratchCardDto, tenantId: string) {
         const cards: ScratchCard[] = [];
         for (let i = 0; i < dto.count; i++) {
             // Simple generation logic - in production use secure random
@@ -57,14 +57,15 @@ export class ResultControlService {
                 serialNumber: serial,
                 pin: pin,
                 maxUsage: dto.maxUsage || 5,
+                tenantId
             });
             cards.push(card);
         }
         return this.scratchCardRepo.save(cards);
     }
 
-    async verifyCard(pin: string) {
-        const card = await this.scratchCardRepo.findOne({ where: { pin } });
+    async verifyCard(pin: string, tenantId: string) {
+        const card = await this.scratchCardRepo.findOne({ where: { pin, tenantId } });
         if (!card) return { valid: false, message: 'Invalid Card' };
         if (card.status !== 'ACTIVE') return { valid: false, message: 'Card not active' };
         if (card.usageCount >= card.maxUsage) return { valid: false, message: 'Card usage limit exceeded' };

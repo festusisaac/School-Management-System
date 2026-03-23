@@ -24,19 +24,19 @@ export class ScoreEntryService {
     ) { }
 
     // --- Marks Entry ---
-    async saveMarks(dto: SaveMarksDto) {
+    async saveMarks(dto: SaveMarksDto, tenantId: string) {
         const savedResults = [];
 
         // Fetch Exam details for denormalization
         const exam = await this.examRepo.findOne({
-            where: { id: dto.examId }
+            where: { id: dto.examId, tenantId }
         });
 
         // Fetch AssessmentType once if ID is provided
         let assessmentType: any = null;
         if (dto.assessmentTypeId) {
             assessmentType = await this.assessmentTypeRepo.findOne({
-                where: { id: dto.assessmentTypeId }
+                where: { id: dto.assessmentTypeId, tenantId }
             });
         }
 
@@ -49,7 +49,8 @@ export class ScoreEntryService {
             // Build query criteria
             const criteria: any = {
                 examId: dto.examId,
-                studentId: mark.studentId
+                studentId: mark.studentId,
+                tenantId
             };
 
             // If assessmentTypeId is provided (for granular scores), add it to criteria
@@ -73,7 +74,7 @@ export class ScoreEntryService {
                     classId: exam?.classId,
                     subjectId: exam?.subjectId,
                     examGroupId: exam?.examGroupId,
-                    tenantId: exam?.tenantId
+                    tenantId
                 });
             }
 
@@ -90,8 +91,8 @@ export class ScoreEntryService {
         return savedResults;
     }
 
-    async getMarks(examId: string, assessmentTypeId?: string) {
-        const criteria: any = { examId };
+    async getMarks(examId: string, tenantId: string, assessmentTypeId?: string) {
+        const criteria: any = { examId, tenantId };
         if (assessmentTypeId) {
             criteria.assessmentTypeId = assessmentTypeId;
         }
@@ -102,22 +103,23 @@ export class ScoreEntryService {
         });
     }
 
-    async getClassMarks(classId: string, examGroupId: string) {
+    async getClassMarks(classId: string, examGroupId: string, tenantId: string) {
         return this.examResultRepo.find({
-            where: { classId, examGroupId },
+            where: { classId, examGroupId, tenantId },
             relations: ['assessmentType'],
         });
     }
 
     // --- Skills Entry (Affective) ---
-    async saveSkills(dto: SaveSkillsDto) {
+    async saveSkills(dto: SaveSkillsDto, tenantId: string) {
         const savedSkills = [];
         for (const entry of dto.skills) {
             let skill = await this.studentSkillRepo.findOne({
                 where: {
                     studentId: entry.studentId,
                     examGroupId: dto.examGroupId,
-                    domainId: entry.domainId
+                    domainId: entry.domainId,
+                    tenantId
                 },
             });
 
@@ -126,6 +128,7 @@ export class ScoreEntryService {
                     studentId: entry.studentId,
                     examGroupId: dto.examGroupId,
                     domainId: entry.domainId,
+                    tenantId
                 });
             }
 
@@ -134,21 +137,22 @@ export class ScoreEntryService {
         }
         return savedSkills;
     }
-    async getSkills(examGroupId: string) {
+    async getSkills(examGroupId: string, tenantId: string) {
         return this.studentSkillRepo.find({
-            where: { examGroupId },
+            where: { examGroupId, tenantId },
         });
     }
 
     // --- Psychomotor Entry ---
-    async savePsychomotor(dto: SavePsychomotorDto) {
+    async savePsychomotor(dto: SavePsychomotorDto, tenantId: string) {
         const saved = [];
         for (const entry of dto.ratings) {
             let record = await this.studentPsychomotorRepo.findOne({
                 where: {
                     studentId: entry.studentId,
                     examGroupId: dto.examGroupId,
-                    domainId: entry.domainId
+                    domainId: entry.domainId,
+                    tenantId
                 },
             });
 
@@ -157,6 +161,7 @@ export class ScoreEntryService {
                     studentId: entry.studentId,
                     examGroupId: dto.examGroupId,
                     domainId: entry.domainId,
+                    tenantId
                 });
             }
 
@@ -166,9 +171,9 @@ export class ScoreEntryService {
         return saved;
     }
 
-    async getPsychomotor(examGroupId: string) {
+    async getPsychomotor(examGroupId: string, tenantId: string) {
         return this.studentPsychomotorRepo.find({
-            where: { examGroupId },
+            where: { examGroupId, tenantId },
         });
     }
 }

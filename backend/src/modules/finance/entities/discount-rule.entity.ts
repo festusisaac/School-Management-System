@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { DiscountProfile } from './discount-profile.entity';
 import { FeeHead } from './fee-head.entity';
 
@@ -26,4 +26,8 @@ export class DiscountRule {
 
     @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
     fixedAmount!: string | null;
+
+    @Index()
+    @Column({ nullable: true })
+    tenantId?: string;
 }

@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { Student } from '../../students/entities/student.entity';
 import { FeeGroup } from './fee-group.entity';
 
@@ -21,6 +21,10 @@ export class FeeAssignment {
 
     @Column({ type: 'jsonb', nullable: true })
     excludedHeadIds!: string[] | null;
+
+    @Index()
+    @Column({ nullable: true })
+    tenantId?: string;
 
     @CreateDateColumn()
     createdAt!: Date;

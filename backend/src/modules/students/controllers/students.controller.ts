@@ -136,6 +136,14 @@ export class StudentsController {
 
     // --- Students (Generic Routes) ---
 
+    @Get('profile/me')
+    async getProfile(@Request() req: any) {
+        // Find the student record associated with the logged-in user's ID
+        const userId = req.user.sub || req.user.id;
+        const student = await this.studentsService.findOne(userId, req.user.tenantId);
+        return student;
+    }
+
     @Get(':id')
     findOne(@Param('id') id: string, @Request() req: any) {
         return this.studentsService.findOne(id, req.user.tenantId);

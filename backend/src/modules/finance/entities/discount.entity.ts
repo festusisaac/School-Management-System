@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index } from 'typeorm';
 
 @Entity({ name: 'discounts' })
 export class Discount {
@@ -16,6 +16,10 @@ export class Discount {
 
   @Column({ default: true })
   active!: boolean;
+
+  @Index()
+  @Column({ nullable: true })
+  tenantId?: string;
 
   @CreateDateColumn()
   createdAt!: Date;

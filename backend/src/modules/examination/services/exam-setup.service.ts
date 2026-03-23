@@ -34,130 +34,133 @@ export class ExamSetupService {
 
 
     // --- Exam Groups ---
-    async createExamGroup(dto: CreateExamGroupDto) {
-        const group = this.examGroupRepo.create(dto);
+    async createExamGroup(dto: CreateExamGroupDto, tenantId: string) {
+        const group = this.examGroupRepo.create({ ...dto, tenantId });
         return this.examGroupRepo.save(group);
     }
 
-    async findAllExamGroups() {
-        return this.examGroupRepo.find({ order: { startDate: 'DESC' } });
+    async findAllExamGroups(tenantId: string) {
+        return this.examGroupRepo.find({ 
+            where: { tenantId },
+            order: { startDate: 'DESC' } 
+        });
     }
 
-    async findOneExamGroup(id: string) {
-        return this.examGroupRepo.findOne({ where: { id } });
+    async findOneExamGroup(id: string, tenantId: string) {
+        return this.examGroupRepo.findOne({ where: { id, tenantId } });
     }
 
-    async updateExamGroup(id: string, dto: Partial<CreateExamGroupDto>) {
-        await this.examGroupRepo.update(id, dto);
-        return this.examGroupRepo.findOne({ where: { id } });
+    async updateExamGroup(id: string, dto: Partial<CreateExamGroupDto>, tenantId: string) {
+        await this.examGroupRepo.update({ id, tenantId }, dto);
+        return this.examGroupRepo.findOne({ where: { id, tenantId } });
     }
 
-    async deleteExamGroup(id: string) {
-        return this.examGroupRepo.delete(id);
+    async deleteExamGroup(id: string, tenantId: string) {
+        return this.examGroupRepo.delete({ id, tenantId });
     }
 
     // --- Assessment Types ---
-    async createAssessmentType(dto: CreateAssessmentTypeDto) {
-        const type = this.assessmentTypeRepo.create(dto);
+    async createAssessmentType(dto: CreateAssessmentTypeDto, tenantId: string) {
+        const type = this.assessmentTypeRepo.create({ ...dto, tenantId });
         return this.assessmentTypeRepo.save(type);
     }
 
-    async getAssessmentTypes(examGroupId: string) {
-        return this.assessmentTypeRepo.find({ where: { examGroupId } });
+    async getAssessmentTypes(examGroupId: string, tenantId: string) {
+        return this.assessmentTypeRepo.find({ where: { examGroupId, tenantId } });
     }
 
-    async updateAssessmentType(id: string, dto: Partial<CreateAssessmentTypeDto>) {
-        await this.assessmentTypeRepo.update(id, dto);
-        return this.assessmentTypeRepo.findOne({ where: { id } });
+    async updateAssessmentType(id: string, dto: Partial<CreateAssessmentTypeDto>, tenantId: string) {
+        await this.assessmentTypeRepo.update({ id, tenantId }, dto);
+        return this.assessmentTypeRepo.findOne({ where: { id, tenantId } });
     }
 
-    async deleteAssessmentType(id: string) {
-        return this.assessmentTypeRepo.delete(id);
+    async deleteAssessmentType(id: string, tenantId: string) {
+        return this.assessmentTypeRepo.delete({ id, tenantId });
     }
 
     // --- Grade Scales ---
-    async createGradeScale(dto: CreateGradeScaleDto) {
-        const scale = this.gradeScaleRepo.create(dto);
+    async createGradeScale(dto: CreateGradeScaleDto, tenantId: string) {
+        const scale = this.gradeScaleRepo.create({ ...dto, tenantId });
         return this.gradeScaleRepo.save(scale);
     }
 
-    async getGradeScales() {
-        return this.gradeScaleRepo.find();
+    async getGradeScales(tenantId: string) {
+        return this.gradeScaleRepo.find({ where: { tenantId } });
     }
 
-    async updateGradeScale(id: string, dto: Partial<CreateGradeScaleDto>) {
-        await this.gradeScaleRepo.update(id, dto);
-        return this.gradeScaleRepo.findOne({ where: { id } });
+    async updateGradeScale(id: string, dto: Partial<CreateGradeScaleDto>, tenantId: string) {
+        await this.gradeScaleRepo.update({ id, tenantId }, dto);
+        return this.gradeScaleRepo.findOne({ where: { id, tenantId } });
     }
 
-    async deleteGradeScale(id: string) {
-        return this.gradeScaleRepo.delete(id);
+    async deleteGradeScale(id: string, tenantId: string) {
+        return this.gradeScaleRepo.delete({ id, tenantId });
     }
 
     // --- Exams ---
-    async createExam(dto: CreateExamDto) {
-        const exam = this.examRepo.create(dto);
+    async createExam(dto: CreateExamDto, tenantId: string) {
+        const exam = this.examRepo.create({ ...dto, tenantId });
         return this.examRepo.save(exam);
     }
 
-    async getExams(examGroupId: string) {
+    async getExams(examGroupId: string, tenantId: string) {
         return this.examRepo.find({
-            where: { examGroupId },
+            where: { examGroupId, tenantId },
             relations: ['subject', 'class', 'examGroup'],
         });
     }
 
-    async deleteExam(id: string) {
-        return this.examRepo.delete(id);
+    async deleteExam(id: string, tenantId: string) {
+        return this.examRepo.delete({ id, tenantId });
     }
 
     // --- Schedules ---
-    async scheduleExam(dto: CreateExamScheduleDto) {
-        const schedule = this.examScheduleRepo.create(dto);
+    async scheduleExam(dto: CreateExamScheduleDto, tenantId: string) {
+        const schedule = this.examScheduleRepo.create({ ...dto, tenantId });
         return this.examScheduleRepo.save(schedule);
     }
 
-    async getSchedule(examGroupId: string) {
+    async getSchedule(examGroupId: string, tenantId: string) {
         return this.examScheduleRepo.find({
-            where: { exam: { examGroupId } },
+            where: { exam: { examGroupId }, tenantId },
             relations: ['exam', 'exam.subject', 'exam.class'],
             order: { date: 'ASC', startTime: 'ASC' },
         });
     }
 
-    async updateSchedule(id: string, dto: Partial<CreateExamScheduleDto>) {
-        await this.examScheduleRepo.update(id, dto);
-        return this.examScheduleRepo.findOne({ where: { id }, relations: ['exam', 'exam.subject', 'exam.class'] });
+    async updateSchedule(id: string, dto: Partial<CreateExamScheduleDto>, tenantId: string) {
+        await this.examScheduleRepo.update({ id, tenantId }, dto);
+        return this.examScheduleRepo.findOne({ where: { id, tenantId }, relations: ['exam', 'exam.subject', 'exam.class'] });
     }
 
-    async deleteSchedule(id: string) {
-        return this.examScheduleRepo.delete(id);
+    async deleteSchedule(id: string, tenantId: string) {
+        return this.examScheduleRepo.delete({ id, tenantId });
     }
 
     // --- Admit Cards ---
-    async createAdmitCardTemplate(dto: any) {
-        const template = this.admitCardRepo.create(dto);
+    async createAdmitCardTemplate(dto: any, tenantId: string) {
+        const template = this.admitCardRepo.create({ ...dto, tenantId });
         return this.admitCardRepo.save(template);
     }
 
-    async getAdmitCardTemplates(examGroupId: string) {
-        return this.admitCardRepo.find({ where: { examGroupId } });
+    async getAdmitCardTemplates(examGroupId: string, tenantId: string) {
+        return this.admitCardRepo.find({ where: { examGroupId, tenantId } });
     }
 
-    async updateAdmitCardTemplate(id: string, dto: any) {
-        await this.admitCardRepo.update(id, dto);
-        return this.admitCardRepo.findOne({ where: { id } });
+    async updateAdmitCardTemplate(id: string, dto: any, tenantId: string) {
+        await this.admitCardRepo.update({ id, tenantId }, dto);
+        return this.admitCardRepo.findOne({ where: { id, tenantId } });
     }
 
-    async deleteAdmitCardTemplate(id: string) {
-        return this.admitCardRepo.delete(id);
+    async deleteAdmitCardTemplate(id: string, tenantId: string) {
+        return this.admitCardRepo.delete({ id, tenantId });
     }
 
-    async getAdmitCardBatchData(examGroupId: string, classId?: string) {
+    async getAdmitCardBatchData(examGroupId: string, tenantId: string, classId?: string) {
         // Fetch group, schedules, and students in parallel for efficiency
         const [schedules, group] = await Promise.all([
-            this.getSchedule(examGroupId),
-            this.findOneExamGroup(examGroupId),
+            this.getSchedule(examGroupId, tenantId),
+            this.findOneExamGroup(examGroupId, tenantId),
         ]);
 
         return {
@@ -167,40 +170,40 @@ export class ExamSetupService {
     }
 
     // --- Domains ---
-    async createPsychomotorDomain(name: string) {
-        const domain = this.psychomotorDomainRepo.create({ name });
+    async createPsychomotorDomain(name: string, tenantId: string) {
+        const domain = this.psychomotorDomainRepo.create({ name, tenantId });
         return this.psychomotorDomainRepo.save(domain);
     }
 
-    async getPsychomotorDomains() {
-        return this.psychomotorDomainRepo.find();
+    async getPsychomotorDomains(tenantId: string) {
+        return this.psychomotorDomainRepo.find({ where: { tenantId } });
     }
 
-    async updatePsychomotorDomain(id: string, name: string) {
-        await this.psychomotorDomainRepo.update(id, { name });
-        return this.psychomotorDomainRepo.findOne({ where: { id } });
+    async updatePsychomotorDomain(id: string, name: string, tenantId: string) {
+        await this.psychomotorDomainRepo.update({ id, tenantId }, { name });
+        return this.psychomotorDomainRepo.findOne({ where: { id, tenantId } });
     }
 
-    async deletePsychomotorDomain(id: string) {
-        return this.psychomotorDomainRepo.delete(id);
+    async deletePsychomotorDomain(id: string, tenantId: string) {
+        return this.psychomotorDomainRepo.delete({ id, tenantId });
     }
 
     // --- Affective Domains ---
-    async createAffectiveDomain(name: string) {
-        const domain = this.affectiveDomainRepo.create({ name });
+    async createAffectiveDomain(name: string, tenantId: string) {
+        const domain = this.affectiveDomainRepo.create({ name, tenantId });
         return this.affectiveDomainRepo.save(domain);
     }
 
-    async getAffectiveDomains() {
-        return this.affectiveDomainRepo.find();
+    async getAffectiveDomains(tenantId: string) {
+        return this.affectiveDomainRepo.find({ where: { tenantId } });
     }
 
-    async updateAffectiveDomain(id: string, name: string) {
-        await this.affectiveDomainRepo.update(id, { name });
-        return this.affectiveDomainRepo.findOne({ where: { id } });
+    async updateAffectiveDomain(id: string, name: string, tenantId: string) {
+        await this.affectiveDomainRepo.update({ id, tenantId }, { name });
+        return this.affectiveDomainRepo.findOne({ where: { id, tenantId } });
     }
 
-    async deleteAffectiveDomain(id: string) {
-        return this.affectiveDomainRepo.delete(id);
+    async deleteAffectiveDomain(id: string, tenantId: string) {
+        return this.affectiveDomainRepo.delete({ id, tenantId });
     }
 }

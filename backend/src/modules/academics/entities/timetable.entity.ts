@@ -11,6 +11,7 @@ import { Class } from './class.entity';
 import { Section } from './section.entity';
 import { Subject } from './subject.entity';
 import { TimetablePeriod } from './timetable-period.entity';
+import { Staff } from '../../hr/entities/staff.entity';
 
 @Entity('timetables')
 export class Timetable {
@@ -50,6 +51,10 @@ export class Timetable {
 
     @Column({ type: 'uuid', nullable: true })
     teacherId!: string | null; // Optional - can be assigned later
+
+    @ManyToOne(() => Staff)
+    @JoinColumn({ name: 'teacherId' })
+    teacher!: Staff;
 
     @Column({ type: 'varchar', nullable: true })
     roomNumber!: string | null; // Optional classroom/room number

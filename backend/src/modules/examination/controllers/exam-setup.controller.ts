@@ -13,13 +13,16 @@ import {
     HttpStatus,
     UseInterceptors,
     UploadedFile,
+    Request,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { ExamSetupService } from '../services/exam-setup.service';
 import { CreateExamGroupDto, CreateAssessmentTypeDto, CreateGradeScaleDto, CreateExamDto, CreateExamScheduleDto, CreateAdmitCardTemplateDto } from '../dtos/setup/create-setup.dto';
+import { JwtAuthGuard } from '../../../guards/jwt-auth.guard';
 
+@UseGuards(JwtAuthGuard)
 @Controller('examination/setup')
 export class ExamSetupController {
     constructor(private readonly setupService: ExamSetupService) { }
@@ -43,159 +46,158 @@ export class ExamSetupController {
     }
 
     @Post('groups')
-    createGroup(@Body() dto: CreateExamGroupDto) {
-        return this.setupService.createExamGroup(dto);
+    createGroup(@Body() dto: CreateExamGroupDto, @Request() req: any) {
+        return this.setupService.createExamGroup(dto, req.user.tenantId);
     }
 
     @Get('groups')
-    getGroups() {
-        return this.setupService.findAllExamGroups();
+    getGroups(@Request() req: any) {
+        return this.setupService.findAllExamGroups(req.user.tenantId);
     }
 
     @Post('assessments')
-    createAssessment(@Body() dto: CreateAssessmentTypeDto) {
-        return this.setupService.createAssessmentType(dto);
+    createAssessment(@Body() dto: CreateAssessmentTypeDto, @Request() req: any) {
+        return this.setupService.createAssessmentType(dto, req.user.tenantId);
     }
 
     @Get('assessments')
-    getAssessments(@Query('examGroupId') examGroupId: string) {
-        return this.setupService.getAssessmentTypes(examGroupId);
+    getAssessments(@Query('examGroupId') examGroupId: string, @Request() req: any) {
+        return this.setupService.getAssessmentTypes(examGroupId, req.user.tenantId);
     }
 
     @Patch('assessments/:id')
-    updateAssessment(@Param('id') id: string, @Body() dto: Partial<CreateAssessmentTypeDto>) {
-        return this.setupService.updateAssessmentType(id, dto);
+    updateAssessment(@Param('id') id: string, @Body() dto: Partial<CreateAssessmentTypeDto>, @Request() req: any) {
+        return this.setupService.updateAssessmentType(id, dto, req.user.tenantId);
     }
 
     @Delete('assessments/:id')
-    deleteAssessment(@Param('id') id: string) {
-        return this.setupService.deleteAssessmentType(id);
+    deleteAssessment(@Param('id') id: string, @Request() req: any) {
+        return this.setupService.deleteAssessmentType(id, req.user.tenantId);
     }
 
     @Post('grades')
-    createGrade(@Body() dto: CreateGradeScaleDto) {
-        return this.setupService.createGradeScale(dto);
+    createGrade(@Body() dto: CreateGradeScaleDto, @Request() req: any) {
+        return this.setupService.createGradeScale(dto, req.user.tenantId);
     }
 
     @Get('grades')
-    getGrades() {
-        return this.setupService.getGradeScales();
+    getGrades(@Request() req: any) {
+        return this.setupService.getGradeScales(req.user.tenantId);
     }
 
     @Patch('grades/:id')
-    updateGrade(@Param('id') id: string, @Body() dto: Partial<CreateGradeScaleDto>) {
-        return this.setupService.updateGradeScale(id, dto);
+    updateGrade(@Param('id') id: string, @Body() dto: Partial<CreateGradeScaleDto>, @Request() req: any) {
+        return this.setupService.updateGradeScale(id, dto, req.user.tenantId);
     }
 
     @Delete('grades/:id')
-    deleteGrade(@Param('id') id: string) {
-        return this.setupService.deleteGradeScale(id);
+    deleteGrade(@Param('id') id: string, @Request() req: any) {
+        return this.setupService.deleteGradeScale(id, req.user.tenantId);
     }
 
     @Post('exams')
-    createExam(@Body() dto: CreateExamDto) {
-        return this.setupService.createExam(dto);
+    createExam(@Body() dto: CreateExamDto, @Request() req: any) {
+        return this.setupService.createExam(dto, req.user.tenantId);
     }
 
     @Get('exams')
-    getExams(@Query('examGroupId') examGroupId: string) {
-        return this.setupService.getExams(examGroupId);
+    getExams(@Query('examGroupId') examGroupId: string, @Request() req: any) {
+        return this.setupService.getExams(examGroupId, req.user.tenantId);
     }
 
     @Delete('exams/:id')
-    deleteExam(@Param('id') id: string) {
-        return this.setupService.deleteExam(id);
+    deleteExam(@Param('id') id: string, @Request() req: any) {
+        return this.setupService.deleteExam(id, req.user.tenantId);
     }
 
     @Post('schedules')
-    scheduleExam(@Body() dto: CreateExamScheduleDto) {
-        return this.setupService.scheduleExam(dto);
+    scheduleExam(@Body() dto: CreateExamScheduleDto, @Request() req: any) {
+        return this.setupService.scheduleExam(dto, req.user.tenantId);
     }
 
     @Get('schedules')
-    getSchedule(@Query('examGroupId') examGroupId: string) {
-        return this.setupService.getSchedule(examGroupId);
+    getSchedule(@Query('examGroupId') examGroupId: string, @Request() req: any) {
+        return this.setupService.getSchedule(examGroupId, req.user.tenantId);
     }
 
     @Patch('schedules/:id')
-    updateSchedule(@Param('id') id: string, @Body() dto: Partial<CreateExamScheduleDto>) {
-        return this.setupService.updateSchedule(id, dto);
+    updateSchedule(@Param('id') id: string, @Body() dto: Partial<CreateExamScheduleDto>, @Request() req: any) {
+        return this.setupService.updateSchedule(id, dto, req.user.tenantId);
     }
 
     @Delete('schedules/:id')
-    deleteSchedule(@Param('id') id: string) {
-        return this.setupService.deleteSchedule(id);
+    deleteSchedule(@Param('id') id: string, @Request() req: any) {
+        return this.setupService.deleteSchedule(id, req.user.tenantId);
     }
 
     // --- Admit Cards ---
     @Post('admit-cards')
-    createAdmitCard(@Body() dto: CreateAdmitCardTemplateDto) {
-        return this.setupService.createAdmitCardTemplate(dto);
+    createAdmitCard(@Body() dto: CreateAdmitCardTemplateDto, @Request() req: any) {
+        return this.setupService.createAdmitCardTemplate(dto, req.user.tenantId);
     }
 
     @Get('admit-cards')
-    getAdmitCards(@Query('examGroupId') examGroupId: string) {
-        return this.setupService.getAdmitCardTemplates(examGroupId);
+    getAdmitCards(@Query('examGroupId') examGroupId: string, @Request() req: any) {
+        return this.setupService.getAdmitCardTemplates(examGroupId, req.user.tenantId);
     }
 
     @Patch('admit-cards/:id')
-    updateAdmitCard(@Param('id') id: string, @Body() dto: Partial<CreateAdmitCardTemplateDto>) {
-        return this.setupService.updateAdmitCardTemplate(id, dto);
+    updateAdmitCard(@Param('id') id: string, @Body() dto: Partial<CreateAdmitCardTemplateDto>, @Request() req: any) {
+        return this.setupService.updateAdmitCardTemplate(id, dto, req.user.tenantId);
     }
 
     @Delete('admit-cards/:id')
-    deleteAdmitCard(@Param('id') id: string) {
-        return this.setupService.deleteAdmitCardTemplate(id);
+    deleteAdmitCard(@Param('id') id: string, @Request() req: any) {
+        return this.setupService.deleteAdmitCardTemplate(id, req.user.tenantId);
     }
 
     @Post('psychomotor-domains')
-    createPsychomotorDomain(@Body('name') name: string) {
-        return this.setupService.createPsychomotorDomain(name);
+    createPsychomotorDomain(@Body('name') name: string, @Request() req: any) {
+        return this.setupService.createPsychomotorDomain(name, req.user.tenantId);
     }
 
     @Get('psychomotor-domains')
-    getPsychomotorDomains() {
-        return this.setupService.getPsychomotorDomains();
+    getPsychomotorDomains(@Request() req: any) {
+        return this.setupService.getPsychomotorDomains(req.user.tenantId);
     }
 
     @Patch('psychomotor-domains/:id')
-    updatePsychomotorDomain(@Param('id') id: string, @Body('name') name: string) {
-        return this.setupService.updatePsychomotorDomain(id, name);
+    updatePsychomotorDomain(@Param('id') id: string, @Body('name') name: string, @Request() req: any) {
+        return this.setupService.updatePsychomotorDomain(id, name, req.user.tenantId);
     }
 
     @Delete('psychomotor-domains/:id')
-    deletePsychomotorDomain(@Param('id') id: string) {
-        return this.setupService.deletePsychomotorDomain(id);
+    deletePsychomotorDomain(@Param('id') id: string, @Request() req: any) {
+        return this.setupService.deletePsychomotorDomain(id, req.user.tenantId);
     }
 
     @Post('affective-domains')
-    createAffectiveDomain(@Body('name') name: string) {
-        return this.setupService.createAffectiveDomain(name);
+    createAffectiveDomain(@Body('name') name: string, @Request() req: any) {
+        return this.setupService.createAffectiveDomain(name, req.user.tenantId);
     }
 
     @Get('affective-domains')
-    getAffectiveDomains() {
-        return this.setupService.getAffectiveDomains();
+    getAffectiveDomains(@Request() req: any) {
+        return this.setupService.getAffectiveDomains(req.user.tenantId);
     }
 
     @Patch('affective-domains/:id')
-    updateAffectiveDomain(@Param('id') id: string, @Body('name') name: string) {
-        return this.setupService.updateAffectiveDomain(id, name);
+    updateAffectiveDomain(@Param('id') id: string, @Body('name') name: string, @Request() req: any) {
+        return this.setupService.updateAffectiveDomain(id, name, req.user.tenantId);
     }
 
     @Delete('affective-domains/:id')
-    deleteAffectiveDomain(@Param('id') id: string) {
-        return this.setupService.deleteAffectiveDomain(id);
+    deleteAffectiveDomain(@Param('id') id: string, @Request() req: any) {
+        return this.setupService.deleteAffectiveDomain(id, req.user.tenantId);
     }
 
     @Patch('groups/:id')
-    updateGroup(@Param('id') id: string, @Body() dto: Partial<CreateExamGroupDto>) {
-        return this.setupService.updateExamGroup(id, dto);
+    updateGroup(@Param('id') id: string, @Body() dto: Partial<CreateExamGroupDto>, @Request() req: any) {
+        return this.setupService.updateExamGroup(id, dto, req.user.tenantId);
     }
 
     @Delete('groups/:id')
-    deleteGroup(@Param('id') id: string) {
-        return this.setupService.deleteExamGroup(id);
+    deleteGroup(@Param('id') id: string, @Request() req: any) {
+        return this.setupService.deleteExamGroup(id, req.user.tenantId);
     }
 }
-

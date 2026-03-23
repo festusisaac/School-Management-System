@@ -5,7 +5,8 @@ import {
     CreateDateColumn,
     UpdateDateColumn,
     ManyToMany,
-    JoinTable
+    JoinTable,
+    Index
 } from 'typeorm';
 import { FeeHead } from './fee-head.entity';
 
@@ -30,6 +31,10 @@ export class FeeGroup {
 
     @Column({ type: 'boolean', default: true })
     isActive!: boolean;
+
+    @Index()
+    @Column({ nullable: true })
+    tenantId?: string;
 
     @CreateDateColumn()
     createdAt!: Date;

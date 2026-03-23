@@ -179,7 +179,7 @@ export class TimetableService {
                 sectionId: sectionId ? sectionId : IsNull(),
                 tenantId
             },
-            relations: ['subject', 'period'],
+            relations: ['subject', 'period', 'teacher'],
             order: { dayOfWeek: 'ASC', period: { periodOrder: 'ASC' } },
         });
     }
@@ -195,7 +195,7 @@ export class TimetableService {
     async getTimetableSlotById(id: string): Promise<Timetable> {
         const slot = await this.timetableRepository.findOne({
             where: { id },
-            relations: ['subject', 'period', 'class', 'section'],
+            relations: ['subject', 'period', 'class', 'section', 'teacher'],
         });
         if (!slot) throw new NotFoundException('Timetable slot not found');
         return slot;

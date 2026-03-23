@@ -43,6 +43,31 @@ async function runFix() {
             { name: 'deactivate_reasons', column: 'tenantId' },
             { name: 'student_documents', column: 'tenantId' },
             { name: 'online_admissions', column: 'tenantId' },
+            // FINANCE TABLES
+            { name: 'carry_forwards', column: 'tenantId' },
+            { name: 'discount_profiles', column: 'tenantId' },
+            { name: 'discount_rules', column: 'tenantId' },
+            { name: 'discounts', column: 'tenantId' },
+            { name: 'fee_assignments', column: 'tenantId' },
+            { name: 'fee_groups', column: 'tenantId' },
+            { name: 'fee_heads', column: 'tenantId' },
+            { name: 'fee_structures', column: 'tenantId' },
+            { name: 'payment_reminders', column: 'tenantId' },
+            // EXAMINATION TABLES
+            { name: 'exams', column: 'tenantId' },
+            { name: 'exam_groups', column: 'tenantId' },
+            { name: 'assessment_types', column: 'tenantId' },
+            { name: 'exam_results', column: 'tenantId' },
+            { name: 'exam_schedules', column: 'tenantId' },
+            { name: 'affective_domains', column: 'tenantId' },
+            { name: 'psychomotor_domains', column: 'tenantId' },
+            { name: 'remark_configs', column: 'tenantId' },
+            { name: 'admit_cards', column: 'tenantId' },
+            { name: 'scratch_cards', column: 'tenantId' },
+            { name: 'student_psychomotors', column: 'tenantId' },
+            { name: 'student_skills', column: 'tenantId' },
+            { name: 'student_term_results', column: 'tenantId' },
+            { name: 'grade_scales', column: 'tenantId' },
         ];
 
         for (const table of tablesToFix) {

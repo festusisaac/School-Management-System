@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index } from 'typeorm';
 
 @Entity({ name: 'carry_forwards' })
 export class CarryForward {
@@ -13,6 +13,10 @@ export class CarryForward {
 
   @Column()
   academicYear!: string;
+
+  @Index()
+  @Column({ nullable: true })
+  tenantId?: string;
 
   @CreateDateColumn()
   createdAt!: Date;

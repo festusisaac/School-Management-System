@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 
 @Entity({ name: 'fee_heads' })
 export class FeeHead {
@@ -19,6 +19,10 @@ export class FeeHead {
 
     @Column({ type: 'boolean', default: false })
     isOptional!: boolean;
+
+    @Index()
+    @Column({ nullable: true })
+    tenantId?: string;
 
     @CreateDateColumn()
     createdAt!: Date;
