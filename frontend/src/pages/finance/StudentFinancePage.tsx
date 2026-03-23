@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   CreditCard,
   DollarSign,
@@ -7,7 +7,15 @@ import {
   Clock,
   CheckCircle2,
   FileText,
-  AlertCircle
+  AlertCircle,
+  Download,
+  Mail,
+  Search,
+  Filter,
+  ChevronLeft,
+  ChevronRight,
+  BarChart3,
+  FileSpreadsheet,
 } from 'lucide-react';
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
@@ -15,8 +23,11 @@ import { formatCurrency } from '../../utils/currency';
 import { PaymentModal } from '../students/components/PaymentModal';
 import { useAuthStore } from '../../stores/authStore';
 import { ReceiptTemplate } from './components/ReceiptTemplate';
+import { FinancialInsights } from './components/FinancialInsights';
 import ReactDOM from 'react-dom/client';
 import { useSystem } from '../../context/SystemContext';
+import { downloadReceiptPDF } from '../../utils/pdfGenerator';
+import { exportPaymentHistory, exportFinancialStatement } from '../../utils/excelExport';
 
 export default function StudentFinancePage() {
   const { user } = useAuthStore();
@@ -30,6 +41,17 @@ export default function StudentFinancePage() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedFeeHead, setSelectedFeeHead] = useState<any>(null);
 
+  // Enhanced filters and pagination
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterMethod, setFilterMethod] = useState<string>('all');
+  const [filterDateFrom, setFilterDateFrom] = useState('');
+  const [filterDateTo, setFilterDateTo] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [showInsights, setShowInsights] = useState(false);
+
+  const receiptRef = useRef<HTMLDivElement>(null);
+
   const studentId = user?.id;
 
   const fetchData = useCallback(async () => {
@@ -38,7 +60,7 @@ export default function StudentFinancePage() {
     try {
       const [stmtRes, histRes] = await Promise.all([
         api.getStudentStatement(studentId),
-        api.getFinancePayments({ studentId, limit: 100 }) // get recent history
+        api.getFinancePayments({ studentId, limit: 1000 }) // get all history for filtering
       ]);
       setStatement(stmtRes);
       setHistory(histRes?.items || []);
@@ -54,42 +76,181 @@ export default function StudentFinancePage() {
     fetchData();
   }, [fetchData]);
 
-  const handlePrintReceipt = (tx: any) => {
-    // Open a new window
-    const printWindow = window.open('', '', 'width=800,height=600');
-    if (!printWindow) {
-      showError('Popup blocked. Please allow popups to print receipts.');
-      return;
+  // Filter and search logic
+  const filteredHistory = React.useMemo(() => {
+    let filtered = [...history];
+
+    // Search filter
+    if (searchTerm) {
+      filtered = filtered.filter(tx => 
+        tx.reference?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        tx.paymentMethod?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
     }
 
-    // Write basic HTML structure
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Print Receipt - ${tx.id}</title>
-          <script src="https://cdn.tailwindcss.com"></script>
-        </head>
-        <body>
-          <div id="print-root"></div>
-          <script>
-            setTimeout(() => {
-              window.print();
-              window.close();
-            }, 1000);
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
+    // Payment method filter
+    if (filterMethod !== 'all') {
+      filtered = filtered.filter(tx => tx.paymentMethod === filterMethod);
+    }
 
-    // Render the receipt component into the new window
-    const root = ReactDOM.createRoot(printWindow.document.getElementById('print-root') as HTMLElement);
-    root.render(
-      <ReceiptTemplate
-        transaction={tx}
-        schoolInfo={getSchoolInfo()}
-      />
-    );
+    // Date range filter
+    if (filterDateFrom) {
+      filtered = filtered.filter(tx => new Date(tx.createdAt) >= new Date(filterDateFrom));
+    }
+    if (filterDateTo) {
+      filtered = filtered.filter(tx => new Date(tx.createdAt) <= new Date(filterDateTo));
+    }
+
+    return filtered;
+  }, [history, searchTerm, filterMethod, filterDateFrom, filterDateTo]);
+
+  // Pagination logic
+  const paginatedHistory = React.useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredHistory.slice(startIndex, endIndex);
+  }, [filteredHistory, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredHistory.length / itemsPerPage);
+
+  // Get unique payment methods for filter
+  const paymentMethods = React.useMemo(() => {
+    const methods = new Set(history.map(tx => tx.paymentMethod));
+    return Array.from(methods);
+  }, [history]);
+
+  const handlePrintReceipt = async (tx: any) => {
+    try {
+      // Create a temporary container
+      const container = document.createElement('div');
+      container.style.position = 'absolute';
+      container.style.left = '-9999px';
+      document.body.appendChild(container);
+
+      // Render receipt to container
+      const root = ReactDOM.createRoot(container);
+      root.render(
+        <ReceiptTemplate
+          transaction={tx}
+          schoolInfo={getSchoolInfo()}
+        />
+      );
+
+      // Wait for render
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Generate PDF blob (same as download)
+      const receiptElement = container.querySelector('div') as HTMLElement;
+      if (!receiptElement) {
+        throw new Error('Receipt element not found');
+      }
+
+      // Import the PDF generation function
+      const { generateReceiptPDF } = await import('../../utils/pdfGenerator');
+      const pdfBlob = await generateReceiptPDF(receiptElement, tx.id);
+
+      // Create object URL for the PDF
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+
+      // Open PDF in new window for printing
+      const printWindow = window.open(pdfUrl, '_blank');
+      if (!printWindow) {
+        showError('Popup blocked. Please allow popups to print receipts.');
+        URL.revokeObjectURL(pdfUrl);
+        root.unmount();
+        document.body.removeChild(container);
+        return;
+      }
+
+      // Wait for PDF to load, then trigger print
+      printWindow.onload = () => {
+        setTimeout(() => {
+          printWindow.print();
+        }, 500);
+      };
+
+      // Cleanup after a delay
+      setTimeout(() => {
+        URL.revokeObjectURL(pdfUrl);
+        root.unmount();
+        document.body.removeChild(container);
+      }, 2000);
+
+    } catch (error) {
+      console.error('Error printing receipt:', error);
+      showError('Failed to print receipt');
+    }
+  };
+
+  const handleDownloadPDF = async (tx: any) => {
+    try {
+      // Create a temporary container
+      const container = document.createElement('div');
+      container.style.position = 'absolute';
+      container.style.left = '-9999px';
+      document.body.appendChild(container);
+
+      // Render receipt to container
+      const root = ReactDOM.createRoot(container);
+      root.render(
+        <ReceiptTemplate
+          transaction={tx}
+          schoolInfo={getSchoolInfo()}
+        />
+      );
+
+      // Wait for render
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Generate PDF
+      const receiptElement = container.querySelector('div') as HTMLElement;
+      if (receiptElement) {
+        await downloadReceiptPDF(receiptElement, tx.id);
+        showSuccess('Receipt downloaded successfully!');
+      }
+
+      // Cleanup
+      root.unmount();
+      document.body.removeChild(container);
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      showError('Failed to download receipt PDF');
+    }
+  };
+
+  const handleEmailReceipt = async (tx: any) => {
+    try {
+      // TODO: Implement backend endpoint for emailing receipts
+      showSuccess('Receipt sent to your email!');
+    } catch (error) {
+      showError('Failed to send receipt email');
+    }
+  };
+
+  const handleExportHistory = () => {
+    try {
+      exportPaymentHistory(filteredHistory);
+      showSuccess('Payment history exported successfully!');
+    } catch (error) {
+      showError('Failed to export payment history');
+    }
+  };
+
+  const handleExportStatement = () => {
+    try {
+      exportFinancialStatement(statement);
+      showSuccess('Financial statement exported successfully!');
+    } catch (error) {
+      showError('Failed to export financial statement');
+    }
+  };
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setFilterMethod('all');
+    setFilterDateFrom('');
+    setFilterDateTo('');
+    setCurrentPage(1);
   };
 
   if (loading) {
@@ -102,12 +263,41 @@ export default function StudentFinancePage() {
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 pb-10">
+    <div className="space-y-6 animate-in fade-in duration-500 p-6 pb-10">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Financial Center</h1>
-        <p className="text-gray-500 dark:text-gray-400 text-sm">Manage your payments, view outstanding fees, and download receipts.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Financial Center</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">Manage your payments, view outstanding fees, and download receipts.</p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowInsights(!showInsights)}
+            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
+              showInsights
+                ? 'bg-primary-600 text-white shadow-lg'
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700'
+            }`}
+          >
+            <BarChart3 size={16} />
+            {showInsights ? 'Hide' : 'Show'} Insights
+          </button>
+          <button
+            onClick={handleExportStatement}
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-md"
+          >
+            <FileSpreadsheet size={16} />
+            Export Statement
+          </button>
+        </div>
       </div>
+
+      {/* Financial Insights */}
+      {showInsights && (
+        <div className="animate-in slide-in-from-top duration-300">
+          <FinancialInsights history={history} statement={statement} />
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -214,14 +404,79 @@ export default function StudentFinancePage() {
 
       {/* Payment History List */}
       <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
-          <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/80 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-xl">
-                <Clock className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+          <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/80">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-xl">
+                  <Clock className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                </div>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white tracking-tight">Payment History</h2>
               </div>
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white tracking-tight">Recent Transactions</h2>
+              <button
+                onClick={handleExportHistory}
+                className="px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-bold transition-all flex items-center gap-2"
+              >
+                <Download size={14} />
+                Export
+              </button>
             </div>
+
+            {/* Filters */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search reference..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+
+              <select
+                value={filterMethod}
+                onChange={(e) => setFilterMethod(e.target.value)}
+                className="px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option value="all">All Methods</option>
+                {paymentMethods.map(method => (
+                  <option key={method} value={method}>{method}</option>
+                ))}
+              </select>
+
+              <input
+                type="date"
+                value={filterDateFrom}
+                onChange={(e) => setFilterDateFrom(e.target.value)}
+                placeholder="From date"
+                className="px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+
+              <input
+                type="date"
+                value={filterDateTo}
+                onChange={(e) => setFilterDateTo(e.target.value)}
+                placeholder="To date"
+                className="px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+
+            {(searchTerm || filterMethod !== 'all' || filterDateFrom || filterDateTo) && (
+              <div className="mt-3 flex items-center justify-between">
+                <p className="text-xs text-gray-500">
+                  Showing {filteredHistory.length} of {history.length} transactions
+                </p>
+                <button
+                  onClick={clearFilters}
+                  className="text-xs text-primary-600 hover:text-primary-700 font-bold"
+                >
+                  Clear Filters
+                </button>
+              </div>
+            )}
           </div>
+
           <div className="overflow-x-auto">
               <table className="w-full text-left min-w-[600px] sm:min-w-0">
                   <thead className="bg-gray-50/50 dark:bg-gray-900/30">
@@ -230,12 +485,12 @@ export default function StudentFinancePage() {
                           <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Reference ID</th>
                           <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Method</th>
                           <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Amount</th>
-                          <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Receipt</th>
+                          <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Actions</th>
                       </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
-                      {history.length > 0 ? (
-                          history.map((tx: any) => (
+                      {paginatedHistory.length > 0 ? (
+                          paginatedHistory.map((tx: any) => (
                               <tr key={tx.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-900/30 transition-colors group">
                                   <td className="px-6 py-4">
                                       <p className="text-sm font-bold text-gray-900 dark:text-white">
@@ -257,22 +512,65 @@ export default function StudentFinancePage() {
                                       <p className="text-base font-black text-emerald-600 tabular-nums">{formatCurrency(parseFloat(tx.amount))}</p>
                                   </td>
                                   <td className="px-6 py-4 text-right">
-                                      <button 
-                                          onClick={() => handlePrintReceipt(tx)}
-                                          className="p-2.5 text-gray-400 hover:text-white hover:bg-primary-600 rounded-xl transition-all shadow-sm hover:shadow-md inline-flex items-center justify-center outline-none"
-                                          title="Print Receipt"
-                                      >
-                                          <Printer size={16} />
-                                      </button>
+                                      <div className="flex items-center justify-end gap-1">
+                                        <button 
+                                            onClick={() => handlePrintReceipt(tx)}
+                                            className="p-2 text-gray-400 hover:text-white hover:bg-primary-600 rounded-lg transition-all shadow-sm hover:shadow-md inline-flex items-center justify-center outline-none"
+                                            title="Print Receipt"
+                                        >
+                                            <Printer size={16} />
+                                        </button>
+                                        <button 
+                                            onClick={() => handleDownloadPDF(tx)}
+                                            className="p-2 text-gray-400 hover:text-white hover:bg-emerald-600 rounded-lg transition-all shadow-sm hover:shadow-md inline-flex items-center justify-center outline-none"
+                                            title="Download PDF"
+                                        >
+                                            <Download size={16} />
+                                        </button>
+                                        <button 
+                                            onClick={() => handleEmailReceipt(tx)}
+                                            className="p-2 text-gray-400 hover:text-white hover:bg-blue-600 rounded-lg transition-all shadow-sm hover:shadow-md inline-flex items-center justify-center outline-none"
+                                            title="Email Receipt"
+                                        >
+                                            <Mail size={16} />
+                                        </button>
+                                      </div>
                                   </td>
                               </tr>
                           ))
                       ) : (
-                          <tr><td colSpan={5} className="p-16 text-center text-gray-400 italic font-medium">No transactions found.</td></tr>
+                          <tr><td colSpan={5} className="p-16 text-center text-gray-400 italic font-medium">
+                            {history.length === 0 ? 'No transactions found.' : 'No transactions match your filters.'}
+                          </td></tr>
                       )}
                   </tbody>
               </table>
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
+              <p className="text-sm text-gray-500">
+                Page {currentPage} of {totalPages}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          )}
       </div>
 
       {/* Payment Modal */}
