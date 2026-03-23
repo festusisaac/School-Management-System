@@ -657,26 +657,14 @@ export default function RecordPaymentPage() {
                                                     )}>
                                                         {transactionType === 'WAIVER' ? 'Total Amount to Waive' : 'Total Amount to record'}
                                                     </p>
-                                                    <input
-                                                        type="number"
-                                                        step="0.01"
+                                                    <div
                                                         className={clsx(
-                                                            "w-full bg-transparent text-center text-3xl font-black border-none focus:ring-0 p-0",
+                                                            "w-full bg-transparent text-center text-3xl font-black border-none p-0 overflow-hidden text-ellipsis whitespace-nowrap",
                                                             transactionType === 'WAIVER' ? "text-amber-600" : "text-primary-600 dark:text-primary-400"
                                                         )}
-                                                        value={amount}
-                                                        onChange={(e) => {
-                                                            setAmount(e.target.value);
-                                                            // If they manually change total, we clear allocations to reflect it's a general payment
-                                                            setHeadAllocations({});
-                                                        }}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                                                                e.preventDefault();
-                                                            }
-                                                        }}
-                                                        placeholder="0.00"
-                                                    />
+                                                    >
+                                                        {amount ? Number(amount).toLocaleString('en-NG', { maximumFractionDigits: 2, minimumFractionDigits: 2 }) : '0.00'}
+                                                    </div>
                                                 </div>
                                                 {transactionType === 'WAIVER' ? (
                                                     <FileText className="absolute -left-2 -bottom-2 text-amber-600/5 -rotate-12" size={80} />
@@ -697,7 +685,6 @@ export default function RecordPaymentPage() {
                                                             <option value="CASH">Cash</option>
                                                             <option value="BANK_TRANSFER">Bank Transfer</option>
                                                             <option value="POS">POS</option>
-                                                            <option value="ONLINE">Online Portal</option>
                                                         </select>
                                                     </div>
                                                 )}

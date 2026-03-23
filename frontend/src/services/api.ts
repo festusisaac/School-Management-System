@@ -170,6 +170,14 @@ class ApiService {
     return this.post<any>('/finance/record-payment', data)
   }
 
+  async verifyPaystackPayment(data: { reference: string, meta: any, studentId: string }) {
+    return this.post<any>('/finance/paystack/verify', data)
+  }
+
+  async verifyFlutterwavePayment(data: { transactionId: string, meta: any, studentId: string }) {
+    return this.post<any>('/finance/flutterwave/verify', data)
+  }
+
   async refundPayment(id: string, reason: string) {
     return this.post<any>(`/finance/payments/${id}/refund`, { reason })
   }

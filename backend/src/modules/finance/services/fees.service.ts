@@ -1,6 +1,8 @@
 import { Injectable, BadRequestException, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, IsNull } from 'typeorm';
+import axios from 'axios';
+import * as crypto from 'crypto';
 import { Transaction, TransactionType, PaymentMethod } from '../entities/transaction.entity';
 import { CreatePaymentDto } from '../dtos/create-payment.dto';
 import { FeeStructure } from '../entities/fee-structure.entity';
@@ -1008,5 +1010,186 @@ export class FeesService {
       conflicts: alreadyAssignedIds.size,
       students: affectedStudents
     };
+  }
+
+  async verifyPaystackPayment(reference: string, meta: any, studentId: string) {
+    try {
+      const response = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
+        headers: {
+          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+        },
+      });
+
+      const data = response.data;
+      if (data.status && data.data.status === 'success') {
+        const amountPaid = data.data.amount / 100; // Paystack amount is in kobo
+        
+        // Ensure this reference hasn't been recorded yet
+        const existingTx = await this.transactionRepo.findOne({ where: { reference } });
+        if (existingTx) {
+          throw new ConflictException('Payment already recorded');
+        }
+
+        // Record the payment
+        await this.recordPayment({
+          studentId,
+          amount: amountPaid.toString(),
+          paymentMethod: PaymentMethod.ONLINE,
+          reference,
+          type: TransactionType.FEE_PAYMENT,
+          meta: {
+            ...meta,
+            gateway: 'PAYSTACK',
+            paystackData: data.data,
+          }
+        });
+
+        return { success: true, message: 'Payment verified successfully' };
+      } else {
+        throw new BadRequestException('Payment verification failed');
+      }
+    } catch (error: any) {
+      throw new BadRequestException(error.response?.data?.message || 'Failed to verify payment with Paystack');
+    }
+  }
+
+  async verifyFlutterwavePayment(transactionId: string, meta: any, studentId: string) {
+    try {
+      const response = await axios.get(`https://api.flutterwave.com/v3/transactions/${transactionId}/verify`, {
+        headers: {
+          Authorization: `Bearer ${process.env.FLUTTERWAVE_SECRET_KEY}`,
+        },
+      });
+
+      const data = response.data;
+      if (data.status === 'success' && data.data.status === 'successful') {
+        const amountPaid = data.data.amount;
+        
+        // Use the tx_ref as reference
+        const reference = data.data.tx_ref;
+
+        // Ensure this reference hasn't been recorded yet
+        const existingTx = await this.transactionRepo.findOne({ where: { reference } });
+        if (existingTx) {
+          throw new ConflictException('Payment already recorded');
+        }
+
+        // Record the payment
+        await this.recordPayment({
+          studentId,
+          amount: amountPaid.toString(),
+          paymentMethod: PaymentMethod.ONLINE,
+          reference,
+          type: TransactionType.FEE_PAYMENT,
+          meta: {
+            ...meta,
+            gateway: 'FLUTTERWAVE',
+            flutterwaveData: data.data,
+          }
+        });
+
+        return { success: true, message: 'Payment verified successfully' };
+      } else {
+        throw new BadRequestException('Payment verification failed');
+      }
+    } catch (error: any) {
+      throw new BadRequestException(error.response?.data?.message || 'Failed to verify payment with Flutterwave');
+    }
+  }
+
+  // --- Webhooks ---
+  async handlePaystackWebhook(signature: string, body: any) {
+    const secret = process.env.PAYSTACK_SECRET_KEY as string;
+    
+    // Validate signature
+    const hash = crypto.createHmac('sha512', secret).update(JSON.stringify(body)).digest('hex');
+    if (hash !== signature) {
+      throw new BadRequestException('Invalid signature');
+    }
+
+    if (body.event === 'charge.success') {
+      const data = body.data;
+      const reference = data.reference;
+      
+      const existingTx = await this.transactionRepo.findOne({ where: { reference } });
+      if (existingTx) {
+        return { message: 'Already processed' };
+      }
+
+      const meta = data.metadata || {};
+      const studentId = meta.studentId;
+      if (!studentId) {
+         return { message: 'No studentId attached' }; 
+      }
+
+      const amountPaid = data.amount / 100;
+      
+      await this.recordPayment({
+        studentId,
+        amount: amountPaid.toString(),
+        paymentMethod: PaymentMethod.ONLINE,
+        reference,
+        type: TransactionType.FEE_PAYMENT,
+        meta: {
+          ...meta,
+          gateway: 'PAYSTACK_WEBHOOK',
+          paystackData: data,
+        }
+      });
+    }
+
+    return { status: 'success' };
+  }
+
+  async handleFlutterwaveWebhook(hash: string, body: any) {
+    const secretHash = process.env.FLUTTERWAVE_WEBHOOK_HASH as string;
+
+    if (!secretHash || hash !== secretHash) {
+      throw new BadRequestException('Invalid hash');
+    }
+
+    if (body.event === 'charge.completed' || body['event.type'] === 'CARD_TRANSACTION') {
+      const data = body.data;
+      const reference = data.tx_ref;
+      
+      const response = await axios.get(`https://api.flutterwave.com/v3/transactions/${data.id}/verify`, {
+        headers: {
+          Authorization: `Bearer ${process.env.FLUTTERWAVE_SECRET_KEY}`,
+        },
+      });
+
+      const fwData = response.data;
+      if (fwData.status === 'success' && fwData.data.status === 'successful') {
+        const existingTx = await this.transactionRepo.findOne({ where: { reference } });
+        if (existingTx) {
+          return { message: 'Already processed' }; 
+        }
+
+        const metaStr = data.meta || fwData.data.meta || {};
+        const studentId = metaStr.studentId;
+        if (!studentId) return { message: 'No studentId attached' }; 
+
+        const amountPaid = fwData.data.amount;
+        let metaObj = { ...metaStr };
+        if (typeof metaObj.allocations === 'string') {
+           try { metaObj.allocations = JSON.parse(metaObj.allocations); } catch (e) {}
+        }
+        
+        await this.recordPayment({
+          studentId,
+          amount: amountPaid.toString(),
+          paymentMethod: PaymentMethod.ONLINE,
+          reference,
+          type: TransactionType.FEE_PAYMENT,
+          meta: {
+            ...metaObj,
+            gateway: 'FLUTTERWAVE_WEBHOOK',
+            flutterwaveData: fwData.data,
+          }
+        });
+      }
+    }
+
+    return { status: 'success' };
   }
 }
