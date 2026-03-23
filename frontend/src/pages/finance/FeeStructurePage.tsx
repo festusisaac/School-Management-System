@@ -6,11 +6,13 @@ import {
   Edit2,
   Layers,
   Tag,
-  LayoutGrid
+  LayoutGrid,
+  Users
 } from 'lucide-react';
 import { formatCurrency, CURRENCY_SYMBOL } from '../../utils/currency';
 import { clsx } from 'clsx';
 import { useToast } from '../../context/ToastContext';
+import api from '../../services/api';
 import BulkFeeAssignmentModal from './components/BulkFeeAssignmentModal';
 
 interface FeeHead {
@@ -83,6 +85,7 @@ export default function FeeStructurePage() {
         setHeads(hRes || []);
       }
     } catch (error) {
+      console.error('Fetch data failed:', error);
       showError('Failed to load data');
     } finally {
       setLoading(false);
@@ -335,9 +338,10 @@ export default function FeeStructurePage() {
                         setAssigningGroup(group);
                         setIsAssignModalOpen(true);
                       }}
-                      className="text-xs font-bold text-primary-600 hover:text-primary-700 transition-colors uppercase tracking-widest"
+                      className="px-4 py-2 bg-primary-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-700 shadow-lg shadow-primary-500/20 transition-all flex items-center gap-2"
                     >
-                      Assign Group
+                      <Users size={14} />
+                      Bulk Assign
                     </button>
                     <button
                       onClick={() => handleDeleteGroup(group.id)}

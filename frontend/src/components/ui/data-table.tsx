@@ -11,6 +11,7 @@ import {
     getFilteredRowModel,
 } from "@tanstack/react-table"
 import { ChevronLeft, ChevronRight, Search } from "lucide-react"
+import { clsx } from "clsx"
 
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[]
@@ -69,10 +70,14 @@ export function DataTable<TData, TValue>({
                             {table.getHeaderGroups().map((headerGroup) => (
                                 <tr key={headerGroup.id}>
                                     {headerGroup.headers.map((header) => {
+                                        const isAction = header.column.id === 'actions';
                                         return (
                                             <th
                                                 key={header.id}
-                                                className="h-12 px-4 text-sm font-bold text-gray-500 dark:text-gray-400 align-middle [&:has([role=checkbox])]:pr-0 whitespace-nowrap"
+                                                className={clsx(
+                                                    "h-12 px-4 text-sm font-bold text-gray-500 dark:text-gray-400 align-middle [&:has([role=checkbox])]:pr-0 whitespace-nowrap transition-all",
+                                                    isAction && "sticky right-0 z-20 bg-gray-50 dark:bg-gray-800 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.05)] border-l border-gray-100 dark:border-gray-700"
+                                                )}
                                             >
                                                 {header.isPlaceholder
                                                     ? null
@@ -103,11 +108,20 @@ export function DataTable<TData, TValue>({
                                         data-state={row.getIsSelected() && "selected"}
                                         className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors group"
                                     >
-                                        {row.getVisibleCells().map((cell) => (
-                                            <td key={cell.id} className="px-4 py-4 align-middle dark:text-gray-300 [&:has([role=checkbox])]:pr-0">
-                                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                            </td>
-                                        ))}
+                                        {row.getVisibleCells().map((cell) => {
+                                            const isAction = cell.column.id === 'actions';
+                                            return (
+                                                <td 
+                                                    key={cell.id} 
+                                                    className={clsx(
+                                                        "px-4 py-4 align-middle dark:text-gray-300 [&:has([role=checkbox])]:pr-0 transition-all",
+                                                        isAction && "sticky right-0 z-10 bg-white dark:bg-gray-900 group-hover:bg-gray-50 dark:group-hover:bg-gray-800 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.05)] border-l border-gray-100 dark:border-gray-700 font-bold"
+                                                    )}
+                                                >
+                                                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                                </td>
+                                            );
+                                        })}
                                     </tr>
                                 ))
                             ) : (
