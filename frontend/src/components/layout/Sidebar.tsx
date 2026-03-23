@@ -41,7 +41,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     const studentNavItems = [
         { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
         { label: 'My Profile', icon: UserIcon, path: `/students/profile/${user?.id || 'me'}` },
-        { label: 'Finance', icon: CreditCard, path: '/finance/payments' },
+        { label: 'Finance', icon: CreditCard, path: '/students/finance' },
         { label: 'Class Timetable', icon: Calendar, path: '/academics/class-timetable' },
         { label: 'Attendance', icon: Clock, path: '/students/attendance' },
         {
