@@ -83,11 +83,21 @@ export const formatCurrencyCompact = (
  * @returns Amount in words string
  */
 export const currencyToWords = (amount: number | string | undefined | null): string => {
-    if (amount === undefined || amount === null) return 'Zero Naira Only';
+    const majorMinorMap: Record<string, [string, string]> = {
+        'NGN': ['Naira', 'Kobo'],
+        'USD': ['Dollars', 'Cents'],
+        'GBP': ['Pounds', 'Pence'],
+        'EUR': ['Euros', 'Cents'],
+        'GHS': ['Cedis', 'Pesewas'],
+        'KES': ['Shillings', 'Cents'],
+    };
 
-    const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-    if (isNaN(numericAmount) || numericAmount === 0) return 'Zero Naira Only';
+    const [major, minor] = majorMinorMap[CURRENCY_CONFIG.CODE] || ['Units', 'Sub-units'];
 
+    const numericAmount = typeof amount === 'string' ? parseFloat(amount) : (amount || 0);
+    if (isNaN(numericAmount) || numericAmount === 0) return `Zero ${major} Only`;
+
+    // ... (rest of units, teens, tens, scales remains same)
     const units = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
     const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
     const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
@@ -114,9 +124,9 @@ export const currencyToWords = (amount: number | string | undefined | null): str
         return chunk;
     };
 
-    const parts = numericAmount.toFixed(2).split('.');
-    let integerPart = parseInt(parts[0]);
-    const fractionalPart = parseInt(parts[1]);
+    const parts = (numericAmount || 0).toFixed(2).split('.');
+    let integerPart = parseInt(parts[0] || '0');
+    const fractionalPart = parseInt(parts[1] || '0');
 
     let words = '';
     if (integerPart === 0) {
@@ -134,10 +144,10 @@ export const currencyToWords = (amount: number | string | undefined | null): str
         }
     }
 
-    words = words.trim() + ' Naira';
+    words = words.trim() + ` ${major}`;
 
     if (fractionalPart > 0) {
-        words += ', ' + convertChunk(fractionalPart).trim() + ' Kobo';
+        words += ', ' + convertChunk(fractionalPart).trim() + ` ${minor}`;
     }
 
     return words + ' Only';

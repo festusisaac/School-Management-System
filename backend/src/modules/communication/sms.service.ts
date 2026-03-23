@@ -79,6 +79,21 @@ export class SmsService {
     }
   }
 
+  async sendPaymentReceiptSms(
+    phoneNumber: string,
+    studentName: string,
+    amount: string,
+    reference: string
+  ): Promise<boolean> {
+    try {
+      const message = `Payment Success! We've received ${amount} for ${studentName}. Ref: ${reference}. Thank you!`;
+      return await this.sendSms(phoneNumber, message);
+    } catch (error: any) {
+      this.logger.error(`Failed to send payment receipt SMS to ${phoneNumber}:`, error.message);
+      return false;
+    }
+  }
+
   async sendSms(phoneNumber: string, message: string): Promise<boolean> {
     try {
       if (!this.apiKey) {

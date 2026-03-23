@@ -229,6 +229,82 @@ export class EmailService {
     }
   }
 
+  async sendPaymentReceiptEmail(
+    email: string,
+    studentName: string,
+    amount: string,
+    reference: string,
+    date: string,
+    method: string,
+    allocations?: any[],
+  ): Promise<boolean> {
+    try {
+      const schoolName = await this.getSchoolName();
+      const allocationHtml = allocations && allocations.length > 0 
+        ? `
+          <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 10px;">
+            <p style="font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Breakdown</p>
+            <table style="width: 100%; border-collapse: collapse;">
+              ${allocations.map(a => `
+                <tr>
+                  <td style="padding: 8px 0; font-size: 14px; color: #333;">${a.name}</td>
+                  <td style="padding: 8px 0; font-size: 14px; color: #333; text-align: right;"><strong>${a.amount}</strong></td>
+                </tr>
+              `).join('')}
+            </table>
+          </div>
+        ` 
+        : '';
+
+      const html = `
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+          <div style="background-color: #4CAF50; color: white; padding: 30px; text-align: center;">
+            <h1 style="margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 2px;">Payment Received</h1>
+            <p style="margin: 10px 0 0; opacity: 0.9;">Thank you for your payment to ${schoolName}</p>
+          </div>
+          
+          <div style="padding: 30px; background-color: #ffffff;">
+            <p>Hi Parent/Guardian,</p>
+            <p>This is to confirm that we have successfully received a payment of <strong>${amount}</strong> for <strong>${studentName}</strong>.</p>
+            
+            <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #4CAF50;">
+              <p style="margin: 0; font-size: 14px; color: #666;">Transaction Details</p>
+              <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+                <span style="font-size: 14px;">Reference:</span>
+                <span style="font-size: 14px; font-weight: bold;">${reference}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-top: 5px;">
+                <span style="font-size: 14px;">Date:</span>
+                <span style="font-size: 14px; font-weight: bold;">${date}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-top: 5px;">
+                <span style="font-size: 14px;">Method:</span>
+                <span style="font-size: 14px; font-weight: bold;">${method}</span>
+              </div>
+            </div>
+
+            ${allocationHtml}
+
+            <p style="margin-top: 30px;">The student's financial records have been updated accordingly. You can view the full history on the student portal.</p>
+          </div>
+          
+          <div style="background-color: #f1f1f1; padding: 20px; text-align: center; border-top: 1px solid #e0e0e0;">
+            <p style="margin: 0; color: #888; font-size: 12px;">&copy; ${new Date().getFullYear()} ${schoolName} Management System</p>
+          </div>
+        </div>
+      `;
+
+      return await this.sendEmail({
+        to: email,
+        subject: `Payment Receipt - ${studentName} - ${reference}`,
+        html,
+      });
+    } catch (error) {
+      this.logger.error(`Failed to send payment receipt to ${email}:`, error);
+      return false;
+    }
+  }
+
   async sendEmail(options: EmailOptions): Promise<boolean> {
     try {
       const mailOptions = {

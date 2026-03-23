@@ -16,10 +16,12 @@ import { DiscountRule } from './entities/discount-rule.entity';
 import { FeeAssignment } from './entities/fee-assignment.entity';
 
 import { CommunicationModule } from '../communication/communication.module';
+import { SystemModule } from '../system/system.module';
 
 @Module({
   imports: [
     CommunicationModule,
+    SystemModule,
     TypeOrmModule.forFeature([
       Transaction,
       FeeStructure,

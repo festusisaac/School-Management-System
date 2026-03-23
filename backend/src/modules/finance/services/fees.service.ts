@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, IsNull } from 'typeorm';
 import axios from 'axios';
 import * as crypto from 'crypto';
+import { SystemSettingsService } from '../../system/services/system-settings.service';
 import { Transaction, TransactionType, PaymentMethod } from '../entities/transaction.entity';
 import { CreatePaymentDto } from '../dtos/create-payment.dto';
 import { FeeStructure } from '../entities/fee-structure.entity';
@@ -53,6 +54,7 @@ export class FeesService {
     private readonly discountRuleRepo: Repository<DiscountRule>,
     private readonly emailService: EmailService,
     private readonly smsService: SmsService,
+    private readonly systemSettingsService: SystemSettingsService,
   ) { }
 
   // Record an offline/payment
@@ -106,7 +108,65 @@ export class FeesService {
       transactions.push(tx);
     }
 
-    return this.transactionRepo.save(transactions);
+    const saved = await this.transactionRepo.save(transactions);
+
+    // Trigger notification (async, don't await to avoid blocking response)
+    if (dto.type === TransactionType.FEE_PAYMENT || !dto.type) {
+      this.sendPaymentNotifications(
+        dto.studentId,
+        dto.amount,
+        dto.reference || 'N/A',
+        dto.paymentMethod || PaymentMethod.CASH,
+        dto.meta
+      ).catch(err => console.error('Notification error:', err));
+    }
+
+    return saved;
+  }
+
+  private async sendPaymentNotifications(studentId: string, amount: string, reference: string, method: string, meta: any) {
+    try {
+      const settings = await this.systemSettingsService.getSettings();
+      const symbol = settings.currencySymbol || '₦';
+
+      const student = await this.studentRepo.findOne({ where: { id: studentId } });
+      if (!student) return;
+
+      const studentName = `${student.firstName} ${student.lastName || ''}`.trim();
+      const date = new Date().toLocaleDateString('en-NG', { day: '2-digit', month: 'long', year: 'numeric' });
+      const allocations = meta?.allocations || [];
+
+      // Email
+      const targetEmail = student.email || student.guardianEmail;
+      if (targetEmail) {
+        await this.emailService.sendPaymentReceiptEmail(
+          targetEmail,
+          studentName,
+          `${symbol}${parseFloat(amount).toLocaleString()}`,
+          reference,
+          date,
+          method.replace(/_/g, ' '),
+          allocations.map((a: any) => ({
+             name: a.name,
+             amount: `${symbol}${parseFloat(a.amount).toLocaleString()}`
+          }))
+        );
+      }
+
+      // SMS
+      const targetPhone = student.mobileNumber || student.guardianPhone || student.fatherPhone || student.motherPhone;
+      if (targetPhone) {
+        await this.smsService.sendPaymentReceiptSms(
+          targetPhone,
+          studentName,
+          `${symbol}${parseFloat(amount).toLocaleString()}`,
+          reference
+        );
+      }
+    } catch (error) {
+      // Log error but don't rethrow
+      console.error('Failed to send payment notifications:', error);
+    }
   }
 
   async getStudentStatement(studentId: string) {
@@ -1013,88 +1073,100 @@ export class FeesService {
   }
 
   async verifyPaystackPayment(reference: string, meta: any, studentId: string) {
-    try {
-      const response = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
-        headers: {
-          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-        },
-      });
+    return this.transactionRepo.manager.transaction(async (manager) => {
+      // 1. Acquire distributed lock for this exact payment reference
+      await manager.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [reference]);
 
-      const data = response.data;
-      if (data.status && data.data.status === 'success') {
-        const amountPaid = data.data.amount / 100; // Paystack amount is in kobo
-        
-        // Ensure this reference hasn't been recorded yet
-        const existingTx = await this.transactionRepo.findOne({ where: { reference } });
-        if (existingTx) {
-          throw new ConflictException('Payment already recorded');
-        }
-
-        // Record the payment
-        await this.recordPayment({
-          studentId,
-          amount: amountPaid.toString(),
-          paymentMethod: PaymentMethod.ONLINE,
-          reference,
-          type: TransactionType.FEE_PAYMENT,
-          meta: {
-            ...meta,
-            gateway: 'PAYSTACK',
-            paystackData: data.data,
-          }
+      try {
+        const response = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
+          headers: {
+            Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+          },
         });
 
-        return { success: true, message: 'Payment verified successfully' };
-      } else {
-        throw new BadRequestException('Payment verification failed');
+        const data = response.data;
+        if (data.status && data.data.status === 'success') {
+          const amountPaid = data.data.amount / 100; // Paystack amount is in kobo
+          
+          // Ensure this reference hasn't been recorded yet
+          const existingTx = await manager.findOne(Transaction, { where: { reference } });
+          if (existingTx) {
+            throw new ConflictException('Payment already recorded');
+          }
+
+          // Record the payment
+          await this.recordPayment({
+            studentId,
+            amount: amountPaid.toString(),
+            paymentMethod: PaymentMethod.ONLINE,
+            reference,
+            type: TransactionType.FEE_PAYMENT,
+            meta: {
+              ...meta,
+              gateway: 'PAYSTACK',
+              paystackData: data.data,
+            }
+          });
+
+          return { success: true, message: 'Payment verified successfully' };
+        } else {
+          throw new BadRequestException('Payment verification failed');
+        }
+      } catch (error: any) {
+        if (error instanceof ConflictException) throw error;
+        throw new BadRequestException(error.response?.data?.message || 'Failed to verify payment with Paystack');
       }
-    } catch (error: any) {
-      throw new BadRequestException(error.response?.data?.message || 'Failed to verify payment with Paystack');
-    }
+    });
   }
 
   async verifyFlutterwavePayment(transactionId: string, meta: any, studentId: string) {
-    try {
-      const response = await axios.get(`https://api.flutterwave.com/v3/transactions/${transactionId}/verify`, {
-        headers: {
-          Authorization: `Bearer ${process.env.FLUTTERWAVE_SECRET_KEY}`,
-        },
-      });
-
-      const data = response.data;
-      if (data.status === 'success' && data.data.status === 'successful') {
-        const amountPaid = data.data.amount;
-        
-        // Use the tx_ref as reference
-        const reference = data.data.tx_ref;
-
-        // Ensure this reference hasn't been recorded yet
-        const existingTx = await this.transactionRepo.findOne({ where: { reference } });
-        if (existingTx) {
-          throw new ConflictException('Payment already recorded');
-        }
-
-        // Record the payment
-        await this.recordPayment({
-          studentId,
-          amount: amountPaid.toString(),
-          paymentMethod: PaymentMethod.ONLINE,
-          reference,
-          type: TransactionType.FEE_PAYMENT,
-          meta: {
-            ...meta,
-            gateway: 'FLUTTERWAVE',
-            flutterwaveData: data.data,
-          }
+    return this.transactionRepo.manager.transaction(async (manager) => {
+      try {
+        const response = await axios.get(`https://api.flutterwave.com/v3/transactions/${transactionId}/verify`, {
+          headers: {
+            Authorization: `Bearer ${process.env.FLUTTERWAVE_SECRET_KEY}`,
+          },
         });
 
-        return { success: true, message: 'Payment verified successfully' };
-      } else {
-        throw new BadRequestException('Payment verification failed');
+        const data = response.data;
+        if (data.status === 'success' && data.data.status === 'successful') {
+          const amountPaid = data.data.amount;
+          
+          // Use the tx_ref as reference
+          const reference = data.data.tx_ref;
+
+          // Acquire lock
+          await manager.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [reference]);
+
+          // Ensure this reference hasn't been recorded yet
+          const existingTx = await manager.findOne(Transaction, { where: { reference } });
+          if (existingTx) {
+            throw new ConflictException('Payment already recorded');
+          }
+
+          // Record the payment
+          await this.recordPayment({
+            studentId,
+            amount: amountPaid.toString(),
+            paymentMethod: PaymentMethod.ONLINE,
+            reference,
+            type: TransactionType.FEE_PAYMENT,
+            meta: {
+              ...meta,
+              gateway: 'FLUTTERWAVE',
+              flutterwaveData: data.data,
+            }
+          });
+
+          return { success: true, message: 'Payment verified successfully' };
+        } else {
+          throw new BadRequestException('Payment verification failed');
+        }
+      } catch (error: any) {
+        if (error instanceof ConflictException) throw error;
+        throw new BadRequestException(error.response?.data?.message || 'Failed to verify payment with Flutterwave');
       }
-    } catch (error: any) {
-      throw new BadRequestException(error.response?.data?.message || 'Failed to verify payment with Flutterwave');
-    }
+    });
   }
 
   // --- Webhooks ---
@@ -1111,30 +1183,37 @@ export class FeesService {
       const data = body.data;
       const reference = data.reference;
       
-      const existingTx = await this.transactionRepo.findOne({ where: { reference } });
-      if (existingTx) {
-        return { message: 'Already processed' };
-      }
+      return this.transactionRepo.manager.transaction(async (manager) => {
+        // Acquire lock
+        await manager.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [reference]);
 
-      const meta = data.metadata || {};
-      const studentId = meta.studentId;
-      if (!studentId) {
-         return { message: 'No studentId attached' }; 
-      }
-
-      const amountPaid = data.amount / 100;
-      
-      await this.recordPayment({
-        studentId,
-        amount: amountPaid.toString(),
-        paymentMethod: PaymentMethod.ONLINE,
-        reference,
-        type: TransactionType.FEE_PAYMENT,
-        meta: {
-          ...meta,
-          gateway: 'PAYSTACK_WEBHOOK',
-          paystackData: data,
+        const existingTx = await manager.findOne(Transaction, { where: { reference } });
+        if (existingTx) {
+          return { message: 'Already processed' };
         }
+
+        const meta = data.metadata || {};
+        const studentId = meta.studentId;
+        if (!studentId) {
+           return { message: 'No studentId attached' }; 
+        }
+
+        const amountPaid = data.amount / 100;
+        
+        await this.recordPayment({
+          studentId,
+          amount: amountPaid.toString(),
+          paymentMethod: PaymentMethod.ONLINE,
+          reference,
+          type: TransactionType.FEE_PAYMENT,
+          meta: {
+            ...meta,
+            gateway: 'PAYSTACK_WEBHOOK',
+            paystackData: data,
+          }
+        });
+
+        return { status: 'success' };
       });
     }
 
@@ -1152,42 +1231,48 @@ export class FeesService {
       const data = body.data;
       const reference = data.tx_ref;
       
-      const response = await axios.get(`https://api.flutterwave.com/v3/transactions/${data.id}/verify`, {
-        headers: {
-          Authorization: `Bearer ${process.env.FLUTTERWAVE_SECRET_KEY}`,
-        },
-      });
+      return this.transactionRepo.manager.transaction(async (manager) => {
+        // Acquire lock
+        await manager.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [reference]);
 
-      const fwData = response.data;
-      if (fwData.status === 'success' && fwData.data.status === 'successful') {
-        const existingTx = await this.transactionRepo.findOne({ where: { reference } });
-        if (existingTx) {
-          return { message: 'Already processed' }; 
-        }
-
-        const metaStr = data.meta || fwData.data.meta || {};
-        const studentId = metaStr.studentId;
-        if (!studentId) return { message: 'No studentId attached' }; 
-
-        const amountPaid = fwData.data.amount;
-        let metaObj = { ...metaStr };
-        if (typeof metaObj.allocations === 'string') {
-           try { metaObj.allocations = JSON.parse(metaObj.allocations); } catch (e) {}
-        }
-        
-        await this.recordPayment({
-          studentId,
-          amount: amountPaid.toString(),
-          paymentMethod: PaymentMethod.ONLINE,
-          reference,
-          type: TransactionType.FEE_PAYMENT,
-          meta: {
-            ...metaObj,
-            gateway: 'FLUTTERWAVE_WEBHOOK',
-            flutterwaveData: fwData.data,
-          }
+        const response = await axios.get(`https://api.flutterwave.com/v3/transactions/${data.id}/verify`, {
+          headers: {
+            Authorization: `Bearer ${process.env.FLUTTERWAVE_SECRET_KEY}`,
+          },
         });
-      }
+
+        const fwData = response.data;
+        if (fwData.status === 'success' && fwData.data.status === 'successful') {
+          const existingTx = await manager.findOne(Transaction, { where: { reference } });
+          if (existingTx) {
+            return { message: 'Already processed' }; 
+          }
+
+          const metaStr = data.meta || fwData.data.meta || {};
+          const studentId = metaStr.studentId;
+          if (!studentId) return { message: 'No studentId attached' }; 
+
+          const amountPaid = fwData.data.amount;
+          let metaObj = { ...metaStr };
+          if (typeof metaObj.allocations === 'string') {
+             try { metaObj.allocations = JSON.parse(metaObj.allocations); } catch (e) {}
+          }
+          
+          await this.recordPayment({
+            studentId,
+            amount: amountPaid.toString(),
+            paymentMethod: PaymentMethod.ONLINE,
+            reference,
+            type: TransactionType.FEE_PAYMENT,
+            meta: {
+              ...metaObj,
+              gateway: 'FLUTTERWAVE_WEBHOOK',
+              flutterwaveData: fwData.data,
+            }
+          });
+        }
+        return { status: 'success' };
+      });
     }
 
     return { status: 'success' };
