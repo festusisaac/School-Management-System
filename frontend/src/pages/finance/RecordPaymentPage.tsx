@@ -11,6 +11,7 @@ import {
     Loader2,
     X
 } from 'lucide-react';
+import { getDetailedPaymentMethod } from '../../utils/transactionUtils';
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 
@@ -298,7 +299,7 @@ export default function RecordPaymentPage() {
     };
 
     return (
-        <div className="max-w-[1600px] mx-auto space-y-6 animate-in fade-in duration-500 pb-20">
+        <div className="space-y-6 animate-in fade-in duration-500 pb-20">
             <style>{scrollbarHideStyle}</style>
             {/* Page Header */}
             <div className="flex items-center justify-between">
@@ -618,7 +619,7 @@ export default function RecordPaymentPage() {
                                                                                     ? "bg-red-50 text-red-600 ring-red-500/20"
                                                                                     : "bg-primary-50 text-primary-600 ring-primary-500/20"
                                                                         )}>
-                                                                            {tx.type === 'REFUND' ? 'REFUND' : tx.paymentMethod || 'CASH'}
+                                                                            {tx.type === 'REFUND' ? 'REFUND' : getDetailedPaymentMethod(tx)}
                                                                         </span>
                                                                     </td>
                                                                     <td className={clsx("px-6 py-3 text-xs font-black text-right",
@@ -663,7 +664,7 @@ export default function RecordPaymentPage() {
                                                             transactionType === 'WAIVER' ? "text-amber-600" : "text-primary-600 dark:text-primary-400"
                                                         )}
                                                     >
-                                                        {amount ? Number(amount).toLocaleString('en-NG', { maximumFractionDigits: 2, minimumFractionDigits: 2 }) : '0.00'}
+                                                        {formatCurrency(amount || 0)}
                                                     </div>
                                                 </div>
                                                 {transactionType === 'WAIVER' ? (

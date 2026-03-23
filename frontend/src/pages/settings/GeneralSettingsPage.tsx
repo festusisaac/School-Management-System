@@ -237,7 +237,7 @@ const GeneralSettingsPage = () => {
     }
 
     return (
-        <div className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+        <div className="space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">General Settings</h1>

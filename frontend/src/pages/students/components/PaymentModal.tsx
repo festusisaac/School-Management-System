@@ -5,6 +5,7 @@ import api from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
 import { usePaystackPayment } from 'react-paystack';
 import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
+import { useSystem } from '../../../context/SystemContext';
 
 interface PaymentModalProps {
     isOpen: boolean;
@@ -16,6 +17,7 @@ interface PaymentModalProps {
 
 export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess }: PaymentModalProps) {
     const { showError, showSuccess } = useToast();
+    const { settings, formatCurrency } = useSystem();
     const [amount, setAmount] = useState(feeHead?.balance || '');
     const [isProcessing, setIsProcessing] = useState(false);
     const [step, setStep] = useState<'DETAILS' | 'GATEWAY_SELECTION' | 'SUCCESS'>('DETAILS');
@@ -56,7 +58,8 @@ export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess }: P
     const paystackConfig = {
         reference: `PS_${Math.random().toString(36).substring(2, 10).toUpperCase()}_${Date.now()}`,
         email: student.email || 'student@example.com',
-        amount: Math.round(payAmountNum * 100), // Paystack amount is in kobo -> NGN, round to avoid floats
+        amount: Math.round(payAmountNum * 100), // Minor units (kobo/cents)
+        currency: settings.currencyCode || 'NGN',
         publicKey: (import.meta as any).env.VITE_PAYSTACK_PUBLIC_KEY,
         metadata: {
             custom_fields: [],
@@ -100,7 +103,7 @@ export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess }: P
         public_key: (import.meta as any).env.VITE_FLUTTERWAVE_PUBLIC_KEY,
         tx_ref: `FW_${Math.random().toString(36).substring(2, 10).toUpperCase()}_${Date.now()}`,
         amount: payAmountNum,
-        currency: 'NGN',
+        currency: settings.currencyCode || 'NGN',
         payment_options: 'card,mobilemoney,ussd',
         customer: {
             email: student.email || 'student@example.com',
@@ -200,7 +203,7 @@ export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess }: P
                                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Amount to Pay</label>
                                     <div className="relative">
                                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                            <span className="text-gray-500 font-black sm:text-lg">₦</span>
+                                            <span className="text-gray-500 font-black sm:text-lg">{settings.currencySymbol || '₦'}</span>
                                         </div>
                                         <input
                                             type="number"

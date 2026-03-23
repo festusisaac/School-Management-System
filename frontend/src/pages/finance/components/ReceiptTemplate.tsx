@@ -1,6 +1,7 @@
 import { forwardRef } from 'react';
 import { formatCurrency } from '../../../utils/currency';
 import { numberToWords } from '../../../utils/numberToWords';
+import { getDetailedPaymentMethod } from '../../../utils/transactionUtils';
 import { clsx } from 'clsx';
 
 interface ReceiptProps {
@@ -20,7 +21,7 @@ interface ReceiptProps {
 export const ReceiptTemplate = forwardRef<HTMLDivElement, ReceiptProps>(({ transaction, schoolInfo }, ref) => {
     if (!transaction) return null;
 
-    const { student, amount, type, paymentMethod, reference, createdAt, meta } = transaction;
+    const { student, amount, type, reference, createdAt, meta } = transaction;
     const allocations = meta?.allocations || [];
 
     // Determine Watermark Text
@@ -113,7 +114,7 @@ export const ReceiptTemplate = forwardRef<HTMLDivElement, ReceiptProps>(({ trans
                             <p className="text-sm font-medium text-gray-600">Time: <span className="font-bold text-black">{new Date(createdAt).toLocaleTimeString()}</span></p>
                             {type !== 'WAIVER' && (
                                 <>
-                                    <p className="text-sm font-medium text-gray-600">Method: <span className="font-bold text-black uppercase">{paymentMethod}</span></p>
+                                    <p className="text-sm font-medium text-gray-600">Method: <span className="font-bold text-black uppercase">{getDetailedPaymentMethod(transaction)}</span></p>
                                     <p className="text-sm font-medium text-gray-600">Ref ID: <span className="font-bold text-black">{reference || 'N/A'}</span></p>
                                 </>
                             )}

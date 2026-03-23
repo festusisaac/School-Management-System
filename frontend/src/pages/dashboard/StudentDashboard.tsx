@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuthStore } from '../../stores/authStore';
+import { useSystem } from '../../context/SystemContext';
 import { 
     Calendar, BookOpen, CreditCard, ChevronRight,
     Clock, TrendingUp, CheckCircle, Bell, User as UserIcon
@@ -8,6 +9,7 @@ import { Link } from 'react-router-dom';
 
 const StudentDashboard: React.FC = () => {
     const { user } = useAuthStore();
+    const { formatCurrency } = useSystem();
     const isParent = (user?.roleObject?.name || user?.role || '').toLowerCase() === 'parent';
     
     // Placeholder Data for now
@@ -94,7 +96,7 @@ const StudentDashboard: React.FC = () => {
                         <div>
                             <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Fee Balance</p>
                             <h3 className={`text-3xl font-bold mt-2 ${stats.feesBalance > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'} group-hover:scale-105 transform origin-left transition-transform`}>
-                                ₦{stats.feesBalance.toLocaleString()}
+                                {formatCurrency(stats.feesBalance)}
                             </h3>
                         </div>
                         <div className={`p-3 rounded-xl transition-colors ${stats.feesBalance > 0 ? 'bg-red-50 dark:bg-red-900/30 group-hover:bg-red-100' : 'bg-green-50 dark:bg-green-900/30 group-hover:bg-green-100'}`}>

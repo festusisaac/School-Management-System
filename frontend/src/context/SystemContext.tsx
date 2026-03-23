@@ -10,6 +10,8 @@ interface SchoolInfo {
     email: string;
     logo: string;
     invoicePrefix?: string;
+    currencyName?: string;
+    subunitName?: string;
 }
 
 interface SystemContextType {
@@ -137,13 +139,25 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }, [settings.currencySymbol, settings.currencyCode]);
 
     const getSchoolInfo = useCallback((): SchoolInfo => {
+        const majorMinorMap: Record<string, [string, string]> = {
+            'NGN': ['Naira', 'Kobo'],
+            'USD': ['Dollars', 'Cents'],
+            'GBP': ['Pounds', 'Pence'],
+            'EUR': ['Euros', 'Cents'],
+            'GHS': ['Cedis', 'Pesewas'],
+            'KES': ['Shillings', 'Cents'],
+        };
+        const [currencyName, subunitName] = majorMinorMap[settings.currencyCode || 'NGN'] || ['Units', 'Sub-units'];
+
         return {
             name: settings.schoolName || 'YOUR SCHOOL NAME',
             address: settings.schoolAddress || '123 Education Lane',
             phone: settings.schoolPhone || '+1 234 567 890',
             email: settings.schoolEmail || 'school@example.com',
             logo: getFullUrl(settings.invoiceLogo || settings.primaryLogo),
-            invoicePrefix: settings.invoicePrefix
+            invoicePrefix: settings.invoicePrefix,
+            currencyName,
+            subunitName
         };
     }, [settings, getFullUrl]);
 

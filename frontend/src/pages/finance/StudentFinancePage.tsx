@@ -17,6 +17,7 @@ import {
   BarChart3,
   FileSpreadsheet,
 } from 'lucide-react';
+import { getDetailedPaymentMethod } from '../../utils/transactionUtils';
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { formatCurrency } from '../../utils/currency';
@@ -263,7 +264,7 @@ export default function StudentFinancePage() {
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 p-6 pb-10">
+    <div className="space-y-6 animate-in fade-in duration-500">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -505,7 +506,7 @@ export default function StudentFinancePage() {
                                   </td>
                                   <td className="px-6 py-4">
                                       <span className="text-xs font-bold px-2.5 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-lg">
-                                        {tx.paymentMethod}
+                                        {getDetailedPaymentMethod(tx)}
                                       </span>
                                   </td>
                                   <td className="px-6 py-4 text-right">

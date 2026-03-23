@@ -136,6 +136,18 @@ export class FeesService {
       const date = new Date().toLocaleDateString('en-NG', { day: '2-digit', month: 'long', year: 'numeric' });
       const allocations = meta?.allocations || [];
 
+      // Determine detailed display method for online payments
+      let displayMethod = method.replace(/_/g, ' ');
+      if (method === PaymentMethod.ONLINE) {
+        if (meta?.paystackData?.channel) {
+          const channel = meta.paystackData.channel;
+          displayMethod = `Online (${channel.charAt(0).toUpperCase() + channel.slice(1)})`;
+        } else if (meta?.flutterwaveData?.payment_type) {
+          const type = meta.flutterwaveData.payment_type;
+          displayMethod = `Online (${type.charAt(0).toUpperCase() + type.slice(1)})`;
+        }
+      }
+
       // Email
       const targetEmail = student.email || student.guardianEmail;
       if (targetEmail) {
@@ -145,7 +157,7 @@ export class FeesService {
           `${symbol}${parseFloat(amount).toLocaleString()}`,
           reference,
           date,
-          method.replace(/_/g, ' '),
+          displayMethod,
           allocations.map((a: any) => ({
              name: a.name,
              amount: `${symbol}${parseFloat(a.amount).toLocaleString()}`
