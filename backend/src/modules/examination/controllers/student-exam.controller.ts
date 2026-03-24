@@ -54,16 +54,28 @@ export class StudentExamController {
     @Post(':id/verify-result')
     async verifyAndGetResult(
         @Param('id') id: string,
-        @Body() dto: { pin: string; examGroupId: string },
+        @Body() dto: { code: string; pin: string; examGroupId: string },
         @Request() req: any
     ) {
         const tenantId = req.user.tenantId;
 
-        // 1. Verify Card
-        const verification = await this.controlService.verifyCard(dto.pin, tenantId);
-        if (!verification.valid) {
-            throw new BadRequestException(verification.message || 'Invalid Scratch Card PIN');
-        }
+        // 1. Resolve Exam Group to get session/term context
+        const examGroup = await this.setupService.findOneExamGroup(dto.examGroupId, tenantId);
+        if (!examGroup) throw new NotFoundException('Exam group not found');
+
+        // 2. Verify Card
+        // We pass the student ID to bind the card to this student if it's the first use.
+        // We also pass sessionId and termId from the exam group.
+        // Note: In this system, ExamGroup stores session/term as strings, 
+        // but ScratchCard expects IDs. For simplicity, we'll use the strings if they are stored as such,
+        // or the service will handle the comparison.
+        await this.controlService.verifyCard({ 
+            code: dto.code, 
+            pin: dto.pin, 
+            studentId: id,
+            sessionId: examGroup.academicYear || '',
+            termId: examGroup.term || '',
+        }, tenantId, req.ip, req.headers['user-agent']);
 
         // 2. Resolve Student
         const student = await this.studentRepo.findOne({

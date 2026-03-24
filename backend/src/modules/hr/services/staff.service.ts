@@ -97,7 +97,8 @@ export class StaffService {
         resignationLetter?: Express.Multer.File[],
         otherDocuments?: Express.Multer.File[],
         certificates?: Express.Multer.File[],
-        idProof?: Express.Multer.File[]
+        idProof?: Express.Multer.File[],
+        signature?: Express.Multer.File[]
     }): Promise<Staff> {
         // Check for duplicate employee ID
         const existingByEmployeeId = await this.staffRepository.findOne({
@@ -146,6 +147,7 @@ export class StaffService {
                 staffData.certificates = files.certificates.map(f => `/uploads/staff/${f.filename}`);
             }
             if (files.idProof?.[0]) staffData.idProof = `/uploads/staff/${files.idProof[0].filename}`;
+            if (files.signature?.[0]) staffData.signature = `/uploads/staff/${files.signature[0].filename}`;
         }
 
         const staff = this.staffRepository.create(staffData);
@@ -175,7 +177,8 @@ export class StaffService {
         resignationLetter?: Express.Multer.File[],
         otherDocuments?: Express.Multer.File[],
         certificates?: Express.Multer.File[],
-        idProof?: Express.Multer.File[]
+        idProof?: Express.Multer.File[],
+        signature?: Express.Multer.File[]
     }): Promise<Staff> {
         const staff = await this.findOne(id, tenantId);
 
@@ -230,6 +233,7 @@ export class StaffService {
                 updateData.certificates = files.certificates.map(f => `/uploads/staff/${f.filename}`);
             }
             if (files.idProof?.[0]) updateData.idProof = `/uploads/staff/${files.idProof[0].filename}`;
+            if (files.signature?.[0]) updateData.signature = `/uploads/staff/${files.signature[0].filename}`;
         }
 
         Object.assign(staff, updateData);

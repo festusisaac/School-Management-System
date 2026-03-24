@@ -206,6 +206,9 @@ export class Staff {
     @Column({ name: 'is_teaching_staff', default: false })
     isTeachingStaff!: boolean;
 
+    @Column({ nullable: true })
+    signature?: string;
+
     // Relations
     @ManyToOne(() => Department, department => department.staff)
     @JoinColumn({ name: 'department_id' })

@@ -934,7 +934,7 @@ class ApiService {
     return this.get<any>(`/examination/student/${studentId}/dashboard`)
   }
 
-  async verifyStudentResult(studentId: string, data: { pin: string; examGroupId: string }) {
+  async verifyStudentResult(studentId: string, data: { code: string; pin: string; examGroupId: string }) {
     return this.post<any>(`/examination/student/${studentId}/verify-result`, data)
   }
 

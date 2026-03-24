@@ -6,7 +6,6 @@ import {
   AlertCircle,
   Clock,
   Send,
-  User,
   History,
   Mail,
   MessageSquare,
@@ -21,6 +20,8 @@ import { formatCurrency } from '../../utils/currency';
 import api, { getFileUrl } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { clsx } from 'clsx';
+
+import { useSystem } from '../../context/SystemContext';
 
 interface Debtor {
   id: string;
@@ -55,6 +56,7 @@ interface ReminderHistory {
 }
 
 const PaymentRemindersPage = () => {
+  const { settings } = useSystem();
   const { showError, showSuccess, showInfo } = useToast();
   const [activeTab, setActiveTab] = useState<'composer' | 'history'>('composer');
 
@@ -282,7 +284,7 @@ const PaymentRemindersPage = () => {
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
-                                 <img src={getFileUrl(d.student.photo)} alt="" className="w-full h-full object-cover" />
+                                 <img src={d.student.photo ? getFileUrl(d.student.photo) : undefined} alt="" className="w-full h-full object-cover" />
                             </div>
                             <div>
                               <div className="text-sm font-bold text-gray-900 dark:text-white">{d.student.firstName} {d.student.lastName}</div>
@@ -431,7 +433,18 @@ const PaymentRemindersPage = () => {
                       </div>
                       {h.error && <p className="text-[9px] text-red-400 mt-1 max-w-[150px] truncate">{h.error}</p>}
                     </td>
-                    <td className="px-6 py-4 text-xs font-bold text-gray-400">{new Date(h.createdAt).toLocaleString()}</td>
+                    <td className="px-6 py-4 text-xs font-bold text-gray-400">
+                      {new Date(h.createdAt).toLocaleString('en-GB', {
+                        timeZone: settings?.timezone || 'Africa/Lagos',
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true,
+                      })}
+                    </td>
+
                   </tr>
                 ))}
               </tbody>

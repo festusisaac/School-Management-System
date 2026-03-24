@@ -94,6 +94,10 @@ export const examinationService = {
         return await api.post<Exam>('/examination/setup/exams', data);
     },
 
+    updateExam: async (id: string, data: Partial<CreateExamDto>) => {
+        return await api.patch<Exam>(`/examination/setup/exams/${id}`, data);
+    },
+
     getSchedules: async (examGroupId: string) => {
         return await api.get<ExamSchedule[]>('/examination/setup/schedules', { params: { examGroupId } });
     },
@@ -219,7 +223,67 @@ export const examinationService = {
     publishResults: async (classId: string, examGroupId: string) => {
         return await api.post('/examination/control/publish', { classId, examGroupId });
     },
+
+    // Scratch Cards
+    getScratchCards: async (params: any) => {
+        return await api.get<any>('/examination/control/scratch-cards', { params });
+    },
+
+    generateScratchCards: async (data: any) => {
+        return await api.post<any>('/examination/control/scratch-cards/generate', data);
+    },
+
+    getScratchCardBatches: async () => {
+        return await api.get<any[]>('/examination/control/scratch-cards/batches');
+    },
+
+    deleteScratchCard: async (id: string) => {
+        return await api.delete(`/examination/control/scratch-cards/${id}`);
+    },
+
+    bulkDeleteScratchCards: async (ids: string[]) => {
+        return await api.post('/examination/control/scratch-cards/bulk-delete', { ids });
+    },
+
+    sellScratchCard: async (id: string) => {
+        return await api.post(`/examination/control/scratch-cards/${id}/sell`, {});
+    },
+
+    verifyScratchCard: async (data: any) => {
+        return await api.post('/examination/control/scratch-cards/verify', data);
+    },
+
+    verifyStudentResult: async (studentId: string, data: { code: string; pin: string; examGroupId: string }) => {
+        return await api.post(`/examination/student/${studentId}/verify-result`, data);
+    },
 };
+
+export interface ScratchCard {
+    id: string;
+    code: string;
+    pin: string;
+    status: string;
+    usageCount: number;
+    maxUsage: number;
+    value: number;
+    expiryDate?: string;
+    batchId?: string;
+    batch?: ScratchCardBatch;
+    sessionId?: string;
+    termId?: string;
+    studentId?: string;
+    student?: any;
+    createdAt: string;
+}
+
+export interface ScratchCardBatch {
+    id: string;
+    name: string;
+    quantity: number;
+    status: string;
+    sessionId?: string;
+    createdAt: string;
+}
 
 export interface PsychomotorDomain {
     id: string;
@@ -309,6 +373,11 @@ export interface Exam {
     name: string;
     totalMarks: number;
     subjectId: string;
+    subject?: {
+        id: string;
+        name: string;
+        code?: string;
+    };
     classId: string;
     examGroupId: string;
 }

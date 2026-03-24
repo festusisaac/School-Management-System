@@ -335,46 +335,4 @@ export class EmailService {
     }
   }
 
-  /**
-   * Send email via Termii Email Product Notification API
-   * Requires a pre-configured template on Termii dashboard
-   */
-  async sendEmailViaTermii(
-    email: string,
-    subject: string,
-    templateId: string,
-    variables: Record<string, any> = {}
-  ): Promise<boolean> {
-    try {
-      const apiKey = process.env.TERMII_API_KEY;
-      const configId = process.env.TERMII_EMAIL_CONFIG_ID;
-
-      if (!apiKey || !configId) {
-        this.logger.warn('Termii Email config missing in .env');
-        return false;
-      }
-
-      const payload = {
-        api_key: apiKey,
-        email,
-        subject,
-        email_configuration_id: configId,
-        template_id: templateId,
-        variables,
-      };
-
-      const response = await axios.post('https://api.ng.termii.com/api/email/notification/send', payload);
-      
-      if (response.status === 200 || response.data?.status === 'success') {
-        this.logger.log(`Termii email sent successfully to ${email}`);
-        return true;
-      }
-
-      this.logger.error(`Termii email error: ${JSON.stringify(response.data)}`);
-      return false;
-    } catch (error: any) {
-      this.logger.error(`Failed to send Termii email to ${email}:`, error.response?.data || error.message);
-      return false;
-    }
-  }
 }

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Modal } from '../../../components/ui/modal';
-import { KeyRound, Loader2, AlertCircle, CheckCircle2, Ticket } from 'lucide-react';
-import api from '../../../services/api';
+import { KeyRound, Loader2, AlertCircle, CheckCircle2, Ticket, Hash } from 'lucide-react';
+import { examinationService } from '../../../services/examinationService';
 
 interface ResultVerificationModalProps {
     isOpen: boolean;
@@ -18,6 +18,7 @@ export const ResultVerificationModal: React.FC<ResultVerificationModalProps> = (
     examGroups,
     onSuccess
 }) => {
+    const [code, setCode] = useState('');
     const [pin, setPin] = useState('');
     const [examGroupId, setExamGroupId] = useState('');
     const [loading, setLoading] = useState(false);
@@ -25,8 +26,8 @@ export const ResultVerificationModal: React.FC<ResultVerificationModalProps> = (
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!pin || !examGroupId) {
-            setError('Please provide both PIN and select a term');
+        if (!code || !pin || !examGroupId) {
+            setError('Please provide Serial Number, PIN and select a term');
             return;
         }
 
@@ -34,11 +35,15 @@ export const ResultVerificationModal: React.FC<ResultVerificationModalProps> = (
         setError(null);
 
         try {
-            const result = await api.verifyStudentResult(studentId, { pin, examGroupId });
-            onSuccess(result);
+            const response = await examinationService.verifyStudentResult(studentId, { 
+                code, 
+                pin, 
+                examGroupId 
+            });
+            onSuccess(response);
             onClose();
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Invalid Scratch Card PIN or Session expired');
+            setError(err.response?.data?.message || 'Invalid Scratch Card details or usage limit exceeded');
         } finally {
             setLoading(false);
         }
@@ -59,7 +64,7 @@ export const ResultVerificationModal: React.FC<ResultVerificationModalProps> = (
                     <div>
                         <h4 className="font-bold text-primary-900 dark:text-primary-100">Scratch Card Required</h4>
                         <p className="text-sm text-primary-700 dark:text-primary-300 mt-1">
-                            To view your academic performance for the selected term, please enter the 10-digit PIN found on your result checker scratch card.
+                            Please enter the Serial Number and PIN found on your result checker card to view your performance.
                         </p>
                     </div>
                 </div>
@@ -84,21 +89,39 @@ export const ResultVerificationModal: React.FC<ResultVerificationModalProps> = (
                         </select>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                            Scratch Card PIN
-                        </label>
-                        <div className="relative">
-                            <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                            <input
-                                type="text"
-                                maxLength={15}
-                                value={pin}
-                                onChange={(e) => setPin(e.target.value.toUpperCase())}
-                                placeholder="ENTER 10-DIGIT PIN"
-                                className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 font-mono tracking-widest focus:ring-2 focus:ring-primary-500 outline-none transition-all placeholder:tracking-normal placeholder:font-sans"
-                                required
-                            />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                Serial Number
+                            </label>
+                            <div className="relative">
+                                <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                <input
+                                    type="text"
+                                    value={code}
+                                    onChange={(e) => setCode(e.target.value.toUpperCase())}
+                                    placeholder="SERIAL NO"
+                                    className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 font-mono focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                Scratch Card PIN
+                            </label>
+                            <div className="relative">
+                                <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                <input
+                                    type="text"
+                                    value={pin}
+                                    onChange={(e) => setPin(e.target.value.toUpperCase())}
+                                    placeholder="PIN CODE"
+                                    className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 font-mono tracking-widest focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                                    required
+                                />
+                            </div>
                         </div>
                     </div>
 

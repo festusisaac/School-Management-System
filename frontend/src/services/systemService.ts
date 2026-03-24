@@ -12,6 +12,8 @@ export interface SystemSetting {
     currentTermId?: string;
     activeTermName?: string;
     sessionStartDate?: string | Date;
+    sessionEndDate?: string | Date;
+    nextTermStartDate?: string | Date;
     dateFormat?: string;
     timezone?: string;
     startDayOfWeek?: number;

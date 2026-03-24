@@ -1,17 +1,19 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Printer, Search, FileText, ChevronRight, X, Users, Trophy, TrendingUp, Filter, AlertCircle, Eye } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Printer, Search, FileText, X, Users, Trophy, TrendingUp, Filter, AlertCircle, Eye, Settings, Check } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { useSystem } from '../../../context/SystemContext';
 import { examinationService, ExamGroup, GradeScale } from '../../../services/examinationService';
 import api from '../../../services/api';
 import { systemService, AcademicTerm } from '../../../services/systemService';
-import ReportCardTemplate, { ReportCardData } from '../../../components/examination/ReportCardTemplate';
+import ReportCardTemplate, { ReportCardData, ReportCardSubject } from '../../../components/examination/ReportCardTemplate';
 
-const ResultSheetPage = () => {
+const ReportCardPage = () => {
     const [groups, setGroups] = useState<ExamGroup[]>([]);
     const [classes, setClasses] = useState<any[]>([]);
     const [selectedGroup, setSelectedGroup] = useState('');
     const [selectedClass, setSelectedClass] = useState('');
+    const [gradeScales, setGradeScales] = useState<GradeScale[]>([]);
+    const [assessments, setAssessments] = useState<any[]>([]);
 
     const [terms, setTerms] = useState<AcademicTerm[]>([]);
     const [selectedTerm, setSelectedTerm] = useState<string>('');
@@ -22,8 +24,19 @@ const ResultSheetPage = () => {
 
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [showSettings, setShowSettings] = useState(false);
 
-    const { showSuccess, showError } = useToast();
+    const [config, setConfig] = useState<any>({
+        showPhoto: true,
+        showHighest: true,
+        showLowest: true,
+        showAverage: true,
+        showSubjectPosition: true,
+        showClassPosition: true,
+        showAttendance: true
+    });
+
+    const { showError } = useToast();
     const { settings, getFullUrl } = useSystem();
 
     // Initial Load
@@ -85,118 +98,141 @@ const ResultSheetPage = () => {
         if (!selectedGroup || !selectedClass) return;
         setLoading(true);
         try {
-            // 1. Fetch Basic Data
-            const [studentsData, groupData, broadsheetResponse, assessments] = await Promise.all([
-                api.getStudents({ classId: selectedClass, limit: 1000 }),
-                groups.find(g => g.id === selectedGroup),
-                examinationService.getBroadsheet(selectedClass, selectedGroup).catch(() => ({ results: [], subjectScores: [] })) as any,
-                examinationService.getAssessmentTypes(selectedGroup)
-            ]);
-
-            if (!groupData) throw new Error("Exam Group not found");
-
-            const broadsheetData = (broadsheetResponse as any)?.results || [];
-
-            // 2. Fetch Detailed Marks for breakdown (Optimized: Single Batch Call)
-            const [exams, allClassMarks] = await Promise.all([
+            // 1. Fetch all necessary data in parallel
+            const [
+                assessmentTypes, 
+                allMarks, 
+                allExams, 
+                broadsheetResponse,
+                affDomains,
+                psycDomains,
+                allSkills,
+                allPsyc,
+                classInfo
+            ] = await Promise.all([
+                examinationService.getAssessmentTypes(selectedGroup),
+                examinationService.getClassMarks(selectedClass, selectedGroup),
                 examinationService.getExams(selectedGroup),
-                examinationService.getClassMarks(selectedClass, selectedGroup) as any
+                examinationService.getBroadsheet(selectedClass, selectedGroup).catch(() => ({ results: [], subjectScores: [], subjectStats: [] })) as any,
+                examinationService.getAffectiveDomains(),
+                examinationService.getPsychomotorDomains(),
+                examinationService.getSkills(selectedGroup),
+                examinationService.getPsychomotor(selectedGroup),
+                api.getClassById(selectedClass).catch(() => null)
             ]);
-            const classExams = exams.filter(e => e.classId === selectedClass);
 
-            // 3. Group marks by student for performance (O(N) vs O(N^2))
-            const studentMarksMap = allClassMarks.reduce((acc, mark) => {
-                const id = typeof mark.studentId === 'string' ? mark.studentId : (mark.student as any)?.id;
-                if (id) {
-                    if (!acc[id]) acc[id] = [];
-                    acc[id].push(mark);
-                }
+            setAssessments(assessmentTypes || []);
+
+            const teacher = (classInfo as any)?.classTeacher;
+            const teacherName = teacher ? `${teacher.firstName} ${teacher.lastName}` : 'N/A';
+            const teacherSign = teacher?.signature ? getFullUrl(teacher.signature) : '';
+
+            const termResults = (broadsheetResponse as any)?.results || [];
+            const subjectStats = (broadsheetResponse as any)?.subjectStats || [];
+            const subjectEnrichedScores = (broadsheetResponse as any)?.subjectScores || [];
+
+            // 2. Group individual marks (CA1, CA2, etc) by studentId for O(1) lookup
+            const marksByStudent = (allMarks as any[]).reduce((acc: Record<string, any[]>, mark: any) => {
+                const sId = mark.studentId;
+                if (!acc[sId]) acc[sId] = [];
+                acc[sId].push(mark);
                 return acc;
-            }, {} as Record<string, any[]>);
+            }, {});
 
-            // 4. Build Report Card Data Objects
-            const reports: ReportCardData[] = studentsData.map((student: any) => {
-                const broadsheetRecord = broadsheetData.find((b: any) => (b.studentId === student.id) || (b.studentId === student.id));
-                const studentPersonalMarks = studentMarksMap[student.id] || [];
+            // 3. Map the processed results into ReportCardData format
+            const reports: ReportCardData[] = termResults.map((result: any) => {
+                const student = result.student;
+                const studentMarks = marksByStudent[student.id] || [];
+                
+                // Get all subjects this student took based on their marks
+                const studentSubjects = Array.from(new Set(studentMarks.map((m: any) => m.subjectId)));
 
-                const subjects = classExams.map(exam => {
-                    const studentMarks = studentPersonalMarks.filter(m => m.examId === exam.id);
-
-                    const totalScore = studentMarks.reduce((a, b) => a + b.score, 0);
-
-                    // Map specific scores (CA1, CA2, Exam)
-                    let ca1: number | undefined;
-                    let ca2: number | undefined;
-                    let examScore: number | undefined;
-
-                    studentMarks.forEach(m => {
-                        const ass = assessments.find(a => a.id === m.assessmentTypeId);
-                        const name = ass?.name.toLowerCase() || '';
-                        if (name.includes('ca1') || name.includes('first ca')) ca1 = m.score;
-                        else if (name.includes('ca2') || name.includes('second ca')) ca2 = m.score;
-                        else if (name.includes('exam') || name.includes('final')) examScore = m.score;
+                const processedSubjects: ReportCardSubject[] = studentSubjects.map((subId: any) => {
+                    const exam = allExams.find((e: any) => e.subjectId === subId && e.classId === selectedClass);
+                    const subjectName = exam?.subject?.name || 'Unknown';
+                    
+                    // Individual assessment scores (CA1, CA2, Exam)
+                    const scores: Record<string, number | undefined> = {};
+                    assessmentTypes.forEach(ass => {
+                        const m = studentMarks.find((mark: any) => mark.assessmentTypeId === ass.id && mark.subjectId === subId);
+                        scores[ass.id] = m ? m.score : undefined;
                     });
 
-                    const { grade, remark } = getGradeDetails(totalScore);
+                    // Pre-calculated subject metrics from backend
+                    const enriched = subjectEnrichedScores.find((s: any) => s.studentId === student.id && s.subjectId === subId);
+                    const stats = subjectStats.find((s: any) => s.subjectId === subId);
 
                     return {
-                        subjectName: exam.name.replace(/\s+exam$/i, ''),
-                        ca1: ca1,
-                        ca2: ca2,
-                        examScore: examScore,
-                        totalScore: totalScore,
-                        highestInClass: 0,
-                        lowestInClass: 0,
-                        classAvg: 0,
-                        positionInSubject: 1,
-                        grade: grade,
-                        remark: remark,
+                        subjectName,
+                        scores,
+                        totalScore: enriched?.totalSubjectScore || 0,
+                        grade: enriched?.grade || 'F',
+                        remark: enriched?.remark || 'VERY POOR',
+                        highestInClass: stats ? parseFloat(stats.highestScore) : undefined,
+                        lowestInClass: stats ? parseFloat(stats.lowestScore) : undefined,
+                        classAvg: stats ? parseFloat(stats.averageScore) : undefined,
+                        positionInSubject: enriched?.positionInSubject // <--- NEW from backend
                     };
-                }).filter(s => s.totalScore > 0);
+                });
 
-                const totalObtained = broadsheetRecord?.totalScore || subjects.reduce((a, b) => a + b.totalScore, 0);
-                const averageScore = broadsheetRecord?.averageScore || (subjects.length > 0 ? (totalObtained / subjects.length) : 0);
+                // Map skills and psychomotor for this student
+                const studentSkills = allSkills
+                    .filter((s: any) => s.studentId === student.id)
+                    .map((s: any) => ({
+                        name: affDomains.find(d => d.id === s.domainId)?.name || 'Unknown',
+                        rating: parseInt(s.rating) || 1
+                    }));
+
+                const studentPsyc = allPsyc
+                    .filter((p: any) => p.studentId === student.id)
+                    .map((p: any) => ({
+                        name: psycDomains.find(d => d.id === p.domainId)?.name || 'Unknown',
+                        rating: parseInt(p.rating) || 1
+                    }));
 
                 return {
                     student: {
                         name: `${student.firstName} ${student.lastName}`,
-                        dateOfBirth: student.dateOfBirth,
-                        sex: student.gender,
-                        admissionNumber: student.admissionNumber,
+                        dateOfBirth: student.dob ? new Date(student.dob).toLocaleDateString() : 'N/A',
+                        sex: student.gender || 'N/A',
+                        admissionNumber: student.admissionNo || student.admissionNumber || 'N/A',
                         class: student.class?.name || 'N/A',
-                        photoUrl: getFullUrl(student.photo || student.studentPhoto),
+                        photoUrl: student.studentPhoto ? getFullUrl(student.studentPhoto) : undefined,
                     },
                     examGroup: {
-                        name: groupData.name,
-                        term: groupData.term,
-                        year: groupData.academicYear
+                        name: result.examGroup?.name || settings?.activeSessionName || 'N/A',
+                        term: result.examGroup?.term || settings?.activeTermName || 'N/A',
+                        year: result.examGroup?.academicYear || new Date().getFullYear().toString()
                     },
                     academicInfo: {
-                        timesOpened: 127,
-                        timesPresent: 109,
-                        timesAbsent: 18,
-                        termBegins: groupData.startDate ? new Date(groupData.startDate).toLocaleDateString() : (settings.sessionStartDate ? new Date(settings.sessionStartDate).toLocaleDateString() : ''),
-                        termEnds: groupData.endDate ? new Date(groupData.endDate).toLocaleDateString() : '',
-                        nextTermBegins: 'To be announced'
+                        timesOpened: result.daysOpened || 0,
+                        timesPresent: result.daysPresent || 0,
+                        timesAbsent: (result.daysOpened || 0) - (result.daysPresent || 0),
+                        termBegins: settings?.sessionStartDate ? new Date(settings.sessionStartDate).toLocaleDateString() : '',
+                        termEnds: settings?.sessionEndDate ? new Date(settings.sessionEndDate).toLocaleDateString() : '',
+                        nextTermBegins: settings?.nextTermStartDate ? new Date(settings.nextTermStartDate).toLocaleDateString() : 'To be announced',
+                        classTeacherName: teacherName,
+                        classTeacherSignature: teacherSign,
+                        principalSignature: settings?.invoiceLogo ? getFullUrl(settings.invoiceLogo) : ''
                     },
-                    subjects: subjects,
+                    subjects: processedSubjects,
+                    affectiveTraits: studentSkills,
+                    psychomotorSkills: studentPsyc,
                     summary: {
-                        totalObtainable: subjects.length * 100,
-                        totalObtained: totalObtained,
-                        averageScore: averageScore,
-                        position: broadsheetRecord ? (broadsheetData.indexOf(broadsheetRecord) + 1) : undefined,
-                        classSize: studentsData.length
+                        totalObtainable: processedSubjects.length * 100,
+                        totalObtained: result.totalScore || 0,
+                        averageScore: result.averageScore || 0,
+                        position: result.position || 0,
+                        classSize: termResults.length
                     }
                 };
             });
 
-            // Sort by totalObtained
-            reports.sort((a, b) => b.summary.totalObtained - a.summary.totalObtained);
-
+            // Keep official sorted order from backend (results are already DESC by totalScore)
             setStudents(reports);
 
         } catch (error) {
-            console.error(error);
+            console.error('Error generating reports:', error);
             showError('Failed to generate report cards');
         } finally {
             setLoading(false);
@@ -227,14 +263,16 @@ const ResultSheetPage = () => {
         };
     }, [students]);
 
-    const getGradeDetails = (score: number) => {
-        // Updated to match the specific grading system in the reference image:
-        // 70-100 (EXCELLENT)
-        // 60-69 (VERY GOOD)
-        // 50-59 (GOOD)
-        // 45-49 (FAIR)
-        // 40-44 (POOR)
-        // 0-39 (VERY POOR)
+    const getGradeDetails = (score: number, scales: GradeScale[]) => {
+        // Use the first scale's grades for now, or match by some criteria if needed
+        if (scales && scales.length > 0) {
+            const grades = scales[0].grades;
+            const match = grades.find(g => score >= g.minScore && score <= g.maxScore);
+            if (match) {
+                return { grade: match.name, remark: match.remark || '' };
+            }
+        }
+        // Fallback
         if (score >= 70) return { grade: 'A', remark: 'EXCELLENT' };
         if (score >= 60) return { grade: 'B', remark: 'VERY GOOD' };
         if (score >= 50) return { grade: 'C', remark: 'GOOD' };
@@ -265,6 +303,13 @@ const ResultSheetPage = () => {
                         <p className="text-sm text-gray-500 dark:text-gray-400">Generate and print student result slips.</p>
                     </div>
                     <div className="flex gap-2">
+                        <button
+                            onClick={() => setShowSettings(!showSettings)}
+                            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all shadow-sm"
+                        >
+                            <Settings className={`w-4 h-4 ${showSettings ? 'animate-spin' : ''}`} />
+                            Settings
+                        </button>
                         {students.length > 0 && (
                             <button
                                 onClick={handlePrint}
@@ -335,6 +380,87 @@ const ResultSheetPage = () => {
                         Generate
                     </button>
                 </div>
+
+                {/* Report Customization Settings Modal */}
+                {showSettings && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        {/* Backdrop */}
+                        <div 
+                            className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+                            onClick={() => setShowSettings(false)}
+                        />
+                        
+                        {/* Modal Content */}
+                        <div className="bg-white dark:bg-gray-800 w-full max-w-xl rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden relative animate-in zoom-in-95 fade-in duration-200">
+                            <div className="p-6 border-b border-gray-50 dark:border-gray-700 flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/50">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-xl flex items-center justify-center text-primary-600">
+                                        <Settings className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-gray-900 dark:text-white uppercase tracking-wider text-sm">Report Configuration</h3>
+                                        <p className="text-[11px] text-gray-500 font-medium">Customize report card visibility and metrics</p>
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={() => setShowSettings(false)}
+                                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors text-gray-400"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <div className="p-8">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                    {[
+                                        { key: 'showPhoto', label: 'Student Photo', desc: 'Display student profile image' },
+                                        { key: 'showHighest', label: 'Highest Score', desc: 'Show top grade in class' },
+                                        { key: 'showLowest', label: 'Lowest Score', desc: 'Show lowest grade in class' },
+                                        { key: 'showAverage', label: 'Class Average', desc: 'Show mean score for subject' },
+                                        { key: 'showSubjectPosition', label: 'Subject Pos.', desc: 'Rank within specific subject' },
+                                        { key: 'showClassPosition', label: 'Class Position', desc: 'Overall student class rank' },
+                                        { key: 'showAttendance', label: 'Attendance', desc: 'Show term attendance stats' },
+                                    ].map((item) => (
+                                        <button
+                                            key={item.key}
+                                            onClick={() => setConfig({ ...config, [item.key]: !config[item.key] })}
+                                            className={`group flex flex-col items-start p-4 rounded-xl border-2 transition-all text-left hover:scale-[1.02] active:scale-95 ${
+                                                config[item.key]
+                                                    ? 'border-primary-500 bg-primary-50/30 dark:bg-primary-900/10'
+                                                    : 'border-gray-100 dark:border-gray-700 hover:border-gray-300'
+                                            }`}
+                                        >
+                                            <div className="flex items-center justify-between w-full mb-2">
+                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                                                    config[item.key] ? 'bg-primary-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-400'
+                                                }`}>
+                                                    <Check className={`w-4 h-4 ${config[item.key] ? 'opacity-100' : 'opacity-20'}`} />
+                                                </div>
+                                                <div className={`w-2 h-2 rounded-full ${config[item.key] ? 'bg-primary-500 animate-pulse' : 'bg-gray-200 dark:bg-gray-700'}`} />
+                                            </div>
+                                            <span className={`text-[11px] font-black uppercase mb-0.5 ${config[item.key] ? 'text-primary-700 dark:text-primary-300' : 'text-gray-900 dark:text-white'}`}>
+                                                {item.label}
+                                            </span>
+                                            <span className="text-[9px] text-gray-400 dark:text-gray-500 leading-tight">
+                                                {item.desc}
+                                            </span>
+                                        </button>
+                                    ))}
+                                </div>
+
+                            </div>
+
+                            <div className="p-6 bg-gray-50/50 dark:bg-gray-900/30 border-t border-gray-50 dark:border-gray-700 flex justify-end">
+                                <button
+                                    onClick={() => setShowSettings(false)}
+                                    className="px-6 py-2.5 bg-primary-600 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/25 active:scale-95"
+                                >
+                                    Apply Changes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Summary Stats */}
                 {!loading && students.length > 0 && (
@@ -488,9 +614,12 @@ const ResultSheetPage = () => {
 
                 {/* Empty State */}
                 {!loading && students.length === 0 && selectedGroup && selectedClass && (
-                    <div className="text-center py-12 text-gray-400 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 border-dashed">
-                        <FileText className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                        <p>No report cards generated yet. Click "Generate" to fetch data.</p>
+                    <div className="text-center py-12 text-gray-400 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 border-dashed shadow-sm">
+                        <div className="w-16 h-16 bg-gray-50 dark:bg-gray-900/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <FileText className="w-8 h-8 opacity-20" />
+                        </div>
+                        <h3 className="text-gray-900 dark:text-white font-bold text-lg mb-1">No Results Found</h3>
+                        <p className="max-w-xs mx-auto text-sm">We couldn't find any processed marks for this selection. Please ensure scores have been entered for this class and exam group.</p>
                     </div>
                 )}
             </div>
@@ -499,7 +628,7 @@ const ResultSheetPage = () => {
             <div className="hidden print:block">
                 {students.map((student, idx) => (
                     <div key={idx} style={{ pageBreakAfter: 'always' }}>
-                        <ReportCardTemplate data={student} />
+                        <ReportCardTemplate data={student} assessments={assessments} config={config} />
                     </div>
                 ))}
             </div>
@@ -515,7 +644,7 @@ const ResultSheetPage = () => {
                             </button>
                         </div>
                         <div className="p-4 bg-gray-100 dark:bg-black/50 flex justify-center">
-                            <ReportCardTemplate data={selectedStudent} />
+                            <ReportCardTemplate data={selectedStudent} assessments={assessments} config={config} />
                         </div>
                     </div>
                 </div>
@@ -524,4 +653,4 @@ const ResultSheetPage = () => {
     );
 };
 
-export default ResultSheetPage;
+export default ReportCardPage;

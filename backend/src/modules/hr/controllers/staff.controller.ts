@@ -54,6 +54,7 @@ export class StaffController {
         { name: 'otherDocuments', maxCount: 5 },
         { name: 'certificates', maxCount: 10 },
         { name: 'idProof', maxCount: 1 },
+        { name: 'signature', maxCount: 1 },
     ], {
         storage: diskStorage({
             destination: './uploads/staff',
@@ -73,7 +74,8 @@ export class StaffController {
             resignationLetter?: Express.Multer.File[],
             otherDocuments?: Express.Multer.File[],
             certificates?: Express.Multer.File[],
-            idProof?: Express.Multer.File[]
+            idProof?: Express.Multer.File[],
+            signature?: Express.Multer.File[]
         },
         @Request() req: any
     ) {
@@ -89,6 +91,7 @@ export class StaffController {
         { name: 'otherDocuments', maxCount: 5 },
         { name: 'certificates', maxCount: 10 },
         { name: 'idProof', maxCount: 1 },
+        { name: 'signature', maxCount: 1 },
     ], {
         storage: diskStorage({
             destination: './uploads/staff',
@@ -109,7 +112,8 @@ export class StaffController {
             resignationLetter?: Express.Multer.File[],
             otherDocuments?: Express.Multer.File[],
             certificates?: Express.Multer.File[],
-            idProof?: Express.Multer.File[]
+            idProof?: Express.Multer.File[],
+            signature?: Express.Multer.File[]
         },
         @Request() req: any
     ) {

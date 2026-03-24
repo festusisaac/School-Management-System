@@ -68,6 +68,7 @@ interface Staff {
     resignationLetter?: string;
     certificates?: string[];
     idProof?: string;
+    signature?: string;
     otherDocuments?: string[];
 }
 
@@ -767,6 +768,27 @@ const StaffDirectoryPage = () => {
                                                                         <span className="truncate">{selectedFiles['resignationLetter'] || 'Drag & drop or click'}</span>
                                                                     </div>
                                                                     <input type="file" name="resignationLetter" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-4 border border-gray-200 dark:border-gray-700 p-4 rounded-lg">
+                                                        <div className="flex-1">
+                                                            <div className="flex justify-between items-center mb-1">
+                                                                <label className="block text-sm font-semibold text-gray-900 dark:text-white">Staff Signature (For Reports)</label>
+                                                                {editingStaff?.signature && (
+                                                                    <a href={getFileUrl(editingStaff.signature)} target="_blank" rel="noreferrer" className="text-xs text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1">
+                                                                        <Eye size={12} /> View Current
+                                                                     </a>
+                                                                )}
+                                                            </div>
+                                                            <div className="relative group">
+                                                                <div className="flex items-center justify-center p-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-primary-500 dark:hover:border-primary-500 transition-colors bg-gray-50 dark:bg-gray-800/50">
+                                                                    <div className="text-gray-500 dark:text-gray-400 text-sm flex items-center gap-2">
+                                                                        <Upload size={16} />
+                                                                        <span className="truncate">{selectedFiles['signature'] || 'Drag & drop or click'}</span>
+                                                                    </div>
+                                                                    <input type="file" name="signature" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                                                                 </div>
                                                             </div>
                                                         </div>

@@ -8,6 +8,8 @@ import {
     JoinColumn,
 } from 'typeorm';
 import { Student } from '../../students/entities/student.entity';
+import { ScratchCardBatch } from './scratch-card-batch.entity';
+import { AcademicSession } from '../../system/entities/academic-session.entity';
 
 @Entity('scratch_cards')
 export class ScratchCard {
@@ -15,10 +17,10 @@ export class ScratchCard {
     id!: string;
 
     @Column({ unique: true })
-    serialNumber!: string;
+    code!: string; // Using 'code' instead of 'serialNumber' to match sample
 
-    @Column({ unique: true })
-    pin!: string; // Hashed or plain? Usually hashed in production, but for now simple.
+    @Column()
+    pin!: string;
 
     @Column({ type: 'int', default: 0 })
     usageCount!: number;
@@ -26,15 +28,41 @@ export class ScratchCard {
     @Column({ type: 'int', default: 5 })
     maxUsage!: number;
 
-    @Column({ default: 'ACTIVE' })
-    status!: string; // ACTIVE, USED, EXPIRED, BLOCKED
+    @Column({ default: 'unsold' })
+    status!: string; // unsold, sold, redeemed, inactive, expired
+
+    @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+    value!: number;
+
+    @Column({ type: 'timestamp', nullable: true })
+    expiryDate?: Date;
 
     @Column({ nullable: true })
-    usedByStudentId?: string;
+    batchId?: string;
+
+    @ManyToOne(() => ScratchCardBatch, (batch) => batch.cards)
+    @JoinColumn({ name: 'batchId' })
+    batch?: ScratchCardBatch;
+
+    @Column({ nullable: true })
+    sessionId?: string;
+
+    @ManyToOne(() => AcademicSession)
+    @JoinColumn({ name: 'sessionId' })
+    session?: AcademicSession;
+
+    @Column({ nullable: true })
+    termId?: string; // We don't have a direct relation here yet, but we'll store the ID
+
+    @Column({ nullable: true })
+    studentId?: string;
 
     @ManyToOne(() => Student)
-    @JoinColumn({ name: 'usedByStudentId' })
-    usedByStudent?: Student; // Optional: bind card to first user
+    @JoinColumn({ name: 'studentId' })
+    student?: Student;
+
+    @Column({ type: 'jsonb', nullable: true })
+    metadata?: any;
 
     @Column({ nullable: true })
     tenantId?: string;

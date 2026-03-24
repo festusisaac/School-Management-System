@@ -3,9 +3,7 @@ import { useSystem } from '../../context/SystemContext';
 
 export interface ReportCardSubject {
     subjectName: string;
-    ca1?: number;
-    ca2?: number;
-    examScore?: number;
+    scores: Record<string, number | undefined>; // assessmentTypeId -> score
     totalScore: number;
     highestInClass?: number;
     lowestInClass?: number;
@@ -37,6 +35,10 @@ export interface ReportCardData {
         termEnds?: string;
         nextTermBegins?: string;
         terminalDuration?: string;
+        promotionStatus?: string;
+        classTeacherName?: string;
+        classTeacherSignature?: string;
+        principalSignature?: string;
     };
     subjects: ReportCardSubject[];
     summary: {
@@ -46,13 +48,39 @@ export interface ReportCardData {
         position?: string | number;
         classSize?: number;
     };
+    affectiveTraits?: { name: string, rating: number }[];
+    psychomotorSkills?: { name: string, rating: number }[];
+}
+
+export interface ReportCardConfig {
+    showPhoto: boolean;
+    showHighest: boolean;
+    showLowest: boolean;
+    showAverage: boolean;
+    showSubjectPosition: boolean;
+    showClassPosition: boolean;
+    showAttendance: boolean;
 }
 
 interface Props {
     data: ReportCardData;
+    assessments: { id: string, name: string, maxMarks: number }[];
+    config?: ReportCardConfig;
 }
 
-const ReportCardTemplate: React.FC<Props> = ({ data }) => {
+const ReportCardTemplate: React.FC<Props> = ({ 
+    data, 
+    assessments, 
+    config = {
+        showPhoto: true,
+        showHighest: true,
+        showLowest: true,
+        showAverage: true,
+        showSubjectPosition: true,
+        showClassPosition: true,
+        showAttendance: true
+    } 
+}) => {
     const { settings, getFullUrl } = useSystem();
 
     // Helper to format position (e.g., 1 -> 1st)
@@ -82,6 +110,25 @@ const ReportCardTemplate: React.FC<Props> = ({ data }) => {
     const colorSectionBg = settings.secondaryColor ? `${settings.secondaryColor}20` : '#eaf6f0';
     const colorBorder = settings.primaryColor || '#218b12ff';
 
+    const getTeacherComment = (avg: number) => {
+        if (avg >= 95) return "AN EXTRAORDINARY PERFORMANCE! KEEP BLAZING THE TRAIL.";
+        if (avg >= 90) return "AN OUTSTANDING RESULT! KEEP UP THE GOOD WORK.";
+        if (avg >= 80) return "EXCELLENT PERFORMANCE. KEEP MAINTAINING THIS VITALITY.";
+        if (avg >= 70) return "A VERY GOOD RESULT. AIM FOR THE TOP NEXT TERM.";
+        if (avg >= 60) return "A GOOD PERFORMANCE. SUSTAIN YOUR EFFORTS.";
+        if (avg >= 50) return "A FAIR RESULT. YOU CAN DO MUCH BETTER.";
+        if (avg >= 40) return "AVERAGE PERFORMANCE. YOU NEED TO BE MORE SERIOUS.";
+        return "POOR RESULT, REDOUBLE YOUR EFFORTS TO IMPROVE.";
+    };
+
+    const getPrincipalComment = (avg: number) => {
+        if (avg >= 90) return "OUTSTANDING PERFORMANCE. KEEP IT UP!";
+        if (avg >= 75) return "EXCELLENT WORK. HIGHLY RECOMMENDED.";
+        if (avg >= 50) return "GOOD EFFORT. PROMOTED.";
+        if (avg >= 45) return "FAIR PERFORMANCE. PROMOTED ON TRIAL.";
+        return "WEAK PERFORMANCE. NOT PROMOTED.";
+    };
+
     return (
         <div
             className="bg-white mx-auto text-black print:p-0"
@@ -101,10 +148,10 @@ const ReportCardTemplate: React.FC<Props> = ({ data }) => {
                     <tbody>
                         <tr>
                             <td width="15%" className="text-center p-1">
-                                {settings.printLogo ? (
-                                    <img src={getFullUrl(settings.printLogo)} className="w-[80px] h-[80px] object-contain mx-auto" alt="Logo" />
+                                {(settings.printLogo || settings.primaryLogo || settings.invoiceLogo) ? (
+                                    <img src={getFullUrl(settings.printLogo || settings.primaryLogo || settings.invoiceLogo)} className="w-[80px] h-[80px] object-contain mx-auto" alt="Logo" />
                                 ) : (
-                                    <div className="w-[60px] h-[60px] bg-primary text-white rounded-full flex items-center justify-center font-bold text-[10px] mx-auto uppercase text-center">Logo</div>
+                                    <div className="w-[60px] h-[60px] bg-primary text-white rounded-full flex items-center justify-center font-bold text-[10px] mx-auto uppercase text-center font-black">LOGO</div>
                                 )}
                             </td>
                             <td className="text-center">
@@ -113,10 +160,10 @@ const ReportCardTemplate: React.FC<Props> = ({ data }) => {
                                 <div className="italic mt-1 text-[11px] text-gray-500 font-medium">"{settings.schoolMotto || 'Excellence & Integrity'}"</div>
                             </td>
                             <td width="15%" className="text-center p-1">
-                                {settings.primaryLogo ? (
-                                    <img src={getFullUrl(settings.primaryLogo)} className="w-[80px] h-[80px] object-contain mx-auto" alt="Logo" />
+                                {(settings.primaryLogo || settings.invoiceLogo || settings.printLogo) ? (
+                                    <img src={getFullUrl(settings.primaryLogo || settings.invoiceLogo || settings.printLogo)} className="w-[80px] h-[80px] object-contain mx-auto" alt="Logo" />
                                 ) : (
-                                    <div className="w-[60px] h-[60px] bg-primary text-white rounded-full flex items-center justify-center font-bold text-[10px] mx-auto uppercase text-center">Logo</div>
+                                    <div className="w-[60px] h-[60px] bg-primary text-white rounded-full flex items-center justify-center font-bold text-[10px] mx-auto uppercase text-center font-black">LOGO</div>
                                 )}
                             </td>
                         </tr>
@@ -165,16 +212,17 @@ const ReportCardTemplate: React.FC<Props> = ({ data }) => {
                                 </table>
                             </td>
 
-                            {/* Photo */}
-                            <td width="15%" style={{ verticalAlign: 'top', padding: '0 2px' }}>
-                                <div className="mx-auto flex items-center justify-center border border-gray-300 overflow-hidden" style={{ width: '95px', height: '100px' }}>
-                                    {data.student.photoUrl ? (
-                                        <img src={data.student.photoUrl} className="w-full h-full object-cover" alt="Student" />
-                                    ) : (
-                                        <span className="text-gray-300 text-[10px] font-bold">PHOTO</span>
-                                    )}
-                                </div>
-                            </td>
+                            {config.showPhoto && (
+                                <td width="15%" style={{ verticalAlign: 'top', padding: '0 2px' }}>
+                                    <div className="mx-auto flex items-center justify-center border border-gray-300 overflow-hidden" style={{ width: '95px', height: '100px' }}>
+                                        {data.student.photoUrl ? (
+                                            <img src={data.student.photoUrl} className="w-full h-full object-cover" alt="Student" />
+                                        ) : (
+                                            <span className="text-gray-300 text-[10px] font-bold">PHOTO</span>
+                                        )}
+                                    </div>
+                                </td>
+                            )}
 
                             {/* Attendance & Duration */}
                             <td width="30%" style={{ verticalAlign: 'top', padding: '0 2px' }}>
@@ -230,21 +278,23 @@ const ReportCardTemplate: React.FC<Props> = ({ data }) => {
                                             <td className="text-center font-bold p-[3px] border" style={{ fontSize: '9px', borderColor: colorBorder }}>TOTAL SCORE<br />OBTAINED</td>
                                             <td className="text-center font-bold p-[3px] border font-black" style={{ borderColor: colorBorder }}>{data.summary.totalObtained || 0}</td>
                                         </tr>
-                                        <tr>
-                                            <td className="text-center font-bold p-[3px] border" style={{ fontSize: '9px', borderColor: colorBorder }}>TERM AVERAGE</td>
-                                            <td className="text-center font-bold p-[3px] border font-black" style={{ borderColor: colorBorder }}>{data.summary.averageScore.toFixed(1)}</td>
-                                        </tr>
+                                        {config.showAverage && (
+                                            <tr>
+                                                <td className="text-center font-bold p-[3px] border" style={{ fontSize: '9px', borderColor: colorBorder }}>TERM AVERAGE</td>
+                                                <td className="text-center font-bold p-[3px] border font-black" style={{ borderColor: colorBorder }}>{data.summary.averageScore.toFixed(1)}</td>
+                                            </tr>
+                                        )}
                                     </tbody>
                                 </table>
                                 <table className="w-full border-collapse" style={{ border: `1px solid ${colorBorder}` }}>
                                     <tbody>
                                         <tr>
                                             <td className="text-center font-bold p-[3px] border" style={{ fontSize: '9px', borderColor: colorBorder }}>No. in Class</td>
-                                            <td className="text-center font-bold p-[3px] border" style={{ fontSize: '9px', borderColor: colorBorder }}>Position</td>
+                                            {config.showClassPosition && <td className="text-center font-bold p-[3px] border" style={{ fontSize: '9px', borderColor: colorBorder }}>Position</td>}
                                         </tr>
                                         <tr>
                                             <td className="text-center p-[3px] border font-black" style={{ borderColor: colorBorder }}>{data.summary.classSize || 0}</td>
-                                            <td className="text-center p-[3px] border font-black" style={{ borderColor: colorBorder }}>{formatSuffix(data.summary.position)}</td>
+                                            {config.showClassPosition && <td className="text-center p-[3px] border font-black" style={{ borderColor: colorBorder }}>{formatSuffix(data.summary.position)}</td>}
                                         </tr>
                                     </tbody>
                                 </table>
@@ -265,36 +315,40 @@ const ReportCardTemplate: React.FC<Props> = ({ data }) => {
                 <table className="w-full border-collapse" style={{ border: `1px solid ${colorBorder}` }}>
                     <thead>
                         <tr style={{ backgroundColor: colorSectionBg, fontSize: '10px' }}>
-                            <th className="border p-1 text-left" width="20%" rowSpan={2} style={{ borderColor: colorBorder }}>SUBJECT</th>
-                            <th className="border p-0 text-center" colSpan={2} style={{ borderColor: colorBorder }}>CA</th>
-                            <th className="border p-1 text-center" width="5%" rowSpan={2} style={{ borderColor: colorBorder }}>EXAM</th>
-                            <th className="border p-1 text-center" width="7%" rowSpan={2} style={{ borderColor: colorBorder }}>TOTAL<br />SCORE</th>
-                            <th className="border p-1 text-center" width="7%" rowSpan={2} style={{ borderColor: colorBorder }}>HIGHEST<br />IN CLASS</th>
-                            <th className="border p-1 text-center" width="7%" rowSpan={2} style={{ borderColor: colorBorder }}>LOWEST<br />IN CLASS</th>
-                            <th className="border p-1 text-center" width="7%" rowSpan={2} style={{ borderColor: colorBorder }}>CLASS<br />AVERAGE</th>
-                            <th className="border p-1 text-center" width="7%" rowSpan={2} style={{ borderColor: colorBorder }}>POSITION IN<br />SUBJECT</th>
-                            <th className="border p-1 text-center" width="5%" rowSpan={2} style={{ borderColor: colorBorder }}>GRADE</th>
-                            <th className="border p-1 text-center" width="10%" rowSpan={2} style={{ borderColor: colorBorder }}>REMARKS</th>
+                            <th className="border p-1 text-left" rowSpan={2} style={{ borderColor: colorBorder, width: '20%' }}>SUBJECT</th>
+                            <th className="border p-0 text-center" colSpan={assessments.length} style={{ borderColor: colorBorder }}>ASSESSMENTS</th>
+                            <th className="border p-1 text-center" rowSpan={2} style={{ borderColor: colorBorder, width: '7%' }}>TOTAL<br />SCORE</th>
+                            {config.showHighest && <th className="border p-1 text-center" rowSpan={2} style={{ borderColor: colorBorder, width: '7%' }}>HIGHEST<br />IN CLASS</th>}
+                            {config.showLowest && <th className="border p-1 text-center" rowSpan={2} style={{ borderColor: colorBorder, width: '7%' }}>LOWEST<br />IN CLASS</th>}
+                            {config.showAverage && <th className="border p-1 text-center" rowSpan={2} style={{ borderColor: colorBorder, width: '7%' }}>CLASS<br />AVERAGE</th>}
+                            {config.showSubjectPosition && <th className="border p-1 text-center" rowSpan={2} style={{ borderColor: colorBorder, width: '7%' }}>POS.</th>}
+                            <th className="border p-1 text-center" rowSpan={2} style={{ borderColor: colorBorder, width: '5%' }}>GRADE</th>
+                            <th className="border p-1 text-center" rowSpan={2} style={{ borderColor: colorBorder, width: '12%' }}>REMARKS</th>
                         </tr>
-                        <tr style={{ backgroundColor: colorSectionBg, fontSize: '10px' }}>
-                            <th className="border p-1" width="5%" style={{ borderColor: colorBorder }}>20</th>
-                            <th className="border p-1" width="5%" style={{ borderColor: colorBorder }}>20</th>
+                        <tr style={{ backgroundColor: colorSectionBg, fontSize: '9px' }}>
+                            {assessments.map(ass => (
+                                <th key={ass.id} className="border p-1 text-center" style={{ borderColor: colorBorder }}>
+                                    {ass.name}<br />({ass.maxMarks})
+                                </th>
+                            ))}
                         </tr>
                     </thead>
                     <tbody>
-                        {data.subjects.map((score, i) => (
+                        {data.subjects.map((subj, i) => (
                             <tr key={i} style={{ fontSize: '10px' }}>
-                                <td className="border p-[3px] text-left font-bold" style={{ borderColor: colorBorder }}>{score.subjectName}</td>
-                                <td className="border p-[3px] text-center" style={{ borderColor: colorBorder }}>{score.ca1 || ''}</td>
-                                <td className="border p-[3px] text-center" style={{ borderColor: colorBorder }}>{score.ca2 || ''}</td>
-                                <td className="border p-[3px] text-center" style={{ borderColor: colorBorder }}>{score.examScore || ''}</td>
-                                <td className="border p-[3px] text-center font-bold" style={{ borderColor: colorBorder }}>{score.totalScore || 0}</td>
-                                <td className="border p-[3px] text-center" style={{ borderColor: colorBorder }}>{score.highestInClass || '-'}</td>
-                                <td className="border p-[3px] text-center" style={{ borderColor: colorBorder }}>{score.lowestInClass || '-'}</td>
-                                <td className="border p-[3px] text-center" style={{ borderColor: colorBorder }}>{score.classAvg ? score.classAvg.toFixed(1) : '-'}</td>
-                                <td className="border p-[3px] text-center" style={{ borderColor: colorBorder }}>{score.positionInSubject || '-'}</td>
-                                <td className="border p-[3px] text-center font-bold" style={{ borderColor: colorBorder }}>{score.grade}</td>
-                                <td className="border p-[3px] text-center font-bold" style={{ fontSize: '9px', borderColor: colorBorder }}>{score.remark}</td>
+                                <td className="border p-[3px] text-left font-bold" style={{ borderColor: colorBorder }}>{subj.subjectName}</td>
+                                {assessments.map(ass => (
+                                    <td key={ass.id} className="border p-[3px] text-center" style={{ borderColor: colorBorder }}>
+                                        {subj.scores[ass.id] ?? ''}
+                                    </td>
+                                ))}
+                                <td className="border p-[3px] text-center font-bold" style={{ borderColor: colorBorder }}>{subj.totalScore || 0}</td>
+                                {config.showHighest && <td className="border p-[3px] text-center" style={{ borderColor: colorBorder }}>{subj.highestInClass || '-'}</td>}
+                                {config.showLowest && <td className="border p-[3px] text-center" style={{ borderColor: colorBorder }}>{subj.lowestInClass || '-'}</td>}
+                                {config.showAverage && <td className="border p-[3px] text-center" style={{ borderColor: colorBorder }}>{subj.classAvg ? subj.classAvg.toFixed(1) : '-'}</td>}
+                                {config.showSubjectPosition && <td className="border p-[3px] text-center" style={{ borderColor: colorBorder }}>{subj.positionInSubject || '-'}</td>}
+                                <td className="border p-[3px] text-center font-bold" style={{ borderColor: colorBorder }}>{subj.grade}</td>
+                                <td className="border p-[3px] text-center font-bold" style={{ fontSize: '9px', borderColor: colorBorder }}>{subj.remark}</td>
                             </tr>
                         ))}
                     </tbody>
@@ -333,25 +387,26 @@ const ReportCardTemplate: React.FC<Props> = ({ data }) => {
                                             </th>
                                         </tr>
                                         <tr style={{ fontSize: '9px' }}>
-                                            <th width="40%" className="border" style={{ borderColor: colorBorder }}></th>
+                                            <th className="border" style={{ borderColor: colorBorder, width: '40%' }}></th>
                                             <th className="border" style={{ borderColor: colorBorder }}>1</th>
                                             <th className="border" style={{ borderColor: colorBorder }}>2</th>
                                             <th className="border" style={{ borderColor: colorBorder }}>3</th>
                                             <th className="border" style={{ borderColor: colorBorder }}>4</th>
                                             <th className="border" style={{ borderColor: colorBorder }}>5</th>
                                         </tr>
-                                        {[
-                                            { n: 'Punctuality', r: 1 }, { n: 'Neatness', r: 1 },
-                                            { n: 'Politeness', r: 1 }, { n: 'Attendance', r: 1 },
-                                            { n: 'Co-operation', r: 1 }, { n: 'Self control', r: 1 },
-                                            { n: 'Sense of responsibility', r: 1 }, { n: 'Industry', r: 1 },
-                                            { n: 'Persistence', r: 1 }
-                                        ].map((t, i) => (
+                                        {/* Dynamic Affective Traits */}
+                                        {(data.affectiveTraits && data.affectiveTraits.length > 0 ? data.affectiveTraits : [
+                                            { name: 'Punctuality', rating: 1 }, { name: 'Neatness', rating: 1 },
+                                            { name: 'Politeness', rating: 1 }, { name: 'Attendance', rating: 1 },
+                                            { name: 'Co-operation', rating: 1 }, { name: 'Self control', rating: 1 },
+                                            { name: 'Sense of responsibility', rating: 1 }, { name: 'Industry', rating: 1 },
+                                            { name: 'Persistence', rating: 1 }
+                                        ]).map((t, i) => (
                                             <tr key={i}>
-                                                <td className="border p-0.5 px-1 truncate" style={{ fontSize: '9px', borderColor: colorBorder }}>{t.n}</td>
+                                                <td className="border p-0.5 px-1 truncate" style={{ fontSize: '9px', borderColor: colorBorder }}>{t.name}</td>
                                                 {[1, 2, 3, 4, 5].map(v => (
                                                     <td key={v} className="border text-center p-0.5" style={{ borderColor: colorBorder, minWidth: '20px' }}>
-                                                        {t.r === v ? '✓' : ''}
+                                                        {t.rating === v ? '✓' : ''}
                                                     </td>
                                                 ))}
                                             </tr>
@@ -368,23 +423,24 @@ const ReportCardTemplate: React.FC<Props> = ({ data }) => {
                                             </th>
                                         </tr>
                                         <tr style={{ fontSize: '9px' }}>
-                                            <th width="40%" className="border" style={{ borderColor: colorBorder }}></th>
+                                            <th className="border" style={{ borderColor: colorBorder, width: '40%' }}></th>
                                             <th className="border" style={{ borderColor: colorBorder }}>1</th>
                                             <th className="border" style={{ borderColor: colorBorder }}>2</th>
                                             <th className="border" style={{ borderColor: colorBorder }}>3</th>
                                             <th className="border" style={{ borderColor: colorBorder }}>4</th>
                                             <th className="border" style={{ borderColor: colorBorder }}>5</th>
                                         </tr>
-                                        {[
-                                            { n: 'Hand Writing', r: 1 }, { n: 'Fluency', r: 1 },
-                                            { n: 'Games', r: 1 }, { n: 'Sports', r: 1 },
-                                            { n: 'Crafts', r: 1 }, { n: 'Drawing', r: 1 }
-                                        ].map((s, i) => (
+                                        {/* Dynamic Psychomotor Skills */}
+                                        {(data.psychomotorSkills && data.psychomotorSkills.length > 0 ? data.psychomotorSkills : [
+                                            { name: 'Hand Writing', rating: 1 }, { name: 'Fluency', rating: 1 },
+                                            { name: 'Games', rating: 1 }, { name: 'Sports', rating: 1 },
+                                            { name: 'Crafts', rating: 1 }, { name: 'Drawing', rating: 1 }
+                                        ]).map((s, i) => (
                                             <tr key={i}>
-                                                <td className="border p-0.5 px-1 truncate" style={{ fontSize: '9px', borderColor: colorBorder }}>{s.n}</td>
+                                                <td className="border p-0.5 px-1 truncate" style={{ fontSize: '9px', borderColor: colorBorder }}>{s.name}</td>
                                                 {[1, 2, 3, 4, 5].map(v => (
                                                     <td key={v} className="border text-center p-0.5" style={{ borderColor: colorBorder, minWidth: '20px' }}>
-                                                        {s.r === v ? '✓' : ''}
+                                                        {s.rating === v ? '✓' : ''}
                                                     </td>
                                                 ))}
                                             </tr>
@@ -416,23 +472,33 @@ const ReportCardTemplate: React.FC<Props> = ({ data }) => {
                             <tr>
                                 <td className="p-1 pr-2 align-top">
                                     <div className="pb-2 mb-2 border-b" style={{ borderColor: colorPrimary }}>
-                                        <span className="font-bold">Class Teacher's Comments:</span> <span className="font-bold italic uppercase">Very Good Result</span>
+                                        <span className="font-bold">Class Teacher's Comments:</span> <span className="font-bold italic uppercase">{getTeacherComment(data.summary.averageScore)}</span>
                                         <div className="float-right font-bold text-[10px] mt-1">
-                                            <span>Sign.:</span> <span className="inline-block w-[60px] border-b border-black text-center h-[20px] align-middle opacity-60">✒️</span>
-                                            <span className="ml-4">Date:</span> <span>04/02/2026</span>
+                                            <span>Sign.:</span> 
+                                            <span className="inline-block w-[60px] border-b border-black text-center h-[24px] align-middle relative">
+                                                {data.academicInfo.classTeacherSignature ? (
+                                                    <img src={data.academicInfo.classTeacherSignature} alt="Teacher Sign" className="absolute inset-0 w-full h-full object-contain -top-2" />
+                                                ) : <span className="opacity-60">✒️</span>}
+                                            </span>
+                                            <span className="ml-4">Date:</span> <span>{new Date().toLocaleDateString()}</span>
                                         </div>
                                         <div className="clear-both"></div>
                                     </div>
                                     <div className="pb-2 mb-2 border-b" style={{ borderColor: colorPrimary }}>
-                                        <span className="font-bold">Principal's Comments:</span> <span className="font-bold italic uppercase">Very Good Result, Keep it up</span>
-                                        <div className="float-right font-bold text-[10px] mt-1">
-                                            <span>Sign.:</span> <span className="inline-block w-[60px] border-b border-black text-center h-[20px] align-middle opacity-60">🖊️</span>
-                                            <span className="ml-4">Date:</span> <span>04/02/2026</span>
+                                        <span className="font-bold">Principal's Comments:</span> <span className="font-bold italic uppercase">{getPrincipalComment(data.summary.averageScore)}</span>
+                                        <div className="float-right font-bold text-[10px] mt-1 md:mt-2">
+                                            <span>Sign.:</span> 
+                                            <span className="inline-block w-[60px] border-b border-black text-center h-[24px] align-middle relative">
+                                                {data.academicInfo.principalSignature || settings?.invoiceLogo ? (
+                                                    <img src={data.academicInfo.principalSignature || getFullUrl(settings?.invoiceLogo || '')} alt="Principal Sign" className="absolute inset-0 w-full h-full object-contain -top-2" />
+                                                ) : <span className="opacity-60">🖊️</span>}
+                                            </span>
+                                            <span className="ml-4">Date:</span> <span>{new Date().toLocaleDateString()}</span>
                                         </div>
                                         <div className="clear-both"></div>
                                     </div>
                                     <div>
-                                        <span className="font-bold underline italic">Promotion Status:</span> <span className="font-black uppercase ml-1">PROMOTED TO (JSS 3)</span>
+                                        <span className="font-bold underline italic">Promotion Status:</span> <span className="font-black uppercase ml-1">{data.academicInfo.promotionStatus || (data.summary.averageScore >= 50 ? 'PROMOTED' : data.summary.averageScore >= 45 ? 'PROMOTED ON TRIAL' : 'NOT PROMOTED')}</span>
                                     </div>
                                 </td>
                                 <td className="w-[110px] border-l-[2px] align-middle text-center p-2" style={{ borderColor: colorPrimary }}>
@@ -448,7 +514,7 @@ const ReportCardTemplate: React.FC<Props> = ({ data }) => {
                 </div>
             </div>
 
-            <style jsx>{`
+            <style>{`
                 @media print {
                     @page {
                         size: A4 portrait;

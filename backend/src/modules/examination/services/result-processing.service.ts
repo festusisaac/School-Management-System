@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { ExamResult } from '../entities/exam-result.entity';
 import { StudentTermResult } from '../entities/student-term-result.entity';
 import { ProcessResultDto } from '../dtos/processing/processing.dto';
+import { GradeScale } from '../entities/grade-scale.entity';
 
 @Injectable()
 export class ResultProcessingService {
@@ -12,6 +13,8 @@ export class ResultProcessingService {
         private examResultRepo: Repository<ExamResult>,
         @InjectRepository(StudentTermResult)
         private termResultRepo: Repository<StudentTermResult>,
+        @InjectRepository(GradeScale)
+        private gradeScaleRepo: Repository<GradeScale>,
     ) { }
 
     async processResults(dto: ProcessResultDto, tenantId: string) {
@@ -52,23 +55,39 @@ export class ResultProcessingService {
 
             termResult.totalScore = total;
             termResult.averageScore = count > 0 ? total / count : 0;
+            termResult.totalStudents = aggregation.length;
 
             await this.termResultRepo.save(termResult);
+        }
+
+        // 3. Calculate and Save Positions (Competition Ranking)
+        const allResults = await this.termResultRepo.find({
+            where: { examGroupId: dto.examGroupId, classId: dto.classId, tenantId },
+            order: { totalScore: 'DESC' }
+        });
+
+        let currentRank = 1;
+        for (let i = 0; i < allResults.length; i++) {
+            if (i > 0 && allResults[i].totalScore < allResults[i - 1].totalScore) {
+                currentRank = i + 1;
+            }
+            allResults[i].position = currentRank;
+            await this.termResultRepo.save(allResults[i]);
         }
 
         return { message: 'Processing complete', studentsProcessed: aggregation.length };
     }
 
     async getBroadsheet(examGroupId: string, classId: string, tenantId: string) {
-        // 1. Fetch official processed term results
-        const results = await this.termResultRepo.find({
-            where: { examGroupId, classId, tenantId },
-            relations: ['student'],
-            order: { totalScore: 'DESC' },
+        // 1. Fetch academic info for the students in this class
+        const allStudents = await this.examResultRepo.manager.getRepository('Student').find({
+            where: { classId, tenantId },
+            relations: ['class'],
+            order: { firstName: 'ASC' }
         });
 
-        // 2. Fetch subject-level aggregations
-        const subjectScores = await this.examResultRepo
+        // 2. Fetch all specific subject scores for all students in this class/group
+        const subjectScoresRaw = await this.examResultRepo
             .createQueryBuilder('result')
             .leftJoin('result.exam', 'exam')
             .select('result.studentId', 'studentId')
@@ -81,9 +100,99 @@ export class ResultProcessingService {
             .addGroupBy('exam.subjectId')
             .getRawMany();
 
+        // 3. Fetch grade scale for marking
+        const gradeScale = await this.gradeScaleRepo.findOne({
+            where: { tenantId, isActive: true }
+        });
+
+        // 4. Calculate everything on-the-fly
+        const studentOverallTotals = new Map<string, number>();
+        const subjectStatsMap = new Map<string, { high: number, low: number, sum: number, count: number, allScores: number[] }>();
+
+        // First pass: accumulate subject stats and calculate student overall totals
+        const tempScores = subjectScoresRaw.map(s => {
+            const score = parseFloat(s.totalSubjectScore);
+            const studentId = s.studentId;
+            const subjectId = s.subjectId;
+
+            // Student overall total (for class ranking)
+            studentOverallTotals.set(studentId, (studentOverallTotals.get(studentId) || 0) + score);
+
+            // Per-subject stats (for subject ranking and benchmarks)
+            if (!subjectStatsMap.has(subjectId)) {
+                subjectStatsMap.set(subjectId, { high: score, low: score, sum: score, count: 1, allScores: [score] });
+            } else {
+                const stat = subjectStatsMap.get(subjectId)!;
+                stat.high = Math.max(stat.high, score);
+                stat.low = Math.min(stat.low, score);
+                stat.sum += score;
+                stat.count += 1;
+                stat.allScores.push(score);
+            }
+
+            return { ...s, totalSubjectScore: score };
+        });
+
+        // Second pass: Enrich subject scores with Grade, Remark, and POSITION IN SUBJECT
+        const enrichedSubjectScores = tempScores.map(s => {
+            const total = s.totalSubjectScore;
+            const stats = subjectStatsMap.get(s.subjectId);
+            
+            // Competition Ranking for Subject
+            let subjectPosition = 1;
+            if (stats) {
+                const sorted = [...stats.allScores].sort((a, b) => b - a);
+                subjectPosition = sorted.indexOf(total) + 1;
+            }
+
+            let grade = 'F';
+            let remark = 'VERY POOR';
+            if (gradeScale && gradeScale.grades) {
+                const match = gradeScale.grades.find(g => total >= g.minScore && total <= g.maxScore);
+                if (match) {
+                    grade = match.name;
+                    remark = match.remark || '';
+                }
+            }
+
+            return {
+                ...s,
+                positionInSubject: subjectPosition,
+                grade,
+                remark
+            };
+        });
+
+        // 5. Calculate CLASS POSITION dynamically
+        const sortedOverallTotals = Array.from(studentOverallTotals.values()).sort((a, b) => b - a);
+        const liveResults = allStudents.map(student => {
+            const totalScore = studentOverallTotals.get(student.id) || 0;
+            const position = sortedOverallTotals.indexOf(totalScore) + 1;
+            
+            // Map to a structure similar to StudentTermResult for frontend compatibility
+            return {
+                studentId: student.id,
+                student,
+                totalScore,
+                averageScore: subjectStatsMap.size > 0 ? totalScore / subjectStatsMap.size : 0, // Approx avg
+                position,
+                status: 'DRAFT',
+                daysPresent: 0,
+                daysOpened: 0,
+            };
+        });
+
+        const subjectStats = Array.from(subjectStatsMap.entries()).map(([subjectId, s]) => ({
+            subjectId,
+            highestScore: s.high,
+            lowestScore: s.low,
+            averageScore: s.sum / s.count
+        }));
+
         return {
-            results,
-            subjectScores
+            results: liveResults,
+            subjectScores: enrichedSubjectScores,
+            subjectStats
         };
     }
 }

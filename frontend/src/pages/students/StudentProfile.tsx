@@ -142,7 +142,12 @@ export default function StudentProfile() {
         const fetchStudent = async () => {
             if (!id) return;
             try {
-                const data = await api.getStudentById(id);
+                let data;
+                if (id === 'me') {
+                    data = await api.getStudentProfile();
+                } else {
+                    data = await api.getStudentById(id);
+                }
                 setStudent(data);
             } catch (error) {
                 console.error("Failed to fetch student profile", error);

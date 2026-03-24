@@ -9,26 +9,27 @@ export interface SmsOptions {
 @Injectable()
 export class SmsService {
   private readonly logger = new Logger(SmsService.name);
-  private apiKey!: string;
+  private username!: string;
+  private password!: string;
   private senderId!: string;
   private baseUrl!: string;
 
   constructor() {
-    this.initializeTermii();
+    this.initializeKudiSMS();
   }
 
-  private initializeTermii() {
-    this.apiKey = process.env.TERMII_API_KEY || '';
-    this.senderId = process.env.TERMII_SENDER_ID || 'N-Alert';
-    this.baseUrl = 'https://api.ng.termii.com';
+  private initializeKudiSMS() {
+    this.username = process.env.KUDISMS_USERNAME || '';
+    this.password = process.env.KUDISMS_PASSWORD || '';
+    this.senderId = process.env.KUDISMS_SENDER_ID || 'N-Alert';
+    this.baseUrl = 'https://account.kudisms.net/api/';
 
-    
-    if (!this.apiKey) {
-      this.logger.warn('Termii API key not configured. SMS service will not work.');
+    if (!this.username || !this.password) {
+      this.logger.warn('KudiSMS credentials not configured. SMS service will not work.');
       return;
     }
 
-    this.logger.log('SMS service initialized with Termii');
+    this.logger.log('SMS service initialized with KudiSMS');
   }
 
   async sendRegistrationOtp(phoneNumber: string, otp: string): Promise<boolean> {
@@ -97,8 +98,8 @@ export class SmsService {
 
   async sendSms(phoneNumber: string, message: string): Promise<boolean> {
     try {
-      if (!this.apiKey) {
-        this.logger.warn('Termii not initialized. SMS service unavailable.');
+      if (!this.username || !this.password) {
+        this.logger.warn('KudiSMS not initialized. SMS service unavailable.');
         return false;
       }
 
@@ -110,43 +111,49 @@ export class SmsService {
         to = '234' + to;
       }
 
-      const payload = {
-        to,
-        from: this.senderId,
-        sms: message,
-        type: 'plain',
-        // 'dnd' channel is the most reliable for Nigerian numbers — it bypasses
-        // DND filters which block 'generic' route for many MTN/Airtel subscribers
-        channel: 'dnd',
-        api_key: this.apiKey,
-      };
+      const params = new URLSearchParams();
+      params.append('username', this.username);
+      params.append('password', this.password);
+      params.append('message', message);
+      params.append('sender', this.senderId);
+      params.append('mobiles', to);
 
-      const response = await axios.post(`${this.baseUrl}/api/sms/send`, payload);
+      const response = await axios.post(this.baseUrl, params.toString(), {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      });
 
-      // Termii returns HTTP 200 for both success AND failure — must check response body
-      if (response.data?.code === 'ok') {
-        this.logger.log(`SMS sent successfully to ${to}`);
+      if (response.status === 200 || response.status === 201) {
+        const responseData = typeof response.data === 'string' ? response.data.trim() : JSON.stringify(response.data);
+        
+        // Simple heuristic: check if response contains error keywords since gateways sometimes return 200 even on API error
+        if (responseData.toLowerCase().includes('error') || responseData.toLowerCase().includes('fail')) {
+           this.logger.warn(`KudiSMS rejected SMS to ${to}: ${responseData}`);
+           return false;
+        }
+
+        this.logger.log(`SMS sent to ${to} successfully via KudiSMS.`);
         return true;
       }
 
-      this.logger.error(`Termii rejected SMS to ${to}: ${JSON.stringify(response.data)}`);
+      this.logger.error(`KudiSMS HTTP error for ${to}: Status ${response.status}`);
       return false;
     } catch (error: any) {
-      this.logger.error(`Failed to send SMS to ${phoneNumber}:`, error.response?.data || error.message);
+      this.logger.error(`Unexpected SMS error for ${phoneNumber}: ${error.response?.data ? JSON.stringify(error.response.data) : error.message}`);
       return false;
     }
   }
 
-
   async verifyOtp(phoneNumber: string, otp: string): Promise<boolean> {
     try {
-      if (!this.apiKey) {
-        this.logger.warn('Termii not initialized. OTP verification unavailable.');
+      if (!this.username) {
+        this.logger.warn('KudiSMS not initialized. OTP verification unavailable.');
         return false;
       }
 
-      // This is a placeholder - actual implementation depends on Termii SDK
-      this.logger.log(`OTP verification for ${phoneNumber}`);
+      // Placeholder: Implement any verification logic
+      this.logger.log(`OTP verification initiated for ${phoneNumber}`);
       return true;
     } catch (error: any) {
       this.logger.error(`Failed to verify OTP for ${phoneNumber}:`, error.message);

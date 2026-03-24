@@ -167,13 +167,11 @@ const ExamSchedulePage = () => {
 
         // Suggest marks from Assessment Structure if not already scheduled
         let suggestedMarks = row.totalMarks || 100;
-        if (row.status === 'Not Scheduled' && assessments.length > 0) {
-            const examAssessment = assessments.find(a =>
-                a.name.toLowerCase().includes('exam') ||
-                a.name.toLowerCase().includes('final')
-            );
-            if (examAssessment) {
-                suggestedMarks = examAssessment.maxMarks;
+        if (assessments.length > 0) {
+            // Sum all maxMarks in the assessment structure
+            const totalStructureMarks = assessments.reduce((sum, a) => sum + (Number(a.maxMarks) || 0), 0);
+            if (totalStructureMarks > 0) {
+                suggestedMarks = totalStructureMarks;
             }
         }
 
@@ -205,6 +203,11 @@ const ExamSchedulePage = () => {
                     examGroupId: selectedGroup
                 });
                 examId = newExam.id;
+            } else {
+                // Update total marks in case they changed in Assessment Structure
+                await examinationService.updateExam(examId, {
+                    totalMarks: formData.totalMarks
+                });
             }
 
             // 2. Create or Update Schedule
@@ -429,10 +432,10 @@ const ExamSchedulePage = () => {
                                 value={formData.totalMarks}
                                 tabIndex={-1}
                             />
-                            {assessments.find(a => a.name.toLowerCase().includes('exam') || a.name.toLowerCase().includes('final')) && (
+                            {assessments.length > 0 && (
                                 <p className="mt-1.5 text-[10px] text-gray-400 flex items-center gap-1 italic">
                                     <Info className="w-2.5 h-2.5" />
-                                    Pulled from "{assessments.find(a => a.name.toLowerCase().includes('exam') || a.name.toLowerCase().includes('final'))?.name}" in Assessment Structure.
+                                    Total of all components ({assessments.map(a => `${a.name}: ${a.maxMarks}`).join(', ')}) in Assessment Structure.
                                 </p>
                             )}
                         </div>

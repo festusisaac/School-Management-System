@@ -58,7 +58,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             path: '/examination',
             children: [
                 { label: 'Admit Card', path: '/examination/setup/admit-cards' },
-                { label: 'Check Result', path: '/examination/processing/result-sheet' },
+                { label: 'Check Result', path: '/examination/reports/report-card' },
             ]
         }
     ];
@@ -147,16 +147,15 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 { label: 'Skills & Attributes', path: '/examination/entry/skills' },
                 { label: 'Psychomotor Skills', path: '/examination/entry/psychomotor' },
 
-                // Processing
-                { type: 'header', label: 'Processing' },
-                { label: 'Broadsheet', path: '/examination/processing/broadsheet' },
-                { label: 'Result Sheet', path: '/examination/processing/result-sheet' },
+                // Reports
+                { type: 'header', label: 'Reports' },
+                { label: 'Class Broadsheet', path: '/examination/reports/class-broadsheet' },
+                { label: 'Subject Broadsheet', path: '/examination/reports/subject-broadsheet' },
+                { label: 'Report Card', path: '/examination/reports/report-card' },
 
                 // Control
                 { type: 'header', label: 'Control' },
                 { label: 'Result Management', path: '/examination/control/results' },
-                { label: 'Approval', path: '/examination/control/approval' },
-                { label: 'Publish', path: '/examination/control/publish' },
                 { label: 'Manage Scratch Cards', path: '/examination/control/scratch-cards' },
             ]
         },

@@ -1,16 +1,33 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import { useSystem } from '../../context/SystemContext';
 import { 
     Calendar, BookOpen, CreditCard, ChevronRight,
-    Clock, TrendingUp, CheckCircle, Bell, User as UserIcon
+    Clock, TrendingUp, CheckCircle, Bell, User as UserIcon, Loader2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import api from '../../services/api';
 
 const StudentDashboard: React.FC = () => {
     const { user } = useAuthStore();
     const { formatCurrency } = useSystem();
+    const [studentProfile, setStudentProfile] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
     const isParent = (user?.roleObject?.name || user?.role || '').toLowerCase() === 'parent';
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const profile = await api.getStudentProfile();
+                setStudentProfile(profile);
+            } catch (error) {
+                console.error("Failed to fetch student profile:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchProfile();
+    }, []);
     
     // Placeholder Data for now
     const stats = {
@@ -32,6 +49,15 @@ const StudentDashboard: React.FC = () => {
         { date: 'Oct 20', title: 'Reminder: Complete Term 1 Fee Payments', type: 'warning' }
     ];
 
+    if (loading) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
+                <Loader2 className="h-12 w-12 text-primary-600 animate-spin" />
+                <p className="text-gray-500 font-medium animate-pulse">Loading dashboard...</p>
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-8">
             {/* Header Section */}
@@ -44,9 +70,11 @@ const StudentDashboard: React.FC = () => {
                     <div className="mt-2 flex flex-wrap items-center gap-4 text-sm">
                         <span className="flex items-center text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full font-medium shadow-sm">
                             <span className="w-2.5 h-2.5 rounded-full bg-green-500 mr-2 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
-                            Student ID: {user?.username || 'N/A'}
+                            Admission No: {studentProfile?.admissionNo || user?.username || 'N/A'}
                         </span>
-                        <span className="text-gray-500 dark:text-gray-400 font-medium bg-gray-50 dark:bg-gray-800 px-3 py-1 rounded-full border border-gray-200 dark:border-gray-600">Class: JSS 1A</span>
+                        <span className="text-gray-500 dark:text-gray-400 font-medium bg-gray-50 dark:bg-gray-800 px-3 py-1 rounded-full border border-gray-200 dark:border-gray-600">
+                            Class: {studentProfile?.class?.name || 'Assigned Soon'}
+                        </span>
                     </div>
                 </div>
                 <div className="relative z-10 flex gap-3">

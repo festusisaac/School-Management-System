@@ -24,6 +24,8 @@ import { StudentTermResult } from './entities/student-term-result.entity';
 import { StudentPsychomotor } from './entities/student-psychomotor.entity';
 import { StudentSkill } from './entities/student-skill.entity';
 import { ScratchCard } from './entities/scratch-card.entity';
+import { ScratchCardBatch } from './entities/scratch-card-batch.entity';
+import { ScratchCardLog } from './entities/scratch-card-log.entity';
 
 @Module({
     imports: [
@@ -42,6 +44,8 @@ import { ScratchCard } from './entities/scratch-card.entity';
             StudentPsychomotor,
             StudentSkill,
             ScratchCard,
+            ScratchCardBatch,
+            ScratchCardLog,
             Student,
         ]),
     ],

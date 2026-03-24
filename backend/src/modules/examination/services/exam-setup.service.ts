@@ -110,6 +110,11 @@ export class ExamSetupService {
         });
     }
 
+    async updateExam(id: string, dto: Partial<CreateExamDto>, tenantId: string) {
+        await this.examRepo.update({ id, tenantId }, dto);
+        return this.examRepo.findOne({ where: { id, tenantId } });
+    }
+
     async deleteExam(id: string, tenantId: string) {
         return this.examRepo.delete({ id, tenantId });
     }

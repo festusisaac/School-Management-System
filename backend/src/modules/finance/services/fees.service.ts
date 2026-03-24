@@ -755,44 +755,92 @@ export class FeesService {
   }
 
   async sendBulkReminders(dto: any, tenantId: string) {
-    const results = [];
+    const results: any[] = [];
+    const failed: any[] = [];
+
     for (const studentId of dto.studentIds) {
-      const statement = await this.getStudentStatement(studentId, tenantId);
-      const student = statement.student;
-      const balance = statement.balance;
+      try {
+        const statement = await this.getStudentStatement(studentId, tenantId);
+        const student = statement.student as any;
+        const balance = statement.balance;
 
-      if (parseFloat(balance) <= 0) continue;
+        if (parseFloat(balance) <= 0) continue;
 
-      const reminder = this.reminderRepo.create({
-        studentId,
-        amount: parseFloat(balance),
-        dueDate: new Date(),
-        message: dto.messageTemplate || null,
-        channel: dto.channel || ReminderChannel.EMAIL,
-        status: ReminderStatus.PENDING,
-        tenantId
-      } as any);
+        const channel: ReminderChannel = dto.channel || ReminderChannel.EMAIL;
+        const dueDate = dto.dueDate
+          ? new Date(dto.dueDate).toLocaleDateString('en-GB', { dateStyle: 'long' })
+          : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB', { dateStyle: 'long' });
 
-      await this.reminderRepo.save(reminder);
+        const studentName = `${student.firstName} ${student.lastName}`;
+        const formattedBalance = `${balance}`;
 
-      // Integration with Email/SMS Service...
-      results.push(reminder);
+        // --- Resolve contact targets ---
+        const parentEmail = student.parent?.email || student.email;
+        const parentPhone = student.fatherPhone || student.motherPhone || student.guardianPhone || student.mobileNumber;
+
+        let emailSent = false;
+        let smsSent = false;
+
+        // --- Send Email ---
+        if ((channel === ReminderChannel.EMAIL || channel === ReminderChannel.BOTH) && parentEmail) {
+          emailSent = await this.emailService.sendPaymentReminderEmail(
+            parentEmail,
+            studentName,
+            formattedBalance,
+            dueDate,
+            dto.messageTemplate || undefined,
+          );
+        }
+
+        // --- Send SMS ---
+        if ((channel === ReminderChannel.SMS || channel === ReminderChannel.BOTH) && parentPhone) {
+          smsSent = await this.smsService.sendPaymentReminderSms(
+            parentPhone,
+            studentName,
+            formattedBalance,
+            dto.messageTemplate || undefined,
+          );
+        }
+
+        const didSend = emailSent || smsSent;
+
+        // --- Save reminder record ---
+        const reminder = this.reminderRepo.create({
+          studentId,
+          amount: parseFloat(balance),
+          dueDate: new Date(),
+          message: dto.messageTemplate || null,
+          channel,
+          status: didSend ? ReminderStatus.SENT : ReminderStatus.FAILED,
+          tenantId,
+        } as any);
+
+        await this.reminderRepo.save(reminder);
+        results.push({ studentId, studentName, emailSent, smsSent });
+      } catch (err: any) {
+        failed.push({ studentId, error: err.message });
+      }
     }
 
     return {
       total: dto.studentIds.length,
       processed: results.length,
+      failed: failed.length,
+      details: results,
+      errors: failed,
     };
   }
+
 
   async listReminders(options: any = {}, tenantId: string) {
     const page = Number(options.page || 1);
     const limit = Number(options.limit || 20);
 
     const query = this.reminderRepo.createQueryBuilder('r')
-      .leftJoinAndMapOne('r.student', Student, 'student', 'student.id = r.studentId')
+      .leftJoinAndMapOne('r.student', Student, 'student', 'student.id = CAST(r.studentId AS UUID)')
       .where('r.tenantId = :tenantId', { tenantId })
       .orderBy('r.createdAt', 'DESC');
+
 
     if (options.studentId) {
       query.andWhere('r.studentId = :studentId', { studentId: options.studentId });

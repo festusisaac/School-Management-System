@@ -51,7 +51,6 @@
     "redis": "^4.6.10",
     "reflect-metadata": "^0.1.13",
     "swagger-ui-express": "^4.6.3",
-    "termii-nodejs": "^1.1.4",
     "typeorm": "^0.3.17",
     "uuid": "^9.0.0",
     "winston": "^3.19.0"

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Download, Search, Filter } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { examinationService, ExamGroup } from '../../../services/examinationService';
@@ -17,7 +17,7 @@ interface BroadsheetRow {
     subjectScores: Record<string, number>; // subjectName -> score
 }
 
-const BroadsheetPage = () => {
+const ClassBroadsheetPage = () => {
     const [groups, setGroups] = useState<ExamGroup[]>([]);
     const [classes, setClasses] = useState<any[]>([]);
 
@@ -108,7 +108,7 @@ const BroadsheetPage = () => {
             const subjectScoresRaw = broadsheetData.subjectScores || [];
 
             // Identify which subjects have scores
-            const scheduledSubjectIds = Array.from(new Set(subjectScoresRaw.map((s: any) => s.subjectId))) as string[];
+            const scheduledSubjectIds = Array.from(new Set(subjectScoresRaw.map((s: any) => s.subjectId || s.subjectid))) as string[];
             const subjectNames = scheduledSubjectIds
                 .map(id => subjectMap.get(id) || 'Unknown')
                 .sort();
@@ -152,17 +152,26 @@ const BroadsheetPage = () => {
                     admissionNumber: student.admissionNumber || student.admissionNo || 'N/A',
                     totalScore: termResult ? parseFloat(termResult.totalScore) : calculatedTotal,
                     averageScore: termResult ? parseFloat(termResult.averageScore) : (subjectCount > 0 ? calculatedTotal / subjectCount : 0),
-                    position: termResult ? (termResults.indexOf(termResult) + 1) : 0,
+                    position: termResult?.position || 0, 
                     subjectScores: scores
                 };
             });
 
-            // Sort by Rank/Position if available, else by Total Score
-            if (termResults.length > 0) {
-                processedRows.sort((a, b) => (a.position || 9999) - (b.position || 9999));
-            } else {
-                processedRows.sort((a, b) => b.totalScore - a.totalScore);
-                processedRows.forEach((r, i) => r.position = i + 1);
+            // 6. Sort by Position (if available) or Total Score
+            processedRows.sort((a, b) => {
+                if (a.position && b.position) return a.position - b.position;
+                return b.totalScore - a.totalScore;
+            });
+            
+            // Recalculate positions only if missing or forced
+            if (processedRows.every(r => r.position === 0)) {
+                let currentRank = 1;
+                processedRows.forEach((row, index) => {
+                    if (index > 0 && row.totalScore < processedRows[index - 1].totalScore) {
+                        currentRank = index + 1;
+                    }
+                    row.position = currentRank;
+                });
             }
 
             setRows(processedRows);
@@ -181,7 +190,7 @@ const BroadsheetPage = () => {
         // Flatten for Excel
         const exportData = rows.map(r => {
             const row: any = {
-                'Rank': r.position,
+                'POS': getOrdinal(r.position),
                 'Student Name': r.studentName,
                 'Admission No': r.admissionNumber,
                 ...r.subjectScores,
@@ -196,6 +205,13 @@ const BroadsheetPage = () => {
         utils.book_append_sheet(wb, ws, "Broadsheet");
         writeFile(wb, `Broadsheet_${new Date().toISOString().split('T')[0]}.xlsx`);
         showSuccess('Broadsheet exported');
+    };
+
+    const getOrdinal = (n: number) => {
+        if (n === 0) return '-';
+        const s = ["th", "st", "nd", "rd"],
+              v = n % 100;
+        return n + (s[(v - 20) % 10] || s[v] || s[0]);
     };
 
     return (
@@ -291,8 +307,8 @@ const BroadsheetPage = () => {
                         <table className="w-full text-sm text-left border-collapse">
                             <thead className="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700 whitespace-nowrap">
                                 <tr>
-                                    <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider sticky left-0 bg-gray-50 dark:bg-gray-900 z-10 w-16 text-center border-r border-gray-200 dark:border-gray-700 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">Pos</th>
-                                    <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider min-w-[250px] sticky left-16 bg-gray-50 dark:bg-gray-900 z-10 border-r border-gray-200 dark:border-gray-700 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">Student Information</th>
+                                    <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider sticky left-0 bg-gray-50 dark:bg-gray-900 z-20 w-16 text-center border-r border-gray-200 dark:border-gray-700 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">POS</th>
+                                    <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider min-w-[250px] sticky left-16 bg-gray-50 dark:bg-gray-900 z-20 border-r border-gray-200 dark:border-gray-700 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">Student Information</th>
 
                                     {subjects.map(subj => (
                                         <th key={subj} className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider min-w-[100px] border-r border-gray-100 dark:border-gray-700">
@@ -305,36 +321,38 @@ const BroadsheetPage = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-800 whitespace-nowrap">
-                                {rows.map((row) => (
-                                    <tr key={row.studentId} className="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
-                                        <td className="px-4 py-3 text-center font-bold text-gray-500 sticky left-0 bg-white dark:bg-gray-800 z-10 border-r border-gray-100 dark:border-gray-700 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                                            {row.position}
-                                        </td>
-                                        <td className="px-6 py-3 sticky left-16 bg-white dark:bg-gray-800 z-10 border-r border-gray-100 dark:border-gray-700 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                                            <div className="flex flex-col">
-                                                <span className="font-semibold text-gray-900 dark:text-white">{row.studentName}</span>
-                                                <span className="text-xs text-gray-400 font-medium">ID: {row.admissionNumber}</span>
-                                            </div>
-                                        </td>
+                            {rows.map((row) => (
+                                <tr key={row.studentId} className="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
+                                    <td className="px-4 py-3 text-center font-black text-primary-600 dark:text-primary-400 sticky left-0 bg-white dark:bg-gray-800 z-10 border-r border-gray-100 dark:border-gray-700 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
+                                        <span className="bg-primary-50 dark:bg-primary-900/20 px-2 py-1 rounded text-[11px]">
+                                            {getOrdinal(row.position)}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-3 sticky left-16 bg-white dark:bg-gray-800 z-10 border-r border-gray-100 dark:border-gray-700 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
+                                        <div className="flex flex-col">
+                                            <span className="font-semibold text-gray-900 dark:text-white">{row.studentName}</span>
+                                            <span className="text-xs text-gray-400 font-medium">ID: {row.admissionNumber}</span>
+                                        </div>
+                                    </td>
 
-                                        {subjects.map(subj => {
-                                            const score = row.subjectScores[subj];
-                                            return (
-                                                <td key={subj} className="px-4 py-3 text-center text-gray-700 dark:text-gray-300 border-r border-gray-50 dark:border-gray-800">
-                                                    {score !== undefined ? Math.round(score) : '-'}
-                                                </td>
-                                            );
-                                        })}
+                                    {subjects.map(subj => {
+                                        const score = row.subjectScores[subj];
+                                        return (
+                                            <td key={subj} className="px-4 py-3 text-center text-gray-700 dark:text-gray-300 border-r border-gray-50 dark:border-gray-800">
+                                                {score !== undefined ? Math.round(score) : '-'}
+                                            </td>
+                                        );
+                                    })}
 
-                                        <td className="px-4 py-3 text-center font-bold text-primary-600 dark:text-primary-400 bg-primary-50/50 dark:bg-primary-900/5">
-                                            {Math.round(row.totalScore)}
-                                        </td>
-                                        <td className="px-4 py-3 text-center font-bold text-gray-800 dark:text-gray-200 bg-primary-50/50 dark:bg-primary-900/5">
-                                            {Number(row.averageScore).toFixed(1)}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
+                                    <td className="px-4 py-3 text-center font-bold text-primary-600 dark:text-primary-400 bg-primary-50/50 dark:bg-primary-900/5">
+                                        {Math.round(row.totalScore)}
+                                    </td>
+                                    <td className="px-4 py-3 text-center font-bold text-gray-800 dark:text-gray-200 bg-primary-50/50 dark:bg-primary-900/5">
+                                        {Number(row.averageScore).toFixed(1)}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
                         </table>
                     </div>
                 )}
@@ -343,4 +361,4 @@ const BroadsheetPage = () => {
     );
 };
 
-export default BroadsheetPage;
+export default ClassBroadsheetPage;

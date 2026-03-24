@@ -119,8 +119,6 @@ function AppRoutes() {
 
               {/* Control */}
               <Route path="control/results" element={<Examination.ResultManagementPage />} />
-              <Route path="control/approval" element={<Examination.ApprovalPage />} />
-              <Route path="control/publish" element={<Examination.PublishPage />} />
               <Route path="control/scratch-cards" element={<Examination.ScratchCardPage />} />
 
               {/* Entry */}
@@ -128,9 +126,10 @@ function AppRoutes() {
               <Route path="entry/skills" element={<Examination.SkillsPage />} />
               <Route path="entry/psychomotor" element={<Examination.PsychomotorPage />} />
 
-              {/* Processing */}
-              <Route path="processing/broadsheet" element={<Examination.BroadsheetPage />} />
-              <Route path="processing/result-sheet" element={<Examination.ResultSheetPage />} />
+              {/* Reports */}
+              <Route path="reports/class-broadsheet" element={<Examination.ClassBroadsheetPage />} />
+              <Route path="reports/subject-broadsheet" element={<Examination.SubjectBroadsheetPage />} />
+              <Route path="reports/report-card" element={<Examination.ReportCardPage />} />
             </Route>
 
             {/* Settings Routes */}

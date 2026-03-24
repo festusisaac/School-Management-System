@@ -105,6 +105,11 @@ export class ExamSetupController {
         return this.setupService.getExams(examGroupId, req.user.tenantId);
     }
 
+    @Patch('exams/:id')
+    updateExam(@Param('id') id: string, @Body() dto: Partial<CreateExamDto>, @Request() req: any) {
+        return this.setupService.updateExam(id, dto, req.user.tenantId);
+    }
+
     @Delete('exams/:id')
     deleteExam(@Param('id') id: string, @Request() req: any) {
         return this.setupService.deleteExam(id, req.user.tenantId);

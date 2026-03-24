@@ -176,4 +176,8 @@ export class CreateStaffDto {
     @IsString()
     @IsOptional()
     instagramUrl?: string;
+
+    @IsString()
+    @IsOptional()
+    signature?: string;
 }
