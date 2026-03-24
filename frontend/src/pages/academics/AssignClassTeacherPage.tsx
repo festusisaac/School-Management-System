@@ -237,8 +237,10 @@ const AssignClassTeacherPage = () => {
                             <select
                                 value={selectedClass}
                                 onChange={(e) => {
-                                    setSelectedClass(e.target.value);
-                                    setSelectedSection('');
+                                    const classId = e.target.value;
+                                    setSelectedClass(classId);
+                                    const classArms = sections.filter(s => s.classId === classId);
+                                    setSelectedSection(classId && classArms.length === 0 ? 'GENERAL' : '');
                                 }}
                                 className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all text-gray-900 dark:text-white"
                             >
@@ -256,11 +258,20 @@ const AssignClassTeacherPage = () => {
                                 disabled={!selectedClass}
                                 className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <option value="">Select Section / Scope</option>
-                                <option value="GENERAL">General (All Sections)</option>
-                                {sectionsForClass.map(sec => (
-                                    <option key={sec.id} value={sec.id}>{sec.name}</option>
-                                ))}
+                                {(() => {
+                                    if (selectedClass && sectionsForClass.length === 0) {
+                                        return <option value="GENERAL">General / No Sections</option>;
+                                    }
+                                    return (
+                                        <>
+                                            <option value="">Select Section / Scope</option>
+                                            <option value="GENERAL">General (All Sections)</option>
+                                            {sectionsForClass.map(sec => (
+                                                <option key={sec.id} value={sec.id}>{sec.name}</option>
+                                            ))}
+                                        </>
+                                    );
+                                })()}
                             </select>
                         </div>
                         <div>

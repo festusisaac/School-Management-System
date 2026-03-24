@@ -37,6 +37,11 @@ export class CreateUserDto {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
+
+  @ApiPropertyOptional({ example: 'uuid-of-tenant' })
+  @IsUUID()
+  @IsOptional()
+  tenantId?: string;
 }
 
 export class UpdateUserDto {
@@ -70,6 +75,11 @@ export class UpdateUserDto {
   @IsOptional()
   @MinLength(6)
   password?: string;
+
+  @ApiPropertyOptional({ example: 'uuid-of-tenant' })
+  @IsUUID()
+  @IsOptional()
+  tenantId?: string;
 }
 
 export class UserResponseDto {

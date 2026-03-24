@@ -125,6 +125,7 @@ const SubjectsPage = () => {
             setDeleteTarget(null);
         } catch (err: any) {
             setError(err.response?.data?.message || 'Failed to delete subject');
+        } finally {
             setSubmitting(false);
         }
     };

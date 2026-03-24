@@ -66,6 +66,42 @@ export class AcademicsService {
             );
         }
 
+        // Check for students in this class
+        const studentCount = await this.classRepository.manager.query(
+            'SELECT COUNT(*) FROM students WHERE "classId" = $1',
+            [id]
+        );
+        if (parseInt(studentCount[0].count) > 0) {
+            throw new BadRequestException(`Cannot delete class "${cls.name}" because it has ${studentCount[0].count} student(s) assigned.`);
+        }
+
+        // Check for timetable slots in this class
+        const timetableCount = await this.classRepository.manager.query(
+            'SELECT COUNT(*) FROM timetables WHERE "classId" = $1',
+            [id]
+        );
+        if (parseInt(timetableCount[0].count) > 0) {
+            throw new BadRequestException(`Cannot delete class "${cls.name}" because it has ${timetableCount[0].count} timetable slot(s).`);
+        }
+
+        // Check for subject teacher assignments in this class
+        const teacherCount = await this.classRepository.manager.query(
+            'SELECT COUNT(*) FROM subject_teachers WHERE "classId" = $1',
+            [id]
+        );
+        if (parseInt(teacherCount[0].count) > 0) {
+            throw new BadRequestException(`Cannot delete class "${cls.name}" because it has ${teacherCount[0].count} teacher assignment(s).`);
+        }
+
+        // Check for class subject mappings in this class
+        const subjectCount = await this.classRepository.manager.query(
+            'SELECT COUNT(*) FROM class_subject WHERE class_id = $1',
+            [id]
+        );
+        if (parseInt(subjectCount[0].count) > 0) {
+            throw new BadRequestException(`Cannot delete class "${cls.name}" because it has ${subjectCount[0].count} subject mapping(s).`);
+        }
+
         await this.classRepository.remove(cls);
     }
 
@@ -106,6 +142,43 @@ export class AcademicsService {
     async deleteSection(id: string): Promise<void> {
         const section = await this.sectionRepository.findOne({ where: { id } });
         if (!section) throw new NotFoundException('Section not found');
+
+        // Check for students in this section
+        const studentCount = await this.sectionRepository.manager.query(
+            'SELECT COUNT(*) FROM students WHERE "sectionId" = $1',
+            [id]
+        );
+        if (parseInt(studentCount[0].count) > 0) {
+            throw new BadRequestException(`Cannot delete section "${section.name}" because it has ${studentCount[0].count} student(s) assigned.`);
+        }
+
+        // Check for timetable slots in this section
+        const timetableCount = await this.sectionRepository.manager.query(
+            'SELECT COUNT(*) FROM timetables WHERE "sectionId" = $1',
+            [id]
+        );
+        if (parseInt(timetableCount[0].count) > 0) {
+            throw new BadRequestException(`Cannot delete section "${section.name}" because it has ${timetableCount[0].count} timetable slot(s).`);
+        }
+
+        // Check for subject teacher assignments in this section
+        const teacherCount = await this.sectionRepository.manager.query(
+            'SELECT COUNT(*) FROM subject_teachers WHERE "sectionId" = $1',
+            [id]
+        );
+        if (parseInt(teacherCount[0].count) > 0) {
+            throw new BadRequestException(`Cannot delete section "${section.name}" because it has ${teacherCount[0].count} teacher assignment(s).`);
+        }
+
+        // Check for class subject mappings in this section
+        const subjectCount = await this.sectionRepository.manager.query(
+            'SELECT COUNT(*) FROM class_subject WHERE section_id = $1',
+            [id]
+        );
+        if (parseInt(subjectCount[0].count) > 0) {
+            throw new BadRequestException(`Cannot delete section "${section.name}" because it has ${subjectCount[0].count} subject mapping(s).`);
+        }
+
         await this.sectionRepository.remove(section);
     }
 

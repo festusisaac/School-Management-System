@@ -275,7 +275,8 @@ const ClassTimetablePage = () => {
 
     const sortedPeriods = [...periods].sort((a, b) => a.periodOrder - b.periodOrder);
     const selectedClassName = classes.find(c => c.id === selectedClass)?.name || '';
-    const selectedSectionName = sections.find(s => s.id === selectedSection)?.name || '';
+    const section = sections.find(s => s.id === selectedSection);
+    const selectedSectionName = section ? section.name : 'General / No Sections';
 
     if (loading && classes.length === 0) {
         return (
@@ -380,10 +381,20 @@ const ClassTimetablePage = () => {
                                 disabled={!selectedClass}
                                 className="w-full pl-4 pr-10 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all appearance-none cursor-pointer text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <option value="">Select Section</option>
-                                {sections.map(sec => (
-                                    <option key={sec.id} value={sec.id}>{sec.name}</option>
-                                ))}
+                                {(() => {
+                                    const classArms = sections.filter(s => s.classId === selectedClass);
+                                    if (selectedClass && classArms.length === 0) {
+                                        return <option value="">General / No Sections</option>;
+                                    }
+                                    return (
+                                        <>
+                                            <option value="">General (All Sections)</option>
+                                            {classArms.map(sec => (
+                                                <option key={sec.id} value={sec.id}>{sec.name}</option>
+                                            ))}
+                                        </>
+                                    );
+                                })()}
                             </select>
                             <ChevronDown className="w-4 h-4 absolute right-3 top-3 text-gray-500 pointer-events-none" />
                         </div>
@@ -391,7 +402,7 @@ const ClassTimetablePage = () => {
                 </div>
 
                 {/* Timetable View */}
-                {selectedClass && (selectedSection || sections.filter(s => s.classId === selectedClass).length === 0) && periods.length > 0 ? (
+                {selectedClass && periods.length > 0 ? (
                     <div id="printable-timetable" ref={printRef} className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden print:shadow-none print:border-none print:rounded-none max-w-full w-full">
                         {/* On-Screen Header */}
                         <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print:hidden">

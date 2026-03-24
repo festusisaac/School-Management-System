@@ -124,7 +124,7 @@ export default function StudentDirectory() {
         {
             accessorKey: 'class',
             header: 'Class',
-            cell: ({ row }) => <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800/50 dark:text-gray-300 border border-transparent dark:border-gray-700/50 rounded-md text-xs font-medium">{row.original.class?.name || '-'} {row.original.section && `(${row.original.section.name})`}</span>
+            cell: ({ row }) => <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800/50 dark:text-gray-300 border border-transparent dark:border-gray-700/50 rounded-md text-xs font-medium">{row.original.class?.name || '-'} {row.original.section?.name ? `(${row.original.section.name})` : ''}</span>
         },
         {
             accessorKey: 'dob',
@@ -240,10 +240,20 @@ export default function StudentDirectory() {
                             onChange={(e) => setFilters({ ...filters, sectionId: e.target.value })}
                             className="w-full md:w-40 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
                         >
-                            <option value="">All Sections</option>
-                            {sections.filter((s: any) => !filters.classId || s.classId === filters.classId).map((sec: any) => (
-                                <option key={sec.id} value={sec.id}>{sec.name}</option>
-                            ))}
+                            {(() => {
+                                const classArms = sections.filter((s: any) => s.classId === filters.classId);
+                                if (filters.classId && classArms.length === 0) {
+                                    return <option value="">General / No Sections</option>;
+                                }
+                                return (
+                                    <>
+                                        <option value="">All Sections</option>
+                                        {classArms.map((sec: any) => (
+                                            <option key={sec.id} value={sec.id}>{sec.name}</option>
+                                        ))}
+                                    </>
+                                );
+                            })()}
                         </select>
                     </div>
                 </div>
@@ -335,7 +345,7 @@ export default function StudentDirectory() {
                                 )}
                                 <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1 group-hover:text-primary-600 transition-colors">{student.firstName} {student.lastName}</h3>
                                 <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-3 py-1 rounded-full text-xs font-medium mb-4">
-                                    {student.class?.name || 'No Class'} - {student.section?.name || 'A'}
+                                    {student.class?.name || 'No Class'} {student.section?.name ? `- ${student.section.name}` : ''}
                                 </span>
 
                                 <div className="w-full space-y-3 pt-4 border-t border-gray-100 dark:border-gray-700">

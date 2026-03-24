@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Power, BookOpen, Layers } from 'lucide-react';
+import { Plus, Trash2, Power, BookOpen, Layers } from 'lucide-react';
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 
@@ -224,12 +224,21 @@ const ClassSubjectsPage = () => {
                                 disabled={!selectedClass}
                                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50"
                             >
-                                <option value="">General (All Sections)</option>
-                                {filteredSections.map((sec) => (
-                                    <option key={sec.id} value={sec.id}>
-                                        {sec.name}
-                                    </option>
-                                ))}
+                                {(() => {
+                                    if (selectedClass && filteredSections.length === 0) {
+                                        return <option value="">General / No Sections</option>;
+                                    }
+                                    return (
+                                        <>
+                                            <option value="">General (All Sections)</option>
+                                            {filteredSections.map((sec) => (
+                                                <option key={sec.id} value={sec.id}>
+                                                    {sec.name}
+                                                </option>
+                                            ))}
+                                        </>
+                                    );
+                                })()}
                             </select>
                         </div>
 

@@ -163,9 +163,17 @@ export default function BulkFeeAssignmentModal({ isOpen, onClose, feeGroupId, fe
                 <LayoutGrid className="w-3 h-3" /> Specific Sections
               </label>
               <div className="flex flex-wrap gap-2">
-                {sections
-                  .filter(sec => assignmentData.classIds.length === 0 || assignmentData.classIds.includes(sec.classId))
-                  .map(sec => (
+                {(() => {
+                  const filteredSections = sections.filter(sec => assignmentData.classIds.length === 0 || assignmentData.classIds.includes(sec.classId));
+                  if (assignmentData.classIds.length > 0 && filteredSections.length === 0) {
+                    return (
+                      <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-900 border border-dashed border-gray-200 dark:border-gray-800 rounded-xl w-full">
+                        <AlertCircle className="w-4 h-4 text-gray-400" />
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Selected classes have no separate sections</p>
+                      </div>
+                    );
+                  }
+                  return filteredSections.map(sec => (
                     <button
                       key={sec.id}
                       onClick={() => {
@@ -185,7 +193,8 @@ export default function BulkFeeAssignmentModal({ isOpen, onClose, feeGroupId, fe
                     >
                       {sec.name} ({classes.find(c => c.id === sec.classId)?.name})
                     </button>
-                  ))}
+                  ));
+                })()}
               </div>
             </div>
           )}

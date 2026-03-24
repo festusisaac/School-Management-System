@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard,
     Users,
@@ -11,7 +11,9 @@ import {
     ChevronDown,
     User as UserIcon,
     Calendar,
-    Clock
+    Clock,
+    LogOut,
+    ChevronRight
 } from 'lucide-react';
 import { useState } from 'react';
 import { clsx } from 'clsx';
@@ -27,14 +29,20 @@ interface SidebarProps {
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
     const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
     const { settings, getFullUrl } = useSystem();
-    const { user } = useAuthStore();
+    const { user, logout } = useAuthStore();
+    const navigate = useNavigate();
     const userRole = (user?.roleObject?.name || user?.role || 'student').toLowerCase();
     const isStudentOrParent = userRole === 'student' || userRole === 'parent';
+    const userName = user ? `${user.firstName} ${user.lastName}` : 'User';
+    const userRoleLabel = user ? (user.roleObject?.name || user.role || 'Student') : 'Student';
+    const initials = user ? `${user.firstName?.charAt(0)}${user.lastName?.charAt(0)}` : 'U';
+
+    const handleLogout = () => {
+        logout();
+        navigate('/login');
+    };
 
     const toggleSubmenu = (path: string) => {
-        if (!isOpen) {
-            // Expansion logic inside
-        }
         setExpandedMenu(expandedMenu === path ? null : path);
     };
 
@@ -169,107 +177,119 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
     const navItems = isStudentOrParent ? studentNavItems : adminNavItems;
 
+    const handleNavClick = () => {
+        // Close sidebar on mobile after navigation
+        if (window.innerWidth < 1024) {
+            onClose();
+        }
+    };
 
     return (
         <>
-            {/* Mobile Overlay */}
+            {/* Backdrop — Mobile Only */}
             {isOpen && (
                 <div
-                    className="fixed inset-0 bg-gray-900/50 z-40 lg:hidden backdrop-blur-sm transition-opacity print:hidden"
+                    className="fixed inset-0 bg-gray-900/60 z-40 lg:hidden backdrop-blur-sm transition-opacity animate-in fade-in duration-200 print:hidden"
                     onClick={onClose}
                 />
             )}
 
-            {/* Sidebar Container */}
+            {/* ─────────────────── MOBILE SIDEBAR PANEL ─────────────────── */}
+            {/* Slides in from the left on mobile; always visible on desktop */}
             <div className={twMerge(
-                "fixed inset-y-0 left-0 z-50 bg-white/80 dark:bg-gray-900/80 border-r border-gray-100 dark:border-gray-800 backdrop-blur-xl transition-all duration-300 ease-in-out flex flex-col print:hidden",
-                // On Desktop: integrate into flex flow properly
-                "lg:relative lg:translate-x-0 lg:shadow-none lg:z-10",
-                // Width Logic
-                isOpen ? "translate-x-0 w-64 shadow-2xl" : "-translate-x-full lg:w-20 lg:translate-x-0"
+                "fixed inset-y-0 left-0 z-50 flex flex-col print:hidden",
+                // Desktop: slim pinned sidebar
+                "lg:relative lg:translate-x-0 lg:z-10",
+                // Mobile sizing & transition
+                "w-[280px] bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl border-r border-gray-100 dark:border-gray-800 shadow-2xl",
+                "transition-transform duration-300 ease-in-out",
+                isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+                // Desktop width collapse
+                "lg:w-[240px] lg:shadow-none"
             )}>
-                {/* Logo Section */}
-                <div className="flex h-16 items-center px-6 border-b border-gray-50 dark:border-gray-800/50 overflow-hidden relative justify-center">
-                    <div className="flex items-center justify-center w-full">
-                        {settings.primaryLogo ? (
-                            <img
-                                src={getFullUrl(settings.primaryLogo)}
-                                className="w-14 h-14 object-contain"
-                                alt="Logo"
-                            />
-                        ) : (
-                            <div className="p-2.5 bg-primary-600 rounded-xl shadow-sm flex items-center justify-center">
-                                <School className="w-6 h-6 text-white" />
-                            </div>
-                        )}
-                    </div>
+
+                {/* ── Mobile Header: User Identity (no logo — it's in TopBar) ── */}
+                <div className="lg:hidden p-5 border-b border-gray-100 dark:border-gray-800 relative">
                     <button
                         onClick={onClose}
-                        className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 absolute right-4 lg:hidden transition-colors"
+                        className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
                     >
                         <X className="w-5 h-5" />
                     </button>
+
+                    {/* User Avatar */}
+                    <div className="flex items-center gap-3 pr-10">
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-primary-500/30 flex-shrink-0 uppercase">
+                            {initials}
+                        </div>
+                        <div className="min-w-0">
+                            <p className="font-bold text-gray-900 dark:text-white truncate leading-tight">{userName}</p>
+                            <p className="text-xs font-semibold text-primary-600 dark:text-primary-400 capitalize mt-0.5">{userRoleLabel}</p>
+                        </div>
+                    </div>
                 </div>
 
-                {/* Navigation Links */}
-                <nav className="p-4 space-y-1 flex-1 overflow-y-auto overflow-x-hidden">
+                {/* ── Desktop Header: Logo ── */}
+                <div className="hidden lg:flex h-16 items-center px-5 border-b border-gray-50 dark:border-gray-800/50 overflow-hidden">
+                    {settings.primaryLogo ? (
+                        <img
+                            src={getFullUrl(settings.primaryLogo)}
+                            className="w-10 h-10 object-contain"
+                            alt="Logo"
+                        />
+                    ) : (
+                        <div className="p-2 bg-primary-600 rounded-xl shadow-sm flex items-center justify-center">
+                            <School className="w-5 h-5 text-white" />
+                        </div>
+                    )}
+                </div>
+
+                {/* ── Navigation ── */}
+                <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto overflow-x-hidden">
                     {navItems.map((item) => (
                         <div key={item.path}>
                             {item.children ? (
                                 /* Dropdown Menu */
-                                <div className="space-y-1">
+                                <div>
                                     <button
                                         onClick={() => toggleSubmenu(item.path)}
                                         className={clsx(
-                                            "w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 group overflow-hidden whitespace-nowrap",
+                                            "w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold rounded-xl transition-all duration-200 group",
                                             expandedMenu === item.path
-                                                ? "bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white"
-                                                : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-gray-200"
+                                                ? "bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400"
+                                                : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/60 hover:text-gray-900 dark:hover:text-gray-200"
                                         )}
                                     >
-                                        <item.icon className="w-5 h-5 text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors flex-shrink-0" />
-                                        <span className={twMerge(
-                                            "flex-1 text-left transition-opacity duration-300",
-                                            isOpen ? "opacity-100" : "opacity-0 lg:hidden"
-                                        )}>
-                                            {item.label}
-                                        </span>
-                                        <ChevronDown className={twMerge(
-                                            "w-4 h-4 transition-transform duration-200",
-                                            expandedMenu === item.path ? "rotate-180" : "",
-                                            isOpen ? "opacity-100" : "opacity-0 invisible"
-                                        )} />
+                                        <item.icon className={clsx("w-5 h-5 flex-shrink-0 transition-colors", expandedMenu === item.path ? "text-primary-600" : "text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300")} />
+                                        <span className="flex-1 text-left">{item.label}</span>
+                                        <ChevronDown className={clsx("w-4 h-4 transition-transform duration-200 opacity-50", expandedMenu === item.path ? "rotate-180" : "")} />
                                     </button>
 
                                     {/* Submenu Items */}
                                     <div className={clsx(
                                         "overflow-hidden transition-all duration-300 ease-in-out",
-                                        (expandedMenu === item.path && isOpen) ? "max-h-[1000px] opacity-100 mb-2" : "max-h-0 opacity-0"
+                                        expandedMenu === item.path ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"
                                     )}>
-                                        <div className="pl-11 space-y-1 py-1">
+                                        <div className="pl-4 pt-1 pb-2 space-y-0.5">
                                             {item.children.map((child: any, index: number) => (
                                                 child.type === 'header' ? (
-                                                    <div key={`header-${index}`} className="px-4 py-2 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest transition-opacity duration-300">
+                                                    <div key={`header-${index}`} className="px-3 pt-3 pb-1 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">
                                                         {child.label}
                                                     </div>
                                                 ) : (
                                                     <NavLink
                                                         key={child.path}
                                                         to={child.path}
+                                                        onClick={handleNavClick}
                                                         className={({ isActive }) => clsx(
-                                                            "group flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg transition-colors overflow-hidden whitespace-nowrap",
+                                                            "flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg transition-colors",
                                                             isActive
-                                                                ? "text-primary-600 dark:text-primary-400"
-                                                                : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                                                                ? "text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 font-semibold"
+                                                                : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/60 font-medium"
                                                         )}
                                                     >
-                                                        <span className={clsx(
-                                                            "w-1.5 h-1.5 rounded-full flex-shrink-0 transition-colors",
-                                                            window.location.pathname === child.path
-                                                                ? "bg-primary-600 dark:bg-primary-400"
-                                                                : "bg-gray-300 dark:bg-gray-600 group-hover:bg-gray-500 dark:group-hover:bg-gray-400"
-                                                        )} />
-                                                        <span className="flex-1">{child.label}</span>
+                                                        <span className={clsx("w-1.5 h-1.5 rounded-full flex-shrink-0", window.location.pathname === child.path ? "bg-primary-600" : "bg-gray-300 dark:bg-gray-600")} />
+                                                        {child.label}
                                                     </NavLink>
                                                 )
                                             ))}
@@ -280,31 +300,33 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                                 /* Regular Nav Link */
                                 <NavLink
                                     to={item.path}
+                                    onClick={handleNavClick}
                                     className={({ isActive }) => clsx(
-                                        "flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 group overflow-hidden whitespace-nowrap",
+                                        "flex items-center gap-3 px-3 py-2.5 text-sm font-semibold rounded-xl transition-all duration-200 group",
                                         isActive
-                                            ? "bg-primary-600 text-white shadow-lg shadow-primary-600/25"
-                                            : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-gray-200"
+                                            ? "bg-primary-600 text-white shadow-md shadow-primary-500/30"
+                                            : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/60 hover:text-gray-900 dark:hover:text-gray-200"
                                     )}
                                 >
-                                    <item.icon className={clsx(
-                                        "w-5 h-5 flex-shrink-0 transition-colors",
-                                        "group-hover:text-inherit"
-                                    )} />
-                                    <span className={twMerge(
-                                        "transition-opacity duration-300",
-                                        isOpen ? "opacity-100" : "opacity-0 lg:hidden"
-                                    )}>
-                                        {item.label}
-                                    </span>
+                                    <item.icon className="w-5 h-5 flex-shrink-0" />
+                                    <span>{item.label}</span>
                                 </NavLink>
                             )}
                         </div>
                     ))}
                 </nav>
 
-                {/* Bottom Section - User / Settings / Help */}
-
+                {/* ── Mobile Footer: Logout ── */}
+                <div className="lg:hidden p-4 border-t border-gray-100 dark:border-gray-800">
+                    <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors group"
+                    >
+                        <LogOut className="w-5 h-5" />
+                        <span>Sign Out</span>
+                        <ChevronRight className="w-4 h-4 ml-auto opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                    </button>
+                </div>
             </div>
         </>
     );

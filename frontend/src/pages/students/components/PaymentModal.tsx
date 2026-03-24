@@ -95,8 +95,14 @@ export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess }: P
 
     const payWithPaystack = () => {
         setIsProcessing(true);
-        initializePaystack({ onSuccess: handlePaystackSuccess, onClose: handlePaystackClose });
+        // Close the gateway selection UI before Paystack popup opens
+        // so Paystack's widget gets clean full-screen access on mobile
+        setStep('DETAILS');
+        setTimeout(() => {
+            initializePaystack({ onSuccess: handlePaystackSuccess, onClose: handlePaystackClose });
+        }, 50);
     };
+
 
     // Flutterwave Configuration
     const flutterwaveConfig = {
@@ -126,36 +132,40 @@ export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess }: P
 
     const payWithFlutterwave = () => {
         setIsProcessing(true);
-        handleFlutterwavePayment({
-            callback: async (response) => {
-                closePaymentModal();
-                if (response.status === 'successful') {
-                     try {
-                        await api.verifyFlutterwavePayment({
-                            transactionId: response.transaction_id.toString(),
-                            meta: paymentMeta,
-                            studentId: student.id,
-                        });
-                        showSuccess('Payment verified successfully!');
-                        setStep('SUCCESS');
-                    } catch (error: any) {
-                        showError(error.response?.data?.message || 'Payment verification failed.');
-                        setStep('DETAILS');
-                    } finally {
+        setStep('DETAILS');
+        setTimeout(() => {
+            handleFlutterwavePayment({
+                callback: async (response) => {
+                    closePaymentModal();
+                    if (response.status === 'successful') {
+                         try {
+                            await api.verifyFlutterwavePayment({
+                                transactionId: response.transaction_id.toString(),
+                                meta: paymentMeta,
+                                studentId: student.id,
+                            });
+                            showSuccess('Payment verified successfully!');
+                            setStep('SUCCESS');
+                        } catch (error: any) {
+                            showError(error.response?.data?.message || 'Payment verification failed.');
+                            setStep('DETAILS');
+                        } finally {
+                            setIsProcessing(false);
+                        }
+                    } else {
+                        showError('Payment failed or cancelled.');
                         setIsProcessing(false);
+                        setStep('DETAILS');
                     }
-                } else {
-                    showError('Payment failed or cancelled.');
+                },
+                onClose: () => {
+                    showError('Payment cancelled.');
                     setIsProcessing(false);
-                    setStep('DETAILS');
-                }
-            },
-            onClose: () => {
-                showError('Payment cancelled.');
-                setIsProcessing(false);
-            },
-        });
+                },
+            });
+        }, 50);
     };
+
 
     const handleClose = () => {
         if (step === 'SUCCESS') {

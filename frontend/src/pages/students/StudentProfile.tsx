@@ -7,8 +7,9 @@ import {
     FileText, GraduationCap, ClipboardList, Clock, CheckCircle2,
     QrCode as QrCodeIcon, Barcode as BarcodeIcon, ShieldAlert, ShieldCheck,
     KeySquare, CalendarDays, CreditCard, ArrowRight, MapPinned,
-    Trash2, Download, Upload
+    Trash2, Download, Upload, Info
 } from 'lucide-react';
+import { format, subMonths, isToday } from 'date-fns';
 import api, { getFileUrl } from '../../services/api';
 import { ResultVerificationModal } from './components/ResultVerificationModal';
 import { PaymentModal } from './components/PaymentModal';
@@ -33,6 +34,8 @@ export default function StudentProfile() {
     const [examLoading, setExamLoading] = useState(false);
     const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
     const [verifiedResult, setVerifiedResult] = useState<any>(null);
+    const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
+    const [loadingAttendance, setLoadingAttendance] = useState(false);
 
     // Document States
     const [isUploadingDoc, setIsUploadingDoc] = useState(false);
@@ -43,6 +46,27 @@ export default function StudentProfile() {
     // Fee Payment State
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [selectedFeeHead, setSelectedFeeHead] = useState<any>(null);
+
+    useEffect(() => {
+        if (activeTab === 'Attendance' && student?.id) {
+            fetchAttendance();
+        }
+    }, [activeTab, student?.id]);
+
+    const fetchAttendance = async () => {
+        try {
+            setLoadingAttendance(true);
+            const today = new Date();
+            const start = format(subMonths(today, 1), 'yyyy-MM-dd');
+            const end = format(today, 'yyyy-MM-dd');
+            const data = await api.getStudentAttendance(student.id, start, end);
+            setAttendanceRecords(data);
+        } catch (error) {
+            console.error('Error fetching attendance:', error);
+        } finally {
+            setLoadingAttendance(false);
+        }
+    };
     
     // Check if user is student
     const userRole = (() => {
@@ -963,6 +987,70 @@ export default function StudentProfile() {
                                 </div>
                             </InfoCard>
                         </div>
+                    ) : activeTab === 'Attendance' ? (
+                        <div className="space-y-6">
+                            <InfoCard>
+                                <SectionHeader title="Attendance History" icon={Clock} />
+                                <div className="p-0">
+                                    {loadingAttendance ? (
+                                        <div className="py-20 flex flex-col items-center justify-center gap-3">
+                                            <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+                                            <p className="text-sm font-medium text-gray-500 uppercase tracking-widest animate-pulse">Fetching records...</p>
+                                        </div>
+                                    ) : attendanceRecords.length > 0 ? (
+                                        <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                                            {attendanceRecords.map((record) => (
+                                                <div key={record.id} className="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={cn(
+                                                            "w-12 h-12 rounded-xl flex flex-col items-center justify-center border",
+                                                            record.status === 'present' ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-800 text-emerald-600" :
+                                                            record.status === 'absent' ? "bg-rose-50 dark:bg-rose-900/20 border-rose-100 dark:border-rose-800 text-rose-600" :
+                                                            "bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-800 text-amber-600"
+                                                        )}>
+                                                            <span className="text-[10px] font-black uppercase leading-none mt-1">{format(new Date(record.date), 'MMM')}</span>
+                                                            <span className="text-xl font-bold leading-none mb-1">{format(new Date(record.date), 'dd')}</span>
+                                                        </div>
+                                                        <div>
+                                                            <div className="flex items-center gap-2">
+                                                                <p className="font-bold text-gray-900 dark:text-white capitalize">{record.status}</p>
+                                                                {isToday(new Date(record.date)) && (
+                                                                    <span className="px-1.5 py-0.5 bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-md text-[9px] font-black uppercase tracking-wider">Today</span>
+                                                                )}
+                                                            </div>
+                                                            <p className="text-xs text-gray-500 font-medium">{format(new Date(record.date), 'EEEE, MMMM do, yyyy')}</p>
+                                                        </div>
+                                                    </div>
+                                                    {record.remarks && (
+                                                        <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-100 dark:border-gray-700 max-w-[200px]">
+                                                            <Info className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                                                            <p className="text-[10px] text-gray-400 font-medium truncate italic">{record.remarks}</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                            <div className="p-6 text-center">
+                                                <button 
+                                                    onClick={() => navigate('/students/attendance')}
+                                                    className="inline-flex items-center gap-2 text-sm font-bold text-primary-600 hover:text-primary-700 group transition-all"
+                                                >
+                                                    View Detailed Calendar Report
+                                                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="py-20 flex flex-col items-center justify-center text-gray-400">
+                                            <div className="w-20 h-20 bg-gray-50 dark:bg-gray-800/50 rounded-3xl flex items-center justify-center mb-4 transition-transform hover:scale-110">
+                                                <ClipboardList className="w-10 h-10 text-gray-300" />
+                                            </div>
+                                            <p className="text-lg font-bold text-gray-600 dark:text-gray-400">No attendance data found</p>
+                                            <p className="text-sm max-w-[280px] text-center mt-1">Daily records will appear here as soon as they are finalized by the administration.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </InfoCard>
+                        </div>
                     ) : (
                         <InfoCard className="flex flex-col items-center justify-center py-20 min-h-[400px]">
                             <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800/50 rounded-2xl flex items-center justify-center mb-4">
@@ -972,6 +1060,8 @@ export default function StudentProfile() {
                             <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-[280px]">System is currently synchronizing historical data for this module. Please check back shortly.</p>
                         </InfoCard>
                     )}
+
+
                 </div>
             </div>
 

@@ -36,6 +36,45 @@ const DAYS = [
     { value: 5, label: 'Friday' },
 ];
 
+const getSubjectAbbreviation = (name: string): string => {
+    const abbrevMap: { [key: string]: string } = {
+        'english': 'ENG',
+        'mathematics': 'MATHS',
+        'kiswahili': 'KISW',
+        'science': 'SCI',
+        'social studies': 'SST',
+        'religious education': 'REL.E',
+        'christian religious education': 'CRE',
+        'islamic religious education': 'IRE',
+        'physical education': 'P.E & S',
+        'agriculture': 'AGRIC',
+        'home science': 'H. Scie',
+        'art and craft': 'ART',
+        'music': 'MUSIC',
+        'business studies': 'BST',
+        'integrated science': 'INT/SCI',
+        'life skills': 'L/SKILL',
+        'technology': 'TECH',
+        'performing arts': 'P.Arts',
+        'optional language': 'Opt Lang',
+        'french': 'FRE',
+        'german': 'GER',
+        'arabic': 'ARAB',
+        'computer': 'COMP',
+        'history': 'HIST',
+        'geography': 'GEO',
+        'biology': 'BIO',
+        'chemistry': 'CHEM',
+        'physics': 'PHY',
+    };
+
+    const lowerName = name.toLowerCase();
+    for (const [key, abbrev] of Object.entries(abbrevMap)) {
+        if (lowerName.includes(key)) return abbrev;
+    }
+    return name.substring(0, 6).toUpperCase();
+};
+
 export default function StudentTimetablePage() {
     const { user } = useAuthStore();
     
@@ -43,26 +82,23 @@ export default function StudentTimetablePage() {
     const [periods, setPeriods] = useState<Period[]>([]);
     const [timetable, setTimetable] = useState<TimetableSlot[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<number>(new Date().getDay() || 1); // Default to today or Monday
+    const [activeTab, setActiveTab] = useState<number>(new Date().getDay() || 1); 
     const [currentTime, setCurrentTime] = useState(new Date());
 
     const fetchData = useCallback(async () => {
         if (!user?.id) return;
         setLoading(true);
         try {
-            // 1. Get Student Profile to find Class/Section
             const studentData = await api.getStudentProfile();
             setStudent(studentData);
 
             if (studentData.classId) {
-                // 2. Fetch Periods and Timetable slots
                 const [periodsData, timetableData] = await Promise.all([
                     api.getPeriods(),
                     api.getTimetable(studentData.classId, studentData.sectionId)
                 ]);
                 
-                // Sort periods by time
-                const sortedPeriods = [...periodsData].sort((a, b) => a.startTime.localeCompare(b.startTime));
+                const sortedPeriods = [...periodsData].sort((a, b) => a.periodOrder - b.periodOrder);
                 setPeriods(sortedPeriods);
                 setTimetable(timetableData);
             }
@@ -75,8 +111,6 @@ export default function StudentTimetablePage() {
 
     useEffect(() => {
         fetchData();
-        
-        // Update clock every minute for live highlighting
         const timer = setInterval(() => setCurrentTime(new Date()), 60000);
         return () => clearInterval(timer);
     }, [fetchData]);
@@ -87,7 +121,7 @@ export default function StudentTimetablePage() {
         const h = parseInt(hours);
         const ampm = h >= 12 ? 'PM' : 'AM';
         const displayHour = h > 12 ? h - 12 : (h === 0 ? 12 : h);
-        return `${displayHour}:${minutes} ${ampm}`;
+        return `${displayHour}:${minutes}${ampm}`;
     };
 
     const isCurrentPeriod = (period: Period, dayValue: number) => {
@@ -180,66 +214,104 @@ export default function StudentTimetablePage() {
                 ))}
             </div>
 
-            {/* Timetable Grid (Desktop) / List (Mobile) */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                {/* Desktop Grid View */}
+            {/* Timetable Contents */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden print:shadow-none print:border-none print:rounded-none">
+                
+                {/* Desktop Grid View (Admin Style) */}
                 <div className="hidden lg:block overflow-x-auto print:block">
                     <table className="w-full border-collapse">
                         <thead>
-                            <tr className="bg-gray-50/50 dark:bg-gray-900/50">
-                                <th className="p-4 text-left text-xs font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 dark:border-gray-700 w-40">Period</th>
-                                {DAYS.map(day => (
-                                    <th key={day.value} className="p-4 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest border-b border-gray-100 dark:border-gray-700">
-                                        {day.label}
+                            <tr>
+                                {/* Corner Header */}
+                                <th
+                                    className="border border-black bg-white dark:bg-gray-900 p-0 relative"
+                                    style={{ width: '120px', height: '80px', borderRight: '1px solid black' }}
+                                >
+                                    <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
+                                        <line x1="0" y1="0" x2="100%" y2="100%" stroke="currentColor" strokeWidth="1" className="text-black dark:text-gray-600" />
+                                    </svg>
+                                    <span className="absolute top-2 right-2 font-bold text-xs text-black dark:text-gray-400">TIME</span>
+                                    <span className="absolute bottom-2 left-2 font-bold text-xs text-black dark:text-gray-400">DAY</span>
+                                </th>
+
+                                {/* Period Headers */}
+                                {periods.map(period => (
+                                    <th
+                                        key={period.id}
+                                        className="border border-black p-2 bg-white dark:bg-gray-900 align-top"
+                                        style={{ minWidth: period.type === 'LESSON' ? '100px' : '50px' }}
+                                    >
+                                        <div className="flex flex-col items-center justify-center h-full">
+                                            <span className="text-primary-700 dark:text-primary-400 font-bold text-[11px] whitespace-nowrap">
+                                                {formatTime(period.startTime)}
+                                            </span>
+                                            <span className="text-primary-700 dark:text-primary-400 font-bold text-[11px]">-</span>
+                                            <span className="text-primary-700 dark:text-primary-400 font-bold text-[11px] whitespace-nowrap">
+                                                {formatTime(period.endTime)}
+                                            </span>
+                                        </div>
                                     </th>
                                 ))}
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700 font-sans">
-                            {periods.map(period => (
-                                <tr key={period.id} className="group hover:bg-gray-50/30 dark:hover:bg-gray-900/20 transition-colors">
-                                    <td className="p-5 border-r border-gray-50 dark:border-gray-700/50">
-                                        <div className="flex flex-col">
-                                            <span className="text-sm font-extrabold text-gray-900 dark:text-white uppercase tracking-tight">{period.name}</span>
-                                            <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                                <Clock className="w-3 h-3 mr-1.5 text-primary-500" />
-                                                {formatTime(period.startTime)}
-                                            </div>
-                                        </div>
+                        <tbody>
+                            {DAYS.map((day, dayIndex) => (
+                                <tr key={day.value}>
+                                    <td className="border border-black p-4 font-bold text-sm text-center uppercase bg-white dark:bg-gray-900 text-black dark:text-white">
+                                        {day.label}
                                     </td>
-                                    {DAYS.map(day => {
+                                    {periods.map((period) => {
                                         const slot = getSlot(day.value, period.id);
-                                        const active = isCurrentPeriod(period, day.value);
-                                        const isBreak = period.type !== 'LESSON';
+                                        const isLesson = period.type === 'LESSON';
                                         
+                                        if (!isLesson) {
+                                            if (dayIndex === 0) {
+                                                return (
+                                                    <td
+                                                        key={period.id}
+                                                        rowSpan={DAYS.length}
+                                                        className="border border-black p-0 bg-white dark:bg-gray-900 align-middle text-center"
+                                                    >
+                                                        <div
+                                                            className="h-full flex items-center justify-center"
+                                                            style={{
+                                                                writingMode: 'vertical-rl',
+                                                                transform: 'rotate(180deg)',
+                                                                maxHeight: '400px'
+                                                            }}
+                                                        >
+                                                            <span className="font-bold text-primary-900 dark:text-primary-400 text-xs tracking-wider uppercase whitespace-nowrap px-2">
+                                                                {period.name}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                );
+                                            }
+                                            return null;
+                                        }
+
+                                        const active = isCurrentPeriod(period, day.value);
+
                                         return (
-                                            <td key={`${day.value}-${period.id}`} className={clsx(
-                                                "p-4 relative min-w-[140px]",
-                                                isBreak && "bg-gray-50/30 dark:bg-gray-900/10"
-                                            )}>
-                                                {active && (
-                                                    <div className="absolute inset-x-1 inset-y-1 bg-primary-50/50 dark:bg-primary-900/10 border-2 border-primary-500 rounded-xl z-0 animate-pulse-subtle print:border-primary-600"></div>
+                                            <td
+                                                key={period.id}
+                                                className={clsx(
+                                                    "border border-black p-0 relative h-16 transition-colors",
+                                                    active ? "bg-primary-50 dark:bg-primary-900/20" : "bg-white dark:bg-gray-800"
                                                 )}
-                                                
-                                                <div className="relative z-10 flex flex-col items-center justify-center min-h-[80px]">
-                                                    {isBreak ? (
-                                                        <span className="text-[10px] font-black text-gray-300 dark:text-gray-600 uppercase tracking-[0.2em] transform rotate-[-15deg]">
-                                                            {period.name}
-                                                        </span>
-                                                    ) : slot ? (
+                                            >
+                                                <div className="w-full h-full flex flex-col items-center justify-center p-1">
+                                                    {slot ? (
                                                         <>
-                                                            <div className="w-9 h-9 bg-primary-50 dark:bg-primary-900/30 rounded-lg flex items-center justify-center mb-2 text-primary-700 dark:text-primary-400 font-bold text-xs ring-1 ring-primary-200 dark:ring-primary-800">
-                                                                {slot.subject?.code || slot.subject?.name?.substring(0, 3).toUpperCase()}
-                                                            </div>
-                                                            <h4 className="text-sm font-bold text-gray-900 dark:text-white text-center line-clamp-2 leading-tight px-1">{slot.subject?.name}</h4>
+                                                            <span className="font-bold text-sm text-center uppercase text-gray-900 dark:text-white">
+                                                                {slot.subject?.code || getSubjectAbbreviation(slot.subject?.name || '')}
+                                                            </span>
                                                             {slot.roomNumber && (
-                                                                <span className="mt-2 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded-full flex items-center shadow-sm">
-                                                                    <MapPin className="w-2.5 h-2.5 mr-1" /> {slot.roomNumber}
-                                                                </span>
+                                                                <span className="text-[10px] text-gray-500 dark:text-gray-400">{slot.roomNumber}</span>
                                                             )}
                                                         </>
                                                     ) : (
-                                                        <div className="w-8 h-8 rounded-full border border-dashed border-gray-200 dark:border-gray-700 opacity-40"></div>
+                                                        <span className="text-gray-200 dark:text-gray-700/50">-</span>
                                                     )}
                                                 </div>
                                             </td>
@@ -251,7 +323,7 @@ export default function StudentTimetablePage() {
                     </table>
                 </div>
 
-                {/* Mobile List View */}
+                {/* Mobile List View (Original Design) */}
                 <div className="lg:hidden p-4 space-y-4 print:hidden">
                     {periods.map(period => {
                         const slot = getSlot(activeTab, period.id);
@@ -319,16 +391,24 @@ export default function StudentTimetablePage() {
             {/* Print Only Styles */}
             <style dangerouslySetInnerHTML={{ __html: `
                 @media print {
+                    @page {
+                        size: A4 landscape;
+                        margin: 5mm;
+                    }
                     body * { visibility: hidden !important; }
                     #timetable-page, #timetable-page * { visibility: visible !important; }
                     #timetable-page { position: absolute; left: 0; top: 0; width: 100%; padding: 0 !important; margin: 0 !important; }
                     .print\\:hidden { display: none !important; }
                     .rounded-2xl { border-radius: 0 !important; }
                     .shadow-sm, .shadow-md, .shadow-lg, .shadow-2xl { box-shadow: none !important; }
-                    table { border: 2px solid black !important; }
-                    th, td { border: 1px solid black !important; color: black !important; }
+                    table { border: 2px solid black !important; width: 100% !important; border-collapse: collapse !important; }
+                    th, td { border: 1px solid black !important; color: black !important; padding: 4px !important; }
                     .bg-primary-50, .bg-emerald-50, .bg-gray-50 { background-color: transparent !important; }
                     .text-primary-600, .text-emerald-600, .text-gray-900 { color: black !important; }
+                    
+                    /* Force grid view for print */
+                    .lg\\:hidden { display: none !important; }
+                    .hidden.lg\\:block { display: block !important; }
                 }
                 @keyframes pulse-subtle {
                     0%, 100% { opacity: 0.8; }

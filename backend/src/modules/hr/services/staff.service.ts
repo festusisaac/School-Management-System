@@ -161,6 +161,7 @@ export class StaffService {
                 role: staffDto.role || (staffDto.roleId ? undefined : 'staff'),
                 password: staffDto.password,
                 isActive: true,
+                tenantId: tenantId
             });
         }
 
@@ -244,6 +245,7 @@ export class StaffService {
                 role: staffDto.role,
                 password: staffDto.password,
                 isActive: true,
+                tenantId: tenantId
             });
         }
 

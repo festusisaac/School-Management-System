@@ -94,7 +94,7 @@ export class UsersService implements OnModuleInit {
     const user = this.usersRepository.create({
       ...createUserDto,
       password: hashedPassword,
-      tenantId: uuidv4(), // Placeholder for multi-tenancy if needed
+      tenantId: createUserDto.tenantId || uuidv4(),
     });
 
     return this.usersRepository.save(user);
@@ -122,10 +122,11 @@ export class UsersService implements OnModuleInit {
     
     if (user) {
       // Update existing user role if provided
-      if (details.roleId || details.role) {
+      if (details.roleId || details.role || details.tenantId) {
         Object.assign(user, {
           roleId: details.roleId || user.roleId,
           role: details.role || user.role,
+          tenantId: details.tenantId || user.tenantId,
         });
         return this.usersRepository.save(user);
       }
@@ -140,6 +141,7 @@ export class UsersService implements OnModuleInit {
       lastName: details.lastName || 'Member',
       roleId: details.roleId,
       role: details.role,
-    });
+      tenantId: details.tenantId,
+    } as any);
   }
 }

@@ -11,6 +11,7 @@ import { CreateStudentHouseDto } from '../dtos/student-house.dto';
 import { CreateDeactivateReasonDto } from '../dtos/deactivate-reason.dto';
 import { CreateOnlineAdmissionDto } from '../dtos/create-online-admission.dto';
 import { UpdateOnlineAdmissionStatusDto } from '../dtos/update-online-admission-status.dto';
+import { MarkAttendanceDto, BulkMarkAttendanceDto } from '../dtos/student-attendance.dto';
 
 @Controller('students')
 @UseGuards(JwtAuthGuard)
@@ -55,7 +56,7 @@ export class StudentsController {
     @Get('profile/me')
     @UseGuards(JwtAuthGuard)
     getProfile(@Request() req: any) {
-        return this.studentsService.findByUserId(req.user.id);
+        return this.studentsService.findOne(req.user.id, req.user.tenantId);
     }
 
     // --- Categories ---
@@ -136,13 +137,6 @@ export class StudentsController {
 
     // --- Students (Generic Routes) ---
 
-    @Get('profile/me')
-    async getProfile(@Request() req: any) {
-        // Find the student record associated with the logged-in user's ID
-        const userId = req.user.sub || req.user.id;
-        const student = await this.studentsService.findOne(userId, req.user.tenantId);
-        return student;
-    }
 
     @Get(':id')
     findOne(@Param('id') id: string, @Request() req: any) {
@@ -188,4 +182,37 @@ export class StudentsController {
     promote(@Body() dto: { studentIds: string[], classId: string, sectionId?: string }, @Request() req: any) {
         return this.studentsService.promote(dto, req.user.tenantId);
     }
+
+    // --- Attendance ---
+
+    @Post('attendance/mark')
+    markAttendance(@Body() dto: MarkAttendanceDto, @Request() req: any) {
+        return this.studentsService.markAttendance(dto, req.user.tenantId);
+    }
+
+    @Post('attendance/bulk')
+    bulkMarkAttendance(@Body() dto: BulkMarkAttendanceDto, @Request() req: any) {
+        return this.studentsService.bulkMarkAttendance(dto, req.user.tenantId);
+    }
+
+    @Get('attendance/student/:studentId')
+    getStudentAttendance(
+        @Param('studentId') studentId: string,
+        @Query('startDate') startDate: string,
+        @Query('endDate') endDate: string,
+        @Request() req: any
+    ) {
+        return this.studentsService.getStudentAttendance(studentId, startDate, endDate, req.user.tenantId);
+    }
+
+    @Get('attendance/class/:classId')
+    getClassAttendance(
+        @Param('classId') classId: string,
+        @Query('date') date: string,
+        @Request() req: any,
+        @Query('sectionId') sectionId?: string
+    ) {
+        return this.studentsService.getClassAttendance(classId, date, req.user.tenantId, sectionId);
+    }
 }
+

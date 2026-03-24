@@ -907,7 +907,29 @@ class ApiService {
     return this.post<any>(`/students/online-admissions/${id}/approve`, {})
   }
 
+  async getDeactivateReason(id: string) {
+    return this.get<any>(`/students/deactivate-reasons/${id}`)
+  }
+
+  // Student Attendance methods
+  async getStudentAttendance(studentId: string, startDate: string, endDate: string) {
+    return this.get<any[]>(`/students/attendance/student/${studentId}`, { params: { startDate, endDate } })
+  }
+
+  async markStudentAttendance(data: any) {
+    return this.post<any>('/students/attendance/mark', data)
+  }
+
+  async bulkMarkStudentAttendance(data: { records: any[] }) {
+    return this.post<any>('/students/attendance/bulk', data)
+  }
+
+  async getStudentClassAttendance(classId: string, date: string, sectionId?: string) {
+    return this.get<any[]>(`/students/attendance/class/${classId}`, { params: { date, sectionId } })
+  }
+
   // Examination Student API
+
   async getStudentExamDashboard(studentId: string) {
     return this.get<any>(`/examination/student/${studentId}/dashboard`)
   }

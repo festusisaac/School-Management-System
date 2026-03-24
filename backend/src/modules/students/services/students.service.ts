@@ -20,6 +20,9 @@ import { FeesService } from '../../finance/services/fees.service';
 import { UsersService } from '../../system/services/users.service';
 import { Role } from '../../auth/entities/role.entity';
 import { EmailService } from '../../communication/email.service';
+import { StudentAttendance } from '../entities/student-attendance.entity';
+import { MarkAttendanceDto, BulkMarkAttendanceDto } from '../dtos/student-attendance.dto';
+import { Between } from 'typeorm';
 
 @Injectable()
 export class StudentsService {
@@ -40,6 +43,8 @@ export class StudentsService {
         private onlineAdmissionRepository: Repository<OnlineAdmission>,
         @InjectRepository(Role)
         private roleRepository: Repository<Role>,
+        @InjectRepository(StudentAttendance)
+        private attendanceRepo: Repository<StudentAttendance>,
         private feesService: FeesService,
         private usersService: UsersService,
         private emailService: EmailService,
@@ -140,7 +145,8 @@ export class StudentsService {
                 lastName: savedStudent.lastName || '',
                 password: `Student@${savedStudent.admissionNo}`,
                 role: 'student',
-                roleId: studentRole?.id
+                roleId: studentRole?.id,
+                tenantId: tenantId
             });
             await this.studentsRepository.update(savedStudent.id, { userId: studentUser.id });
 
@@ -153,7 +159,8 @@ export class StudentsService {
                     lastName: '',
                     password: `Parent@${parent.guardianPhone?.slice(-4) || '1234'}`,
                     role: 'parent',
-                    roleId: parentRole?.id
+                    roleId: parentRole?.id,
+                    tenantId: tenantId
                 });
                 await this.parentRepository.update(parent.id, { userId: parentUser.id });
                 
@@ -483,6 +490,7 @@ export class StudentsService {
         return student;
     }
 
+
     async promote(data: { studentIds: string[], classId: string, sectionId?: string }, tenantId: string): Promise<void> {
         if (!data.studentIds || data.studentIds.length === 0) return;
         
@@ -491,4 +499,60 @@ export class StudentsService {
             sectionId: (data.sectionId || undefined) as any
         });
     }
+
+    // --- Attendance ---
+
+    async markAttendance(dto: MarkAttendanceDto, tenantId: string): Promise<StudentAttendance> {
+        let attendance = await this.attendanceRepo.findOne({
+            where: {
+                studentId: dto.studentId,
+                date: dto.date,
+                tenantId
+            }
+        });
+
+        if (attendance) {
+            attendance.status = dto.status;
+            attendance.remarks = dto.remarks;
+            attendance.classId = dto.classId;
+            attendance.sectionId = dto.sectionId;
+        } else {
+            attendance = this.attendanceRepo.create({
+                ...dto,
+                tenantId
+            });
+        }
+
+        return this.attendanceRepo.save(attendance);
+    }
+
+    async bulkMarkAttendance(dto: BulkMarkAttendanceDto, tenantId: string): Promise<StudentAttendance[]> {
+        const results: StudentAttendance[] = [];
+        for (const record of dto.records) {
+            results.push(await this.markAttendance(record, tenantId));
+        }
+        return results;
+    }
+
+    async getStudentAttendance(studentId: string, startDate: string, endDate: string, tenantId: string): Promise<StudentAttendance[]> {
+        return this.attendanceRepo.find({
+            where: {
+                studentId,
+                date: Between(startDate, endDate) as any,
+                tenantId
+            },
+            order: { date: 'ASC' }
+        });
+    }
+
+    async getClassAttendance(classId: string, date: string, tenantId: string, sectionId?: string): Promise<StudentAttendance[]> {
+        const where: any = { classId, date, tenantId };
+        if (sectionId) where.sectionId = sectionId;
+        
+        return this.attendanceRepo.find({
+            where,
+            relations: ['student']
+        });
+    }
 }
+

@@ -136,11 +136,6 @@ const AssignSubjectTeacherPage = () => {
     };
 
     const handleSave = async () => {
-        const classArms = sections.filter(s => s.classId === selectedClass);
-        if (!selectedSection && classArms.length > 0) {
-            setError('Please select a section first');
-            return;
-        }
         if (!selectedClass) {
             setError('Please select a class first');
             return;
@@ -213,10 +208,19 @@ const AssignSubjectTeacherPage = () => {
                             disabled={!selectedClass}
                             className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm focus:border-primary-500 focus:ring-primary-500 disabled:bg-gray-50 disabled:text-gray-400 dark:disabled:bg-gray-900"
                         >
-                            <option value="">Select Section</option>
-                            {filteredSections.map(s => (
-                                <option key={s.id} value={s.id}>{s.name}</option>
-                            ))}
+                            {(() => {
+                                if (selectedClass && filteredSections.length === 0) {
+                                    return <option value="">General / No Sections</option>;
+                                }
+                                return (
+                                    <>
+                                        <option value="">General (All Sections)</option>
+                                        {filteredSections.map(s => (
+                                            <option key={s.id} value={s.id}>{s.name}</option>
+                                        ))}
+                                    </>
+                                );
+                            })()}
                         </select>
                     </div>
                 </div>
@@ -231,7 +235,7 @@ const AssignSubjectTeacherPage = () => {
             )}
 
             {/* Assignments Grid */}
-            {(selectedSection || (selectedClass && filteredSections.length === 0)) && (
+            {selectedClass && (
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
                     <div className="p-4 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                         <h3 className="font-semibold text-gray-900 dark:text-white">Subject Assignments</h3>

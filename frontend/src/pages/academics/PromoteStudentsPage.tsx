@@ -34,7 +34,8 @@ export default function PromoteStudentsPage() {
   // Filter State
   const [availableSessions, setAvailableSessions] = useState<AcademicSession[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
-  const [sections, setSections] = useState<any[]>([]);
+  const [fromSections, setFromSections] = useState<any[]>([]);
+  const [toSections, setToSections] = useState<any[]>([]);
 
   const [fromSession, setFromSession] = useState('');
   const [toSession, setToSession] = useState('');
@@ -54,11 +55,33 @@ export default function PromoteStudentsPage() {
 
   useEffect(() => {
     if (fromClass) {
-      fetchSections(fromClass);
+        (async () => {
+            try {
+                const res = await api.getSections();
+                setFromSections(res.filter((s: any) => s.classId === fromClass));
+            } catch (error) {
+                console.error('Failed to load from-sections');
+            }
+        })();
     } else {
-      setSections([]);
+      setFromSections([]);
     }
   }, [fromClass]);
+
+  useEffect(() => {
+    if (toClass) {
+        (async () => {
+            try {
+                const res = await api.getSections();
+                setToSections(res.filter((s: any) => s.classId === toClass));
+            } catch (error) {
+                console.error('Failed to load to-sections');
+            }
+        })();
+    } else {
+      setToSections([]);
+    }
+  }, [toClass]);
 
   useEffect(() => {
     if (!fromSession && settings?.activeSessionName) {
@@ -86,14 +109,7 @@ export default function PromoteStudentsPage() {
     }
   };
 
-  const fetchSections = async (classId: string) => {
-    try {
-      const res = await api.getSections();
-      setSections(res.filter((s: any) => s.classId === classId));
-    } catch (error) {
-      console.error('Failed to load sections');
-    }
-  };
+  // fetchSections removed as it's handled by inline async in useEffects for better scoping
 
   const handleFetchStudents = async () => {
     if (!fromSession || !fromClass) {
@@ -290,10 +306,19 @@ export default function PromoteStudentsPage() {
                                 value={fromSection}
                                 onChange={e => setFromSection(e.target.value)}
                             >
-                                <option value="">All</option>
-                                {sections.map(s => (
-                                    <option key={s.id} value={s.id}>{s.name}</option>
-                                ))}
+                                {(() => {
+                                    if (fromClass && fromSections.length === 0) {
+                                        return <option value="">General / No Sections</option>;
+                                    }
+                                    return (
+                                        <>
+                                            <option value="">General (All Sections)</option>
+                                            {fromSections.map(s => (
+                                                <option key={s.id} value={s.id}>{s.name}</option>
+                                            ))}
+                                        </>
+                                    );
+                                })()}
                             </select>
                         </div>
                     </div>
@@ -351,10 +376,19 @@ export default function PromoteStudentsPage() {
                                 value={toSection}
                                 onChange={e => setToSection(e.target.value)}
                             >
-                                <option value="">Select</option>
-                                {sections.map(s => (
-                                    <option key={s.id} value={s.id}>{s.name}</option>
-                                ))}
+                                {(() => {
+                                    if (toClass && toSections.length === 0) {
+                                        return <option value="">General / No Sections</option>;
+                                    }
+                                    return (
+                                        <>
+                                            <option value="">General (All Sections)</option>
+                                            {toSections.map(s => (
+                                                <option key={s.id} value={s.id}>{s.name}</option>
+                                            ))}
+                                        </>
+                                    );
+                                })()}
                             </select>
                         </div>
                     </div>

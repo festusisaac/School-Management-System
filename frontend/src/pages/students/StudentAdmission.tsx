@@ -978,9 +978,26 @@ export default function StudentAdmission() {
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Section</label>
-                                        <select name="sectionId" value={formData.sectionId} onChange={handleChange} className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800">
-                                            <option value="">Select Section</option>
-                                            {sections.filter((s: any) => !formData.classId || s.classId === formData.classId).map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                        <select 
+                                            name="sectionId" 
+                                            value={formData.sectionId} 
+                                            onChange={handleChange} 
+                                            className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800"
+                                        >
+                                            {(() => {
+                                                const filteredSections = sections.filter((s: any) => s.classId === formData.classId);
+                                                if (formData.classId && filteredSections.length === 0) {
+                                                    return <option value="">General / No Sections</option>;
+                                                }
+                                                return (
+                                                    <>
+                                                        <option value="">Select Section</option>
+                                                        {filteredSections.map((s: any) => (
+                                                            <option key={s.id} value={s.id}>{s.name}</option>
+                                                        ))}
+                                                    </>
+                                                );
+                                            })()}
                                         </select>
                                     </div>
                                     <div className="space-y-1.5">

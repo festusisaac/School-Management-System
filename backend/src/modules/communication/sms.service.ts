@@ -19,8 +19,9 @@ export class SmsService {
 
   private initializeTermii() {
     this.apiKey = process.env.TERMII_API_KEY || '';
-    this.senderId = process.env.TERMII_SENDER_ID || 'PHJCNPSS';
+    this.senderId = process.env.TERMII_SENDER_ID || 'N-Alert';
     this.baseUrl = 'https://api.ng.termii.com';
+
     
     if (!this.apiKey) {
       this.logger.warn('Termii API key not configured. SMS service will not work.');
@@ -101,7 +102,7 @@ export class SmsService {
         return false;
       }
 
-      // Format phone number (Termii likes 23480...)
+      // Format phone number to E.164 for Nigeria (234XXXXXXXXXX)
       let to = phoneNumber.replace(/\D/g, '');
       if (to.startsWith('0')) {
         to = '234' + to.substring(1);
@@ -114,24 +115,28 @@ export class SmsService {
         from: this.senderId,
         sms: message,
         type: 'plain',
-        channel: 'generic',
+        // 'dnd' channel is the most reliable for Nigerian numbers — it bypasses
+        // DND filters which block 'generic' route for many MTN/Airtel subscribers
+        channel: 'dnd',
         api_key: this.apiKey,
       };
 
       const response = await axios.post(`${this.baseUrl}/api/sms/send`, payload);
 
-      if (response.data && response.status === 200) {
+      // Termii returns HTTP 200 for both success AND failure — must check response body
+      if (response.data?.code === 'ok') {
         this.logger.log(`SMS sent successfully to ${to}`);
         return true;
       }
 
-      this.logger.error(`Termii error response: ${JSON.stringify(response.data)}`);
+      this.logger.error(`Termii rejected SMS to ${to}: ${JSON.stringify(response.data)}`);
       return false;
     } catch (error: any) {
       this.logger.error(`Failed to send SMS to ${phoneNumber}:`, error.response?.data || error.message);
       return false;
     }
   }
+
 
   async verifyOtp(phoneNumber: string, otp: string): Promise<boolean> {
     try {
