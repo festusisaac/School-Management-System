@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, Calendar, Clock, Printer, AlertTriangle } from 'lucide-react';
+import { BookOpen, Calendar, Clock, Printer, AlertTriangle, Layout, Table as TableIcon, Info } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import BatchPrintView from '../examination/setup/admit-cards/BatchPrintView';
+import AdmitCardRenderer from '../examination/setup/admit-cards/AdmitCardRenderer';
 
 const StudentAdmitCardPage = () => {
     const { user } = useAuthStore();
@@ -12,12 +13,17 @@ const StudentAdmitCardPage = () => {
     const [dashboardData, setDashboardData] = useState<any>(null);
     const [selectedExamGroup, setSelectedExamGroup] = useState<any>(null);
     const [printTemplate, setPrintTemplate] = useState<any>(null);
+    const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+    const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchDashboard = async () => {
             try {
                 const data = await api.getStudentExamDashboard(user?.id || 'me');
                 setDashboardData(data);
+                if (data.examGroups?.length > 0) {
+                    setActiveGroupId(data.examGroups[0].id);
+                }
             } catch (error) {
                 showError('Failed to load examination dashboard');
             } finally {
@@ -67,87 +73,179 @@ const StudentAdmitCardPage = () => {
             </div>
 
             {/* Exam Groups */}
-            <div className="space-y-6">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                    <BookOpen className="w-5 h-5 text-primary-600" />
-                    Active Examinations
-                </h2>
+            {/* Exam Groups / Tabs */}
+            <div className="flex border-b border-gray-200 dark:border-gray-800">
+                {examGroups.map((group: any) => (
+                    <button
+                        key={group.id}
+                        onClick={() => setActiveGroupId(group.id)}
+                        className={`px-6 py-3 text-sm font-bold transition-all relative ${
+                            activeGroupId === group.id 
+                                ? 'text-primary-600' 
+                                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                        }`}
+                    >
+                        {group.name}
+                        {activeGroupId === group.id && (
+                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 rounded-full" />
+                        )}
+                    </button>
+                ))}
+            </div>
 
-                {examGroups.map((group: any) => {
-                    const groupSchedules = schedules.filter((s: any) => s.examGroupId === group.id);
-                    const groupAdmitCard = admitCards.find((ac: any) => ac.examGroupId === group.id && ac.isActive);
+            {/* Active Group Content */}
+            {activeGroupId && (() => {
+                const group = examGroups.find((g: any) => g.id === activeGroupId);
+                const groupSchedules = schedules.filter((s: any) => s.examGroupId === activeGroupId);
+                const groupAdmitCard = admitCards.find((ac: any) => ac.examGroupId === activeGroupId && ac.isActive);
 
-                    return (
-                        <div key={group.id} className="bg-white dark:bg-gray-900 shadow-sm border border-gray-200 dark:border-gray-800/50 rounded-xl overflow-hidden">
-                            <div className="p-5 border-b border-gray-200 dark:border-gray-800/50 bg-gray-50/50 dark:bg-gray-800/20 flex flex-wrap gap-4 justify-between items-center">
-                                <div>
-                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{group.name}</h3>
-                                    <p className="text-sm text-gray-500">{group.description || 'Upcoming Examination'}</p>
+                return (
+                    <div className="space-y-6">
+                        {/* Summary & View Toggle */}
+                        <div className="flex flex-wrap gap-4 items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-primary-50 dark:bg-primary-900/10 rounded-lg">
+                                    <Info className="w-5 h-5 text-primary-600" />
                                 </div>
+                                <div>
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{group.academicYear} | {group.term}</p>
+                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">{group.name}</h3>
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
+                                <button
+                                    onClick={() => setViewMode('card')}
+                                    className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                                        viewMode === 'card' 
+                                            ? 'bg-white dark:bg-gray-900 text-primary-600 shadow-sm' 
+                                            : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                                    }`}
+                                >
+                                    <Layout className="w-3.5 h-3.5" />
+                                    Card View
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('table')}
+                                    className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                                        viewMode === 'table' 
+                                            ? 'bg-white dark:bg-gray-900 text-primary-600 shadow-sm' 
+                                            : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                                    }`}
+                                >
+                                    <TableIcon className="w-3.5 h-3.5" />
+                                    Schedule View
+                                </button>
+                            </div>
+                        </div>
+
+                        {viewMode === 'card' ? (
+                            <div className="flex flex-col items-center">
                                 {groupAdmitCard ? (
-                                    <button
-                                        onClick={() => {
-                                            setSelectedExamGroup(group.id);
-                                            setPrintTemplate(groupAdmitCard.template);
-                                        }}
-                                        className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
-                                    >
-                                        <Printer className="w-4 h-4" />
-                                        Print Admit Card
-                                    </button>
+                                    <div className="w-full max-w-[800px]">
+                                        <div className="flex justify-end mb-4">
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedExamGroup(group.id);
+                                                    setPrintTemplate(groupAdmitCard.template);
+                                                }}
+                                                className="inline-flex items-center gap-2 px-6 py-2.5 bg-gray-900 dark:bg-primary-600 text-white text-sm font-bold rounded-xl hover:opacity-90 transition-all shadow-lg active:scale-95"
+                                            >
+                                                <Printer className="w-4 h-4" />
+                                                Print Admit Card
+                                            </button>
+                                        </div>
+                                        <div className="bg-gray-100 dark:bg-gray-800/50 p-4 sm:p-12 rounded-[2rem] border-4 border-dashed border-gray-200 dark:border-gray-800 flex justify-center overflow-x-auto">
+                                            <div className="shrink-0 scale-90 sm:scale-100 origin-top">
+                                                <AdmitCardRenderer
+                                                    sections={groupAdmitCard.template.sections}
+                                                    config={groupAdmitCard.template.config}
+                                                    student={student}
+                                                    schedules={groupSchedules}
+                                                    isPreview={true}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
                                 ) : (
-                                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400 text-xs font-semibold rounded-lg">
-                                        <AlertTriangle className="w-3.5 h-3.5" />
-                                        Admit Card Pending
-                                    </span>
+                                    <div className="w-full max-w-[800px] bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-xl p-12 rounded-[2rem] text-center relative overflow-hidden">
+                                        {/* Background Decor */}
+                                        <div className="absolute top-0 right-0 w-32 h-32 bg-primary-600/5 rounded-bl-full pointer-events-none" />
+                                        
+                                        <div className="relative z-10">
+                                            {dashboardData.settings?.primaryLogo && (
+                                                <img 
+                                                    src={api.getFileUrl(dashboardData.settings.primaryLogo)} 
+                                                    className="h-16 mx-auto mb-6 grayscale opacity-50" 
+                                                    alt="School Logo" 
+                                                />
+                                            )}
+                                            <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+                                            <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Admit Card Not Ready</h4>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto leading-relaxed">
+                                                The official admit card for <span className="text-primary-600 font-bold">{group.name}</span> hasn't been generated yet for your class. 
+                                            </p>
+                                            
+                                            <div className="mt-8 flex flex-col items-center gap-4">
+                                                <button 
+                                                    onClick={() => setViewMode('table')}
+                                                    className="px-6 py-2 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-sm font-bold rounded-xl hover:bg-gray-100 transition-all border border-gray-200 dark:border-gray-700"
+                                                >
+                                                    View Detailed Schedule
+                                                </button>
+                                                <p className="text-[10px] text-gray-400 italic">Please contact the examination office for more information.</p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 )}
                             </div>
-
-                            <div className="p-5">
-                                <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Exam Schedule</h4>
+                        ) : (
+                            <div className="bg-white dark:bg-gray-900 shadow-sm border border-gray-200 dark:border-gray-800/50 rounded-2xl overflow-hidden p-6">
+                                <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-6 uppercase tracking-widest flex items-center gap-2">
+                                    <TableIcon className="w-4 h-4 text-primary-600" />
+                                    Detailed Schedule
+                                </h4>
                                 {groupSchedules.length > 0 ? (
-                                    <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-800">
+                                    <div className="overflow-x-auto rounded-xl border border-gray-100 dark:border-gray-800">
                                         <table className="w-full text-left text-sm whitespace-nowrap">
-                                            <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 font-medium">
+                                            <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider text-[10px]">
                                                 <tr>
-                                                    <th className="px-4 py-3">Subject</th>
-                                                    <th className="px-4 py-3">Date</th>
-                                                    <th className="px-4 py-3">Time</th>
-                                                    <th className="px-4 py-3">Room</th>
+                                                    <th className="px-6 py-4">Subject</th>
+                                                    <th className="px-6 py-4">Date</th>
+                                                    <th className="px-6 py-4">Time</th>
+                                                    <th className="px-6 py-4">Venue</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                                                 {groupSchedules.map((schedule: any) => (
-                                                    <tr key={schedule.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
-                                                        <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white">
+                                                    <tr key={schedule.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+                                                        <td className="px-6 py-4 font-bold text-gray-900 dark:text-white">
                                                             {schedule.subject?.name}
                                                         </td>
-                                                        <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
-                                                            <div className="flex items-center gap-1.5">
-                                                                <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                                                                {new Date(schedule.examDate).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
-                                                            </div>
+                                                        <td className="px-6 py-4 text-gray-600 dark:text-gray-300 font-medium">
+                                                            {new Date(schedule.examDate).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                                                         </td>
-                                                        <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
-                                                            <div className="flex items-center gap-1.5">
-                                                                <Clock className="w-3.5 h-3.5 text-gray-400" />
-                                                                {schedule.startTime} - {schedule.endTime}
-                                                            </div>
+                                                        <td className="px-6 py-4 text-gray-600 dark:text-gray-300 font-medium font-mono text-xs">
+                                                            {schedule.startTime} - {schedule.endTime}
                                                         </td>
-                                                        <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{schedule.roomNumber || 'TBA'}</td>
+                                                        <td className="px-6 py-4 text-gray-600 dark:text-gray-300 italic">
+                                                            {schedule.roomNumber || 'Main Examination Hall'}
+                                                        </td>
                                                     </tr>
                                                 ))}
                                             </tbody>
                                         </table>
                                     </div>
                                 ) : (
-                                    <p className="text-sm text-gray-500 italic">No schedules published yet for this examination.</p>
+                                    <div className="text-center py-12 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-dashed border-gray-200 dark:border-gray-800 text-gray-400">
+                                        No schedules have been published for this session.
+                                    </div>
                                 )}
                             </div>
-                        </div>
-                    );
-                })}
-            </div>
+                        )}
+                    </div>
+                );
+            })()}
 
             {/* Print Portal using existing component */}
             {printTemplate && (

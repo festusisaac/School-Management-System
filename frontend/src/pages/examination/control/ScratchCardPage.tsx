@@ -270,6 +270,7 @@ const ScratchCardPage = () => {
                                         <th className="px-4 py-3">PIN</th>
                                         <th className="px-4 py-3">Usage</th>
                                         <th className="px-4 py-3">Status</th>
+                                        <th className="px-4 py-3">Batch</th>
                                         <th className="px-4 py-3 text-right">Action</th>
                                     </tr>
                                 </thead>
@@ -280,6 +281,16 @@ const ScratchCardPage = () => {
                                             <td className="px-4 py-3 font-mono font-bold text-primary-600">{card.pin}</td>
                                             <td className="px-4 py-3 text-gray-500">{card.usageCount}/{card.maxUsage}</td>
                                             <td className="px-4 py-3">{getStatusBadge(card.status)}</td>
+                                            <td className="px-4 py-3">
+                                                {card.batchId ? (
+                                                    <button 
+                                                        onClick={() => navigate(`/examination/control/scratch-cards/batches/${card.batchId}`)}
+                                                        className="text-primary-600 hover:underline font-medium"
+                                                    >
+                                                        {card.batch?.name || 'View'}
+                                                    </button>
+                                                ) : '-'}
+                                            </td>
                                             <td className="px-4 py-3 text-right">
                                                 <button 
                                                     onClick={() => handleDeleteCard(card.id)}
@@ -290,6 +301,13 @@ const ScratchCardPage = () => {
                                             </td>
                                         </tr>
                                     ))}
+                                    {cards.length === 0 && (
+                                        <tr>
+                                            <td colSpan={6} className="px-4 py-10 text-center text-gray-400">
+                                                No cards found matching your filters.
+                                            </td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>

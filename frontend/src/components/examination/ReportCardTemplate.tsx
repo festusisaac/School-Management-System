@@ -216,7 +216,7 @@ const ReportCardTemplate: React.FC<Props> = ({
                                 <td width="15%" style={{ verticalAlign: 'top', padding: '0 2px' }}>
                                     <div className="mx-auto flex items-center justify-center border border-gray-300 overflow-hidden" style={{ width: '95px', height: '100px' }}>
                                         {data.student.photoUrl ? (
-                                            <img src={data.student.photoUrl} className="w-full h-full object-cover" alt="Student" />
+                                            <img src={getFullUrl(data.student.photoUrl)} className="w-full h-full object-cover" alt="Student" />
                                         ) : (
                                             <span className="text-gray-300 text-[10px] font-bold">PHOTO</span>
                                         )}

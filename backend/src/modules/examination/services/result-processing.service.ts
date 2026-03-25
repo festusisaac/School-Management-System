@@ -5,6 +5,7 @@ import { ExamResult } from '../entities/exam-result.entity';
 import { StudentTermResult } from '../entities/student-term-result.entity';
 import { ProcessResultDto } from '../dtos/processing/processing.dto';
 import { GradeScale } from '../entities/grade-scale.entity';
+import { Exam } from '../entities/exam.entity';
 
 @Injectable()
 export class ResultProcessingService {
@@ -15,6 +16,8 @@ export class ResultProcessingService {
         private termResultRepo: Repository<StudentTermResult>,
         @InjectRepository(GradeScale)
         private gradeScaleRepo: Repository<GradeScale>,
+        @InjectRepository(Exam)
+        private examRepo: Repository<Exam>,
     ) { }
 
     async processResults(dto: ProcessResultDto, tenantId: string) {
@@ -73,6 +76,28 @@ export class ResultProcessingService {
             }
             allResults[i].position = currentRank;
             await this.termResultRepo.save(allResults[i]);
+        }
+
+        // 4. Calculate and Save Subject-Level Statistics (Performance Benchmarking)
+        const subjectStatsRaw = await this.examResultRepo
+            .createQueryBuilder('result')
+            .leftJoin('result.exam', 'exam')
+            .select('exam.id', 'examId')
+            .addSelect('MAX(result.score)', 'highest')
+            .addSelect('MIN(result.score)', 'lowest')
+            .addSelect('AVG(result.score)', 'average')
+            .where('exam.examGroupId = :groupId', { groupId: dto.examGroupId })
+            .andWhere('exam.classId = :classId', { classId: dto.classId })
+            .andWhere('result.tenantId = :tenantId', { tenantId })
+            .groupBy('exam.id')
+            .getRawMany();
+
+        for (const stat of subjectStatsRaw) {
+            await this.examRepo.update(stat.examId, {
+                highestScore: parseFloat(stat.highest),
+                lowestScore: parseFloat(stat.lowest),
+                averageScore: parseFloat(stat.average)
+            });
         }
 
         return { message: 'Processing complete', studentsProcessed: aggregation.length };
@@ -202,6 +227,76 @@ export class ResultProcessingService {
             results: liveResults,
             subjectScores: enrichedSubjectScores,
             subjectStats
+        };
+    }
+
+    async getStudentReportCardData(studentId: string, examGroupId: string, tenantId: string) {
+        // 1. Fetch pre-calculated Summary (Rank, Total, Avg)
+        const summary = await this.termResultRepo.findOne({
+            where: { studentId, examGroupId, tenantId }
+        });
+
+        if (!summary) return null;
+
+        // 2. Fetch Exams with cached class statistics
+        const exams = await this.examRepo.find({
+            where: { examGroupId, tenantId },
+            relations: ['subject']
+        });
+
+        // 3. Fetch student's individual marks (aggregated by subject)
+        const subjectScoresRaw = await this.examResultRepo
+            .createQueryBuilder('result')
+            .leftJoin('result.exam', 'exam')
+            .select('exam.subjectId', 'subjectId')
+            .addSelect('SUM(result.score)', 'totalSubjectScore')
+            .where('result.studentId = :studentId', { studentId })
+            .andWhere('exam.examGroupId = :examGroupId', { examGroupId })
+            .andWhere('result.tenantId = :tenantId', { tenantId })
+            .groupBy('exam.subjectId')
+            .getRawMany();
+
+        // 4. Fetch grade scale
+        const gradeScale = await this.gradeScaleRepo.findOne({
+            where: { tenantId, isActive: true }
+        });
+
+        // 5. Map into the final format
+        const subjectScores = subjectScoresRaw.map(s => {
+            const score = parseFloat(s.totalSubjectScore);
+            const exam = exams.find(e => e.subjectId === s.subjectId);
+            
+            let grade = '-';
+            let remark = '-';
+            if (gradeScale && (gradeScale as any).grades) {
+                const match = (gradeScale as any).grades.find((g: any) => score >= g.minScore && score <= g.maxScore);
+                if (match) {
+                    grade = match.name;
+                    remark = match.remark || '';
+                }
+            }
+
+            return {
+                subjectId: s.subjectId,
+                subject: exam?.subject,
+                totalScore: score,
+                grade,
+                remark,
+                highestInClass: exam?.highestScore,
+                lowestInClass: exam?.lowestScore,
+                classAvg: exam?.averageScore
+            };
+        });
+
+        return {
+            summary,
+            subjectScores,
+            subjectStats: exams.map(e => ({
+                subjectId: e.subjectId,
+                highestScore: e.highestScore,
+                lowestScore: e.lowestScore,
+                averageScore: e.averageScore
+            }))
         };
     }
 }

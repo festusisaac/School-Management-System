@@ -18,6 +18,39 @@ export class RolesPermissionsService implements OnModuleInit {
     await this.renameAdminToSuperAdmin();
     await this.seedDefaultRoles();
     await this.seedSelfServicePermissions();
+    await this.seedLibraryPermissions();
+  }
+
+  private async seedLibraryPermissions() {
+    const perms = [
+      { slug: 'library:books:create', name: 'Create Books', module: 'Library' },
+      { slug: 'library:books:read', name: 'Read Books', module: 'Library' },
+      { slug: 'library:books:update', name: 'Update Books', module: 'Library' },
+      { slug: 'library:books:delete', name: 'Delete Books', module: 'Library' },
+      { slug: 'library:loans:issue', name: 'Issue Loans', module: 'Library' },
+      { slug: 'library:loans:return', name: 'Return Loans', module: 'Library' },
+      { slug: 'library:fines:manage', name: 'Manage Fines', module: 'Library' },
+      { slug: 'library:reports:view', name: 'View Library Reports', module: 'Library' },
+    ];
+
+    for (const p of perms) {
+      await this.createPermission(p.slug, p.name, p.module);
+    }
+
+    // Assign sensible defaults: Super Administrator already has all permissions via seeding elsewhere
+    const principalRole = await this.roleRepository.findOne({ where: { name: 'Principal' }, relations: ['permissions'] });
+    if (principalRole) {
+      const principalPerms = await this.permissionRepository.find({ where: { slug: In(['library:books:read','library:loans:issue','library:loans:return','library:reports:view']) } });
+      principalRole.permissions = [...(principalRole.permissions || []), ...principalPerms];
+      await this.roleRepository.save(principalRole);
+    }
+
+    const teacherRole = await this.roleRepository.findOne({ where: { name: 'Teacher' }, relations: ['permissions'] });
+    if (teacherRole) {
+      const teacherPerms = await this.permissionRepository.find({ where: { slug: In(['library:books:read','library:loans:issue','library:loans:return']) } });
+      teacherRole.permissions = [...(teacherRole.permissions || []), ...teacherPerms];
+      await this.roleRepository.save(teacherRole);
+    }
   }
 
   private async renameAdminToSuperAdmin() {

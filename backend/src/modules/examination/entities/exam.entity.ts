@@ -44,6 +44,15 @@ export class Exam {
     @Column({ type: 'int', default: 100 })
     totalMarks!: number;
 
+    @Column({ type: 'float', nullable: true })
+    highestScore?: number;
+
+    @Column({ type: 'float', nullable: true })
+    lowestScore?: number;
+
+    @Column({ type: 'float', nullable: true })
+    averageScore?: number;
+
     @Column({ nullable: true })
     tenantId?: string;
 

@@ -7,6 +7,7 @@ import { Repository } from 'typeorm';
 import { Student } from '../../students/entities/student.entity';
 import { AcademicSession } from '../../system/entities/academic-session.entity';
 import { AcademicTerm } from '../../system/entities/academic-term.entity';
+import { SystemSetting } from '../../system/entities/system-setting.entity';
 import { JwtAuthGuard } from '../../../guards/jwt-auth.guard';
 
 @UseGuards(JwtAuthGuard)
@@ -22,6 +23,8 @@ export class StudentExamController {
         private sessionRepo: Repository<AcademicSession>,
         @InjectRepository(AcademicTerm)
         private termRepo: Repository<AcademicTerm>,
+        @InjectRepository(SystemSetting)
+        private settingRepo: Repository<SystemSetting>,
     ) { }
 
     @Get(':id/dashboard')
@@ -36,24 +39,30 @@ export class StudentExamController {
 
         if (!student) throw new NotFoundException('Student not found');
 
-        // Fetch Exam Groups and Schedules
-        const examGroups = await this.setupService.findAllExamGroups(tenantId);
+        // Fetch Exam Groups
+        const allExamGroups = await this.setupService.findAllExamGroups(tenantId);
         
-        // Find schedules for the most recent/active exam group the student belongs to
-        const schedules = await Promise.all(
-            examGroups.map(group => this.setupService.getSchedule(group.id, tenantId))
+        // Fetch schedules filtered by student's class
+        const schedules = await this.setupService.getScheduleForClass(student.classId!, tenantId);
+
+        // Fetch Admit Card Templates for active groups
+        const admitCards = await Promise.all(
+            allExamGroups.map(group => this.setupService.getAdmitCardTemplates(group.id, tenantId))
         );
 
-        // Fetch Admit Card Templates
-        const admitCards = await Promise.all(
-            examGroups.map(group => this.setupService.getAdmitCardTemplates(group.id, tenantId))
-        );
+        // Fetch School Settings for branding
+        const settings = await this.settingRepo.findOne({ where: { } });
+
+        // Filter exam groups to only those that have at least one schedule for this student's class
+        const relevantGroupIds = new Set(schedules.map(s => s.exam?.examGroupId));
+        const examGroups = allExamGroups.filter(group => relevantGroupIds.has(group.id));
 
         return {
             student,
             examGroups,
-            schedules: schedules.flat(),
+            schedules,
             admitCards: admitCards.flat(),
+            settings,
         };
     }
 
@@ -107,26 +116,19 @@ export class StudentExamController {
         await this.controlService.verifyCard({ 
             code: dto.code, 
             pin: dto.pin, 
-            studentId: student.id,  // Use resolved student entity ID, not the raw URL param
+            studentId: student.id, 
             sessionId: academicSessionId || undefined as any,
             termId: academicTermId || undefined as any,
         }, tenantId, req.ip, req.headers['user-agent']);
 
-        // 3. Fetch Results (Broadsheet-like for this student)
-        const summary = await this.processingService.getBroadsheet(dto.examGroupId, student.classId!, tenantId);
+        // 3. Fetch Results (Optimized student-specific fetch)
+        const summary = await this.processingService.getStudentReportCardData(student.id, dto.examGroupId, tenantId);
         
-        // Filter broadsheet for this specific student
-        const studentResult = summary.results.find(r => r.studentId === student.id);
-        const subjectScores = summary.subjectScores.filter(s => s.studentId === student.id);
-
-        if (!studentResult) {
-            console.log('[DEBUG] No result found for student:', student.id, 'in broadsheet results:', summary.results.map(r => ({ studentId: r.studentId, status: r.status })));
+        if (!summary) {
             throw new NotFoundException('Results not found for this term');
         }
 
-        console.log('[DEBUG] Student result status:', studentResult.status, 'for student:', student.id);
-
-        if (studentResult.status !== 'PUBLISHED') {
+        if (summary.summary.status !== 'PUBLISHED') {
             throw new BadRequestException('Results for this term are not yet published');
         }
 
@@ -162,12 +164,10 @@ export class StudentExamController {
             relations: ['domain']
         });
 
-        // Exam Group Detail is already fetched at the start of this method as `examGroup`
-
         return {
-            summary: studentResult,
-            subjectScores, // enriched scores from broadsheet
-            subjectStats: summary.subjectStats, // class stats
+            summary: summary.summary,
+            subjectScores: summary.subjectScores,
+            subjectStats: summary.subjectStats,
             assessments,
             studentMarks,
             affectiveTraits,

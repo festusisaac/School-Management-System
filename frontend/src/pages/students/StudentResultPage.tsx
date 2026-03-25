@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, RefreshCw, ShieldCheck } from 'lucide-react';
+import { BookOpen, RefreshCw, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
@@ -10,6 +10,7 @@ const StudentResultPage = () => {
     const { showError, showSuccess } = useToast();
     const [loadingInit, setLoadingInit] = useState(true);
     const [checking, setChecking] = useState(false);
+    const [showPin, setShowPin] = useState(false);
     
     const [examGroups, setExamGroups] = useState<any[]>([]);
     
@@ -168,7 +169,6 @@ const StudentResultPage = () => {
                 </p>
             </div>
 
-            {/* Verification Form */}
             <div className="bg-white dark:bg-gray-900 p-8 sm:p-12 rounded-[1.5rem] shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1)] w-full max-w-[500px]">
                 <form onSubmit={handleVerify} className="space-y-6">
                     <div>
@@ -205,14 +205,23 @@ const StudentResultPage = () => {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-900 dark:text-gray-200 mb-2">PIN</label>
-                                <input 
-                                    type="text"
-                                    className="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all placeholder:text-gray-400"
-                                    placeholder="Enter Card PIN"
-                                    value={form.pin}
-                                    onChange={(e) => setForm({...form, pin: e.target.value})}
-                                    required
-                                />
+                                <div className="relative">
+                                    <input 
+                                        type={showPin ? "text" : "password"}
+                                        className="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all placeholder:text-gray-400"
+                                        placeholder="Enter Card PIN"
+                                        value={form.pin}
+                                        onChange={(e) => setForm({...form, pin: e.target.value})}
+                                        required
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPin(!showPin)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                    >
+                                        {showPin ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -956,7 +956,7 @@ export class FeesService {
       query.andWhere('student.id IN (:...studentIds)', { studentIds: dto.studentIds });
     }
 
-    let students = await query.getMany();
+    const students = await query.getMany();
     
     const existingAssignments = await this.assignmentRepo.find({
       where: {

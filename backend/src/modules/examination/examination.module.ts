@@ -28,6 +28,7 @@ import { ScratchCardBatch } from './entities/scratch-card-batch.entity';
 import { ScratchCardLog } from './entities/scratch-card-log.entity';
 import { AcademicSession } from '../system/entities/academic-session.entity';
 import { AcademicTerm } from '../system/entities/academic-term.entity';
+import { SystemSetting } from '../system/entities/system-setting.entity';
 
 @Module({
     imports: [
@@ -51,6 +52,7 @@ import { AcademicTerm } from '../system/entities/academic-term.entity';
             Student,
             AcademicSession,
             AcademicTerm,
+            SystemSetting,
         ]),
     ],
     controllers: [
