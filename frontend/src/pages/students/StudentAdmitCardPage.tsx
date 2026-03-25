@@ -15,6 +15,7 @@ const StudentAdmitCardPage = () => {
     const [printTemplate, setPrintTemplate] = useState<any>(null);
     const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
     const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchDashboard = async () => {
@@ -24,7 +25,9 @@ const StudentAdmitCardPage = () => {
                 if (data.examGroups?.length > 0) {
                     setActiveGroupId(data.examGroups[0].id);
                 }
-            } catch (error) {
+            } catch (err: any) {
+                console.error('Dashboard error:', err);
+                setError(err.message || 'Failed to load examination dashboard');
                 showError('Failed to load examination dashboard');
             } finally {
                 setLoading(false);
@@ -42,10 +45,30 @@ const StudentAdmitCardPage = () => {
         );
     }
 
-    if (!dashboardData || !dashboardData.examGroups?.length) {
+    if (error) {
         return (
             <div className="p-6">
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-10 text-center border border-gray-100 dark:border-gray-800">
+                <div className="bg-red-50 dark:bg-red-900/10 rounded-2xl p-10 text-center border border-red-100 dark:border-red-900/30">
+                    <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                    <h2 className="text-xl font-bold text-red-900 dark:text-red-400 mb-2">Error Loading Data</h2>
+                    <p className="text-red-700 dark:text-red-500/80 max-w-sm mx-auto mb-6">
+                        {error}
+                    </p>
+                    <button 
+                        onClick={() => window.location.reload()}
+                        className="px-6 py-2 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-700 transition-all"
+                    >
+                        Retry Now
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    if (!dashboardData || !dashboardData.examGroups || dashboardData.examGroups.length === 0) {
+        return (
+            <div className="p-6">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-10 text-center border border-gray-100 dark:border-gray-800 shadow-sm">
                     <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Calendar className="w-8 h-8 text-gray-400" />
                     </div>
@@ -58,7 +81,7 @@ const StudentAdmitCardPage = () => {
         );
     }
 
-    const { student, examGroups, schedules, admitCards } = dashboardData;
+    const { student, examGroups, schedules = [], admitCards = [] } = dashboardData;
 
     return (
         <div className="space-y-6">
@@ -96,8 +119,10 @@ const StudentAdmitCardPage = () => {
             {/* Active Group Content */}
             {activeGroupId && (() => {
                 const group = examGroups.find((g: any) => g.id === activeGroupId);
-                const groupSchedules = schedules.filter((s: any) => s.examGroupId === activeGroupId);
-                const groupAdmitCard = admitCards.find((ac: any) => ac.examGroupId === activeGroupId && ac.isActive);
+                if (!group) return <div className="p-8 text-center text-gray-400">Exam group not found.</div>;
+
+                const groupSchedules = Array.isArray(schedules) ? schedules.filter((s: any) => (s.examGroupId === activeGroupId || s.exam?.examGroupId === activeGroupId)) : [];
+                const groupAdmitCard = Array.isArray(admitCards) ? admitCards.find((ac: any) => ac.examGroupId === activeGroupId && ac.isActive) : null;
 
                 return (
                     <div className="space-y-6">

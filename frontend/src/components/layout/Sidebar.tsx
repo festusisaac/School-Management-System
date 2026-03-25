@@ -115,6 +115,17 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             ]
         },
         {
+            label: 'Library',
+            icon: BookOpen,
+            path: '/library',
+            children: [
+                { label: 'Books', path: '/library' },
+                { label: 'Issue Book', path: '/library/issue' },
+                { label: 'Return Book', path: '/library/return' },
+                { label: 'Overdues', path: '/library/overdues' },
+            ]
+        },
+        {
             label: 'Finance',
             icon: CreditCard,
             path: '/finance',

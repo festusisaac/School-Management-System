@@ -79,39 +79,39 @@ const AdmitCardRenderer: React.FC<Props> = ({ sections, config, student, schedul
                         <div className="flex-1 grid grid-cols-2 gap-y-6 gap-x-12">
                             <div className="col-span-2 pb-4 border-b border-gray-50">
                                 <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em] mb-1">Candidate's Full Name</p>
-                                <p className="text-2xl font-black text-gray-900 uppercase tracking-tight">{student.firstName} {student.lastName}</p>
+                                <p className="text-2xl font-black text-gray-900 uppercase tracking-tight">{student?.firstName || '---'} {student?.lastName || '---'}</p>
                             </div>
 
-                            {fields.admissionNo && (
+                            {fields?.admissionNo && (
                                 <div>
                                     <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em] mb-1">Admission Number</p>
-                                    <p className="text-base font-bold text-gray-900">{student.admissionNumber || student.admissionNo}</p>
+                                    <p className="text-base font-bold text-gray-900">{student?.admissionNumber || student?.admissionNo || '---'}</p>
                                 </div>
                             )}
 
                             <div>
                                 <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em] mb-1">Current Class</p>
-                                <p className="text-base font-bold text-gray-900">{(student.currentClass?.name || student.class?.name) || 'N/A'}</p>
+                                <p className="text-base font-bold text-gray-900">{(student?.currentClass?.name || student?.class?.name) || 'N/A'}</p>
                             </div>
 
-                            {fields.rollNumber && (
+                            {fields?.rollNumber && (
                                 <div>
                                     <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em] mb-1">Roll Number</p>
-                                    <p className="text-base font-bold text-gray-900">{student.rollNumber || student.rollNo || 'N/A'}</p>
+                                    <p className="text-base font-bold text-gray-900">{student?.rollNumber || student?.rollNo || 'N/A'}</p>
                                 </div>
                             )}
 
-                            {fields.gender && (
+                            {fields?.gender && (
                                 <div>
                                     <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em] mb-1">Gender</p>
-                                    <p className="text-base font-bold text-gray-900 uppercase">{student.gender || 'N/A'}</p>
+                                    <p className="text-base font-bold text-gray-900 uppercase">{student?.gender || 'N/A'}</p>
                                 </div>
                             )}
 
-                            {fields.dob && (
+                            {fields?.dob && (
                                 <div>
                                     <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em] mb-1">Date of Birth</p>
-                                    <p className="text-base font-bold text-gray-900">{student.dob ? new Date(student.dob).toLocaleDateString() : 'N/A'}</p>
+                                    <p className="text-base font-bold text-gray-900">{student?.dob ? new Date(student.dob).toLocaleDateString() : 'N/A'}</p>
                                 </div>
                             )}
                         </div>
@@ -138,11 +138,11 @@ const AdmitCardRenderer: React.FC<Props> = ({ sections, config, student, schedul
                                 {schedules.length > 0 ? schedules.map((s, idx) => (
                                     <tr key={idx} className="group">
                                         <td className="py-4 pr-4 border-b border-gray-50">
-                                            <div className="font-bold text-gray-900">{s.date ? new Date(s.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : ''}</div>
-                                            <div className="text-[10px] text-gray-400 font-bold">{s.startTime}</div>
+                                            <div className="font-bold text-gray-900">{s.examDate || s.date ? new Date(s.examDate || s.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : ''}</div>
+                                            <div className="text-[10px] text-gray-400 font-bold">{s.startTime || '---'}</div>
                                         </td>
                                         <td className="py-4 px-4 border-b border-gray-50">
-                                            <div className="font-extrabold text-gray-900 uppercase tracking-tight">{s.exam?.subject?.name}</div>
+                                            <div className="font-extrabold text-gray-900 uppercase tracking-tight">{s?.exam?.subject?.name || '---'}</div>
                                         </td>
                                         <td className="py-4 pl-4 border-b border-gray-50 italic text-gray-500 font-medium">
                                             {s.venue || 'Main Hall'}
@@ -230,7 +230,9 @@ const AdmitCardRenderer: React.FC<Props> = ({ sections, config, student, schedul
             )}
 
             <div className="relative h-full flex flex-col antialiased">
-                {sections.map(renderSection)}
+                {Array.isArray(sections) ? sections.map(renderSection) : (
+                    <div className="p-8 text-center text-gray-400">Admit card layout is being finalized.</div>
+                )}
             </div>
         </div>
     );

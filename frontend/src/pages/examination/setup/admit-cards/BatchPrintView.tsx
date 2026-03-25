@@ -116,7 +116,7 @@ const BatchPrintView: React.FC<Props> = ({ template, students, schedules, onClos
                 }
 
                 @page {
-                    size: ${template.config.layout === 'landscape' ? 'landscape' : 'portrait'};
+                    size: ${template?.config?.layout === 'landscape' ? 'landscape' : 'portrait'};
                     margin: 0mm;
                 }
             `}</style>
