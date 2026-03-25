@@ -1,5 +1,5 @@
 import React from 'react';
-import { getFileUrl } from '../../../../services/api';
+import { getFileUrl } from '../../../services/api';
 
 export interface Section {
     type: 'header' | 'studentInfo' | 'timetable' | 'footer' | 'customText';
@@ -24,7 +24,7 @@ interface Props {
     isPreview?: boolean;
 }
 
-const AdmitCardRenderer: React.FC<Props> = ({ sections, config, student, schedules, isPreview = false }) => {
+const AdmitCardComponent: React.FC<Props> = ({ sections, config, student, schedules, isPreview = false }) => {
     const {
         primaryColor = '#1e40af',
         layout = 'portrait',
@@ -70,7 +70,7 @@ const AdmitCardRenderer: React.FC<Props> = ({ sections, config, student, schedul
                 const fields = settings.fields || {};
                 return (
                     <div key={section.id} className="p-10 py-8 flex gap-12 relative z-10 bg-white" style={section.style}>
-                        <div className="w-40 h-48 bg-gray-50 rounded-2xl border-2 border-gray-100 flex flex-col items-center justify-center shrink-0 overflow-hidden shadow-inner order-last">
+                         <div className="w-40 h-48 bg-gray-50 rounded-2xl border-2 border-gray-100 flex flex-col items-center justify-center shrink-0 overflow-hidden shadow-inner order-last">
                             {(student?.photoUrl || student?.studentPhoto) ? (
                                 <img src={getAbsoluteUrl(student.photoUrl || student.studentPhoto)} className="w-full h-full object-cover" />
                             ) : (
@@ -208,4 +208,4 @@ const AdmitCardRenderer: React.FC<Props> = ({ sections, config, student, schedul
     );
 };
 
-export default AdmitCardRenderer;
+export default AdmitCardComponent;

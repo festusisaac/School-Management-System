@@ -20,6 +20,7 @@ import { FeesService } from '../../finance/services/fees.service';
 import { UsersService } from '../../system/services/users.service';
 import { Role } from '../../auth/entities/role.entity';
 import { EmailService } from '../../communication/email.service';
+import { SmsService } from '../../communication/sms.service';
 import { StudentAttendance } from '../entities/student-attendance.entity';
 import { MarkAttendanceDto, BulkMarkAttendanceDto } from '../dtos/student-attendance.dto';
 import { Between } from 'typeorm';
@@ -48,6 +49,7 @@ export class StudentsService {
         private feesService: FeesService,
         private usersService: UsersService,
         private emailService: EmailService,
+        private smsService: SmsService,
     ) { }
 
     // --- Students ---
@@ -529,9 +531,50 @@ export class StudentsService {
     async bulkMarkAttendance(dto: BulkMarkAttendanceDto, tenantId: string): Promise<StudentAttendance[]> {
         const results: StudentAttendance[] = [];
         for (const record of dto.records) {
-            results.push(await this.markAttendance(record, tenantId));
+            const attendance = await this.markAttendance(record, tenantId);
+            results.push(attendance);
+
+            // Send notification if student is absent
+            if (record.status === 'absent') {
+                this.sendAbsenceNotification(record.studentId, record.date, tenantId).catch(err => {
+                    console.error(`Failed to send absence notification for student ${record.studentId}:`, err);
+                });
+            }
         }
         return results;
+    }
+
+    private async sendAbsenceNotification(studentId: string, date: string, tenantId: string) {
+        try {
+            const student = await this.studentsRepository.findOne({
+                where: { id: studentId, tenantId },
+                relations: ['parent']
+            });
+
+            if (!student || !student.parent) return;
+
+            const parentPhone = student.parent.guardianPhone;
+            const parentEmail = student.parent.guardianEmail;
+            const studentName = `${student.firstName} ${student.lastName}`;
+            const formattedDate = new Date(date).toLocaleDateString();
+
+            const message = `Attendance Alert: Your child, ${studentName}, was marked ABSENT today (${formattedDate}). Kindly contact the school for any clarification.`;
+
+            if (parentPhone) {
+                await this.smsService.sendSms(parentPhone, message);
+            }
+
+            if (parentEmail) {
+                await this.emailService.sendEmail({
+                    to: parentEmail,
+                    subject: `Absence Notification - ${studentName}`,
+                    text: message,
+                    html: `<p>${message}</p>`
+                });
+            }
+        } catch (error) {
+            console.error('Error in sendAbsenceNotification:', error);
+        }
     }
 
     async getStudentAttendance(studentId: string, startDate: string, endDate: string, tenantId: string): Promise<StudentAttendance[]> {
@@ -552,6 +595,21 @@ export class StudentsService {
         return this.attendanceRepo.find({
             where,
             relations: ['student']
+        });
+    }
+
+    async getAttendanceLogs(startDate: string, endDate: string, tenantId: string, classId?: string, sectionId?: string): Promise<StudentAttendance[]> {
+        const where: any = {
+            date: Between(startDate, endDate) as any,
+            tenantId
+        };
+        if (classId) where.classId = classId;
+        if (sectionId) where.sectionId = sectionId;
+
+        return this.attendanceRepo.find({
+            where,
+            relations: ['student', 'class', 'section'],
+            order: { date: 'DESC' }
         });
     }
 }

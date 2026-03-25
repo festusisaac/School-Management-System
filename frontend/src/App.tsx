@@ -96,6 +96,9 @@ function AppRoutes() {
               <Route path="profile/:id" element={<Students.StudentProfile />} />
               <Route path="timetable" element={<Students.StudentTimetablePage />} />
               <Route path="attendance" element={<Students.StudentAttendancePage />} />
+              <Route path="attendance/mark" element={<Students.StudentAttendanceMarkingPage />} />
+              <Route path="attendance/history" element={<Students.StudentAttendanceHistoryPage />} />
+              <Route path="attendance/reports" element={<Students.StudentAttendanceReportsPage />} />
               <Route path="finance" element={<Finance.StudentFinancePage />} />
               <Route path="examination/admit-card" element={<Students.StudentAdmitCardPage />} />
               <Route path="examination/results" element={<Students.StudentResultPage />} />

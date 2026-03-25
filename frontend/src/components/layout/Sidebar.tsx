@@ -99,6 +99,16 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             ]
         },
         {
+            label: 'Student Attendance',
+            icon: Clock,
+            path: '/students/attendance',
+            children: [
+                { label: 'Mark Attendance', path: '/students/attendance/mark' },
+                { label: 'Attendance History', path: '/students/attendance/history' },
+                { label: 'Attendance Reports', path: '/students/attendance/reports' },
+            ]
+        },
+        {
             label: 'Student Information',
             icon: GraduationCap,
             path: '/students',

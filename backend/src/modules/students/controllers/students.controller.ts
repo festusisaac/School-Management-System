@@ -109,8 +109,7 @@ export class StudentsController {
         return this.studentsService.removeDeactivateReason(id, req.user.tenantId);
     }
 
-    // --- Online Admission ---
-
+    @Post('online-admissions')
     createOnlineAdmission(@Body() dto: CreateOnlineAdmissionDto, @Request() req: any) {
         return this.studentsService.createOnlineAdmission(dto, req.user.tenantId);
     }
@@ -213,6 +212,17 @@ export class StudentsController {
         @Query('sectionId') sectionId?: string
     ) {
         return this.studentsService.getClassAttendance(classId, date, req.user.tenantId, sectionId);
+    }
+
+    @Get('attendance/logs')
+    getAttendanceLogs(
+        @Query('startDate') startDate: string,
+        @Query('endDate') endDate: string,
+        @Request() req: any,
+        @Query('classId') classId?: string,
+        @Query('sectionId') sectionId?: string
+    ) {
+        return this.studentsService.getAttendanceLogs(startDate, endDate, req.user.tenantId, classId, sectionId);
     }
 }
 

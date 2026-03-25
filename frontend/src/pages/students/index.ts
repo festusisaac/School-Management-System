@@ -11,3 +11,6 @@ export { default as StudentTimetablePage } from './StudentTimetablePage';
 export { default as StudentAttendancePage } from './StudentAttendancePage';
 export { default as StudentAdmitCardPage } from './StudentAdmitCardPage';
 export { default as StudentResultPage } from './StudentResultPage';
+export { default as StudentAttendanceMarkingPage } from './StudentAttendanceMarkingPage';
+export { default as StudentAttendanceHistoryPage } from './StudentAttendanceHistoryPage';
+export { default as StudentAttendanceReportsPage } from './StudentAttendanceReportsPage';

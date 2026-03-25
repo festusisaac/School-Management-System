@@ -906,11 +906,6 @@ class ApiService {
   async approveOnlineAdmission(id: string) {
     return this.post<any>(`/students/online-admissions/${id}/approve`, {})
   }
-
-  async getDeactivateReason(id: string) {
-    return this.get<any>(`/students/deactivate-reasons/${id}`)
-  }
-
   // Student Attendance methods
   async getStudentAttendance(studentId: string, startDate: string, endDate: string) {
     return this.get<any[]>(`/students/attendance/student/${studentId}`, { params: { startDate, endDate } })
@@ -928,8 +923,11 @@ class ApiService {
     return this.get<any[]>(`/students/attendance/class/${classId}`, { params: { date, sectionId } })
   }
 
-  // Examination Student API
+  async getAttendanceLogs(params: { startDate: string, endDate: string, classId?: string, sectionId?: string }) {
+    return this.get<any[]>('/students/attendance/logs', { params })
+  }
 
+  // Examination Student API
   async getStudentExamDashboard(studentId: string) {
     return this.get<any>(`/examination/student/${studentId}/dashboard`)
   }
@@ -938,6 +936,10 @@ class ApiService {
     return this.post<any>(`/examination/student/${studentId}/verify-result`, data)
   }
 
+  async getStudentAdmitCard(studentId: string, examGroupId: string) {
+    return this.get<any>(`/examination/student/${studentId}/admit-card`, { params: { examGroupId } })
+  }
 }
 
-export default new ApiService()
+export const api = new ApiService()
+export default api
