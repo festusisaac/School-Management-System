@@ -76,40 +76,45 @@ const StudentAttendanceMarkingPage: React.FC = () => {
         }
     };
 
-    const handleSearch = async () => {
+    useEffect(() => {
         if (!selectedClass) {
-            toast.showError('Please select a class');
+            setStudents([]);
+            setAttendance({});
             return;
         }
 
-        try {
-            setLoading(true);
-            // 1. Fetch Students in the class/section
-            const studentData = await api.get<Student[]>('/students', {
-                params: { classId: selectedClass, sectionId: selectedSection || undefined }
-            });
-            setStudents(studentData);
+        const fetchStudentData = async () => {
+            try {
+                setLoading(true);
+                // 1. Fetch Students in the class/section
+                const studentData = await api.get<Student[]>('/students', {
+                    params: { classId: selectedClass, sectionId: selectedSection || undefined }
+                });
+                setStudents(studentData);
 
-            // 2. Fetch existing attendance for the date
-            const existingAttendance = await api.getStudentClassAttendance(selectedClass, date, selectedSection || undefined);
-            
-            const attendanceMap: Record<string, AttendanceRecord> = {};
-            studentData.forEach(s => {
-                const record = existingAttendance.find((a: any) => a.studentId === s.id);
-                attendanceMap[s.id] = {
-                    studentId: s.id,
-                    status: (record?.status as any) || 'present',
-                    remarks: record?.remarks || ''
-                };
-            });
-            setAttendance(attendanceMap);
-        } catch (error) {
-            console.error('Error fetching students/attendance:', error);
-            toast.showError('Failed to load student data');
-        } finally {
-            setLoading(false);
-        }
-    };
+                // 2. Fetch existing attendance for the date
+                const existingAttendance = await api.getStudentClassAttendance(selectedClass, date, selectedSection || undefined);
+                
+                const attendanceMap: Record<string, AttendanceRecord> = {};
+                studentData.forEach(s => {
+                    const record = existingAttendance.find((a: any) => a.studentId === s.id);
+                    attendanceMap[s.id] = {
+                        studentId: s.id,
+                        status: (record?.status as any) || 'present',
+                        remarks: record?.remarks || ''
+                    };
+                });
+                setAttendance(attendanceMap);
+            } catch (error) {
+                console.error('Error fetching students/attendance:', error);
+                toast.showError('Failed to load student data');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStudentData();
+    }, [selectedClass, selectedSection, date]);
 
     const handleStatusChange = (studentId: string, status: 'present' | 'absent' | 'late' | 'medical') => {
         setAttendance(prev => ({
@@ -153,10 +158,12 @@ const StudentAttendanceMarkingPage: React.FC = () => {
         }
     };
 
-    const filteredStudents = students.filter(s => 
-        `${s.firstName} ${s.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.admissionNo.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredStudents = (students || []).filter(s => {
+        const query = (searchTerm || '').toLowerCase();
+        const fullName = `${s.firstName || ''} ${s.lastName || ''}`.toLowerCase();
+        const admNo = (s.admissionNo || '').toLowerCase();
+        return fullName.includes(query) || admNo.includes(query);
+    });
 
     return (
         <div className="p-4 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
@@ -222,13 +229,6 @@ const StudentAttendanceMarkingPage: React.FC = () => {
                             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
                         </div>
                     </div>
-                    <button
-                        onClick={handleSearch}
-                        className="flex items-center justify-center gap-2 px-6 py-2 bg-gray-900 dark:bg-white dark:text-gray-900 text-white text-sm font-bold rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-all shadow-md active:scale-95"
-                    >
-                        <Filter size={16} />
-                        Load Students
-                    </button>
                     <div className="flex gap-2 h-[38px]">
                         <button 
                             onClick={() => markAllAs('present')}
@@ -304,18 +304,18 @@ const StudentAttendanceMarkingPage: React.FC = () => {
                                     </td>
                                 </tr>
                             ) : (
-                                filteredStudents.map((student) => (
+                                filteredStudents.map((student, i) => (
                                     <tr key={student.id} className="group hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
                                         <td className="px-5 py-3 text-center text-[10px] font-bold text-gray-400">
                                             {i + 1}
                                         </td>
                                         <td className="px-5 py-3">
                                             <div className="flex items-center gap-2">
-                                                <div className="w-8 h-8 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-lg flex items-center justify-center font-black text-[10px] shadow-sm">
-                                                    {student.firstName[0]}{student.lastName[0]}
+                                                <div className="w-8 h-8 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-lg flex items-center justify-center font-black text-[10px] shadow-sm uppercase">
+                                                    {student.firstName?.charAt(0) || ''}{student.lastName?.charAt(0) || ''}
                                                 </div>
                                                 <div className="text-sm font-bold text-gray-900 dark:text-white capitalize">
-                                                    {student.firstName} {student.lastName}
+                                                    {student.firstName} {student.lastName || ''}
                                                 </div>
                                             </div>
                                         </td>

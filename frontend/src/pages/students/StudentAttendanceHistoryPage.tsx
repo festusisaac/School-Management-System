@@ -12,6 +12,7 @@ import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { clsx } from 'clsx';
+import { downloadPDF } from '../../utils/pdfGenerator';
 
 const StudentAttendanceHistoryPage: React.FC = () => {
     const [startDate, setStartDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
@@ -38,35 +39,51 @@ const StudentAttendanceHistoryPage: React.FC = () => {
         }
     };
 
-    const handleSearch = async () => {
-        try {
-            setLoading(true);
-            // In a real app, we'd have a specific endpoint for logs filtering.
-            // For now, let's fetch by class and date range if possible, or simulate with what we have.
-            // Since the backend only has getClassAttendance(classId, date), we might need to loop or use a more generic reporting endpoint.
-            
-            // Assume we have a reporting/logs endpoint:
-            const data = await api.getAttendanceLogs({ 
-                classId: selectedClass || undefined, 
-                sectionId: selectedSection || undefined,
-                startDate,
-                endDate
-            });
-            setLogs(data);
-        } catch (error) {
-            console.error('Error fetching attendance logs:', error);
-            toast.showError('Failed to load attendance logs');
-            // Mock data for UI demonstration if endpoint fails
-            setLogs([]);
-        } finally {
-            setLoading(false);
+    useEffect(() => {
+        const fetchLogs = async () => {
+            try {
+                setLoading(true);
+                const data = await api.getAttendanceLogs({ 
+                    classId: selectedClass || undefined, 
+                    sectionId: selectedSection || undefined,
+                    startDate,
+                    endDate
+                });
+                setLogs(data);
+            } catch (error) {
+                console.error('Error fetching attendance logs:', error);
+                toast.showError('Failed to load attendance logs');
+                setLogs([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchLogs();
+    }, [startDate, endDate, selectedClass, selectedSection]);
+
+    const filteredLogs = logs.filter(log => {
+        const query = (searchTerm || '').toLowerCase();
+        const first = (log.student?.firstName || '').toLowerCase();
+        const last = (log.student?.lastName || '').toLowerCase();
+        return first.includes(query) || last.includes(query);
+    });
+
+    const handleExportPDF = async () => {
+        const element = document.getElementById('export-pdf-content');
+        if (element) {
+            try {
+                await downloadPDF(element, { 
+                    filename: `attendance-history-${format(new Date(), 'yyyy-MM-dd')}.pdf`,
+                    orientation: 'portrait' 
+                });
+                toast.showSuccess('PDF downloaded successfully');
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                toast.showError('Failed to generate PDF');
+            }
         }
     };
-
-    const filteredLogs = logs.filter(log => 
-        log.student?.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        log.student?.lastName.toLowerCase().includes(searchTerm.toLowerCase())
-    );
 
     const getStatusColor = (status: string) => {
         switch (status.toLowerCase()) {
@@ -89,15 +106,18 @@ const StudentAttendanceHistoryPage: React.FC = () => {
                     </h1>
                     <p className="text-xs text-gray-600 dark:text-gray-400">View and audit past attendance records</p>
                 </div>
-                <button className="flex items-center gap-2 px-5 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 text-sm font-bold rounded-lg hover:bg-gray-50 transition-all shadow-sm active:scale-95">
+                <button 
+                    onClick={handleExportPDF}
+                    className="flex items-center gap-2 px-5 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 text-sm font-bold rounded-lg hover:bg-gray-50 transition-all shadow-sm active:scale-95"
+                >
                     <Download size={18} className="text-primary-600" />
                     Export PDF
                 </button>
             </div>
 
             {/* Filters */}
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm mb-6">
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm mb-6 print:hidden">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
                     <div>
                         <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">From</label>
                         <input
@@ -130,13 +150,6 @@ const StudentAttendanceHistoryPage: React.FC = () => {
                             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
                         </div>
                     </div>
-                    <button
-                        onClick={handleSearch}
-                        className="flex items-center justify-center gap-2 px-6 py-2 bg-primary-600 text-white text-sm font-bold rounded-lg hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/25 active:scale-95"
-                    >
-                        <Filter size={16} />
-                        Filter
-                    </button>
                     <div className="md:col-span-1 bg-primary-50 dark:bg-primary-900/10 p-2 rounded-lg border border-primary-100 dark:border-primary-900/30 flex items-center gap-2">
                         <TrendingUp className="text-primary-600 w-4 h-4" />
                         <div>
@@ -148,8 +161,8 @@ const StudentAttendanceHistoryPage: React.FC = () => {
             </div>
 
             {/* Logs Table */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden min-h-[400px]">
-                <div className="p-3 border-b border-gray-50 dark:border-gray-700">
+            <div id="export-pdf-content" className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden min-h-[400px]">
+                <div data-html2canvas-ignore="true" className="p-3 border-b border-gray-50 dark:border-gray-700">
                     <div className="relative max-w-xs">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                         <input
@@ -200,10 +213,10 @@ const StudentAttendanceHistoryPage: React.FC = () => {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3 text-sm font-bold text-gray-900 dark:text-white capitalize">
-                                                <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700/50 flex items-center justify-center text-[10px] text-gray-500">
-                                                    {log.student?.firstName[0]}{log.student?.lastName[0]}
+                                                <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700/50 flex items-center justify-center text-[10px] text-gray-500 uppercase">
+                                                    {log.student?.firstName?.charAt(0) || ''}{log.student?.lastName?.charAt(0) || ''}
                                                 </div>
-                                                {log.student?.firstName} {log.student?.lastName}
+                                                {log.student?.firstName || ''} {log.student?.lastName || ''}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400">

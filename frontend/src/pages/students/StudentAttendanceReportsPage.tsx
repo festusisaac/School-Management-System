@@ -13,6 +13,7 @@ import {
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { clsx } from 'clsx';
 import {
   BarChart,
   Bar,
@@ -25,6 +26,8 @@ import {
   PieChart,
   Pie,
 } from 'recharts';
+import { exportToExcel } from '../../utils/excelExport';
+import { downloadPDF } from '../../utils/pdfGenerator';
 
 const StudentAttendanceReportsPage: React.FC = () => {
     const [startDate, setStartDate] = useState(format(subMonths(new Date(), 1), 'yyyy-MM-dd'));
@@ -35,11 +38,11 @@ const StudentAttendanceReportsPage: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [stats, setStats] = useState({ avgPresence: '0%', absents: '0', students: '0' });
     const [pieData, setPieData] = useState<any[]>([]);
+    const [rawLogs, setRawLogs] = useState<any[]>([]);
     const toast = useToast();
 
     useEffect(() => {
         fetchClasses();
-        fetchReport();
     }, []);
 
     const fetchClasses = async () => {
@@ -51,92 +54,157 @@ const StudentAttendanceReportsPage: React.FC = () => {
         }
     };
 
-    const fetchReport = async () => {
-        try {
-            setLoading(true);
-            const logs = await api.getAttendanceLogs({ 
-                startDate, 
-                endDate, 
-                classId: selectedClass || undefined 
-            });
-
-            // 1. Calculate Summary Stats
-            const total = logs.length;
-            if (total > 0) {
-                const present = logs.filter(l => l.status === 'present').length;
-                const absent = logs.filter(l => l.status === 'absent').length;
-                const late = logs.filter(l => l.status === 'late').length;
-                const medical = logs.filter(l => l.status === 'medical').length;
-                const uniqueStudents = new Set(logs.map(l => l.studentId)).size;
-
-                setStats({
-                    avgPresence: `${((present / total) * 100).toFixed(1)}%`,
-                    absents: absent.toString(),
-                    students: uniqueStudents.toString()
+    const handleExportPDF = async () => {
+        const element = document.getElementById('export-pdf-content');
+        if (element) {
+            try {
+                toast.showLoading('Generating PDF Download...');
+                await downloadPDF(element, { 
+                    filename: `attendance-report-${format(new Date(), 'yyyy-MM-dd')}.pdf`,
+                    orientation: 'landscape' 
                 });
-
-                // 2. Prepare Pie Chart Data
-                setPieData([
-                    { name: 'Present', value: Math.round((present / total) * 100), color: '#10b981' },
-                    { name: 'Absent', value: Math.round((absent / total) * 100), color: '#f43f5e' },
-                    { name: 'Late', value: Math.round((late / total) * 100), color: '#f59e0b' },
-                    { name: 'Medical', value: Math.round((medical / total) * 100), color: '#3b82f6' },
-                ]);
-
-                // 3. Prepare Bar Chart Data (Class-wise)
-                const classMap: Record<string, { name: string, presentCount: number, totalCount: number }> = {};
-                logs.forEach(log => {
-                    const cId = log.classId;
-                    if (!classMap[cId]) {
-                        classMap[cId] = { name: log.class?.name || 'Unknown', presentCount: 0, totalCount: 0 };
-                    }
-                    classMap[cId].totalCount++;
-                    if (log.status === 'present') classMap[cId].presentCount++;
-                });
-
-                const barData = Object.values(classMap).map(c => ({
-                    name: c.name,
-                    present: Math.round((c.presentCount / c.totalCount) * 100)
-                }));
-                setReportData(barData);
-            } else {
-                setStats({ avgPresence: '0%', absents: '0', students: '0' });
-                setPieData([]);
-                setReportData([]);
+                toast.showSuccess('Report exported successfully');
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                toast.showError('Failed to generate report');
             }
-        } catch (error) {
-            console.error('Error fetching report:', error);
-            toast.showError('Failed to load report data');
-        } finally {
-            setLoading(false);
         }
     };
 
+    const handleExportCSV = () => {
+        if (rawLogs.length === 0) {
+            toast.showError('No data available to export');
+            return;
+        }
+        
+        const columns = [
+            { header: 'Date', key: 'date', formatter: (val: any) => format(new Date(val), 'MMM dd, yyyy') },
+            { header: 'Student First Name', key: 'student', formatter: (val: any) => val?.firstName || '' },
+            { header: 'Student Last Name', key: 'student', formatter: (val: any) => val?.lastName || '' },
+            { header: 'Admission No', key: 'student', formatter: (val: any) => val?.admissionNo || '' },
+            { header: 'Class', key: 'class', formatter: (val: any) => val?.name || '' },
+            { header: 'Section', key: 'section', formatter: (val: any) => val?.name || '' },
+            { header: 'Status', key: 'status', formatter: (val: string) => val.toUpperCase() },
+            { header: 'Remarks', key: 'remarks', formatter: (val: any) => val || '' },
+        ];
+        
+        try {
+            exportToExcel(rawLogs, columns, `attendance-logs-${format(new Date(), 'yyyy-MM-dd')}.xlsx`, 'Attendance Logs');
+            toast.showSuccess('CSV downloaded successfully');
+        } catch (error) {
+            console.error('Error exporting CSV:', error);
+            toast.showError('Failed to download CSV');
+        }
+    };
+
+    useEffect(() => {
+        const fetchReportData = async () => {
+            try {
+                setLoading(true);
+                const logs = await api.getAttendanceLogs({ 
+                    startDate, 
+                    endDate, 
+                    classId: selectedClass || undefined 
+                });
+                setRawLogs(logs);
+
+                // 1. Calculate Summary Stats
+                const total = logs.length;
+                if (total > 0) {
+                    const present = logs.filter(l => l.status === 'present').length;
+                    const absent = logs.filter(l => l.status === 'absent').length;
+                    const late = logs.filter(l => l.status === 'late').length;
+                    const medical = logs.filter(l => l.status === 'medical').length;
+                    const uniqueStudents = new Set(logs.map(l => l.studentId)).size;
+
+                    setStats({
+                        avgPresence: `${((present / total) * 100).toFixed(1)}%`,
+                        absents: absent.toString(),
+                        students: uniqueStudents.toString()
+                    });
+
+                    // 2. Prepare Pie Chart Data
+                    setPieData([
+                        { name: 'Present', value: Math.round((present / total) * 100), color: '#10b981' },
+                        { name: 'Absent', value: Math.round((absent / total) * 100), color: '#f43f5e' },
+                        { name: 'Late', value: Math.round((late / total) * 100), color: '#f59e0b' },
+                        { name: 'Medical', value: Math.round((medical / total) * 100), color: '#3b82f6' },
+                    ]);
+
+                    // 3. Prepare Bar Chart Data (Class-wise)
+                    const classMap: Record<string, { name: string, presentCount: number, totalCount: number }> = {};
+                    logs.forEach(log => {
+                        const cId = log.classId;
+                        if (!classMap[cId]) {
+                            classMap[cId] = { name: log.class?.name || 'Unknown', presentCount: 0, totalCount: 0 };
+                        }
+                        classMap[cId].totalCount++;
+                        if (log.status === 'present') classMap[cId].presentCount++;
+                    });
+
+                    const barData = Object.values(classMap).map(c => ({
+                        name: c.name,
+                        present: Math.round((c.presentCount / c.totalCount) * 100)
+                    }));
+                    setReportData(barData);
+                } else {
+                    setStats({ avgPresence: '0%', absents: '0', students: '0' });
+                    setPieData([]);
+                    setReportData([]);
+                }
+            } catch (error) {
+                console.error('Error fetching report:', error);
+                toast.showError('Failed to load report data');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchReportData();
+    }, [startDate, endDate, selectedClass]);
+
     return (
-        <div className="p-4 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                <div>
-                    <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                        <BarChart3 className="w-6 h-6 text-primary-600" />
-                        Attendance Analytics
-                    </h1>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">Deep dive into student attendance trends and patterns</p>
-                </div>
-                <div className="flex gap-2">
-                    <button className="flex items-center gap-2 px-5 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 text-sm font-bold rounded-lg hover:bg-gray-50 transition-all shadow-sm active:scale-95">
-                        <Download size={18} className="text-primary-600" />
-                        CSV
-                    </button>
-                    <button className="flex items-center gap-2 px-5 py-2 bg-primary-600 text-white text-sm font-bold rounded-lg hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/25 active:scale-95">
-                        <Download size={18} />
-                        PDF Report
-                    </button>
-                </div>
+        <div className="p-2 sm:p-4 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+            {/* Top Action Bar (Outside PDF) */}
+            <div className="flex justify-end gap-3 mb-4">
+                <button 
+                    onClick={handleExportCSV}
+                    className="flex items-center gap-2 px-6 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 text-sm font-bold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all shadow-sm active:scale-95"
+                >
+                    <Download size={18} className="text-primary-600" />
+                    Export CSV
+                </button>
+                <button 
+                    onClick={handleExportPDF}
+                    className="flex items-center gap-2 px-6 py-2 bg-primary-600 text-white text-sm font-bold rounded-lg hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/25 active:scale-95"
+                >
+                    <Download size={18} />
+                    Download PDF Report
+                </button>
             </div>
 
-            {/* Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            {/* Exportable PDF Content */}
+            <div id="export-pdf-content" className="flex flex-col gap-5 bg-gray-50 dark:bg-gray-900 sm:p-2 rounded-xl">
+                
+                {/* PDF Header - Premium Design */}
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary-500/30">
+                            <BarChart3 size={28} />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Official Attendance Report</h1>
+                            <p className="text-sm font-bold text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
+                                <Calendar size={14} />
+                                Period: {format(new Date(startDate), 'MMM dd, yyyy')} — {format(new Date(endDate), 'MMM dd, yyyy')}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Filters (Hidden during PDF generation) */}
+                <div data-html2canvas-ignore="true" className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm mb-2">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
                 {[
                     { label: 'Avg. Attendance', value: stats.avgPresence, icon: TrendingUp, color: 'emerald' },
                     { label: 'Total Absents', value: stats.absents, icon: AlertCircle, color: 'rose' },
@@ -161,9 +229,9 @@ const StudentAttendanceReportsPage: React.FC = () => {
                 ))}
             </div>
 
-            {/* Filters */}
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm mb-6">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                {/* Quick Stats */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
                     <div>
                         <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">Start Date</label>
                         <input
@@ -196,13 +264,6 @@ const StudentAttendanceReportsPage: React.FC = () => {
                             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
                         </div>
                     </div>
-                    <button
-                        onClick={fetchReport}
-                        className="flex items-center justify-center gap-2 px-6 py-2 bg-gray-900 dark:bg-white dark:text-gray-900 text-white text-sm font-bold rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-all shadow-md active:scale-95"
-                    >
-                        <Filter size={16} />
-                        Filter
-                    </button>
                 </div>
             </div>
 
@@ -286,6 +347,7 @@ const StudentAttendanceReportsPage: React.FC = () => {
                         </div>
                     </div>
                 </div>
+            </div>
             </div>
         </div>
     );
