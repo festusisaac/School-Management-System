@@ -9,4 +9,5 @@ export { default as DeactivateReasons } from './DeactivateReasons';
 export { default as StudentProfile } from './StudentProfile';
 export { default as StudentTimetablePage } from './StudentTimetablePage';
 export { default as StudentAttendancePage } from './StudentAttendancePage';
-
+export { default as StudentAdmitCardPage } from './StudentAdmitCardPage';
+export { default as StudentResultPage } from './StudentResultPage';

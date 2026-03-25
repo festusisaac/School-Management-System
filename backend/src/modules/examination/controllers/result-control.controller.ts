@@ -8,6 +8,11 @@ import { JwtAuthGuard } from '../../../guards/jwt-auth.guard';
 export class ResultControlController {
     constructor(private readonly controlService: ResultControlService) { }
 
+    @Get('scratch-cards/dashboard')
+    getDashboard(@Request() req: any) {
+        return this.controlService.getDashboardStats(req.user.tenantId);
+    }
+
     @Post('scratch-cards/generate')
     generateCards(@Body() dto: GenerateScratchCardDto, @Request() req: any) {
         return this.controlService.generateScratchCards(dto, req.user.tenantId, req.user.id);
@@ -21,6 +26,11 @@ export class ResultControlController {
     @Get('scratch-cards/batches')
     getBatches(@Request() req: any) {
         return this.controlService.getBatches(req.user.tenantId);
+    }
+
+    @Delete('scratch-cards/batches/:id')
+    deleteBatch(@Param('id') id: string, @Request() req: any) {
+        return this.controlService.deleteBatch(id, req.user.tenantId);
     }
 
     @Delete('scratch-cards/:id')

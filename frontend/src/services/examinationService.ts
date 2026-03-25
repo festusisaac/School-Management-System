@@ -241,6 +241,10 @@ export const examinationService = {
         return await api.delete(`/examination/control/scratch-cards/${id}`);
     },
 
+    deleteScratchCardBatch: async (id: string) => {
+        return await api.delete(`/examination/control/scratch-cards/batches/${id}`);
+    },
+
     bulkDeleteScratchCards: async (ids: string[]) => {
         return await api.post('/examination/control/scratch-cards/bulk-delete', { ids });
     },
@@ -255,6 +259,10 @@ export const examinationService = {
 
     verifyStudentResult: async (studentId: string, data: { code: string; pin: string; examGroupId: string }) => {
         return await api.post(`/examination/student/${studentId}/verify-result`, data);
+    },
+
+    getScratchCardDashboardStats: async () => {
+        return await api.get<ScratchCardDashboardStats>('/examination/control/scratch-cards/dashboard');
     },
 };
 
@@ -282,7 +290,33 @@ export interface ScratchCardBatch {
     quantity: number;
     status: string;
     sessionId?: string;
+    session?: any;
+    usedCards?: number;
+    totalCards?: number;
     createdAt: string;
+}
+
+export interface ScratchCardDashboardStats {
+    totalGenerated: number;
+    totalDistributed: number;
+    totalChecked: number;
+    totalRedeemed: number;
+    overallWinRate: number;
+    successCount: number;
+    failCount: number;
+    trendData: { date: string; count: number }[];
+    recentLogs: {
+        action: string;
+        status: string;
+        reason?: string;
+        ip?: string;
+        time: string;
+    }[];
+    suspiciousActivities: {
+        severity: 'low' | 'medium' | 'high';
+        message: string;
+        time: string;
+    }[];
 }
 
 export interface PsychomotorDomain {

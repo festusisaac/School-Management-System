@@ -10,6 +10,7 @@ import {
 import { Student } from '../../students/entities/student.entity';
 import { ScratchCardBatch } from './scratch-card-batch.entity';
 import { AcademicSession } from '../../system/entities/academic-session.entity';
+import { AcademicTerm } from '../../system/entities/academic-term.entity';
 
 @Entity('scratch_cards')
 export class ScratchCard {
@@ -52,7 +53,11 @@ export class ScratchCard {
     session?: AcademicSession;
 
     @Column({ nullable: true })
-    termId?: string; // We don't have a direct relation here yet, but we'll store the ID
+    termId?: string;
+
+    @ManyToOne(() => AcademicTerm, { nullable: true, onDelete: 'SET NULL' })
+    @JoinColumn({ name: 'termId' })
+    term?: AcademicTerm;
 
     @Column({ nullable: true })
     studentId?: string;

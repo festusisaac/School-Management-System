@@ -163,11 +163,18 @@ export class ResultProcessingService {
             };
         });
 
-        // 5. Calculate CLASS POSITION dynamically
+        // 5. Fetch saved StudentTermResults to get actual status (PUBLISHED, DRAFT) and remarks
+        const savedResults = await this.termResultRepo.find({
+            where: { examGroupId, classId, tenantId }
+        });
+        const savedResultsMap = new Map(savedResults.map(r => [r.studentId, r]));
+
+        // 6. Calculate CLASS POSITION dynamically and merge saved statuses
         const sortedOverallTotals = Array.from(studentOverallTotals.values()).sort((a, b) => b - a);
         const liveResults = allStudents.map(student => {
             const totalScore = studentOverallTotals.get(student.id) || 0;
             const position = sortedOverallTotals.indexOf(totalScore) + 1;
+            const saved = savedResultsMap.get(student.id);
             
             // Map to a structure similar to StudentTermResult for frontend compatibility
             return {
@@ -176,9 +183,11 @@ export class ResultProcessingService {
                 totalScore,
                 averageScore: subjectStatsMap.size > 0 ? totalScore / subjectStatsMap.size : 0, // Approx avg
                 position,
-                status: 'DRAFT',
-                daysPresent: 0,
-                daysOpened: 0,
+                status: saved ? saved.status : 'DRAFT',
+                daysPresent: saved ? saved.daysPresent : 0,
+                daysOpened: saved ? saved.daysOpened : 0,
+                principalComment: saved?.principalComment || undefined,
+                teacherComment: saved?.teacherComment || undefined,
             };
         });
 

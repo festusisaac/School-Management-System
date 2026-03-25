@@ -8,6 +8,8 @@ export { default as AdmitCardPage } from './setup/admit-cards/AdmitCardPage';
 // Control
 export { default as ResultManagementPage } from './control/ResultManagementPage';
 export { default as ScratchCardPage } from './control/ScratchCardPage';
+export { default as ScratchCardBatchesPage } from './control/ScratchCardBatchesPage';
+export { default as ScratchCardBatchDetailsPage } from './control/ScratchCardBatchDetailsPage';
 
 // Entry
 export { default as ScoresheetPage } from './entry/ScoresheetPage';

@@ -8,6 +8,12 @@ import { StudentTermResult } from '../entities/student-term-result.entity';
 import { GenerateScratchCardDto, GetScratchCardsFilterDto, VerifyScratchCardDto } from '../dtos/control/control.dto';
 import { v4 as uuidv4 } from 'uuid';
 import * as crypto from 'crypto';
+import moment from 'moment';
+
+export interface ScratchCardBatchWithCounts extends ScratchCardBatch {
+    usedCards: number;
+    totalCards: number;
+}
 
 @Injectable()
 export class ResultControlService {
@@ -112,7 +118,7 @@ export class ResultControlService {
     }
 
     async getScratchCards(filter: GetScratchCardsFilterDto, tenantId: string) {
-        const { status, batchId, sessionId, search, page = 1, limit = 50 } = filter;
+        const { status, batchId, sessionId, studentId, search, page = 1, limit = 50 } = filter;
         const skip = (page - 1) * limit;
 
         const query = this.scratchCardRepo.createQueryBuilder('card')
@@ -124,6 +130,7 @@ export class ResultControlService {
         if (status) query.andWhere('card.status = :status', { status });
         if (batchId) query.andWhere('card.batchId = :batchId', { batchId });
         if (sessionId) query.andWhere('card.sessionId = :sessionId', { sessionId });
+        if (studentId) query.andWhere('card.studentId = :studentId', { studentId });
         if (search) {
             query.andWhere('(card.code ILIKE :search OR card.pin ILIKE :search)', { search: `%${search}%` });
         }
@@ -137,21 +144,70 @@ export class ResultControlService {
         return { items, total, page, limit };
     }
 
-    async getBatches(tenantId: string) {
-        return this.batchRepo.find({
+    async getBatches(tenantId: string): Promise<any[]> {
+        const batches = await this.batchRepo.find({
             where: { tenantId },
             order: { createdAt: 'DESC' },
             relations: ['session']
         });
+
+        const counts = await this.scratchCardRepo.createQueryBuilder('card')
+            .select('card.batchId', 'batchId')
+            .addSelect('COUNT(*)', 'total')
+            .addSelect('COUNT(CASE WHEN card.status IN (\'sold\', \'redeemed\') THEN 1 ELSE null END)', 'used')
+            .where('card.tenantId = :tenantId', { tenantId })
+            .groupBy('card.batchId')
+            .getRawMany();
+
+        const countMap = new Map(counts.map(c => [c.batchId, { total: parseInt(c.total), used: parseInt(c.used) }]));
+
+        return batches.map(batch => ({
+            ...batch,
+            usedCards: countMap.get(batch.id)?.used || 0,
+            totalCards: countMap.get(batch.id)?.total || batch.quantity
+        }));
+    }
+
+    async deleteBatch(id: string, tenantId: string) {
+        const batch = await this.batchRepo.findOne({ where: { id, tenantId } });
+        if (!batch) throw new NotFoundException('Batch not found');
+        
+        // Prevent deletion if any cards are sold/redeemed
+        const usedCardsCount = await this.scratchCardRepo.count({
+            where: { batchId: id, tenantId, status: In(['sold', 'redeemed']) }
+        });
+        
+        if (usedCardsCount > 0) {
+            throw new BadRequestException('Cannot delete a batch that contains sold or redeemed cards');
+        }
+
+        // Delete all cards in this batch first
+        await this.scratchCardRepo.delete({ batchId: id, tenantId });
+        
+        return this.batchRepo.remove(batch);
     }
 
     async deleteCard(id: string, tenantId: string) {
         const card = await this.scratchCardRepo.findOne({ where: { id, tenantId } });
         if (!card) throw new NotFoundException('Card not found');
+        
+        if (card.status === 'sold' || card.status === 'redeemed') {
+            throw new BadRequestException('Cannot delete a sold or redeemed card');
+        }
+        
         return this.scratchCardRepo.remove(card);
     }
 
     async bulkDeleteCards(ids: string[], tenantId: string) {
+        // Find if any of these cards are sold or redeemed
+        const usedCardsCount = await this.scratchCardRepo.count({
+            where: { id: In(ids), tenantId, status: In(['sold', 'redeemed']) }
+        });
+        
+        if (usedCardsCount > 0) {
+            throw new BadRequestException('Cannot delete sold or redeemed cards from the selection');
+        }
+
         return this.scratchCardRepo.delete({ id: In(ids), tenantId });
     }
 
@@ -199,18 +255,28 @@ export class ResultControlService {
 
         // If card was already used for a different student/term/session
         if (card.usageCount > 0) {
-            if (card.studentId !== studentId || card.termId !== termId || card.sessionId !== sessionId) {
+            if (card.studentId !== studentId || (termId && card.termId !== termId) || card.sessionId !== sessionId) {
                 await this.logRepo.save({ ...logData, status: false, failureReason: 'Card used for different student/term' });
                 throw new BadRequestException('Card already used for another student or for another term');
             }
         } else {
             // First time use: bind to student and term
             card.studentId = studentId;
-            card.termId = termId;
+            card.termId = termId || null as any;  // Must be null, not empty string, to satisfy FK constraint
             card.status = 'redeemed';
         }
 
         card.usageCount += 1;
+        console.log('[DEBUG verifyCard] About to save card with:', {
+            cardId: card.id,
+            termId: card.termId,
+            termIdType: typeof card.termId,
+            sessionId: card.sessionId,
+            studentId: card.studentId,
+            usageCount: card.usageCount,
+            inputTermId: termId,
+            inputTermIdType: typeof termId,
+        });
         await this.scratchCardRepo.save(card);
         await this.logRepo.save({ ...logData, status: true });
 
@@ -234,5 +300,77 @@ export class ResultControlService {
         card.metadata = { ...(card.metadata || {}), soldBy: userId, soldAt: new Date() };
 
         return this.scratchCardRepo.save(card);
+    }
+
+    async getDashboardStats(tenantId: string) {
+        const totalGenerated = await this.scratchCardRepo.count({ where: { tenantId } });
+        const totalDistributed = await this.scratchCardRepo.count({ 
+            where: { tenantId, status: In(['sold', 'redeemed']) } 
+        });
+        const totalRedeemed = await this.scratchCardRepo.count({ 
+            where: { tenantId, status: 'redeemed' } 
+        });
+        
+        // Logs stats
+        const totalChecked = await this.logRepo.count({ where: { tenantId, action: 'validate' } });
+        const successCount = await this.logRepo.count({ where: { tenantId, action: 'validate', status: true } });
+        const failCount = await this.logRepo.count({ where: { tenantId, action: 'validate', status: false } });
+
+        // overallWinRate: % of generated cards that were redeemed
+        const overallWinRate = totalGenerated > 0 ? (totalRedeemed / totalGenerated) * 100 : 0;
+
+        // 7-day trend
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        
+        const trendLogs = await this.logRepo.createQueryBuilder('log')
+            .select("DATE(log.createdAt)", "date")
+            .addSelect("COUNT(*)", "count")
+            .where("log.tenantId = :tenantId", { tenantId })
+            .andWhere("log.action = :action", { action: 'validate' })
+            .andWhere("log.createdAt >= :sevenDaysAgo", { sevenDaysAgo })
+            .groupBy("DATE(log.createdAt)")
+            .orderBy("DATE(log.createdAt)", "ASC")
+            .getRawMany();
+
+        // Recent Audit logs
+        const recentLogs = await this.logRepo.find({
+            where: { tenantId },
+            order: { createdAt: 'DESC' },
+            take: 10
+        });
+
+        // Suspicious Activity: multiple failures from same IP or details
+        const suspiciousActivities = await this.logRepo.find({
+            where: { tenantId, status: false },
+            order: { createdAt: 'DESC' },
+            take: 5
+        });
+
+        return {
+            totalGenerated,
+            totalDistributed,
+            totalChecked,
+            totalRedeemed,
+            overallWinRate,
+            successCount,
+            failCount,
+            trendData: trendLogs.map(l => ({
+                date: moment(l.date).format('MMM dd'),
+                count: parseInt(l.count)
+            })),
+            recentLogs: recentLogs.map(l => ({
+                action: l.action,
+                status: l.status ? 'Success' : 'Failed',
+                reason: l.failureReason,
+                ip: l.ipAddress,
+                time: moment(l.createdAt).format('MMM dd, HH:mm')
+            })),
+            suspiciousActivities: suspiciousActivities.map(l => ({
+                severity: 'medium',
+                message: l.failureReason || 'Validation failed',
+                time: moment(l.createdAt).fromNow()
+            }))
+        };
     }
 }

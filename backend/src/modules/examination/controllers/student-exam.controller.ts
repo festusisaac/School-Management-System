@@ -5,6 +5,8 @@ import { ResultProcessingService } from '../services/result-processing.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Student } from '../../students/entities/student.entity';
+import { AcademicSession } from '../../system/entities/academic-session.entity';
+import { AcademicTerm } from '../../system/entities/academic-term.entity';
 import { JwtAuthGuard } from '../../../guards/jwt-auth.guard';
 
 @UseGuards(JwtAuthGuard)
@@ -16,6 +18,10 @@ export class StudentExamController {
         private readonly processingService: ResultProcessingService,
         @InjectRepository(Student)
         private studentRepo: Repository<Student>,
+        @InjectRepository(AcademicSession)
+        private sessionRepo: Repository<AcademicSession>,
+        @InjectRepository(AcademicTerm)
+        private termRepo: Repository<AcademicTerm>,
     ) { }
 
     @Get(':id/dashboard')
@@ -63,25 +69,48 @@ export class StudentExamController {
         const examGroup = await this.setupService.findOneExamGroup(dto.examGroupId, tenantId);
         if (!examGroup) throw new NotFoundException('Exam group not found');
 
-        // 2. Verify Card
-        // We pass the student ID to bind the card to this student if it's the first use.
-        // We also pass sessionId and termId from the exam group.
-        // Note: In this system, ExamGroup stores session/term as strings, 
-        // but ScratchCard expects IDs. For simplicity, we'll use the strings if they are stored as such,
-        // or the service will handle the comparison.
+        // Resolve AcademicSession to get the UUID that matches examGroup.academicYear
+        let academicSessionId = '';
+        if (examGroup.academicYear) {
+            const session = await this.sessionRepo.findOne({ where: { name: examGroup.academicYear } });
+            if (session) {
+                academicSessionId = session.id;
+            }
+        }
+
+        // Resolve AcademicTerm to get the UUID that matches examGroup.term
+        let academicTermId = '';
+        if (examGroup.term && academicSessionId) {
+            // Look up by term name within the resolved session
+            const term = await this.termRepo.findOne({ 
+                where: { name: examGroup.term, sessionId: academicSessionId } 
+            });
+            if (term) {
+                academicTermId = term.id;
+            }
+        }
+
+        console.log('[DEBUG verifyAndGetResult] Resolution:', {
+            examGroupTerm: examGroup.term,
+            examGroupAcademicYear: examGroup.academicYear,
+            resolvedSessionId: academicSessionId,
+            resolvedTermId: academicTermId,
+        });
+
+        // 2. Resolve Student FIRST (id may be userId, not student entity id)
+        const student = await this.studentRepo.findOne({
+            where: [{ id, tenantId }, { userId: id, tenantId }],
+            relations: ['class']
+        });
+        if (!student) throw new NotFoundException('Student not found');
+
         await this.controlService.verifyCard({ 
             code: dto.code, 
             pin: dto.pin, 
-            studentId: id,
-            sessionId: examGroup.academicYear || '',
-            termId: examGroup.term || '',
+            studentId: student.id,  // Use resolved student entity ID, not the raw URL param
+            sessionId: academicSessionId || undefined as any,
+            termId: academicTermId || undefined as any,
         }, tenantId, req.ip, req.headers['user-agent']);
-
-        // 2. Resolve Student
-        const student = await this.studentRepo.findOne({
-            where: [{ id, tenantId }, { userId: id, tenantId }],
-        });
-        if (!student) throw new NotFoundException('Student not found');
 
         // 3. Fetch Results (Broadsheet-like for this student)
         const summary = await this.processingService.getBroadsheet(dto.examGroupId, student.classId!, tenantId);
@@ -91,16 +120,60 @@ export class StudentExamController {
         const subjectScores = summary.subjectScores.filter(s => s.studentId === student.id);
 
         if (!studentResult) {
+            console.log('[DEBUG] No result found for student:', student.id, 'in broadsheet results:', summary.results.map(r => ({ studentId: r.studentId, status: r.status })));
             throw new NotFoundException('Results not found for this term');
         }
+
+        console.log('[DEBUG] Student result status:', studentResult.status, 'for student:', student.id);
 
         if (studentResult.status !== 'PUBLISHED') {
             throw new BadRequestException('Results for this term are not yet published');
         }
 
+        // 4. Fetch additional raw data needed to build the ReportCardTemplate
+        const entityManager = this.studentRepo.manager;
+
+        // Fetch assessment types for this exam group
+        const assessments = await entityManager.find('AssessmentType', {
+            where: { examGroupId: dto.examGroupId, tenantId, isActive: true }
+        }) as any[];
+        // Sort manually to avoid TypeORM string-entity typing issues
+        assessments.sort((a, b) => a.name.localeCompare(b.name));
+
+        // Fetch raw exam results (individual CA/Exam marks) for this student
+        const studentMarks = await entityManager.find('ExamResult', {
+            where: { 
+                studentId: student.id, 
+                tenantId,
+                exam: { examGroupId: dto.examGroupId }
+            },
+            relations: ['exam']
+        });
+
+        // Fetch Affective Traits
+        const affectiveTraits = await entityManager.find('StudentSkill', {
+            where: { studentId: student.id, examGroupId: dto.examGroupId, tenantId },
+            relations: ['domain']
+        });
+
+        // Fetch Psychomotor Skills
+        const psychomotorSkills = await entityManager.find('StudentPsychomotor', {
+            where: { studentId: student.id, examGroupId: dto.examGroupId, tenantId },
+            relations: ['domain']
+        });
+
+        // Exam Group Detail is already fetched at the start of this method as `examGroup`
+
         return {
             summary: studentResult,
-            subjectScores,
+            subjectScores, // enriched scores from broadsheet
+            subjectStats: summary.subjectStats, // class stats
+            assessments,
+            studentMarks,
+            affectiveTraits,
+            psychomotorSkills,
+            examGroup, // for term/session info
+            student // for personal details
         };
     }
 }

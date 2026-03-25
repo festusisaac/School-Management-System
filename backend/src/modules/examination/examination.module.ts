@@ -26,6 +26,8 @@ import { StudentSkill } from './entities/student-skill.entity';
 import { ScratchCard } from './entities/scratch-card.entity';
 import { ScratchCardBatch } from './entities/scratch-card-batch.entity';
 import { ScratchCardLog } from './entities/scratch-card-log.entity';
+import { AcademicSession } from '../system/entities/academic-session.entity';
+import { AcademicTerm } from '../system/entities/academic-term.entity';
 
 @Module({
     imports: [
@@ -47,6 +49,8 @@ import { ScratchCardLog } from './entities/scratch-card-log.entity';
             ScratchCardBatch,
             ScratchCardLog,
             Student,
+            AcademicSession,
+            AcademicTerm,
         ]),
     ],
     controllers: [

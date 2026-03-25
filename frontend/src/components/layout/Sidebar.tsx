@@ -57,8 +57,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             icon: BookOpen,
             path: '/examination',
             children: [
-                { label: 'Admit Card', path: '/examination/setup/admit-cards' },
-                { label: 'Check Result', path: '/examination/reports/report-card' },
+                { label: 'Admit Card', path: '/students/examination/admit-card' },
+                { label: 'Check Result', path: '/students/examination/results' },
             ]
         }
     ];

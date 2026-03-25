@@ -92,6 +92,8 @@ function AppRoutes() {
               <Route path="timetable" element={<Students.StudentTimetablePage />} />
               <Route path="attendance" element={<Students.StudentAttendancePage />} />
               <Route path="finance" element={<Finance.StudentFinancePage />} />
+              <Route path="examination/admit-card" element={<Students.StudentAdmitCardPage />} />
+              <Route path="examination/results" element={<Students.StudentResultPage />} />
             </Route>
 
 
@@ -120,6 +122,8 @@ function AppRoutes() {
               {/* Control */}
               <Route path="control/results" element={<Examination.ResultManagementPage />} />
               <Route path="control/scratch-cards" element={<Examination.ScratchCardPage />} />
+              <Route path="control/scratch-cards/batches" element={<Examination.ScratchCardBatchesPage />} />
+              <Route path="control/scratch-cards/batches/:id" element={<Examination.ScratchCardBatchDetailsPage />} />
 
               {/* Entry */}
               <Route path="entry/scoresheet" element={<Examination.ScoresheetPage />} />

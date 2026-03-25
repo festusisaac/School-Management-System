@@ -94,6 +94,10 @@ export class GetScratchCardsFilterDto {
     @IsOptional()
     @Type(() => Number)
     limit?: number;
+
+    @IsString()
+    @IsOptional()
+    studentId?: string;
 }
 
 export class VerifyScratchCardDto {
