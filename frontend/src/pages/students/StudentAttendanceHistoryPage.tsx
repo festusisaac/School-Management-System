@@ -91,6 +91,7 @@ const StudentAttendanceHistoryPage: React.FC = () => {
             case 'absent': return 'text-rose-600 bg-rose-50 dark:bg-rose-900/20';
             case 'late': return 'text-amber-600 bg-amber-50 dark:bg-amber-900/20';
             case 'medical': return 'text-blue-600 bg-blue-50 dark:bg-blue-900/20';
+            case 'holiday': return 'text-purple-600 bg-purple-50 dark:bg-purple-900/20';
             default: return 'text-gray-600 bg-gray-50';
         }
     };

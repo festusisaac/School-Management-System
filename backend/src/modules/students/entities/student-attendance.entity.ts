@@ -8,7 +8,8 @@ export enum AttendanceStatus {
   ABSENT = 'absent',
   LATE = 'late',
   MEDICAL = 'medical',
-  HALFDAY = 'halfday'
+  HALFDAY = 'halfday',
+  HOLIDAY = 'holiday'
 }
 
 @Entity('student_attendance')

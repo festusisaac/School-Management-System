@@ -10,6 +10,10 @@ import { Fine } from './entities/fine.entity';
 import { CreateBookDto } from './dtos/create-book.dto';
 import { IssueLoanDto } from './dtos/issue-loan.dto';
 import { ReturnLoanDto } from './dtos/return-loan.dto';
+import { CreateAuthorDto, UpdateAuthorDto } from './dtos/author.dto';
+import { CreateCategoryDto, UpdateCategoryDto } from './dtos/category.dto';
+import { UpdateBookDto } from './dtos/update-book.dto';
+import { LibrarySetting } from './entities/library-setting.entity';
 
 @Injectable()
 export class LibraryService {
@@ -26,7 +30,51 @@ export class LibraryService {
     private loanRepo: Repository<Loan>,
     @InjectRepository(Fine)
     private fineRepo: Repository<Fine>,
+    @InjectRepository(LibrarySetting)
+    private settingsRepo: Repository<LibrarySetting>,
   ) {}
+
+  // Author CRUD
+  async createAuthor(dto: CreateAuthorDto, tenantId: string): Promise<Author> {
+    const author = this.authorRepo.create({ ...dto, tenantId });
+    return this.authorRepo.save(author);
+  }
+
+  async findAllAuthors(tenantId: string): Promise<Author[]> {
+    return this.authorRepo.find({ where: { tenantId }, order: { name: 'ASC' } });
+  }
+
+  async updateAuthor(id: string, dto: UpdateAuthorDto, tenantId: string): Promise<Author> {
+    const author = await this.authorRepo.findOneBy({ id, tenantId });
+    if (!author) throw new NotFoundException('Author not found');
+    Object.assign(author, dto);
+    return this.authorRepo.save(author);
+  }
+
+  async deleteAuthor(id: string, tenantId: string): Promise<void> {
+    await this.authorRepo.delete({ id, tenantId });
+  }
+
+  // Category CRUD
+  async createCategory(dto: CreateCategoryDto, tenantId: string): Promise<Category> {
+    const category = this.categoryRepo.create({ ...dto, tenantId });
+    return this.categoryRepo.save(category);
+  }
+
+  async findAllCategories(tenantId: string): Promise<Category[]> {
+    return this.categoryRepo.find({ where: { tenantId }, order: { name: 'ASC' } });
+  }
+
+  async updateCategory(id: string, dto: UpdateCategoryDto, tenantId: string): Promise<Category> {
+    const category = await this.categoryRepo.findOneBy({ id, tenantId });
+    if (!category) throw new NotFoundException('Category not found');
+    Object.assign(category, dto);
+    return this.categoryRepo.save(category);
+  }
+
+  async deleteCategory(id: string, tenantId: string): Promise<void> {
+    await this.categoryRepo.delete({ id, tenantId });
+  }
 
   async createBook(dto: CreateBookDto, tenantId: string, coverPath?: string): Promise<Book> {
     const book = this.bookRepo.create({
@@ -49,6 +97,31 @@ export class LibraryService {
     }
 
     return this.bookRepo.save(book);
+  }
+
+  async updateBook(id: string, dto: UpdateBookDto, tenantId: string, coverPath?: string): Promise<Book> {
+    const book = await this.bookRepo.findOneBy({ id, tenantId });
+    if (!book) throw new NotFoundException('Book not found');
+
+    if (dto.title) book.title = dto.title;
+    if (dto.isbn) book.isbn = dto.isbn;
+    if (dto.publisher) book.publisher = dto.publisher;
+    if (dto.publishedDate) book.publishedDate = dto.publishedDate;
+    if (dto.description) book.description = dto.description;
+    if (coverPath) book.coverPath = coverPath;
+
+    if (dto.authorIds) {
+      book.authors = await this.authorRepo.find({ where: { id: In(dto.authorIds), tenantId } });
+    }
+    if (dto.categoryIds) {
+      book.categories = await this.categoryRepo.find({ where: { id: In(dto.categoryIds), tenantId } });
+    }
+
+    return this.bookRepo.save(book);
+  }
+
+  async deleteBook(id: string, tenantId: string): Promise<void> {
+    await this.bookRepo.delete({ id, tenantId });
   }
 
   async findAllBooks(query: any, tenantId: string): Promise<Book[]> {
@@ -80,6 +153,19 @@ export class LibraryService {
 
     const copy = this.copyRepo.create({ bookId, barcode, location, tenantId });
     return this.copyRepo.save(copy);
+  }
+
+  async updateCopy(id: string, tenantId: string, barcode?: string, location?: string, status?: string): Promise<BookCopy> {
+    const copy = await this.copyRepo.findOneBy({ id, tenantId });
+    if (!copy) throw new NotFoundException('Copy not found');
+    if (barcode !== undefined) copy.barcode = barcode;
+    if (location !== undefined) copy.location = location;
+    if (status !== undefined) copy.status = status;
+    return this.copyRepo.save(copy);
+  }
+
+  async deleteCopy(id: string, tenantId: string): Promise<void> {
+    await this.copyRepo.delete({ id, tenantId });
   }
 
   async issueLoan(dto: IssueLoanDto, tenantId: string): Promise<Loan> {
@@ -122,7 +208,11 @@ export class LibraryService {
     // Calculate fine if overdue
     const now = loan.returnedAt || new Date();
     if (loan.dueAt && now > loan.dueAt) {
-      const fineAmount = this.calculateFine(loan.dueAt, now);
+      const settings = await this.settingsRepo.findOne({ where: { tenantId } });
+      const graceDays = settings?.graceDays ?? 3;
+      const finePerDay = settings?.finePerDay ?? 50;
+
+      const fineAmount = this.calculateFine(loan.dueAt, now, graceDays, finePerDay);
       if (fineAmount > 0) {
         const fine = this.fineRepo.create({ loanId: loan.id, amount: fineAmount, paid: false, tenantId });
         await this.fineRepo.save(fine);
@@ -142,6 +232,24 @@ export class LibraryService {
 
   async findOverdues(tenantId: string): Promise<Loan[]> {
     const now = new Date();
-    return this.loanRepo.find({ where: { tenantId, status: 'active', dueAt: LessThan(now) }, relations: ['copy'] });
+    return this.loanRepo.find({ where: { tenantId, status: 'active', dueAt: LessThan(now) }, relations: ['copy', 'copy.book'] });
+  }
+
+  async getStats(tenantId: string) {
+    const [totalBooks, totalAuthors, totalCategories, totalLoans, overdueLoans] = await Promise.all([
+      this.bookRepo.countBy({ tenantId }),
+      this.authorRepo.countBy({ tenantId }),
+      this.categoryRepo.countBy({ tenantId }),
+      this.loanRepo.countBy({ tenantId, status: 'active' }),
+      this.loanRepo.countBy({ tenantId, status: 'active', dueAt: LessThan(new Date()) }),
+    ]);
+
+    return {
+      totalBooks,
+      totalAuthors,
+      totalCategories,
+      activeLoans: totalLoans,
+      overdueLoans,
+    };
   }
 }

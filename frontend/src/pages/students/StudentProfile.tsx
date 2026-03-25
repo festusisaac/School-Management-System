@@ -1011,6 +1011,7 @@ export default function StudentProfile() {
                                                             "w-12 h-12 rounded-xl flex flex-col items-center justify-center border",
                                                             record.status === 'present' ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-800 text-emerald-600" :
                                                             record.status === 'absent' ? "bg-rose-50 dark:bg-rose-900/20 border-rose-100 dark:border-rose-800 text-rose-600" :
+                                                            record.status === 'holiday' ? "bg-purple-50 dark:bg-purple-900/20 border-purple-100 dark:border-purple-800 text-purple-600" :
                                                             "bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-800 text-amber-600"
                                                         )}>
                                                             <span className="text-[10px] font-black uppercase leading-none mt-1">{format(new Date(record.date), 'MMM')}</span>

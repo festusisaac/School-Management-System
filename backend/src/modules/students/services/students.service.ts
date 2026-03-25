@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, ILike } from 'typeorm';
+import { Repository, Like, ILike, Between } from 'typeorm';
 import { extname } from 'path';
 import { Student } from '../entities/student.entity';
 import { CreateStudentDto } from '../dtos/create-student.dto';
@@ -23,7 +23,6 @@ import { EmailService } from '../../communication/email.service';
 import { SmsService } from '../../communication/sms.service';
 import { StudentAttendance } from '../entities/student-attendance.entity';
 import { MarkAttendanceDto, BulkMarkAttendanceDto } from '../dtos/student-attendance.dto';
-import { Between } from 'typeorm';
 
 @Injectable()
 export class StudentsService {
@@ -576,11 +575,22 @@ export class StudentsService {
             console.error('Error in sendAbsenceNotification:', error);
         }
     }
-
     async getStudentAttendance(studentId: string, startDate: string, endDate: string, tenantId: string): Promise<StudentAttendance[]> {
+        // Resolve the student ID since the studentId parameter might actually be a userId from the auth token
+        const student = await this.studentsRepository.findOne({
+            where: [
+                { id: studentId, tenantId },
+                { userId: studentId, tenantId }
+            ]
+        });
+
+        if (!student) {
+            throw new NotFoundException('Student not found');
+        }
+
         return this.attendanceRepo.find({
             where: {
-                studentId,
+                studentId: student.id,
                 date: Between(startDate, endDate) as any,
                 tenantId
             },

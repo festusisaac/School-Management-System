@@ -895,10 +895,6 @@ class ApiService {
     return this.get<any[]>('/students/online-admissions')
   }
 
-  async getOnlineAdmissionById(id: string) {
-    return this.get<any>(`/students/online-admissions/${id}`)
-  }
-
   async updateOnlineAdmissionStatus(id: string, status: 'pending' | 'approved' | 'rejected') {
     return this.patch<any>(`/students/online-admissions/${id}/status`, { status })
   }
@@ -906,9 +902,12 @@ class ApiService {
   async approveOnlineAdmission(id: string) {
     return this.post<any>(`/students/online-admissions/${id}/approve`, {})
   }
+
   // Student Attendance methods
   async getStudentAttendance(studentId: string, startDate: string, endDate: string) {
-    return this.get<any[]>(`/students/attendance/student/${studentId}`, { params: { startDate, endDate } })
+    return this.get<any[]>(`/students/attendance/student/${studentId}`, {
+      params: { startDate, endDate }
+    });
   }
 
   async markStudentAttendance(data: any) {

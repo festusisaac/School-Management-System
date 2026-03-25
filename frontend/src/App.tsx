@@ -14,11 +14,18 @@ import * as Students from './pages/students';
 import * as Finance from './pages/finance';
 import * as Examination from './pages/examination';
 import * as Settings from './pages/settings';
-import BookList from './pages/library/BookList'
-import BookDetail from './pages/library/BookDetail'
-import IssueBook from './pages/library/IssueBook'
-import ReturnBook from './pages/library/ReturnBook'
-import Overdues from './pages/library/Overdues'
+import { 
+  BookList, 
+  BookDetail, 
+  IssueBook, 
+  ReturnBook, 
+  Overdues, 
+  LibraryDashboard, 
+  AuthorManagement, 
+  CategoryManagement, 
+  LibrarySettings, 
+  BookAddEdit 
+} from '@pages/library';
 import ScrollToTop from './components/common/ScrollToTop';
 import './App.css'
 
@@ -107,6 +114,12 @@ function AppRoutes() {
             {/* Library Routes */}
             <Route path="library">
               <Route index element={<BookList />} />
+              <Route path="dashboard" element={<LibraryDashboard />} />
+              <Route path="authors" element={<AuthorManagement />} />
+              <Route path="categories" element={<CategoryManagement />} />
+              <Route path="settings" element={<LibrarySettings />} />
+              <Route path="add" element={<BookAddEdit />} />
+              <Route path="edit/:id" element={<BookAddEdit />} />
               <Route path=":id" element={<BookDetail />} />
               <Route path="issue" element={<IssueBook />} />
               <Route path="return" element={<ReturnBook />} />

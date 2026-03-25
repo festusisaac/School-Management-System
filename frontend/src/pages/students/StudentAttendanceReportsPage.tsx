@@ -115,6 +115,7 @@ const StudentAttendanceReportsPage: React.FC = () => {
                     const absent = logs.filter(l => l.status === 'absent').length;
                     const late = logs.filter(l => l.status === 'late').length;
                     const medical = logs.filter(l => l.status === 'medical').length;
+                    const holiday = logs.filter(l => l.status === 'holiday').length;
                     const uniqueStudents = new Set(logs.map(l => l.studentId)).size;
 
                     setStats({
@@ -129,6 +130,7 @@ const StudentAttendanceReportsPage: React.FC = () => {
                         { name: 'Absent', value: Math.round((absent / total) * 100), color: '#f43f5e' },
                         { name: 'Late', value: Math.round((late / total) * 100), color: '#f59e0b' },
                         { name: 'Medical', value: Math.round((medical / total) * 100), color: '#3b82f6' },
+                        { name: 'Holiday', value: Math.round((holiday / total) * 100), color: '#a855f7' },
                     ]);
 
                     // 3. Prepare Bar Chart Data (Class-wise)
@@ -164,108 +166,100 @@ const StudentAttendanceReportsPage: React.FC = () => {
     }, [startDate, endDate, selectedClass]);
 
     return (
-        <div className="p-2 sm:p-4 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-            {/* Top Action Bar (Outside PDF) */}
-            <div className="flex justify-end gap-3 mb-4">
-                <button 
-                    onClick={handleExportCSV}
-                    className="flex items-center gap-2 px-6 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 text-sm font-bold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all shadow-sm active:scale-95"
-                >
-                    <Download size={18} className="text-primary-600" />
-                    Export CSV
-                </button>
-                <button 
-                    onClick={handleExportPDF}
-                    className="flex items-center gap-2 px-6 py-2 bg-primary-600 text-white text-sm font-bold rounded-lg hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/25 active:scale-95"
-                >
-                    <Download size={18} />
-                    Download PDF Report
-                </button>
+        <div className="p-4 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                <div>
+                    <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <BarChart3 className="w-6 h-6 text-primary-600" />
+                        Attendance Analytics
+                    </h1>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Deep dive into student attendance trends and patterns</p>
+                </div>
+                <div className="flex gap-2">
+                    <button 
+                        onClick={handleExportCSV}
+                        className="flex items-center gap-2 px-5 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 text-sm font-bold rounded-lg hover:bg-gray-50 transition-all shadow-sm active:scale-95"
+                    >
+                        <Download size={18} className="text-primary-600" />
+                        CSV
+                    </button>
+                    <button 
+                        onClick={handleExportPDF}
+                        className="flex items-center gap-2 px-5 py-2 bg-primary-600 text-white text-sm font-bold rounded-lg hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/25 active:scale-95"
+                    >
+                        <Download size={18} />
+                        PDF Report
+                    </button>
+                </div>
             </div>
 
             {/* Exportable PDF Content */}
-            <div id="export-pdf-content" className="flex flex-col gap-5 bg-gray-50 dark:bg-gray-900 sm:p-2 rounded-xl">
-                
-                {/* PDF Header - Premium Design */}
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary-500/30">
-                            <BarChart3 size={28} />
+            <div id="export-pdf-content" className="flex flex-col gap-4 bg-gray-50 dark:bg-gray-900">
+
+                {/* Filters (Hidden during PDF generation) */}
+                <div data-html2canvas-ignore="true" className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm mb-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                        <div>
+                            <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">Start Date</label>
+                            <input
+                                type="date"
+                                className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700 text-xs text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                            />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Official Attendance Report</h1>
-                            <p className="text-sm font-bold text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
-                                <Calendar size={14} />
-                                Period: {format(new Date(startDate), 'MMM dd, yyyy')} — {format(new Date(endDate), 'MMM dd, yyyy')}
-                            </p>
+                            <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">End Date</label>
+                            <input
+                                type="date"
+                                className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700 text-xs text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">Class Filter</label>
+                            <div className="relative">
+                                <select 
+                                    value={selectedClass}
+                                    onChange={(e) => setSelectedClass(e.target.value)}
+                                    className="w-full pl-3 pr-8 py-2 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700 text-xs text-gray-900 dark:text-white rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                                >
+                                    <option value="">All Classes</option>
+                                    {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                </select>
+                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                            </div>
                         </div>
                     </div>
                 </div>
-
-                {/* Filters (Hidden during PDF generation) */}
-                <div data-html2canvas-ignore="true" className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm mb-2">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
-                {[
-                    { label: 'Avg. Attendance', value: stats.avgPresence, icon: TrendingUp, color: 'emerald' },
-                    { label: 'Total Absents', value: stats.absents, icon: AlertCircle, color: 'rose' },
-                    { label: 'Active Students', value: stats.students, icon: Users, color: 'blue' },
-                    { label: 'Reporting Period', value: 'Selected Range', icon: Calendar, color: 'amber' },
-                ].map((stat, i) => (
-                    <div key={i} className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center gap-3">
-                        <div className={clsx(
-                            "w-10 h-10 rounded-lg flex items-center justify-center",
-                            stat.color === 'emerald' && 'bg-emerald-50 text-emerald-600',
-                            stat.color === 'rose' && 'bg-rose-50 text-rose-600',
-                            stat.color === 'blue' && 'bg-blue-50 text-blue-600',
-                            stat.color === 'amber' && 'bg-amber-50 text-amber-600'
-                        )}>
-                            <stat.icon size={24} />
-                        </div>
-                        <div>
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">{stat.label}</p>
-                            <p className="text-xl font-black text-gray-900 dark:text-white tracking-tight">{stat.value}</p>
-                        </div>
-                    </div>
-                ))}
-            </div>
 
                 {/* Quick Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
-                    <div>
-                        <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">Start Date</label>
-                        <input
-                            type="date"
-                            className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700 text-xs text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 outline-none transition-all"
-                            value={startDate}
-                            onChange={(e) => setStartDate(e.target.value)}
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">End Date</label>
-                        <input
-                            type="date"
-                            className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700 text-xs text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 outline-none transition-all"
-                            value={endDate}
-                            onChange={(e) => setEndDate(e.target.value)}
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">Class Filter</label>
-                        <div className="relative">
-                            <select 
-                                value={selectedClass}
-                                onChange={(e) => setSelectedClass(e.target.value)}
-                                className="w-full pl-3 pr-8 py-2 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700 text-xs text-gray-900 dark:text-white rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 outline-none transition-all"
-                            >
-                                <option value="">All Classes</option>
-                                {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                            </select>
-                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                    {[
+                        { label: 'Avg. Attendance', value: stats.avgPresence, icon: TrendingUp, color: 'emerald' },
+                        { label: 'Total Absents', value: stats.absents, icon: AlertCircle, color: 'rose' },
+                        { label: 'Active Students', value: stats.students, icon: Users, color: 'blue' },
+                        { label: 'Reporting Period', value: 'Selected Range', icon: Calendar, color: 'amber' },
+                    ].map((stat, i) => (
+                        <div key={i} className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center gap-3">
+                            <div className={clsx(
+                                "w-10 h-10 rounded-lg flex items-center justify-center",
+                                stat.color === 'emerald' && 'bg-emerald-50 text-emerald-600',
+                                stat.color === 'rose' && 'bg-rose-50 text-rose-600',
+                                stat.color === 'blue' && 'bg-blue-50 text-blue-600',
+                                stat.color === 'amber' && 'bg-amber-50 text-amber-600'
+                            )}>
+                                <stat.icon size={24} />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">{stat.label}</p>
+                                <p className="text-xl font-black text-gray-900 dark:text-white tracking-tight">{stat.value}</p>
+                            </div>
                         </div>
-                    </div>
+                    ))}
                 </div>
-            </div>
 
             {/* Charts View */}
             <div className="relative">

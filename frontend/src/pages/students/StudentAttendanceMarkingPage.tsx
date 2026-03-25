@@ -10,7 +10,8 @@ import {
     Users,
     ChevronDown,
     Filter,
-    Check
+    Check,
+    Palmtree
 } from 'lucide-react';
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
@@ -28,7 +29,7 @@ interface Student {
 
 interface AttendanceRecord {
     studentId: string;
-    status: 'present' | 'absent' | 'late' | 'medical';
+    status: 'present' | 'absent' | 'late' | 'medical' | 'holiday';
     remarks: string;
 }
 
@@ -116,7 +117,7 @@ const StudentAttendanceMarkingPage: React.FC = () => {
         fetchStudentData();
     }, [selectedClass, selectedSection, date]);
 
-    const handleStatusChange = (studentId: string, status: 'present' | 'absent' | 'late' | 'medical') => {
+    const handleStatusChange = (studentId: string, status: 'present' | 'absent' | 'late' | 'medical' | 'holiday') => {
         setAttendance(prev => ({
             ...prev,
             [studentId]: { ...prev[studentId], status }
@@ -130,7 +131,7 @@ const StudentAttendanceMarkingPage: React.FC = () => {
         }));
     };
 
-    const markAllAs = (status: 'present' | 'absent') => {
+    const markAllAs = (status: 'present' | 'absent' | 'holiday') => {
         const newAttendance = { ...attendance };
         Object.keys(newAttendance).forEach(id => {
             newAttendance[id].status = status;
@@ -244,6 +245,13 @@ const StudentAttendanceMarkingPage: React.FC = () => {
                         >
                             All Absent
                         </button>
+                        <button 
+                            onClick={() => markAllAs('holiday')}
+                            disabled={students.length === 0}
+                            className="flex-1 px-2 text-[9px] font-black uppercase tracking-tighter bg-purple-50 text-purple-600 border border-purple-100 rounded-lg hover:bg-purple-100 transition-all disabled:opacity-30"
+                        >
+                            All Holiday
+                        </button>
                     </div>
                 </div>
             </div>
@@ -267,6 +275,7 @@ const StudentAttendanceMarkingPage: React.FC = () => {
                             { label: 'Absent', color: 'bg-rose-600' },
                             { label: 'Late', color: 'bg-amber-500' },
                             { label: 'Medical', color: 'bg-blue-600' },
+                            { label: 'Holiday', color: 'bg-purple-600' },
                         ].map(l => (
                             <div key={l.label} className="flex items-center gap-1.5">
                                 <div className={`w-2 h-2 rounded-full ${l.color}`}></div>
@@ -328,7 +337,8 @@ const StudentAttendanceMarkingPage: React.FC = () => {
                                                     { id: 'present', icon: CheckCircle2, label: 'P', color: 'emerald' },
                                                     { id: 'absent', icon: XCircle, label: 'A', color: 'rose' },
                                                     { id: 'late', icon: Clock, label: 'L', color: 'amber' },
-                                                    { id: 'medical', icon: AlertCircle, label: 'M', color: 'blue' }
+                                                    { id: 'medical', icon: AlertCircle, label: 'M', color: 'blue' },
+                                                    { id: 'holiday', icon: Palmtree, label: 'H', color: 'purple' }
                                                 ].map((stat) => (
                                                     <button
                                                         key={stat.id}
@@ -341,6 +351,7 @@ const StudentAttendanceMarkingPage: React.FC = () => {
                                                                 'bg-rose-600 border-rose-600 text-white shadow-md shadow-rose-500/30': stat.color === 'rose',
                                                                 'bg-amber-500 border-amber-500 text-white shadow-md shadow-amber-500/30': stat.color === 'amber',
                                                                 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/30': stat.color === 'blue',
+                                                                'bg-purple-600 border-purple-600 text-white shadow-md shadow-purple-500/30': stat.color === 'purple',
                                                               }
                                                             : "bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-300 dark:text-gray-500 hover:border-gray-200 dark:hover:border-gray-600"
                                                         )}

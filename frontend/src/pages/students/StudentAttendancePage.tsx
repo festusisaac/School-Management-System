@@ -61,7 +61,9 @@ const StudentAttendancePage: React.FC = () => {
             const start = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
             const end = format(endOfMonth(currentMonth), 'yyyy-MM-dd');
             
+            console.log('Fetching attendance for:', user?.id, 'from:', start, 'to:', end);
             const data = await api.getStudentAttendance(user!.id, start, end);
+            console.log('Received attendance data:', data);
             setAttendanceData(data);
             calculateStats(data);
         } catch (error) {
@@ -77,9 +79,11 @@ const StudentAttendancePage: React.FC = () => {
         const absent = data.filter(d => d.status === 'absent').length;
         const late = data.filter(d => d.status === 'late').length;
         const medical = data.filter(d => d.status === 'medical').length;
+        const holiday = data.filter(d => d.status === 'holiday').length;
         const total = data.length;
-        // Simple heuristic: present/late count as full, medical as full for attendance %
-        const percentage = total > 0 ? Math.round(((present + late + medical) / total) * 100) : 0;
+        // Exclude holidays from the base "school days" for percentage calculation
+        const schoolDays = total - holiday;
+        const percentage = schoolDays > 0 ? Math.round(((present + late + medical) / schoolDays) * 100) : 0;
 
         setStats({ present, absent, late, medical, total, percentage });
     };
@@ -120,7 +124,8 @@ const StudentAttendancePage: React.FC = () => {
             absent: { label: 'Absent', color: 'bg-rose-500', text: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-900/20' },
             late: { label: 'Late', color: 'bg-amber-500', text: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20' },
             medical: { label: 'Medical', color: 'bg-blue-500', text: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20' },
-            halfday: { label: 'Half Day', color: 'bg-purple-500', text: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-900/20' }
+            halfday: { label: 'Half Day', color: 'bg-purple-500', text: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-900/20' },
+            holiday: { label: 'Holiday', color: 'bg-purple-600', text: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' }
         };
         const c = config[status.toLowerCase()] || config.present;
         return (
