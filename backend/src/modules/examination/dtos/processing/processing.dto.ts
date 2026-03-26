@@ -14,7 +14,8 @@ export class ProcessResultDto {
     recalculate?: boolean; // Force recalculation
 }
 
-export class GetBroadsheetDto {
+
+export class BulkPublishDto {
     @IsString()
     @IsNotEmpty()
     examGroupId!: string;
@@ -22,4 +23,8 @@ export class GetBroadsheetDto {
     @IsString()
     @IsNotEmpty()
     classId!: string;
+
+    @IsString()
+    @IsNotEmpty()
+    status!: 'DRAFT' | 'PUBLISHED';
 }

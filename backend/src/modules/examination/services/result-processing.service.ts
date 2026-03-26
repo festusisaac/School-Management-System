@@ -1,13 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, Not } from 'typeorm';
+import { Repository, In, Not, Between } from 'typeorm';
 import { ExamResult } from '../entities/exam-result.entity';
 import { StudentTermResult } from '../entities/student-term-result.entity';
-import { ProcessResultDto } from '../dtos/processing/processing.dto';
+import { ProcessResultDto, BulkPublishDto } from '../dtos/processing/processing.dto';
 import { GradeScale } from '../entities/grade-scale.entity';
 import { Exam } from '../entities/exam.entity';
 
 import { ExamGroup } from '../entities/exam-group.entity';
+import { StudentAttendance, AttendanceStatus } from '../../students/entities/student-attendance.entity';
 
 import { AcademicTerm } from '../../system/entities/academic-term.entity';
 import { AcademicSession } from '../../system/entities/academic-session.entity';
@@ -23,11 +24,20 @@ export class ResultProcessingService {
         private gradeScaleRepo: Repository<GradeScale>,
         @InjectRepository(Exam)
         private examRepo: Repository<Exam>,
+        @InjectRepository(StudentAttendance)
+        private attendanceRepo: Repository<StudentAttendance>,
     ) { }
 
     async processResults(dto: ProcessResultDto, tenantId: string) {
         // 1. Aggregate scores per student (Simple Sum)
-        const aggregation = await this.examResultRepo
+        
+        // --- Added: Fetch all students in the class to ensure everyone is processed ---
+        const allStudents = await this.examResultRepo.manager.getRepository('Student').find({
+            where: { classId: dto.classId, tenantId },
+            select: ['id']
+        });
+        const aggregationMap = new Map();
+const aggregation = await this.examResultRepo
             .createQueryBuilder('result')
             .leftJoin('result.exam', 'exam')
             .select('result.studentId', 'studentId')
@@ -38,9 +48,31 @@ export class ResultProcessingService {
             .andWhere('result.tenantId = :tenantId', { tenantId })
             .groupBy('result.studentId')
             .getRawMany();
+        for (const res of aggregation) {
+            aggregationMap.set(res.studentId, res);
+        }
 
         // 2. Save to StudentTermResult
-        for (const record of aggregation) {
+        
+        // --- Fetch Context: Group and Term Settings ---
+        const currentGroup = await this.examResultRepo.manager.getRepository(ExamGroup).findOne({ 
+            where: { id: dto.examGroupId, tenantId } 
+        });
+
+        let termDaysOpened = 0;
+        if (currentGroup) {
+            const termDetails = await this.examResultRepo.manager.getRepository(AcademicTerm).findOne({
+                where: { 
+                    name: currentGroup.term,
+                    session: { name: currentGroup.academicYear }
+                },
+                relations: ['session']
+            });
+            termDaysOpened = termDetails?.daysOpened || 0;
+        }
+
+        for (const student of allStudents) {
+            const record = aggregationMap.get(student.id) || { studentId: student.id, totalScore: 0, subjectCount: 0 };
             let termResult = await this.termResultRepo.findOne({
                 where: {
                     studentId: record.studentId,
@@ -63,7 +95,49 @@ export class ResultProcessingService {
 
             termResult.totalScore = total;
             termResult.averageScore = count > 0 ? total / count : 0;
-            termResult.totalStudents = aggregation.length;
+            termResult.totalStudents = allStudents.length;
+
+            
+            // --- Synchronization: Pull Real Attendance Data ---
+            try {
+                const examGroup = await this.examResultRepo.manager.getRepository(ExamGroup).findOne({
+                    where: { id: dto.examGroupId, tenantId }
+                });
+
+                if (examGroup) {
+                    // 1. Calculate Days School Opened (Unique dates where attendance was taken for this class)
+                    const attendanceDates = await this.attendanceRepo
+                        .createQueryBuilder('attendance')
+                        .select('DISTINCT(attendance.date)', 'date')
+                        .where('attendance.classId = :classId', { classId: dto.classId })
+                        .andWhere('attendance.date BETWEEN :start AND :end', {
+                            start: new Date(examGroup.startDate).toISOString().split('T')[0],
+                            end: new Date(examGroup.endDate).toISOString().split('T')[0]
+                        })
+                        .andWhere('attendance.tenantId = :tenantId', { tenantId })
+                        .getRawMany();
+
+                    const actualDaysOpened = attendanceDates.length;
+                    // --- User Preference: Use fixed number from term settings if available ---
+                    const daysOpened = termDaysOpened > 0 ? termDaysOpened : actualDaysOpened;
+
+                    // 2. Calculate Student's Presence (present, late, halfday)
+                    const presentCount = await this.attendanceRepo.count({
+                        where: {
+                            studentId: record.studentId,
+                            classId: dto.classId,
+                            date: Between(new Date(examGroup.startDate).toISOString().split('T')[0], new Date(examGroup.endDate).toISOString().split('T')[0]),
+                            status: In([AttendanceStatus.PRESENT, AttendanceStatus.LATE, AttendanceStatus.HALFDAY]),
+                            tenantId
+                        }
+                    });
+
+                    termResult.daysOpened = daysOpened;
+                    termResult.daysPresent = presentCount;
+                }
+            } catch (err) {
+                console.error(`Failed to sync attendance for student ${record.studentId}:`, err);
+            }
 
             await this.termResultRepo.save(termResult);
         }
@@ -435,5 +509,17 @@ export class ResultProcessingService {
                 nextTermStartDate: termDetails?.nextTermStartDate
             }
         };
+    }
+
+    async bulkPublishResults(dto: BulkPublishDto, tenantId: string) {
+        await this.termResultRepo.update(
+            { 
+                examGroupId: dto.examGroupId, 
+                classId: dto.classId, 
+                tenantId 
+            },
+            { status: dto.status }
+        );
+        return { message: `Successfully ${dto.status.toLowerCase()} results for the class.` };
     }
 }

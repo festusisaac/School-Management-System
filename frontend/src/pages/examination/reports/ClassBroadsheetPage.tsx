@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Download, Search, Filter } from 'lucide-react';
+import { Download, Search, Filter, Printer } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { examinationService, ExamGroup } from '../../../services/examinationService';
 import api from '../../../services/api';
 import { utils, writeFile } from 'xlsx';
 import { useSystem } from '../../../context/SystemContext';
 import { systemService, AcademicTerm } from '../../../services/systemService';
+import { useSearchParams } from 'react-router-dom';
 
 interface BroadsheetRow {
     studentId: string;
@@ -22,15 +23,17 @@ interface BroadsheetRow {
 }
 
 const ClassBroadsheetPage = () => {
+    const [searchParams] = useSearchParams();
+
     const [groups, setGroups] = useState<ExamGroup[]>([]);
     const [classes, setClasses] = useState<any[]>([]);
 
-    const [selectedGroup, setSelectedGroup] = useState('');
-    const [selectedClass, setSelectedClass] = useState('');
+    const [selectedGroup, setSelectedGroup] = useState(searchParams.get('examGroupId') || '');
+    const [selectedClass, setSelectedClass] = useState(searchParams.get('classId') || '');
 
     const { settings } = useSystem();
     const [terms, setTerms] = useState<AcademicTerm[]>([]);
-    const [selectedTerm, setSelectedTerm] = useState<string>(settings?.activeTermName || '');
+    const [selectedTerm, setSelectedTerm] = useState<string>(searchParams.get('termName') || settings?.activeTermName || '');
 
     const [rows, setRows] = useState<BroadsheetRow[]>([]);
     const [subjects, setSubjects] = useState<string[]>([]); // Array of subject names for columns
@@ -64,10 +67,12 @@ const ClassBroadsheetPage = () => {
                         (!sessionToUse || group.academicYear === sessionToUse) &&
                         (!termToUse || group.term === termToUse)
                     );
-                    if (filtered.length > 0) {
-                        setSelectedGroup(filtered[0].id);
-                    } else {
-                        setSelectedGroup(g[0].id);
+                    if (!searchParams.get('examGroupId')) {
+                        if (filtered.length > 0) {
+                            setSelectedGroup(filtered[0].id);
+                        } else {
+                            setSelectedGroup(g[0].id);
+                        }
                     }
                 }
             } catch (e) {
@@ -229,6 +234,11 @@ const ClassBroadsheetPage = () => {
         showSuccess('Broadsheet exported');
     };
 
+    const handleBulkPrint = () => {
+        // Redirect to a bulk print version of report card page
+        window.open(`/examination/reports/report-card/bulk?classId=${selectedClass}&examGroupId=${selectedGroup}`, '_blank');
+    };
+
     const getOrdinal = (n: number) => {
         if (n === 0) return '-';
         const s = ["th", "st", "nd", "rd"],
@@ -244,6 +254,14 @@ const ClassBroadsheetPage = () => {
                     <p className="text-sm text-gray-500 dark:text-gray-400">Master accumulation sheet for class performance.</p>
                 </div>
                 <div className="flex gap-2">
+                    <button
+                        onClick={handleBulkPrint}
+                        disabled={rows.length === 0}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-shadow shadow-sm text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <Printer className="w-4 h-4" />
+                        Print All
+                    </button>
                     <button
                         onClick={handleExport}
                         disabled={rows.length === 0}

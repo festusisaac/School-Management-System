@@ -41,6 +41,57 @@ export class ResultControlService {
 
         return { total, drafted, approved, published, results };
     }
+    
+    async getGlobalSummary(examGroupId: string, tenantId: string) {
+        // 1. Fetch all classes
+        const classes = await this.termResultRepo.manager.getRepository('Class').find({
+            where: { tenantId },
+            order: { name: 'ASC' }
+        });
+
+        // 2. Fetch existing result counts for this group
+        const results = await this.termResultRepo.find({
+            where: { examGroupId, tenantId },
+            select: ['id', 'classId', 'status']
+        });
+
+        // 3. Score Entry Progress
+        // Get all exams scheduled for this group
+        const exams = await this.termResultRepo.manager.getRepository('Exam').find({
+            where: { examGroupId, tenantId },
+            select: ['id', 'classId']
+        });
+
+        // Get count of unique exams that have at least one mark
+        // Using raw query for efficiency on large datasets
+        const examsWithMarks = await this.termResultRepo.manager.createQueryBuilder('ExamResult', 'res')
+            .leftJoin('res.exam', 'exam')
+            .select('DISTINCT(exam.id)', 'examId')
+            .where('exam.examGroupId = :examGroupId', { examGroupId })
+            .andWhere('res.tenantId = :tenantId', { tenantId })
+            .getRawMany();
+
+        const markedExamIds = new Set(examsWithMarks.map(e => e.examId));
+
+        // 4. Map everything together
+        return classes.map(cls => {
+            const classResults = results.filter(r => r.classId === cls.id);
+            const classExams = exams.filter(e => e.classId === cls.id);
+            const markedExams = classExams.filter(e => markedExamIds.has(e.id));
+
+            return {
+                id: cls.id,
+                name: cls.name,
+                total: classResults.length,
+                drafted: classResults.filter(r => r.status === 'DRAFT').length,
+                approved: classResults.filter(r => r.status === 'APPROVED').length,
+                published: classResults.filter(r => r.status === 'PUBLISHED').length,
+                scoreProgress: classExams.length > 0 ? (markedExams.length / classExams.length) * 100 : 0,
+                totalExams: classExams.length,
+                markedExams: markedExams.length
+            };
+        });
+    }
 
     async approveResults(examGroupId: string, classId: string, tenantId: string) {
         await this.termResultRepo.update(
@@ -56,6 +107,14 @@ export class ResultControlService {
             { status: 'PUBLISHED' }
         );
         return { message: 'Results published successfully' };
+    }
+
+    async withholdResults(examGroupId: string, classId: string, tenantId: string) {
+        await this.termResultRepo.update(
+            { examGroupId, classId, status: 'PUBLISHED', tenantId },
+            { status: 'APPROVED' }
+        );
+        return { message: 'Results withheld successfully' };
     }
 
     async generateScratchCards(dto: GenerateScratchCardDto, tenantId: string, userId: string) {

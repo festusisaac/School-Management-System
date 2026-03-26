@@ -10,6 +10,7 @@ import { ResultProcessingController } from './controllers/result-processing.cont
 import { ResultControlController } from './controllers/result-control.controller';
 import { StudentExamController } from './controllers/student-exam.controller';
 import { Student } from '../students/entities/student.entity';
+import { StudentAttendance } from '../students/entities/student-attendance.entity';
 import { ExamGroup } from './entities/exam-group.entity';
 import { AssessmentType } from './entities/assessment-type.entity';
 import { GradeScale } from './entities/grade-scale.entity';
@@ -50,6 +51,7 @@ import { SystemSetting } from '../system/entities/system-setting.entity';
             ScratchCardBatch,
             ScratchCardLog,
             Student,
+            StudentAttendance,
             AcademicSession,
             AcademicTerm,
             SystemSetting,

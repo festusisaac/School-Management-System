@@ -204,8 +204,22 @@ export const examinationService = {
     },
 
     getBroadsheet: async (classId: string, examGroupId: string) => {
-        return await api.get<any[]>('/examination/processing/broadsheet', {
+        return await api.get<any>('/examination/processing/broadsheet', {
             params: { classId, examGroupId }
+        });
+    },
+
+    bulkPublishResults: async (classId: string, examGroupId: string, status: 'DRAFT' | 'PUBLISHED') => {
+        return await api.patch('/examination/processing/bulk-publish', { classId, examGroupId, status });
+    },
+
+    getStudentReportCardData: async (studentId: string, examGroupId: string) => {
+        return await api.get<any>(`/examination/processing/report-card/${studentId}/${examGroupId}`);
+    },
+
+    getGlobalSummary: async (examGroupId: string) => {
+        return await api.get<any[]>('/examination/control/global-summary', {
+            params: { examGroupId }
         });
     },
 
@@ -222,6 +236,10 @@ export const examinationService = {
 
     publishResults: async (classId: string, examGroupId: string) => {
         return await api.post('/examination/control/publish', { classId, examGroupId });
+    },
+
+    withholdResults: async (classId: string, examGroupId: string) => {
+        return await api.post('/examination/control/withhold', { classId, examGroupId });
     },
 
     // Scratch Cards

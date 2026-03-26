@@ -1,22 +1,27 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Printer, Search, FileText, X, Users, Trophy, TrendingUp, Filter, AlertCircle, Eye, Settings, Check } from 'lucide-react';
+import { Printer, Search, FileText, X, Filter, Eye, Settings, Check } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { useSystem } from '../../../context/SystemContext';
 import { examinationService, ExamGroup, GradeScale } from '../../../services/examinationService';
 import api from '../../../services/api';
 import { systemService, AcademicTerm } from '../../../services/systemService';
 import ReportCardTemplate, { ReportCardData, ReportCardSubject } from '../../../components/examination/ReportCardTemplate';
+import { useSearchParams } from 'react-router-dom';
+
 
 const ReportCardPage = () => {
+    const [searchParams] = useSearchParams();
+
     const [groups, setGroups] = useState<ExamGroup[]>([]);
     const [classes, setClasses] = useState<any[]>([]);
-    const [selectedGroup, setSelectedGroup] = useState('');
-    const [selectedClass, setSelectedClass] = useState('');
+    const [selectedGroup, setSelectedGroup] = useState(searchParams.get('examGroupId') || '');
+    const [selectedClass, setSelectedClass] = useState(searchParams.get('classId') || '');
     const [gradeScales, setGradeScales] = useState<GradeScale[]>([]);
     const [assessments, setAssessments] = useState<any[]>([]);
 
+    const { settings, getFullUrl } = useSystem();
     const [terms, setTerms] = useState<AcademicTerm[]>([]);
-    const [selectedTerm, setSelectedTerm] = useState<string>('');
+    const [selectedTerm, setSelectedTerm] = useState<string>(searchParams.get('termName') || settings?.activeTermName || '');
 
     const [students, setStudents] = useState<ReportCardData[]>([]);
     const [loading, setLoading] = useState(false);
@@ -38,7 +43,6 @@ const ReportCardPage = () => {
     });
 
     const { showError } = useToast();
-    const { settings, getFullUrl } = useSystem();
 
     // Initial Load
     useEffect(() => {
@@ -59,11 +63,13 @@ const ReportCardPage = () => {
 
                 // Set initial session/term from settings if available
                 const initialSession = settings?.activeSessionName || '';
-                const initialTerm = settings?.activeTermName || '';
-                setSelectedTerm(initialTerm);
+                const initialTerm = selectedTerm || settings?.activeTermName || '';
+                if (!selectedTerm && settings?.activeTermName) {
+                    setSelectedTerm(settings.activeTermName);
+                }
 
                 // Auto-select group matching global session and term
-                if (initialSession && initialTerm && loadedGroups.length > 0) {
+                if (!searchParams.get('examGroupId') && initialSession && initialTerm && loadedGroups.length > 0) {
                     const matchedGroup = loadedGroups.find(group => 
                         group.academicYear === initialSession && 
                         group.term === initialTerm
@@ -92,7 +98,13 @@ const ReportCardPage = () => {
         (!selectedTerm || g.term === selectedTerm)
     );
 
-    // Helper removed as we use getFullUrl from SystemContext
+    useEffect(() => {
+        if (selectedGroup && selectedClass) {
+            fetchReportCards();
+        } else {
+            setStudents([]);
+        }
+    }, [selectedGroup, selectedClass]);
 
     // Load Report Cards Data
     const fetchReportCards = async () => {
@@ -223,8 +235,12 @@ const ReportCardPage = () => {
                         timesOpened: result.daysOpened || (broadsheetResponse as any).termDetails?.daysOpened || 0,
                         timesPresent: result.daysPresent || 0,
                         timesAbsent: (result.daysOpened || (broadsheetResponse as any).termDetails?.daysOpened || 0) - (result.daysPresent || 0),
-                        termBegins: settings?.sessionStartDate ? new Date(settings.sessionStartDate).toLocaleDateString() : '',
-                        termEnds: settings?.sessionEndDate ? new Date(settings.sessionEndDate).toLocaleDateString() : '',
+                        termBegins: (broadsheetResponse as any).termDetails?.startDate 
+                            ? new Date((broadsheetResponse as any).termDetails.startDate).toLocaleDateString()
+                            : (settings?.sessionStartDate ? new Date(settings.sessionStartDate).toLocaleDateString() : ''),
+                        termEnds: (broadsheetResponse as any).termDetails?.endDate 
+                            ? new Date((broadsheetResponse as any).termDetails.endDate).toLocaleDateString()
+                            : (settings?.sessionEndDate ? new Date(settings.sessionEndDate).toLocaleDateString() : ''),
                         nextTermBegins: (broadsheetResponse as any).termDetails?.nextTermStartDate 
                             ? new Date((broadsheetResponse as any).termDetails.nextTermStartDate).toLocaleDateString()
                             : (settings?.nextTermStartDate ? new Date(settings.nextTermStartDate).toLocaleDateString() : 'To be announced'),
@@ -284,15 +300,6 @@ const ReportCardPage = () => {
         });
     }, [students, searchQuery, statusFilter]);
 
-    const stats = useMemo(() => {
-        if (students.length === 0) return { avg: 0, high: 0, low: 0 };
-        const scores = students.map(s => s.summary.averageScore);
-        return {
-            avg: scores.reduce((a, b) => a + b, 0) / scores.length,
-            high: Math.max(...scores),
-            low: Math.min(...scores)
-        };
-    }, [students]);
 
     const getGradeDetails = (score: number, scales: GradeScale[]) => {
         // Use the first scale's grades for now, or match by some criteria if needed
@@ -402,14 +409,12 @@ const ReportCardPage = () => {
                         </select>
                     </div>
 
-                    <button
-                        onClick={fetchReportCards}
-                        disabled={!selectedGroup || !selectedClass || loading}
-                        className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 h-[38px] flex items-center justify-center gap-2 font-bold shadow-lg shadow-primary-500/20"
-                    >
-                        {loading ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> : <Search className="w-4 h-4" />}
-                        Generate
-                    </button>
+                    {loading && (
+                        <div className="flex items-center gap-2 h-[38px] text-primary-600 font-medium">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
+                            <span className="text-sm">Generating...</span>
+                        </div>
+                    )}
                 </div>
 
                 {/* Report Customization Settings Modal */}
@@ -494,50 +499,6 @@ const ReportCardPage = () => {
                     </div>
                 )}
 
-                {/* Summary Stats */}
-                {!loading && students.length > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
-                        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex items-center gap-4">
-                            <div className="w-12 h-12 bg-primary-50 dark:bg-primary-900/20 rounded-xl flex items-center justify-center">
-                                <Users className="w-6 h-6 text-primary-600" />
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Students</p>
-                                <p className="text-xl font-black text-gray-900 dark:text-white uppercase">{students.length}</p>
-                            </div>
-                        </div>
-
-                        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex items-center gap-4">
-                            <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl flex items-center justify-center">
-                                <TrendingUp className="w-6 h-6 text-emerald-600" />
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Class Avg</p>
-                                <p className="text-xl font-black text-gray-900 dark:text-white uppercase">{stats.avg.toFixed(1)}%</p>
-                            </div>
-                        </div>
-
-                        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex items-center gap-4 border-l-4 border-l-amber-500">
-                            <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 rounded-xl flex items-center justify-center">
-                                <Trophy className="w-6 h-6 text-amber-500" />
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Top Score</p>
-                                <p className="text-xl font-black text-gray-900 dark:text-white uppercase">{stats.high.toFixed(1)}%</p>
-                            </div>
-                        </div>
-
-                        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex items-center gap-4 border-l-4 border-l-red-500">
-                            <div className="w-12 h-12 bg-red-50 dark:bg-red-900/20 rounded-xl flex items-center justify-center">
-                                <AlertCircle className="w-6 h-6 text-red-500" />
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Low Score</p>
-                                <p className="text-xl font-black text-gray-900 dark:text-white uppercase">{stats.low.toFixed(1)}%</p>
-                            </div>
-                        </div>
-                    </div>
-                )}
 
                 {/* Search & Filter Bar */}
                 {!loading && students.length > 0 && (
@@ -578,13 +539,11 @@ const ReportCardPage = () => {
                                     <th className="px-6 py-3 text-center">Subjects</th>
                                     <th className="px-6 py-3 text-center">Total</th>
                                     <th className="px-6 py-3 text-center">Avg</th>
-                                    <th className="px-6 py-3 text-center">Status</th>
                                     <th className="px-6 py-3 text-right">Action</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                                 {filteredStudents.map((student, idx) => {
-                                    const isPassing = student.summary.averageScore >= 40;
                                     return (
                                         <tr key={idx} className="hover:bg-primary-50/30 dark:hover:bg-primary-900/10 transition-colors cursor-pointer group" onClick={() => setSelectedStudent(student)}>
                                             <td className="px-6 py-4 text-center text-gray-400 font-medium">{idx + 1}</td>
@@ -605,18 +564,8 @@ const ReportCardPage = () => {
                                             </td>
                                             <td className="px-6 py-4 text-center font-medium text-gray-600 dark:text-gray-400">{student.subjects.length}</td>
                                             <td className="px-6 py-4 text-center font-black text-gray-900 dark:text-white">{student.summary.totalObtained}</td>
-                                            <td className="px-6 py-4 text-center">
-                                                <span className={`px-2 py-1 rounded-md font-bold text-xs ${isPassing ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20' : 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20'}`}>
-                                                    {student.summary.averageScore.toFixed(1)}%
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest ${isPassing
-                                                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
-                                                    : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-800'
-                                                    }`}>
-                                                    {isPassing ? 'PASSED' : 'FAILED'}
-                                                </span>
+                                            <td className="px-6 py-4 text-center font-bold text-primary-600">
+                                                {student.summary.averageScore.toFixed(1)}%
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex items-center justify-end gap-2">

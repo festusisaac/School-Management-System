@@ -164,6 +164,7 @@ function AppRoutes() {
               <Route path="reports/class-broadsheet" element={<Examination.ClassBroadsheetPage />} />
               <Route path="reports/subject-broadsheet" element={<Examination.SubjectBroadsheetPage />} />
               <Route path="reports/report-card" element={<Examination.ReportCardPage />} />
+              <Route path="reports/report-card/bulk" element={<Examination.BulkReportCardPage />} />
             </Route>
 
             {/* Settings Routes */}

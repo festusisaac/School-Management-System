@@ -20,3 +20,4 @@ export { default as PsychomotorPage } from './entry/PsychomotorPage';
 export { default as ClassBroadsheetPage } from './reports/ClassBroadsheetPage';
 export { default as SubjectBroadsheetPage } from './reports/SubjectBroadsheetPage';
 export { default as ReportCardPage } from './reports/ReportCardPage';
+export { default as BulkReportCardPage } from './reports/BulkReportCardPage';

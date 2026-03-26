@@ -60,6 +60,11 @@ export class ResultControlController {
         return this.controlService.getResultSummary(examGroupId, classId, req.user.tenantId);
     }
 
+    @Get('global-summary')
+    getGlobalSummary(@Query('examGroupId') examGroupId: string, @Request() req: any) {
+        return this.controlService.getGlobalSummary(examGroupId, req.user.tenantId);
+    }
+
     @Post('approve')
     approveResults(@Body() dto: { examGroupId: string; classId: string }, @Request() req: any) {
         return this.controlService.approveResults(dto.examGroupId, dto.classId, req.user.tenantId);
@@ -68,5 +73,10 @@ export class ResultControlController {
     @Post('publish')
     publishResults(@Body() dto: { examGroupId: string; classId: string }, @Request() req: any) {
         return this.controlService.publishResults(dto.examGroupId, dto.classId, req.user.tenantId);
+    }
+
+    @Post('withhold')
+    withholdResults(@Body() dto: { examGroupId: string; classId: string }, @Request() req: any) {
+        return this.controlService.withholdResults(dto.examGroupId, dto.classId, req.user.tenantId);
     }
 }

@@ -1,6 +1,6 @@
-import { Controller, Post, Body, Get, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, Get, Query, UseGuards, Request, Patch } from '@nestjs/common';
 import { ResultProcessingService } from '../services/result-processing.service';
-import { ProcessResultDto } from '../dtos/processing/processing.dto';
+import { ProcessResultDto, BulkPublishDto } from '../dtos/processing/processing.dto';
 import { JwtAuthGuard } from '../../../guards/jwt-auth.guard';
 
 @UseGuards(JwtAuthGuard)
@@ -16,5 +16,10 @@ export class ResultProcessingController {
     @Get('broadsheet')
     getBroadsheet(@Query('examGroupId') examGroupId: string, @Query('classId') classId: string, @Request() req: any) {
         return this.processingService.getBroadsheet(examGroupId, classId, req.user.tenantId);
+    }
+
+    @Patch('bulk-publish')
+    bulkPublish(@Body() dto: BulkPublishDto, @Request() req: any) {
+        return this.processingService.bulkPublishResults(dto, req.user.tenantId);
     }
 }

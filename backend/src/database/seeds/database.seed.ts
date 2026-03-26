@@ -32,8 +32,8 @@ export class SeedDatabase {
       const admin = userRepository.create({
         email: 'admin@sms.school',
         password: await bcrypt.hash('Admin@12345', 10),
-        firstName: 'John',
-        lastName: 'Administrator',
+        firstName: 'PHJC',
+        lastName: 'Super Admin',
         role: 'super administrator',
         isActive: true,
         tenantId: '00000000-0000-0000-0000-000000000001',
