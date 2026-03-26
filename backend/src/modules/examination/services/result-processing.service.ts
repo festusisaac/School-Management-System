@@ -1,11 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In, Not } from 'typeorm';
 import { ExamResult } from '../entities/exam-result.entity';
 import { StudentTermResult } from '../entities/student-term-result.entity';
 import { ProcessResultDto } from '../dtos/processing/processing.dto';
 import { GradeScale } from '../entities/grade-scale.entity';
 import { Exam } from '../entities/exam.entity';
+
+import { ExamGroup } from '../entities/exam-group.entity';
+
+import { AcademicTerm } from '../../system/entities/academic-term.entity';
+import { AcademicSession } from '../../system/entities/academic-session.entity';
 
 @Injectable()
 export class ResultProcessingService {
@@ -195,6 +200,22 @@ export class ResultProcessingService {
         const savedResultsMap = new Map(savedResults.map(r => [r.studentId, r]));
 
         // 6. Calculate CLASS POSITION dynamically and merge saved statuses
+        const currentGroup = await this.examRepo.manager.getRepository(ExamGroup).findOne({ 
+            where: { id: examGroupId, tenantId } 
+        });
+
+        // Fetch AcademicTerm details for school-wide settings
+        let termDetails = null;
+        if (currentGroup) {
+            termDetails = await this.examRepo.manager.getRepository(AcademicTerm).findOne({
+                where: { 
+                    name: currentGroup.term,
+                    session: { name: currentGroup.academicYear }
+                },
+                relations: ['session']
+            });
+        }
+
         const sortedOverallTotals = Array.from(studentOverallTotals.values()).sort((a, b) => b - a);
         const liveResults = allStudents.map(student => {
             const totalScore = studentOverallTotals.get(student.id) || 0;
@@ -205,6 +226,7 @@ export class ResultProcessingService {
             return {
                 studentId: student.id,
                 student,
+                examGroup: currentGroup,
                 totalScore,
                 averageScore: subjectStatsMap.size > 0 ? totalScore / subjectStatsMap.size : 0, // Approx avg
                 position,
@@ -223,22 +245,131 @@ export class ResultProcessingService {
             averageScore: s.sum / s.count
         }));
 
-        return {
+        // 7. Handle Cumulative Data for Third Term
+        let cumulativeSubjectScores: any[] = [];
+        let cumulativeOverallResults: any[] = [];
+        
+        // currentGroup is now fetched above
+        if (currentGroup) {
+            const termName = currentGroup?.term?.toLowerCase() || '';
+            const isThirdTerm = termName.includes('third') || termName.includes('3rd');
+            
+            if (isThirdTerm) {
+            const sessionsGroups = await this.examRepo.manager.getRepository(ExamGroup).find({
+                where: { 
+                    academicYear: currentGroup.academicYear, 
+                    tenantId,
+                    id: Not(examGroupId)
+                }
+            });
+
+            const prevGroupIds = sessionsGroups
+                .filter(g => {
+                    const t = g.term?.toLowerCase() || '';
+                    return t.includes('first') || t.includes('1st') || t.includes('second') || t.includes('2nd');
+                })
+                .map(g => g.id);
+
+            if (prevGroupIds.length > 0) {
+                // For Subject Broadsheet
+                cumulativeSubjectScores = await this.examResultRepo
+                    .createQueryBuilder('result')
+                    .leftJoin('result.exam', 'exam')
+                    .leftJoin('exam.examGroup', 'group')
+                    .select('result.studentId', 'studentId')
+                    .addSelect('exam.subjectId', 'subjectId')
+                    .addSelect('group.term', 'term')
+                    .addSelect('SUM(result.score)', 'termTotal')
+                    .where('exam.examGroupId IN (:...prevGroupIds)', { prevGroupIds })
+                    .andWhere('exam.classId = :classId', { classId })
+                    .andWhere('result.tenantId = :tenantId', { tenantId })
+                    .groupBy('result.studentId')
+                    .addGroupBy('exam.subjectId')
+                    .addGroupBy('group.term')
+                    .getRawMany();
+                
+                // For Class Broadsheet
+                cumulativeOverallResults = await this.termResultRepo.find({
+                    where: { 
+                        examGroupId: In(prevGroupIds),
+                        classId,
+                        tenantId
+                    },
+                    relations: ['examGroup']
+                });
+            }
+        }
+    }
+
+    return {
             results: liveResults,
             subjectScores: enrichedSubjectScores,
-            subjectStats
+            subjectStats,
+            cumulativeSubjectScores,
+            cumulativeOverallResults,
+            termDetails
         };
     }
 
     async getStudentReportCardData(studentId: string, examGroupId: string, tenantId: string) {
-        // 1. Fetch pre-calculated Summary (Rank, Total, Avg)
+        // 1. Fetch current summary and groups info
+        const currentGroup = await this.examRepo.manager.getRepository(ExamGroup).findOne({ where: { id: examGroupId, tenantId } });
         const summary = await this.termResultRepo.findOne({
-            where: { studentId, examGroupId, tenantId }
+            where: { studentId, examGroupId, tenantId },
+            relations: ['examGroup']
+        });
+
+        const termDetails = await this.examRepo.manager.getRepository(AcademicTerm).findOne({
+            where: { 
+                name: currentGroup?.term,
+                session: { name: currentGroup?.academicYear }
+            },
+            relations: ['session']
         });
 
         if (!summary) return null;
 
-        // 2. Fetch Exams with cached class statistics
+        // 2. Cumulative logic for Report Card
+        let cumulativeSummary: any[] = [];
+        let cumulativeSubjectScores: any[] = [];
+
+        const termName = currentGroup?.term?.toLowerCase() || '';
+        const isThirdTerm = termName.includes('third') || termName.includes('3rd');
+
+        if (isThirdTerm && currentGroup) {
+            const sessionsGroups = await this.examRepo.manager.getRepository(ExamGroup).find({
+                where: { academicYear: currentGroup.academicYear, tenantId, id: Not(examGroupId) }
+            });
+            const prevGroupIds = sessionsGroups
+                .filter(g => {
+                    const t = g.term?.toLowerCase() || '';
+                    return t.includes('first') || t.includes('1st') || t.includes('second') || t.includes('2nd');
+                })
+                .map(g => g.id);
+
+            if (prevGroupIds.length > 0) {
+                cumulativeSummary = await this.termResultRepo.find({
+                    where: { studentId, examGroupId: In(prevGroupIds), tenantId },
+                    relations: ['examGroup']
+                });
+
+                cumulativeSubjectScores = await this.examResultRepo
+                    .createQueryBuilder('result')
+                    .leftJoin('result.exam', 'exam')
+                    .leftJoin('exam.examGroup', 'group')
+                    .select('exam.subjectId', 'subjectId')
+                    .addSelect('group.term', 'term')
+                    .addSelect('SUM(result.score)', 'termTotal')
+                    .where('result.studentId = :studentId', { studentId })
+                    .andWhere('exam.examGroupId IN (:...prevGroupIds)', { prevGroupIds })
+                    .andWhere('result.tenantId = :tenantId', { tenantId })
+                    .groupBy('exam.subjectId')
+                    .addGroupBy('group.term')
+                    .getRawMany();
+            }
+        }
+
+        // 3. Fetch Exams and scores for current term
         const exams = await this.examRepo.find({
             where: { examGroupId, tenantId },
             relations: ['subject']
@@ -296,7 +427,13 @@ export class ResultProcessingService {
                 highestScore: e.highestScore,
                 lowestScore: e.lowestScore,
                 averageScore: e.averageScore
-            }))
+            })),
+            cumulativeSummary,
+            cumulativeSubjectScores,
+            termDetails: {
+                daysOpened: termDetails?.daysOpened,
+                nextTermStartDate: termDetails?.nextTermStartDate
+            }
         };
     }
 }

@@ -66,6 +66,8 @@ export interface AcademicTerm {
     startDate?: string;
     endDate?: string;
     isActive: boolean;
+    daysOpened?: number;
+    nextTermStartDate?: string | Date;
     createdAt?: string;
     updatedAt?: string;
 }

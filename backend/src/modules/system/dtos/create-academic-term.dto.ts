@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsUUID, IsDateString, IsBoolean, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsUUID, IsDateString, IsBoolean, IsOptional, IsNumber } from 'class-validator';
 
 export class CreateAcademicTermDto {
     @IsString()
@@ -20,4 +20,12 @@ export class CreateAcademicTermDto {
     @IsBoolean()
     @IsOptional()
     isActive?: boolean;
+
+    @IsNumber()
+    @IsOptional()
+    daysOpened?: number;
+
+    @IsDateString()
+    @IsOptional()
+    nextTermStartDate?: Date;
 }

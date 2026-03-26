@@ -33,7 +33,8 @@ const ReportCardPage = () => {
         showAverage: true,
         showSubjectPosition: true,
         showClassPosition: true,
-        showAttendance: true
+        showAttendance: true,
+        showCumulative: true
     });
 
     const { showError } = useToast();
@@ -113,7 +114,7 @@ const ReportCardPage = () => {
                 examinationService.getAssessmentTypes(selectedGroup),
                 examinationService.getClassMarks(selectedClass, selectedGroup),
                 examinationService.getExams(selectedGroup),
-                examinationService.getBroadsheet(selectedClass, selectedGroup).catch(() => ({ results: [], subjectScores: [], subjectStats: [] })) as any,
+                examinationService.getBroadsheet(selectedClass, selectedGroup).catch(() => ({ results: [], subjectScores: [], subjectStats: [], cumulativeSubjectScores: [], cumulativeOverallResults: [] })) as any,
                 examinationService.getAffectiveDomains(),
                 examinationService.getPsychomotorDomains(),
                 examinationService.getSkills(selectedGroup),
@@ -130,6 +131,8 @@ const ReportCardPage = () => {
             const termResults = (broadsheetResponse as any)?.results || [];
             const subjectStats = (broadsheetResponse as any)?.subjectStats || [];
             const subjectEnrichedScores = (broadsheetResponse as any)?.subjectScores || [];
+            const cumulativeSubjectScores = (broadsheetResponse as any)?.cumulativeSubjectScores || [];
+            const cumulativeOverallResults = (broadsheetResponse as any)?.cumulativeOverallResults || [];
 
             // 2. Group individual marks (CA1, CA2, etc) by studentId for O(1) lookup
             const marksByStudent = (allMarks as any[]).reduce((acc: Record<string, any[]>, mark: any) => {
@@ -171,7 +174,19 @@ const ReportCardPage = () => {
                         highestInClass: stats ? parseFloat(stats.highestScore) : undefined,
                         lowestInClass: stats ? parseFloat(stats.lowestScore) : undefined,
                         classAvg: stats ? parseFloat(stats.averageScore) : undefined,
-                        positionInSubject: enriched?.positionInSubject // <--- NEW from backend
+                        positionInSubject: enriched?.positionInSubject,
+                        cumulative: {
+                            term1: parseFloat(cumulativeSubjectScores.find((c: any) => 
+                                (c.studentId || c.studentid) === student.id && 
+                                (c.subjectId || c.subjectid) === subId && 
+                                (c.term?.toLowerCase().includes('first') || c.term?.toLowerCase().includes('1st'))
+                            )?.termTotal || 0),
+                            term2: parseFloat(cumulativeSubjectScores.find((c: any) => 
+                                (c.studentId || c.studentid) === student.id && 
+                                (c.subjectId || c.subjectid) === subId && 
+                                (c.term?.toLowerCase().includes('second') || c.term?.toLowerCase().includes('2nd'))
+                            )?.termTotal || 0),
+                        }
                     };
                 });
 
@@ -205,12 +220,14 @@ const ReportCardPage = () => {
                         year: result.examGroup?.academicYear || new Date().getFullYear().toString()
                     },
                     academicInfo: {
-                        timesOpened: result.daysOpened || 0,
+                        timesOpened: result.daysOpened || (broadsheetResponse as any).termDetails?.daysOpened || 0,
                         timesPresent: result.daysPresent || 0,
-                        timesAbsent: (result.daysOpened || 0) - (result.daysPresent || 0),
+                        timesAbsent: (result.daysOpened || (broadsheetResponse as any).termDetails?.daysOpened || 0) - (result.daysPresent || 0),
                         termBegins: settings?.sessionStartDate ? new Date(settings.sessionStartDate).toLocaleDateString() : '',
                         termEnds: settings?.sessionEndDate ? new Date(settings.sessionEndDate).toLocaleDateString() : '',
-                        nextTermBegins: settings?.nextTermStartDate ? new Date(settings.nextTermStartDate).toLocaleDateString() : 'To be announced',
+                        nextTermBegins: (broadsheetResponse as any).termDetails?.nextTermStartDate 
+                            ? new Date((broadsheetResponse as any).termDetails.nextTermStartDate).toLocaleDateString()
+                            : (settings?.nextTermStartDate ? new Date(settings.nextTermStartDate).toLocaleDateString() : 'To be announced'),
                         classTeacherName: teacherName,
                         classTeacherSignature: teacherSign,
                         principalSignature: settings?.invoiceLogo ? getFullUrl(settings.invoiceLogo) : ''
@@ -223,7 +240,21 @@ const ReportCardPage = () => {
                         totalObtained: result.totalScore || 0,
                         averageScore: result.averageScore || 0,
                         position: result.position || 0,
-                        classSize: termResults.length
+                        classSize: termResults.length,
+                        cumulativeAvg: (() => {
+                            const t1Avg = cumulativeOverallResults.find((r: any) => 
+                                r.studentId === student.id && 
+                                (r.examGroup?.term?.toLowerCase().includes('first') || r.examGroup?.term?.toLowerCase().includes('1st'))
+                            )?.averageScore || 0;
+                            const t2Avg = cumulativeOverallResults.find((r: any) => 
+                                r.studentId === student.id && 
+                                (r.examGroup?.term?.toLowerCase().includes('second') || r.examGroup?.term?.toLowerCase().includes('2nd'))
+                            )?.averageScore || 0;
+                            if (t1Avg > 0 || t2Avg > 0) {
+                                return (parseFloat(t1Avg) + parseFloat(t2Avg) + (result.averageScore || 0)) / 3;
+                            }
+                            return undefined;
+                        })()
                     }
                 };
             });
@@ -420,6 +451,7 @@ const ReportCardPage = () => {
                                         { key: 'showSubjectPosition', label: 'Subject Pos.', desc: 'Rank within specific subject' },
                                         { key: 'showClassPosition', label: 'Class Position', desc: 'Overall student class rank' },
                                         { key: 'showAttendance', label: 'Attendance', desc: 'Show term attendance stats' },
+                                        { key: 'showCumulative', label: 'Cumulative', desc: 'Show 1st & 2nd term scores' },
                                     ].map((item) => (
                                         <button
                                             key={item.key}

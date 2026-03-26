@@ -35,6 +35,12 @@ export class AcademicTerm {
     @Column({ type: 'boolean', default: false })
     isActive!: boolean;
 
+    @Column({ type: 'int', default: 0 })
+    daysOpened!: number;
+
+    @Column({ type: 'date', nullable: true })
+    nextTermStartDate!: Date;
+
     @CreateDateColumn()
     createdAt!: Date;
 

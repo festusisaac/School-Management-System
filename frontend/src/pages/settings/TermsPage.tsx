@@ -22,7 +22,9 @@ const TermsPage = () => {
         sessionId: '',
         startDate: '',
         endDate: '',
-        isActive: false
+        isActive: false,
+        daysOpened: '',
+        nextTermStartDate: ''
     });
 
     const loadData = async () => {
@@ -53,7 +55,9 @@ const TermsPage = () => {
             sessionId: activeSession?.id || '',
             startDate: '',
             endDate: '',
-            isActive: false
+            isActive: false,
+            daysOpened: '',
+            nextTermStartDate: ''
         });
         setEditingId(null);
         setIsCreateOpen(false);
@@ -62,11 +66,19 @@ const TermsPage = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            const payload = {
+                ...formData,
+                daysOpened: parseInt(formData.daysOpened) || 0,
+                startDate: formData.startDate || undefined,
+                endDate: formData.endDate || undefined,
+                nextTermStartDate: formData.nextTermStartDate || undefined,
+            };
+
             if (editingId) {
-                await systemService.updateTerm(editingId, formData);
+                await systemService.updateTerm(editingId, payload);
                 showSuccess('Term updated successfully');
             } else {
-                await systemService.createTerm(formData);
+                await systemService.createTerm(payload);
                 showSuccess('Term created successfully');
             }
             resetForm();
@@ -82,7 +94,9 @@ const TermsPage = () => {
             sessionId: term.sessionId,
             startDate: term.startDate ? new Date(term.startDate).toISOString().split('T')[0] : '',
             endDate: term.endDate ? new Date(term.endDate).toISOString().split('T')[0] : '',
-            isActive: term.isActive
+            isActive: term.isActive,
+            daysOpened: term.daysOpened?.toString() || '',
+            nextTermStartDate: term.nextTermStartDate ? new Date(term.nextTermStartDate).toISOString().split('T')[0] : ''
         });
         setEditingId(term.id);
         setIsCreateOpen(true);
@@ -128,6 +142,15 @@ const TermsPage = () => {
             accessorKey: 'endDate',
             header: 'End Date',
             cell: ({ row }) => row.original.endDate ? new Date(row.original.endDate).toLocaleDateString() : 'N/A',
+        },
+        {
+            accessorKey: 'daysOpened',
+            header: 'Days Opened',
+        },
+        {
+            accessorKey: 'nextTermStartDate',
+            header: 'Next Term Starts',
+            cell: ({ row }) => row.original.nextTermStartDate ? new Date(row.original.nextTermStartDate).toLocaleDateString() : 'N/A',
         },
         {
             accessorKey: 'isActive',
@@ -242,6 +265,27 @@ const TermsPage = () => {
                                     className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                                     value={formData.endDate}
                                     onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">No. of Times School Opens</label>
+                                <input
+                                    type="text"
+                                    className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                    placeholder="e.g. 110"
+                                    value={formData.daysOpened}
+                                    onChange={(e) => setFormData({ ...formData, daysOpened: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Next Term Begins</label>
+                                <input
+                                    type="date"
+                                    className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                    value={formData.nextTermStartDate}
+                                    onChange={(e) => setFormData({ ...formData, nextTermStartDate: e.target.value })}
                                 />
                             </div>
                         </div>

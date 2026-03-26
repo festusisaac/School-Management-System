@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Download, Trophy, TrendingUp, Filter } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { examinationService, ExamGroup } from '../../../services/examinationService';
@@ -16,6 +16,10 @@ interface SubjectRow {
     grade: string;
     remark: string;
     position: number;
+    cumulative?: {
+        term1: number;
+        term2: number;
+    };
 }
 
 const SubjectBroadsheetPage = () => {
@@ -37,6 +41,11 @@ const SubjectBroadsheetPage = () => {
     const [subjectStats, setSubjectStats] = useState<{ high: number; low: number; avg: number } | null>(null);
     
     const { showError, showSuccess } = useToast();
+
+    const isThirdTerm = useMemo(() => {
+        const t = groups.find(g => g.id === selectedGroup)?.term?.toLowerCase() || '';
+        return t.includes('third') || t.includes('3rd');
+    }, [groups, selectedGroup]);
 
     useEffect(() => {
         const init = async () => {
@@ -100,22 +109,26 @@ const SubjectBroadsheetPage = () => {
                 examinationService.getBroadsheet(selectedClass, selectedGroup) as any
             ]);
 
-            setAssessments(assessmentTypes || []);
             const subjectEnrichedScores = broadsheetData?.subjectScores || [];
+            const cumulativeSubjectScores = broadsheetData?.cumulativeSubjectScores || [];
 
             // Filter marks for this specific subject
             const subjectMarks = (allMarks as any[]).filter(m => m.subjectId === selectedSubject);
-
+            
             const processedRows: SubjectRow[] = allStudents.map((student: any) => {
-                const studentSubjectMarks = subjectMarks.filter(m => m.studentId === student.id);
                 const scores: Record<string, number> = {};
-                assessmentTypes.forEach(ass => {
-                    const m = studentSubjectMarks.find(mark => mark.assessmentTypeId === ass.id);
-                    scores[ass.id] = m ? m.score : 0;
+                assessmentTypes.forEach((ass: any) => {
+                    const mark = subjectMarks.find((m: any) => m.studentId === student.id && m.assessmentTypeId === ass.id);
+                    scores[ass.id] = mark ? mark.score : 0;
                 });
 
                 // Use backend enriched data for grade/remark/total
                 const enriched = subjectEnrichedScores.find((s: any) => s.studentId === student.id && s.subjectId === selectedSubject);
+
+                // Cumulative mapping
+                const studCum = cumulativeSubjectScores.filter((c: any) => (c.studentId || c.studentid) === student.id && (c.subjectId || c.subjectid) === selectedSubject);
+                const term1 = studCum.find((c: any) => c.term?.toLowerCase() === 'first term')?.termTotal || 0;
+                const term2 = studCum.find((c: any) => c.term?.toLowerCase() === 'second term')?.termTotal || 0;
 
                 return {
                     studentId: student.id,
@@ -125,12 +138,16 @@ const SubjectBroadsheetPage = () => {
                     total: enriched?.totalSubjectScore || 0,
                     grade: enriched?.grade || 'F',
                     remark: enriched?.remark || 'VERY POOR',
-                    position: enriched?.positionInSubject || 0
+                    position: enriched?.positionInSubject || 0,
+                    cumulative: {
+                        term1: parseFloat(term1 || 0),
+                        term2: parseFloat(term2 || 0)
+                    }
                 };
             });
 
-            const subjectStats = broadsheetData?.subjectStats || [];
-            const currentSubjectStats = subjectStats.find((s: any) => s.subjectId === selectedSubject);
+            const rawStats = broadsheetData?.subjectStats || [];
+            const currentSubjectStats = rawStats.find((s: any) => s.subjectId === selectedSubject);
             
             if (currentSubjectStats) {
                 setSubjectStats({
@@ -160,6 +177,7 @@ const SubjectBroadsheetPage = () => {
     const handleExport = () => {
         if (rows.length === 0) return;
         const subject = subjects.find(s => s.id === selectedSubject)?.name || 'Subject';
+
         const exportData = rows.map(r => {
             const row: any = {
                 'POS': getOrdinal(r.position),
@@ -170,6 +188,14 @@ const SubjectBroadsheetPage = () => {
                 row[ass.name] = r.scores[ass.id] || 0;
             });
             row['Total'] = r.total;
+            
+            if (isThirdTerm) {
+                row['1st Term'] = r.cumulative?.term1 || 0;
+                row['2nd Term'] = r.cumulative?.term2 || 0;
+                row['CUM. Total'] = (r.cumulative?.term1 || 0) + (r.cumulative?.term2 || 0) + r.total;
+                row['CUM. Avg'] = (((r.cumulative?.term1 || 0) + (r.cumulative?.term2 || 0) + r.total) / 3).toFixed(1);
+            }
+
             row['Subj High'] = subjectStats?.high || 0;
             row['Subj Low'] = subjectStats?.low || 0;
             row['Grade'] = r.grade;
@@ -298,6 +324,14 @@ const SubjectBroadsheetPage = () => {
                                     <th key={ass.id} className="px-6 py-3 text-center">{ass.name} ({ass.maxMarks})</th>
                                 ))}
                                 <th className="px-6 py-3 text-center text-primary-600">Total</th>
+                                {isThirdTerm && (
+                                    <>
+                                        <th className="px-6 py-3 text-center border-l border-gray-200 dark:border-gray-700">1st T</th>
+                                        <th className="px-6 py-3 text-center">2nd T</th>
+                                        <th className="px-6 py-3 text-center bg-primary-50 dark:bg-primary-900/10">CUM. Total</th>
+                                        <th className="px-6 py-3 text-center bg-primary-50 dark:bg-primary-900/10">CUM. Avg</th>
+                                    </>
+                                )}
                                 <th className="px-6 py-3 text-center text-emerald-600">Subj High</th>
                                 <th className="px-6 py-3 text-center text-rose-600">Subj Low</th>
                                 <th className="px-6 py-3 text-center">Grade</th>
@@ -305,7 +339,11 @@ const SubjectBroadsheetPage = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                            {rows.map((row) => (
+                            {rows.map((row) => {
+                                const cumTotal = (row.cumulative?.term1 || 0) + (row.cumulative?.term2 || 0) + row.total;
+                                const cumAvg = cumTotal / 3;
+
+                                return (
                                 <tr key={row.studentId} className="hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
                                     <td className="px-6 py-4 text-center font-bold text-primary-600">{getOrdinal(row.position)}</td>
                                     <td className="px-6 py-4">
@@ -316,6 +354,14 @@ const SubjectBroadsheetPage = () => {
                                         <td key={ass.id} className="px-6 py-4 text-center">{row.scores[ass.id] || 0}</td>
                                     ))}
                                     <td className="px-6 py-4 text-center font-black text-primary-700 dark:text-primary-400">{row.total}</td>
+                                    {isThirdTerm && (
+                                        <>
+                                            <td className="px-6 py-4 text-center border-l border-gray-100 dark:border-gray-800 text-gray-400">{row.cumulative?.term1 || 0}</td>
+                                            <td className="px-6 py-4 text-center text-gray-400">{row.cumulative?.term2 || 0}</td>
+                                            <td className="px-6 py-4 text-center font-bold bg-primary-50/30 dark:bg-primary-900/5">{cumTotal}</td>
+                                            <td className="px-6 py-4 text-center font-black text-primary-600 bg-primary-50/50 dark:bg-primary-900/10">{cumAvg.toFixed(1)}</td>
+                                        </>
+                                    )}
                                     <td className="px-6 py-4 text-center font-bold text-emerald-600 dark:text-emerald-400">
                                         {subjectStats?.high || '-'}
                                     </td>
@@ -327,7 +373,8 @@ const SubjectBroadsheetPage = () => {
                                     </td>
                                     <td className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase">{row.remark}</td>
                                 </tr>
-                            ))}
+                                );
+                            })}
                         </tbody>
                     </table>
                 )}

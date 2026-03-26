@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useSystem } from '../../context/SystemContext';
 
 export interface ReportCardSubject {
@@ -11,6 +11,10 @@ export interface ReportCardSubject {
     positionInSubject?: string | number;
     grade: string;
     remark: string;
+    cumulative?: {
+        term1?: number;
+        term2?: number;
+    };
 }
 
 export interface ReportCardData {
@@ -47,6 +51,7 @@ export interface ReportCardData {
         averageScore: number;
         position?: string | number;
         classSize?: number;
+        cumulativeAvg?: number;
     };
     affectiveTraits?: { name: string, rating: number }[];
     psychomotorSkills?: { name: string, rating: number }[];
@@ -60,6 +65,7 @@ export interface ReportCardConfig {
     showSubjectPosition: boolean;
     showClassPosition: boolean;
     showAttendance: boolean;
+    showCumulative: boolean;
 }
 
 interface Props {
@@ -78,10 +84,16 @@ const ReportCardTemplate: React.FC<Props> = ({
         showAverage: true,
         showSubjectPosition: true,
         showClassPosition: true,
-        showAttendance: true
+        showAttendance: true,
+        showCumulative: true
     } 
 }) => {
     const { settings, getFullUrl } = useSystem();
+
+    const isThirdTerm = useMemo(() => {
+        const t = data.examGroup.term?.toLowerCase() || '';
+        return t.includes('third') || t.includes('3rd');
+    }, [data.examGroup.term]);
 
     // Helper to format position (e.g., 1 -> 1st)
     const formatSuffix = (n: number | string | undefined | null) => {
@@ -280,8 +292,14 @@ const ReportCardTemplate: React.FC<Props> = ({
                                         </tr>
                                         {config.showAverage && (
                                             <tr>
-                                                <td className="text-center font-bold p-[3px] border" style={{ fontSize: '9px', borderColor: colorBorder }}>TERM AVERAGE</td>
+                                                <td className="text-center font-bold p-[3px] border" style={{ fontSize: '9px', borderColor: colorBorder }}>{data.examGroup.term?.toLowerCase() === 'third term' ? 'TERM AVG' : 'AVERAGE SCORE'}</td>
                                                 <td className="text-center font-bold p-[3px] border font-black" style={{ borderColor: colorBorder }}>{data.summary.averageScore.toFixed(1)}</td>
+                                            </tr>
+                                        )}
+                                        {isThirdTerm && config.showCumulative && data.summary.cumulativeAvg && (
+                                            <tr style={{ backgroundColor: '#f0fdf4' }}>
+                                                <td className="text-center font-black p-[3px] border" style={{ fontSize: '9px', borderColor: colorBorder }}>CUM. AVG</td>
+                                                <td className="text-center font-black p-[3px] border font-black text-primary" style={{ borderColor: colorBorder }}>{data.summary.cumulativeAvg.toFixed(1)}</td>
                                             </tr>
                                         )}
                                     </tbody>
@@ -322,6 +340,14 @@ const ReportCardTemplate: React.FC<Props> = ({
                             {config.showLowest && <th className="border p-1 text-center" rowSpan={2} style={{ borderColor: colorBorder, width: '7%' }}>LOWEST<br />IN CLASS</th>}
                             {config.showAverage && <th className="border p-1 text-center" rowSpan={2} style={{ borderColor: colorBorder, width: '7%' }}>CLASS<br />AVERAGE</th>}
                             {config.showSubjectPosition && <th className="border p-1 text-center" rowSpan={2} style={{ borderColor: colorBorder, width: '7%' }}>POS.</th>}
+                            {isThirdTerm && config.showCumulative && (
+                                <>
+                                    <th className="border p-1 text-center" rowSpan={2} style={{ borderColor: colorBorder, width: '5%' }}>1ST T</th>
+                                    <th className="border p-1 text-center" rowSpan={2} style={{ borderColor: colorBorder, width: '5%' }}>2ND T</th>
+                                    <th className="border p-1 text-center font-bold" rowSpan={2} style={{ borderColor: colorBorder, width: '6%', backgroundColor: '#f0fdf4' }}>CUM.<br />TOT</th>
+                                    <th className="border p-1 text-center font-bold" rowSpan={2} style={{ borderColor: colorBorder, width: '6%', backgroundColor: '#f0fdf4' }}>CUM.<br />AVG</th>
+                                </>
+                            )}
                             <th className="border p-1 text-center" rowSpan={2} style={{ borderColor: colorBorder, width: '5%' }}>GRADE</th>
                             <th className="border p-1 text-center" rowSpan={2} style={{ borderColor: colorBorder, width: '12%' }}>REMARKS</th>
                         </tr>
@@ -347,6 +373,18 @@ const ReportCardTemplate: React.FC<Props> = ({
                                 {config.showLowest && <td className="border p-[3px] text-center" style={{ borderColor: colorBorder }}>{subj.lowestInClass || '-'}</td>}
                                 {config.showAverage && <td className="border p-[3px] text-center" style={{ borderColor: colorBorder }}>{subj.classAvg ? subj.classAvg.toFixed(1) : '-'}</td>}
                                 {config.showSubjectPosition && <td className="border p-[3px] text-center" style={{ borderColor: colorBorder }}>{subj.positionInSubject || '-'}</td>}
+                                {isThirdTerm && config.showCumulative && (
+                                    <>
+                                        <td className="border p-[3px] text-center" style={{ borderColor: colorBorder }}>{subj.cumulative?.term1 ?? '-'}</td>
+                                        <td className="border p-[3px] text-center" style={{ borderColor: colorBorder }}>{subj.cumulative?.term2 ?? '-'}</td>
+                                        <td className="border p-[3px] text-center font-bold" style={{ borderColor: colorBorder, backgroundColor: '#f0fdf4' }}>
+                                            {(subj.cumulative?.term1 || 0) + (subj.cumulative?.term2 || 0) + subj.totalScore}
+                                        </td>
+                                        <td className="border p-[3px] text-center font-bold" style={{ borderColor: colorBorder, backgroundColor: '#f0fdf4' }}>
+                                            {(((subj.cumulative?.term1 || 0) + (subj.cumulative?.term2 || 0) + subj.totalScore) / 3).toFixed(1)}
+                                        </td>
+                                    </>
+                                )}
                                 <td className="border p-[3px] text-center font-bold" style={{ borderColor: colorBorder }}>{subj.grade}</td>
                                 <td className="border p-[3px] text-center font-bold" style={{ fontSize: '9px', borderColor: colorBorder }}>{subj.remark}</td>
                             </tr>

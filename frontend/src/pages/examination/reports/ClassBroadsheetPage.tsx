@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Download, Search, Filter } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { examinationService, ExamGroup } from '../../../services/examinationService';
@@ -15,6 +15,10 @@ interface BroadsheetRow {
     averageScore: number;
     position: number;
     subjectScores: Record<string, number>; // subjectName -> score
+    cumulative?: {
+        term1: number;
+        term2: number;
+    };
 }
 
 const ClassBroadsheetPage = () => {
@@ -33,6 +37,11 @@ const ClassBroadsheetPage = () => {
     const [loading, setLoading] = useState(false);
 
     const { showError, showSuccess } = useToast();
+
+    const isThirdTerm = useMemo(() => {
+        const t = groups.find(g => g.id === selectedGroup)?.term?.toLowerCase() || '';
+        return t.includes('third') || t.includes('3rd');
+    }, [groups, selectedGroup]);
 
     useEffect(() => {
         const init = async () => {
@@ -106,6 +115,7 @@ const ClassBroadsheetPage = () => {
             const broadsheetData: any = await examinationService.getBroadsheet(selectedClass, selectedGroup);
             const termResults = broadsheetData.results || [];
             const subjectScoresRaw = broadsheetData.subjectScores || [];
+            const cumulativeOverallResults = broadsheetData.cumulativeOverallResults || [];
 
             // Identify which subjects have scores
             const scheduledSubjectIds = Array.from(new Set(subjectScoresRaw.map((s: any) => s.subjectId || s.subjectid))) as string[];
@@ -153,7 +163,11 @@ const ClassBroadsheetPage = () => {
                     totalScore: termResult ? parseFloat(termResult.totalScore) : calculatedTotal,
                     averageScore: termResult ? parseFloat(termResult.averageScore) : (subjectCount > 0 ? calculatedTotal / subjectCount : 0),
                     position: termResult?.position || 0, 
-                    subjectScores: scores
+                    subjectScores: scores,
+                    cumulative: {
+                        term1: parseFloat(cumulativeOverallResults.find((r: any) => r.studentId === student.id && r.examGroup?.term?.toLowerCase() === 'first term')?.totalScore || 0),
+                        term2: parseFloat(cumulativeOverallResults.find((r: any) => r.studentId === student.id && r.examGroup?.term?.toLowerCase() === 'second term')?.totalScore || 0),
+                    }
                 };
             });
 
@@ -195,8 +209,16 @@ const ClassBroadsheetPage = () => {
                 'Admission No': r.admissionNumber,
                 ...r.subjectScores,
                 'Total': r.totalScore,
-                'Average': parseInt(r.averageScore.toString()).toFixed(2)
             };
+            
+            if (isThirdTerm) {
+                row['1st Term'] = r.cumulative?.term1 || 0;
+                row['2nd Term'] = r.cumulative?.term2 || 0;
+                row['CUM. Total'] = (r.cumulative?.term1 || 0) + (r.cumulative?.term2 || 0) + r.totalScore;
+                row['CUM. Avg'] = (((r.cumulative?.term1 || 0) + (r.cumulative?.term2 || 0) + r.totalScore) / 3).toFixed(1);
+            }
+
+            row['Average'] = parseFloat(r.averageScore.toString()).toFixed(1);
             return row;
         });
 
@@ -317,6 +339,14 @@ const ClassBroadsheetPage = () => {
                                     ))}
 
                                     <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider bg-primary-50 dark:bg-primary-900/10 min-w-[80px]">Total</th>
+                                    {isThirdTerm && (
+                                        <>
+                                            <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider bg-primary-50 dark:bg-primary-900/10 min-w-[80px]">1st T</th>
+                                            <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider bg-primary-50 dark:bg-primary-900/10 min-w-[80px]">2nd T</th>
+                                            <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider bg-primary-600 text-white min-w-[100px]">CUM. Tot</th>
+                                            <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider bg-primary-600 text-white min-w-[100px]">CUM. Avg</th>
+                                        </>
+                                    )}
                                     <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider bg-primary-50 dark:bg-primary-900/10 min-w-[80px]">Avg</th>
                                 </tr>
                             </thead>
@@ -347,6 +377,22 @@ const ClassBroadsheetPage = () => {
                                     <td className="px-4 py-3 text-center font-bold text-primary-600 dark:text-primary-400 bg-primary-50/50 dark:bg-primary-900/5">
                                         {Math.round(row.totalScore)}
                                     </td>
+                                    {isThirdTerm && (
+                                        <>
+                                            <td className="px-4 py-3 text-center font-medium text-gray-400 bg-primary-50/20 dark:bg-primary-900/5">
+                                                {Math.round(row.cumulative?.term1 || 0)}
+                                            </td>
+                                            <td className="px-4 py-3 text-center font-medium text-gray-400 bg-primary-50/20 dark:bg-primary-900/5">
+                                                {Math.round(row.cumulative?.term2 || 0)}
+                                            </td>
+                                            <td className="px-4 py-3 text-center font-black text-primary-700 bg-primary-50/80 dark:bg-primary-900/20">
+                                                {Math.round((row.cumulative?.term1 || 0) + (row.cumulative?.term2 || 0) + row.totalScore)}
+                                            </td>
+                                            <td className="px-4 py-3 text-center font-black text-primary-800 bg-primary-100 dark:bg-primary-900/40">
+                                                {(((row.cumulative?.term1 || 0) + (row.cumulative?.term2 || 0) + row.totalScore) / 3).toFixed(1)}
+                                            </td>
+                                        </>
+                                    )}
                                     <td className="px-4 py-3 text-center font-bold text-gray-800 dark:text-gray-200 bg-primary-50/50 dark:bg-primary-900/5">
                                         {Number(row.averageScore).toFixed(1)}
                                     </td>
