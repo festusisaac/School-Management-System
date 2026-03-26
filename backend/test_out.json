@@ -1,0 +1,11 @@
+Settings: {
+  id: '2fdcc9e7-f1e3-4590-b30d-b5b3991c2fb4',
+  tenantId: '186f9f4d-1298-4a99-b35a-1494d9f581a1',
+  graceDays: 3,
+  finePerDay: '50',
+  createdAt: 2026-03-25T17:23:40.064Z,
+  updatedAt: 2026-03-25T17:23:40.064Z
+}
+Active Loans: 2
+{"id":"442381b3-9b85-4da9-b173-041331a3458f","dueAt":"2026-03-27T00:00:00.000Z","overdueDays":-1,"chargeable":0,"fine":0}
+{"id":"db492ad6-28d0-41c7-938d-8321769771c1","dueAt":"2026-03-25T00:00:00.000Z","overdueDays":1,"chargeable":0,"fine":0}

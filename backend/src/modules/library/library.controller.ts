@@ -185,4 +185,22 @@ export class LibraryController {
   async getStats(@Request() req: any) {
     return this.libraryService.getStats(req.user.tenantId);
   }
+  @Get('loans/student/:studentId')
+  @ApiOperation({ summary: 'Get all loans for a specific student' })
+  async findStudentLoans(@Param('studentId') studentId: string, @Request() req: any) {
+    return this.libraryService.findStudentLoans(studentId, req.user.tenantId);
+  }
+
+  // Settings
+  @Get('settings')
+  @ApiOperation({ summary: 'Get library settings (grace days, fine rate)' })
+  async getSettings(@Request() req: any) {
+    return this.libraryService.getSettings(req.user.tenantId);
+  }
+
+  @Post('settings')
+  @ApiOperation({ summary: 'Update library settings' })
+  async updateSettings(@Body() body: { graceDays?: number; finePerDay?: number }, @Request() req: any) {
+    return this.libraryService.updateSettings(req.user.tenantId, body);
+  }
 }

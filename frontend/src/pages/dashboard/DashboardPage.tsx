@@ -69,7 +69,7 @@ const COLORS = ['#3B82F6', '#EC4899', '#10B981', '#F59E0B'];
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuthStore()
-  const userRole = (user?.roleObject?.name || user?.role || '').toLowerCase()
+  const userRole = (user?.role || user?.roleObject?.name || '').toLowerCase()
   const isStudentOrParent = userRole === 'student' || userRole === 'parent'
 
   const [stats, setStats] = useState<DashboardStats | null>(null)

@@ -25,6 +25,9 @@ interface Staff {
     firstName: string;
     lastName: string;
     role: string;
+    roleObject?: {
+        name: string;
+    };
     isTeachingStaff?: boolean;
     designation?: {
         title: string;
@@ -81,7 +84,11 @@ const AssignSubjectTeacherPage = () => {
             setSections(sectionsData);
 
             // Filter teaching staff
-            const teacherList = staffData.filter((s: Staff) => s.isTeachingStaff === true);
+            const teacherList = staffData.filter((s: Staff) => 
+                s.isTeachingStaff === true || 
+                s.roleObject?.name === 'Teacher' || 
+                s.role === 'Teacher'
+            );
             setTeachers(teacherList);
         } catch (err: any) {
             setError(err.response?.data?.message || 'Failed to fetch initial data');

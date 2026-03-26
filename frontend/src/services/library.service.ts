@@ -162,4 +162,9 @@ export const libraryService = {
   issueBook: async (data: any) => libraryService.issueLoan(data),
   returnBook: async (loanId: string, returnedAt?: string) => libraryService.returnLoan(loanId, returnedAt),
   getOverdueLoans: async (params: any = {}) => libraryService.getOverdues(params),
+
+  // Student Portal
+  getStudentLoans: async (studentId: string) => {
+    return api.get<Loan[]>(`/library/loans/student/${studentId}`);
+  },
 };

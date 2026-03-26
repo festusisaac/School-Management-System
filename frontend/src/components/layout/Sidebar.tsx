@@ -13,7 +13,8 @@ import {
     Calendar,
     Clock,
     LogOut,
-    ChevronRight
+    ChevronRight,
+    Video
 } from 'lucide-react';
 import { useState } from 'react';
 import { clsx } from 'clsx';
@@ -31,7 +32,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     const { settings, getFullUrl } = useSystem();
     const { user, logout } = useAuthStore();
     const navigate = useNavigate();
-    const userRole = (user?.roleObject?.name || user?.role || 'student').toLowerCase();
+    const userRole = (user?.role || user?.roleObject?.name || 'student').toLowerCase();
     const isStudentOrParent = userRole === 'student' || userRole === 'parent';
     const userName = user ? `${user.firstName} ${user.lastName}` : 'User';
     const userRoleLabel = user ? (user.roleObject?.name || user.role || 'Student') : 'Student';
@@ -52,6 +53,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         { label: 'Finance', icon: CreditCard, path: '/students/finance' },
         { label: 'Class Timetable', icon: Calendar, path: '/students/timetable' },
         { label: 'Attendance', icon: Clock, path: '/students/attendance' },
+        { label: 'My Library', icon: BookOpen, path: '/students/library' },
         {
             label: 'Examination',
             icon: BookOpen,
@@ -60,7 +62,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 { label: 'Admit Card', path: '/students/examination/admit-card' },
                 { label: 'Check Result', path: '/students/examination/results' },
             ]
-        }
+        },
+        { label: 'Online Classes', icon: Video, path: '/students/online-classes' }
     ];
 
     const adminNavItems = [
@@ -80,6 +83,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 { label: 'Assign Class Teachers', path: '/academics/assign-class-teachers' },
                 { label: 'Class Timetable', path: '/academics/class-timetable' },
                 { label: 'Teachers Timetable', path: '/academics/teachers-timetable' },
+                { label: 'Online Classes', path: '/academics/online-classes' },
                 { label: 'Promote Students', path: '/academics/promotion' },
             ]
         },

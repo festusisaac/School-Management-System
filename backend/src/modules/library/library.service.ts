@@ -337,4 +337,59 @@ export class LibraryService {
       overdueLoans,
     };
   }
+  async findStudentLoans(studentOrUserId: string, tenantId: string): Promise<any[]> {
+    // Try to find the student directly (if the ID is a studentId)
+    // Or try to find the student where userId matches
+    const loans = await this.loanRepo.find({
+      where: [
+        { studentId: studentOrUserId, tenantId },
+        { student: { userId: studentOrUserId }, tenantId }
+      ],
+      relations: ['copy', 'copy.book', 'copy.book.authors', 'student'],
+      order: { issuedAt: 'DESC' },
+    });
+
+    const settings = await this.settingsRepo.findOne({ where: { tenantId } });
+    const graceDays = settings?.graceDays ?? 3;
+    const finePerDay = settings?.finePerDay ?? 50;
+    const now = new Date();
+
+    // Also get fines for this student's loans
+    const loanIds = loans.map(l => l.id);
+    const fines = loanIds.length > 0 
+      ? await this.fineRepo.find({ where: { loanId: In(loanIds), tenantId } })
+      : [];
+
+    return loans.map(loan => {
+      const fine = fines.find(f => f.loanId === loan.id);
+      const currentFine = loan.status === 'active' && loan.dueAt < now
+        ? this.calculateFine(loan.dueAt, now, graceDays, finePerDay)
+        : 0;
+
+      return {
+        ...loan,
+        fineAmount: fine?.amount || currentFine,
+        finePaid: fine?.paid || false,
+      };
+    });
+  }
+  async getSettings(tenantId: string): Promise<LibrarySetting> {
+    let settings = await this.settingsRepo.findOne({ where: { tenantId } });
+    if (!settings) {
+      settings = this.settingsRepo.create({
+        graceDays: 3,
+        finePerDay: 50,
+        tenantId,
+      });
+      await this.settingsRepo.save(settings);
+    }
+    return settings;
+  }
+
+  async updateSettings(tenantId: string, payload: { graceDays?: number; finePerDay?: number }): Promise<LibrarySetting> {
+    const settings = await this.getSettings(tenantId);
+    if (payload.graceDays !== undefined) settings.graceDays = payload.graceDays;
+    if (payload.finePerDay !== undefined) settings.finePerDay = payload.finePerDay;
+    return this.settingsRepo.save(settings);
+  }
 }

@@ -22,6 +22,7 @@ import { BackupModule } from '@modules/backup/backup.module';
 import { HrModule } from '@modules/hr/hr.module';
 import { ExaminationModule } from '@modules/examination/examination.module';
 import { SystemModule } from '@modules/system/system.module';
+import { OnlineClassesModule } from '@modules/online-classes/online-classes.module';
 
 @Module({
   imports: [
@@ -75,6 +76,7 @@ import { SystemModule } from '@modules/system/system.module';
     HrModule,
     ExaminationModule,
     SystemModule,
+    OnlineClassesModule,
   ],
   controllers: [AppController],
   providers: [

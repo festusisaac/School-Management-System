@@ -73,6 +73,7 @@ function AppRoutes() {
               <Route path="subjects" element={<Academics.SubjectsPage />} />
               <Route path="assign-class-subjects" element={<Academics.ClassSubjectsPage />} />
               <Route path="assign-subject-teachers" element={<Academics.AssignSubjectTeacherPage />} />
+              <Route path="online-classes" element={<Academics.OnlineClassesPage />} />
               <Route path="classes" element={<Academics.ClassPage />} />
               <Route path="sections" element={<Academics.SectionsPage />} />
             </Route>
@@ -109,6 +110,8 @@ function AppRoutes() {
               <Route path="finance" element={<Finance.StudentFinancePage />} />
               <Route path="examination/admit-card" element={<Students.StudentAdmitCardPage />} />
               <Route path="examination/results" element={<Students.StudentResultPage />} />
+              <Route path="library" element={<Students.StudentLibraryPage />} />
+              <Route path="online-classes" element={<Academics.OnlineClassesPage />} />
             </Route>
 
             {/* Library Routes */}

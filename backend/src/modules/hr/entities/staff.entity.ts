@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany, Index } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany, Index, Unique } from 'typeorm';
 import { Department } from './department.entity';
 import { Role } from '../../auth/entities/role.entity';
 import { StaffAttendance } from './staff-attendance.entity';
@@ -34,12 +34,16 @@ export enum Gender {
 }
 
 @Entity('staff')
+@Unique(['employeeId', 'tenantId'])
+@Unique(['email', 'tenantId'])
+@Unique(['biometricId', 'tenantId'])
 export class Staff {
     @PrimaryGeneratedColumn('uuid')
     id!: string;
 
     // Personal Information
-    @Column({ name: 'employee_id', unique: true })
+    @Index()
+    @Column({ name: 'employee_id' })
     employeeId!: string;
 
     @Column({ name: 'first_name' })
@@ -61,7 +65,8 @@ export class Staff {
     photo!: string;
 
     // Contact Information
-    @Column({ unique: true })
+    @Index()
+    @Column()
     email!: string;
 
     @Column()
@@ -148,7 +153,8 @@ export class Staff {
     qualifications!: string;
 
     // Biometric/Attendance Device ID
-    @Column({ name: 'biometric_id', nullable: true, unique: true })
+    @Index()
+    @Column({ name: 'biometric_id', nullable: true })
     biometricId!: string;
 
     // --- Extended Fields ---

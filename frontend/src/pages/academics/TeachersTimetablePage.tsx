@@ -8,6 +8,9 @@ interface Staff {
     lastName: string;
     employeeId: string;
     role: string;
+    roleObject?: {
+        name: string;
+    };
     isTeachingStaff?: boolean;
 }
 
@@ -109,8 +112,12 @@ const TeachersTimetablePage = () => {
                 api.getStaff(),
                 api.getPeriods()
             ]);
-            // Filter only teachers using isTeachingStaff flag
-            const teacherList = staffData.filter((s: Staff) => s.isTeachingStaff === true);
+            // Filter only teachers using isTeachingStaff flag or "Teacher" role
+            const teacherList = staffData.filter((s: Staff) => 
+                s.isTeachingStaff === true || 
+                s.roleObject?.name === 'Teacher' || 
+                s.role === 'Teacher'
+            );
             setTeachers(teacherList);
             setPeriods(periodsData.sort((a: Period, b: Period) => a.periodOrder - b.periodOrder));
             setError('');

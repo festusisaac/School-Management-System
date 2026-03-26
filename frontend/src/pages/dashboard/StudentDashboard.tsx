@@ -13,7 +13,7 @@ const StudentDashboard: React.FC = () => {
     const { formatCurrency } = useSystem();
     const [studentProfile, setStudentProfile] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const isParent = (user?.roleObject?.name || user?.role || '').toLowerCase() === 'parent';
+    const isParent = (user?.role || user?.roleObject?.name || '').toLowerCase() === 'parent';
 
     useEffect(() => {
         const fetchProfile = async () => {

@@ -96,6 +96,7 @@ const StaffDirectoryPage = () => {
     });
     const [selectedFiles, setSelectedFiles] = useState<Record<string, string | string[]>>({});
     const [enableLogin, setEnableLogin] = useState(false);
+    const [isTeachingStaff, setIsTeachingStaff] = useState(false);
     const toast = useToast();
     const { settings } = useSystem();
 
@@ -140,6 +141,7 @@ const StaffDirectoryPage = () => {
             setEmployeeIdField(editingStaff.employeeId);
         } else if (!showModal) {
             setEmployeeIdField('');
+            setIsTeachingStaff(false);
         }
     }, [editingStaff, showModal, enableLogin]);
 
@@ -191,6 +193,7 @@ const StaffDirectoryPage = () => {
         setEditingStaff(staffMember);
         setSelectedFiles({});
         setEnableLogin(false); // Reset enableLogin when editing existing staff
+        setIsTeachingStaff(staffMember.isTeachingStaff || false);
         setShowModal(true);
     };
 
@@ -250,7 +253,7 @@ const StaffDirectoryPage = () => {
                         Export
                     </button>
                     <button
-                        onClick={() => { setEditingStaff(null); setSelectedFiles({}); setEnableLogin(false); setShowModal(true); }}
+                        onClick={() => { setEditingStaff(null); setSelectedFiles({}); setEnableLogin(false); setIsTeachingStaff(false); setShowModal(true); }}
                         className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
                     >
                         <Plus size={20} />
@@ -499,6 +502,11 @@ const StaffDirectoryPage = () => {
                                                             onChange={(e) => {
                                                                 // Automatically enable login if a role is selected
                                                                 if (e.target.value) setEnableLogin(true);
+
+                                                                const selectedRole = roles.find(r => r.id === e.target.value);
+                                                                if (selectedRole?.name === 'Teacher') {
+                                                                    setIsTeachingStaff(true);
+                                                                }
                                                             }}
                                                         >
                                                             <option value="">Select Role</option>
@@ -506,6 +514,20 @@ const StaffDirectoryPage = () => {
                                                                 <option key={role.id} value={role.id}>{role.name}</option>
                                                             ))}
                                                         </select>
+                                                        {/* Teaching Staff Toggle */}
+                                                        <div className="flex items-center gap-2 mt-2">
+                                                            <input
+                                                                type="checkbox"
+                                                                name="isTeachingStaff"
+                                                                id="isTeachingStaff"
+                                                                checked={isTeachingStaff}
+                                                                onChange={(e) => setIsTeachingStaff(e.target.checked)}
+                                                                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                                                            />
+                                                            <label htmlFor="isTeachingStaff" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                                Teaching Staff
+                                                            </label>
+                                                        </div>
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Department</label>

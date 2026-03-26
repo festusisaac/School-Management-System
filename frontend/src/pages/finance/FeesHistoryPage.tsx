@@ -77,7 +77,7 @@ export default function FeesHistoryPage() {
   const [limit] = useState(10);
 
   // User Role Check
-  const currentUserRole = (user?.roleObject?.name || user?.role || 'student').toLowerCase();
+  const currentUserRole = (user?.role || user?.roleObject?.name || 'student').toLowerCase();
   const isStudent = currentUserRole === 'student' || currentUserRole === 'parent';
 
   // Filters

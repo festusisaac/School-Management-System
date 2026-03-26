@@ -23,6 +23,9 @@ interface Staff {
     lastName: string;
     employeeId: string;
     role: string;
+    roleObject?: {
+        name: string;
+    };
     isTeachingStaff?: boolean;
     designation?: {
         title: string;
@@ -70,10 +73,13 @@ const AssignClassTeacherPage = () => {
             setClasses(classesData);
             setSections(sectionsData);
 
-            // Filter staff based on isTeachingStaff flag
-            // This is the explicit "Teaching Staff" checkbox value
+            // Filter staff based on isTeachingStaff flag or "Teacher" role
             const teacherList = Array.isArray(staffData)
-                ? staffData.filter((s: Staff) => s.isTeachingStaff === true)
+                ? staffData.filter((s: Staff) => 
+                    s.isTeachingStaff === true || 
+                    s.roleObject?.name === 'Teacher' || 
+                    s.role === 'Teacher'
+                )
                 : [];
 
             setTeachers(teacherList);
