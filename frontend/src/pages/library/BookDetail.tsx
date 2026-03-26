@@ -11,7 +11,8 @@ import {
   CheckCircle2, 
   XCircle, 
   Clock,
-  Edit
+  Edit,
+  User as UserIcon
 } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { Modal } from '../../components/ui/modal';
@@ -156,26 +157,100 @@ const BookDetail: React.FC = () => {
                       {copy.status === 'available' ? <CheckCircle2 size={16} strokeWidth={2.5} /> : <Clock size={16} strokeWidth={2.5} />}
                     </div>
                   </div>
-                  
-                  <div className="mt-4 pt-3 border-t border-gray-50 dark:border-gray-900 flex items-center justify-between">
-                    <span className={`text-[10px] font-black uppercase tracking-widest ${copy.status === 'available' ? 'text-green-600' : 'text-amber-500'}`}>
-                      {copy.status}
-                    </span>
-                    <button 
-                      onClick={() => handleDeleteCopy(copy.id)}
-                      className="p-1 px-2 text-[10px] font-black text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                    >
-                      Delete
-                    </button>
+                                   <div className="mt-4 pt-3 border-t border-gray-50 dark:border-gray-900 flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className={`text-[10px] font-black uppercase tracking-widest ${copy.status?.toLowerCase() === 'available' ? 'text-green-600' : 'text-amber-500'}`}>
+                        {copy.status}
+                      </span>
+                      <button 
+                        onClick={() => handleDeleteCopy(copy.id)}
+                        className="p-1 px-2 text-[10px] font-black text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                    
+                    {copy.status?.toLowerCase() === 'loaned' && (
+                      <div className="flex items-center gap-2 px-2 py-1.5 bg-amber-50 dark:bg-amber-900/10 rounded-lg border border-amber-100 dark:border-amber-900/20">
+                        <UserIcon size={12} className="text-amber-600" />
+                        <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 truncate">
+                          {(() => {
+                            const activeLoan = copy.loans?.find(l => l.status === 'active');
+                            if (!activeLoan) return 'Unknown Borrower';
+                            const b = activeLoan.student || activeLoan.staff;
+                            return b ? `${b.firstName} ${b.lastName}` : 'System User';
+                          })()}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
-              {(!book.copies || book.copies.length === 0) && (
-                <div className="col-span-full py-10 text-center bg-gray-50/50 dark:bg-gray-900/20 rounded-xl border-2 border-dashed border-gray-100 dark:border-gray-800">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-300">No physical copies in inventory</p>
-                </div>
-              )}
             </div>
+          </div>
+
+          {/* Recent Loans History */}
+          <div className="space-y-4 pt-4">
+             <div className="border-b border-gray-50 dark:border-gray-800 pb-3">
+                <h2 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                   Recent Circulation History
+                </h2>
+             </div>
+             <div className="bg-gray-50/50 dark:bg-gray-900/20 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-800">
+                <table className="w-full text-left border-collapse">
+                   <thead>
+                      <tr className="bg-gray-100/50 dark:bg-gray-800/50">
+                         <th className="px-4 py-2.5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Borrower</th>
+                         <th className="px-4 py-2.5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Accession</th>
+                         <th className="px-4 py-2.5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Issued</th>
+                         <th className="px-4 py-2.5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
+                      </tr>
+                   </thead>
+                   <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
+                      {(() => {
+                        const allLoans = book.copies?.flatMap(c => (c.loans || []).map(l => ({...l, barcode: c.barcode})))
+                          .sort((a, b) => new Date(b.issuedAt).getTime() - new Date(a.issuedAt).getTime())
+                          .slice(0, 5) || [];
+                        
+                        if (allLoans.length === 0) {
+                           return (
+                             <tr>
+                                <td colSpan={4} className="px-4 py-10 text-center text-[10px] font-black uppercase text-gray-300 italic tracking-widest">No previous transaction record found</td>
+                             </tr>
+                           );
+                        }
+
+                        return allLoans.map((loan: any) => (
+                           <tr key={loan.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                              <td className="px-4 py-3">
+                                 <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center text-primary-500 border border-gray-100 dark:border-gray-700 shadow-sm">
+                                       <UserIcon size={10} />
+                                    </div>
+                                    <p className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                                       {loan.student ? `${loan.student.firstName} ${loan.student.lastName}` : (loan.staff ? `${loan.staff.firstName} ${loan.staff.lastName}` : 'System User')}
+                                    </p>
+                                 </div>
+                              </td>
+                              <td className="px-4 py-3">
+                                 <span className="text-[10px] font-black text-gray-500 bg-white dark:bg-gray-800 px-2 py-0.5 rounded border border-gray-100 dark:border-gray-700">{loan.barcode}</span>
+                              </td>
+                              <td className="px-4 py-3">
+                                 <p className="text-[10px] font-bold text-gray-500">{new Date(loan.issuedAt).toLocaleDateString()}</p>
+                              </td>
+                              <td className="px-4 py-3">
+                                 <span className={`text-[9px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded ${
+                                    loan.status === 'active' ? 'bg-amber-50 text-amber-600' : 'bg-green-50 text-green-600'
+                                 }`}>
+                                    {loan.status}
+                                 </span>
+                              </td>
+                           </tr>
+                        ));
+                      })()}
+                   </tbody>
+                </table>
+             </div>
           </div>
         </div>
       </div>

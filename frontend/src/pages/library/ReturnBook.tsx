@@ -20,14 +20,14 @@ const ReturnBook: React.FC = () => {
     setLoading(true);
     setLoan(null);
     try {
-      const data = await libraryService.getOverdueLoans({ keyword: accessionNumber });
-      if (data && data.length > 0) {
-        setLoan(data[0]);
+      const data = await libraryService.findActiveLoanByBarcode(accessionNumber);
+      if (data) {
+        setLoan(data);
       } else {
         showError('No active loan found for this accession number');
       }
-    } catch (err) {
-      showError('Failed to search loan');
+    } catch (err: any) {
+      showError(err.response?.data?.message || 'Failed to search loan');
     } finally {
       setLoading(false);
     }
@@ -88,7 +88,7 @@ const ReturnBook: React.FC = () => {
                  </div>
                  <div>
                     <h3 className="font-bold text-gray-900 dark:text-white leading-tight">{loan.copy?.book?.title}</h3>
-                    <p className="text-[10px] text-primary-600 font-bold uppercase tracking-widest mt-0.5">Copy: {loan.copy?.copyNumber}</p>
+                    <p className="text-[10px] text-primary-600 font-bold uppercase tracking-widest mt-0.5">Barcode: {loan.copy?.barcode}</p>
                  </div>
               </div>
 
@@ -96,15 +96,15 @@ const ReturnBook: React.FC = () => {
                  <div className="flex items-center gap-2">
                     <User className="text-gray-400" size={14} />
                     <div>
-                       <p className="text-[10px] text-gray-400 font-bold uppercase">Borrower</p>
-                       <p className="text-xs font-bold text-gray-700 dark:text-gray-300 line-clamp-1">{loan.student ? `${loan.student.firstName} ${loan.student.lastName}` : loan.staff ? `${loan.staff.firstName} ${loan.staff.lastName}` : 'N/A'}</p>
+                       <p className="text-[10px] text-gray-400 font-bold uppercase">Borrower ID</p>
+                       <p className="text-xs font-bold text-gray-700 dark:text-gray-300 line-clamp-1">{loan.borrowerId || 'N/A'}</p>
                     </div>
                  </div>
                  <div className="flex items-center gap-2">
                     <Calendar className="text-red-400" size={14} />
                     <div>
                        <p className="text-[10px] text-red-500 font-bold uppercase">Due Date</p>
-                       <p className="text-xs font-bold text-red-600">{new Date(loan.dueDate).toLocaleDateString()}</p>
+                       <p className="text-xs font-bold text-red-600">{new Date(loan.dueAt).toLocaleDateString()}</p>
                     </div>
                  </div>
               </div>

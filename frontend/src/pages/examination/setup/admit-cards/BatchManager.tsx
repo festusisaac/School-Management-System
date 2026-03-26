@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Search, UserCheck, Users, Printer } from 'lucide-react';
 import { getFileUrl } from '../../../../services/api';
 
@@ -9,8 +9,14 @@ interface Props {
 }
 
 const BatchManager: React.FC<Props> = ({ students, onPrintBatch, loading }) => {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [searchTerm, setSearchTerm] = React.useState('');
+    const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
+
+    // Reset selection and search when students list changes (e.g. switching classes)
+    React.useEffect(() => {
+        setSelectedIds([]);
+        setSearchTerm('');
+    }, [students]);
 
     const getAbsoluteUrl = (url: string) => getFileUrl(url || '');
 

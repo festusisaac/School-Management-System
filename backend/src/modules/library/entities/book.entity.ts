@@ -26,6 +26,12 @@ export class Book {
   @Column({ nullable: true })
   coverPath?: string;
 
+  @Column({ nullable: true })
+  edition?: string;
+
+  @Column({ nullable: true })
+  language?: string;
+
   @ManyToMany(() => Author, (author) => author.books, { cascade: true })
   @JoinTable({ name: 'book_authors', joinColumn: { name: 'bookId' }, inverseJoinColumn: { name: 'authorId' } })
   authors?: Author[];

@@ -118,6 +118,16 @@ const BookList: React.FC = () => {
                   {book.authors?.map(a => a.name).join(', ') || 'Unknown'}
                 </p>
                 
+                <div className="mt-2">
+                   <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-black uppercase tracking-tighter ${
+                      book.copies?.some(c => c.status?.toLowerCase() === 'available') 
+                         ? 'bg-green-50 text-green-600' 
+                         : 'bg-red-50 text-red-600'
+                   }`}>
+                      {book.copies?.filter(c => c.status?.toLowerCase() === 'available').length || 0} / {book.copies?.length || 0} Avail
+                   </span>
+                </div>
+                
                 <div className="mt-auto pt-3 flex items-center justify-between border-t border-gray-50 dark:border-gray-700 mt-3">
                   <span className="text-[9px] font-black uppercase text-gray-300 tracking-tighter">
                     {book.isbn || 'ISBN-N/A'}

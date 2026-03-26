@@ -110,7 +110,7 @@ export class LibraryController {
   @Get('books/:id')
   @ApiOperation({ summary: 'Get book details by id' })
   getBook(@Param('id') id: string, @Request() req: any) {
-    return this.libraryService.findOneBook(id, req.user.tenantId);
+    return this.libraryService.findOne(id, req.user.tenantId);
   }
 
   @Patch('books/:id')
@@ -170,13 +170,19 @@ export class LibraryController {
 
   @Get('loans/overdue')
   @ApiOperation({ summary: 'List overdue loans' })
-  getOverdues(@Request() req: any) {
+  async findOverdues(@Request() req: any) {
     return this.libraryService.findOverdues(req.user.tenantId);
+  }
+
+  @Get('loans/find-by-barcode/:barcode')
+  @ApiOperation({ summary: 'Find active loan by book copy barcode' })
+  async findByBarcode(@Request() req: any, @Param('barcode') barcode: string) {
+    return this.libraryService.findActiveLoanByBarcode(barcode, req.user.tenantId);
   }
 
   @Get('stats')
   @ApiOperation({ summary: 'Get library dashboard statistics' })
-  getStats(@Request() req: any) {
+  async getStats(@Request() req: any) {
     return this.libraryService.getStats(req.user.tenantId);
   }
 }

@@ -9,6 +9,7 @@ import { AcademicSession } from '../../system/entities/academic-session.entity';
 import { AcademicTerm } from '../../system/entities/academic-term.entity';
 import { SystemSetting } from '../../system/entities/system-setting.entity';
 import { JwtAuthGuard } from '../../../guards/jwt-auth.guard';
+import { StudentTermResult } from '../entities/student-term-result.entity';
 
 @UseGuards(JwtAuthGuard)
 @Controller('examination/student')
@@ -42,8 +43,18 @@ export class StudentExamController {
         // Fetch Exam Groups
         const allExamGroups = await this.setupService.findAllExamGroups(tenantId);
         
-        // Fetch schedules filtered by student's class
-        const schedules = await this.setupService.getScheduleForClass(student.classId!, tenantId);
+        // Fetch schedules AND exams for the class to ensure visibility even if not yet scheduled
+        const [schedules, exams] = await Promise.all([
+            this.setupService.getScheduleForClass(student.classId!, tenantId),
+            this.setupService.getExamsForClass(student.classId!, tenantId)
+        ]);
+
+        // Also check if the student has any results (even if exams/schedules were deleted)
+        // This ensures they can still check historical results
+        const entityManager = this.studentRepo.manager;
+        const results = await entityManager.find(StudentTermResult, { 
+            where: { studentId: student.id, tenantId } 
+        });
 
         // Fetch Admit Card Templates for active groups
         const admitCards = await Promise.all(
@@ -53,8 +64,13 @@ export class StudentExamController {
         // Fetch School Settings for branding
         const settings = await this.settingRepo.findOne({ where: { } });
 
-        // Filter exam groups to only those that have at least one schedule for this student's class
-        const relevantGroupIds = new Set(schedules.map(s => s.exam?.examGroupId));
+        // Broaden relevant group discovery: Schedules OR Exams OR existing Results
+        const relevantGroupIds = new Set([
+            ...schedules.map(s => s.exam?.examGroupId),
+            ...exams.map(e => e.examGroupId),
+            ...results.map(r => r.examGroupId)
+        ]);
+        
         const examGroups = allExamGroups.filter(group => relevantGroupIds.has(group.id));
 
         return {

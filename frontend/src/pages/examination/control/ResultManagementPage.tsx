@@ -158,8 +158,19 @@ const ResultManagementPage = () => {
                     className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                     value={selectedTerm}
                     onChange={(e) => {
-                        setSelectedTerm(e.target.value);
-                        setSelectedGroup('');
+                        const term = e.target.value;
+                        setSelectedTerm(term);
+                        
+                        // Auto-select the first group of the new term
+                        const termGroups = groups.filter(g => 
+                            (g.academicYear === settings?.activeSessionName) && 
+                            (!term || g.term === term)
+                        );
+                        if (termGroups.length > 0) {
+                            setSelectedGroup(termGroups[0].id);
+                        } else {
+                            setSelectedGroup('');
+                        }
                     }}
                 >
                     <option value="">All Terms</option>

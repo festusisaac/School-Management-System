@@ -141,6 +141,13 @@ export class ExamSetupService {
         });
     }
 
+    async getExamsForClass(classId: string, tenantId: string) {
+        return this.examRepo.find({
+            where: { classId, tenantId },
+            relations: ['subject', 'class', 'examGroup'],
+        });
+    }
+
     async updateSchedule(id: string, dto: Partial<CreateExamScheduleDto>, tenantId: string) {
         await this.examScheduleRepo.update({ id, tenantId }, dto);
         return this.examScheduleRepo.findOne({ where: { id, tenantId }, relations: ['exam', 'exam.subject', 'exam.class'] });

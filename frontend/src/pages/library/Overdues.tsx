@@ -46,33 +46,32 @@ const Overdues: React.FC = () => {
           <BookIcon size={14} className="text-gray-300" />
           <div>
             <p className="text-xs font-bold text-gray-900 dark:text-white line-clamp-1">{row.original.copy?.book?.title}</p>
-            <p className="text-[10px] font-bold text-primary-600 uppercase">Acc: {row.original.copy?.copyNumber}</p>
+            <p className="text-[10px] font-bold text-primary-600 uppercase">Barcode: {row.original.copy?.barcode}</p>
           </div>
         </div>
       )
     },
     {
       accessorKey: 'borrower',
-      header: 'Borrower',
+      header: 'Borrower ID',
       cell: ({ row }) => {
-        const borrower = row.original.student || row.original.staff;
         return (
           <div className="flex items-center gap-2">
             <User size={12} className="text-gray-300" />
-            <p className="text-xs font-medium text-gray-700 dark:text-gray-300">{borrower ? `${borrower.firstName} ${borrower.lastName}` : 'N/A'}</p>
+            <p className="text-xs font-medium text-gray-700 dark:text-gray-300">{row.original.borrowerId || 'N/A'}</p>
           </div>
         );
       }
     },
     {
-      accessorKey: 'dueDate',
+      accessorKey: 'dueAt',
       header: 'Due Date',
       cell: ({ row }) => {
-        const dueDate = new Date(row.original.dueDate);
-        const isOverdue = dueDate < new Date();
+        const dueAt = new Date(row.original.dueAt);
+        const isOverdue = dueAt < new Date();
         return (
           <div className="flex flex-col">
-             <span className={`text-xs font-bold ${isOverdue ? 'text-red-600' : 'text-gray-600'}`}>{dueDate.toLocaleDateString()}</span>
+             <span className={`text-xs font-bold ${isOverdue ? 'text-red-600' : 'text-gray-600'}`}>{dueAt.toLocaleDateString()}</span>
              {isOverdue && <span className="text-[8px] font-black text-red-600 uppercase">Overdue</span>}
           </div>
         );
@@ -113,8 +112,8 @@ const Overdues: React.FC = () => {
         </div>
         <div className="flex gap-4">
            <div className="text-right">
-              <p className="text-[10px] font-black text-red-500 uppercase tracking-widest">Total Overdue</p>
-              <p className="text-xl font-black text-red-600 mt-0.5">{loans.filter(l => new Date(l.dueDate) < new Date()).length}</p>
+              <p className="text-[10px] font-black text-red-500 uppercase tracking-widest">Active Overdue</p>
+              <p className="text-xl font-black text-red-600 mt-0.5">{loans.filter(l => new Date(l.dueAt) < new Date()).length}</p>
            </div>
         </div>
       </div>
@@ -132,7 +131,7 @@ const Overdues: React.FC = () => {
       {loans.length === 0 && !loading && (
         <div className="py-20 text-center space-y-2 opacity-50">
            <CheckCircle className="mx-auto text-green-500" size={24} />
-           <p className="text-xs font-bold uppercase tracking-widest text-gray-500">All cleared</p>
+           <p className="text-xs font-black uppercase tracking-widest text-gray-500">All cleared</p>
         </div>
       )}
     </div>

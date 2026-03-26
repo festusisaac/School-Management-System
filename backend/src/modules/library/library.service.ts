@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, LessThan, ILike } from 'typeorm';
+import { Repository, In, LessThan, ILike, DeepPartial } from 'typeorm';
 import { Book } from './entities/book.entity';
 import { Author } from './entities/author.entity';
 import { Category } from './entities/category.entity';
@@ -83,6 +83,8 @@ export class LibraryService {
       publisher: dto.publisher,
       publishedDate: dto.publishedDate,
       description: dto.description,
+      edition: dto.edition,
+      language: dto.language,
       coverPath,
       tenantId,
     });
@@ -96,7 +98,44 @@ export class LibraryService {
       book.categories = categories;
     }
 
-    return this.bookRepo.save(book);
+    const savedBook = await this.bookRepo.save(book);
+
+    // Initial Copies Logic
+    if (dto.initialCopies && dto.initialCopies > 0) {
+      const copies: BookCopy[] = [];
+      let barcodePrefix = '';
+      let barcodeNum = 0;
+      let barcodePad = 3;
+
+      if (dto.startingBarcode) {
+        const match = dto.startingBarcode.match(/^(.*?)(\d+)$/);
+        if (match) {
+          barcodePrefix = match[1];
+          barcodeNum = parseInt(match[2], 10);
+          barcodePad = match[2].length;
+        } else {
+          barcodePrefix = dto.startingBarcode + '-';
+          barcodeNum = 1;
+        }
+      }
+
+      for (let i = 0; i < dto.initialCopies; i++) {
+        let barcode = undefined;
+        if (dto.startingBarcode) {
+          barcode = `${barcodePrefix}${String(barcodeNum + i).padStart(barcodePad, '0')}`;
+        }
+        
+        copies.push(this.copyRepo.create({
+          bookId: savedBook.id,
+          barcode,
+          status: 'available',
+          tenantId,
+        }));
+      }
+      await this.copyRepo.save(copies);
+    }
+
+    return savedBook;
   }
 
   async updateBook(id: string, dto: UpdateBookDto, tenantId: string, coverPath?: string): Promise<Book> {
@@ -108,6 +147,8 @@ export class LibraryService {
     if (dto.publisher) book.publisher = dto.publisher;
     if (dto.publishedDate) book.publishedDate = dto.publishedDate;
     if (dto.description) book.description = dto.description;
+    if (dto.edition) book.edition = dto.edition;
+    if (dto.language) book.language = dto.language;
     if (coverPath) book.coverPath = coverPath;
 
     if (dto.authorIds) {
@@ -141,9 +182,19 @@ export class LibraryService {
     return this.bookRepo.find({ where, relations: ['authors', 'categories', 'copies'] });
   }
 
-  async findOneBook(id: string, tenantId: string): Promise<Book> {
-    const book = await this.bookRepo.findOne({ where: { id, tenantId }, relations: ['authors', 'categories', 'copies'] });
-    if (!book) throw new NotFoundException(`Book ${id} not found`);
+  async findOne(id: string, tenantId: string): Promise<Book> {
+    const book = await this.bookRepo.findOne({
+      where: { id, tenantId },
+      relations: [
+        'authors', 
+        'categories', 
+        'copies', 
+        'copies.loans', 
+        'copies.loans.student', 
+        'copies.loans.staff'
+      ],
+    });
+    if (!book) throw new NotFoundException('Book not found');
     return book;
   }
 
@@ -173,14 +224,17 @@ export class LibraryService {
     if (!copy) throw new NotFoundException('Copy not found');
     if (copy.status !== 'available') throw new ConflictException('Copy not available');
 
-    const loan = this.loanRepo.create({
+    const loanData: any = {
       copyId: dto.copyId,
-      borrowerId: dto.borrowerId,
+      studentId: dto.studentId,
+      staffId: dto.staffId,
+      borrowerId: dto.studentId || dto.staffId || dto.borrowerId,
       issuedAt: new Date(),
       dueAt: new Date(dto.dueAt),
       status: 'active',
       tenantId,
-    });
+    };
+    const loan = this.loanRepo.create(loanData as DeepPartial<Loan>);
 
     copy.status = 'loaned';
     await this.copyRepo.save(copy);
@@ -230,9 +284,40 @@ export class LibraryService {
     return chargeable > 0 ? chargeable * finePerDay : 0;
   }
 
-  async findOverdues(tenantId: string): Promise<Loan[]> {
+  async findOverdues(tenantId: string): Promise<any[]> {
     const now = new Date();
-    return this.loanRepo.find({ where: { tenantId, status: 'active', dueAt: LessThan(now) }, relations: ['copy', 'copy.book'] });
+    const loans = await this.loanRepo.find({ 
+      where: { tenantId, status: 'active' }, 
+      relations: ['copy', 'copy.book'] 
+    });
+
+    const settings = await this.settingsRepo.findOne({ where: { tenantId } });
+    const graceDays = settings?.graceDays ?? 3;
+    const finePerDay = settings?.finePerDay ?? 50;
+
+    return loans.map(loan => {
+      const fineAmount = this.calculateFine(loan.dueAt, now, graceDays, finePerDay);
+      return { ...loan, fineAmount };
+    });
+  }
+
+  async findActiveLoanByBarcode(barcode: string, tenantId: string): Promise<any> {
+    const copy = await this.copyRepo.findOne({ where: { barcode, tenantId } });
+    if (!copy) throw new NotFoundException('Copy not found');
+
+    const loan = await this.loanRepo.findOne({ 
+      where: { copyId: copy.id, status: 'active', tenantId },
+      relations: ['copy', 'copy.book']
+    });
+
+    if (!loan) return null;
+
+    const settings = await this.settingsRepo.findOne({ where: { tenantId } });
+    const graceDays = settings?.graceDays ?? 3;
+    const finePerDay = settings?.finePerDay ?? 50;
+    const fineAmount = this.calculateFine(loan.dueAt, new Date(), graceDays, finePerDay);
+
+    return { ...loan, fineAmount };
   }
 
   async getStats(tenantId: string) {

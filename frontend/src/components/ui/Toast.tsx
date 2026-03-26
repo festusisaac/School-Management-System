@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
-import { X, CheckCircle, XCircle, AlertTriangle, Info } from 'lucide-react';
+import { X, CheckCircle, XCircle, AlertTriangle, Info, Loader2 } from 'lucide-react';
 
-export type ToastType = 'success' | 'error' | 'warning' | 'info';
+export type ToastType = 'success' | 'error' | 'warning' | 'info' | 'loading';
 
 export interface ToastProps {
     id: string;
@@ -13,12 +13,14 @@ export interface ToastProps {
 
 const Toast: React.FC<ToastProps> = ({ id, type, message, duration = 5000, onClose }) => {
     useEffect(() => {
+        if (type === 'loading') return; // Loading toasts must be manually closed or replaced
+
         const timer = setTimeout(() => {
             onClose(id);
         }, duration);
 
         return () => clearTimeout(timer);
-    }, [id, duration, onClose]);
+    }, [id, duration, onClose, type]);
 
     const getIcon = () => {
         switch (type) {
@@ -30,6 +32,8 @@ const Toast: React.FC<ToastProps> = ({ id, type, message, duration = 5000, onClo
                 return <AlertTriangle className="w-5 h-5" />;
             case 'info':
                 return <Info className="w-5 h-5" />;
+            case 'loading':
+                return <Loader2 className="w-5 h-5 animate-spin" />;
         }
     };
 
@@ -42,6 +46,7 @@ const Toast: React.FC<ToastProps> = ({ id, type, message, duration = 5000, onClo
             case 'warning':
                 return 'bg-yellow-50 border-yellow-200 text-yellow-800';
             case 'info':
+            case 'loading':
                 return 'bg-primary-50 border-primary-200 text-primary-800';
         }
     };
@@ -55,6 +60,7 @@ const Toast: React.FC<ToastProps> = ({ id, type, message, duration = 5000, onClo
             case 'warning':
                 return 'text-yellow-600';
             case 'info':
+            case 'loading':
                 return 'text-primary-600';
         }
     };

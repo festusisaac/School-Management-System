@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Layout, Printer, Save, Trash2, Edit3 } from 'lucide-react';
 import { examinationService, ExamGroup, AdmitCard } from '../../../../services/examinationService';
 import api from '../../../../services/api';
@@ -90,12 +90,18 @@ const AdmitCardPage = () => {
         if (selectedGroup) {
             fetchAdmitCards();
             fetchSchedules();
+        } else {
+            setAdmitCards([]);
+            setSchedules([]);
+            setSelectedTemplateForPrint(null);
         }
     }, [selectedGroup]);
 
     useEffect(() => {
         if (selectedClass) {
             fetchStudents();
+        } else {
+            setStudents([]);
         }
     }, [selectedClass]);
 
@@ -303,8 +309,19 @@ const AdmitCardPage = () => {
                             className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 shadow-sm min-w-[150px]"
                             value={selectedTerm}
                             onChange={(e) => {
-                                setSelectedTerm(e.target.value);
-                                setSelectedGroup('');
+                                const term = e.target.value;
+                                setSelectedTerm(term);
+                                
+                                // Auto-select the first group of the new term
+                                const termGroups = groups.filter(g => 
+                                    (g.academicYear === settings?.activeSessionName) && 
+                                    (!term || g.term === term)
+                                );
+                                if (termGroups.length > 0) {
+                                    setSelectedGroup(termGroups[0].id);
+                                } else {
+                                    setSelectedGroup('');
+                                }
                             }}
                         >
                             <option value="">All Terms</option>
@@ -359,7 +376,12 @@ const AdmitCardPage = () => {
             {activeTab === 'design' ? (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-3">
-                        <DataTable columns={columns} data={admitCards} searchKey="templateName" />
+                        <DataTable 
+                            key={`admin-admit-${selectedGroup}`}
+                            columns={columns} 
+                            data={admitCards} 
+                            searchKey="templateName" 
+                        />
                     </div>
                 </div>
             ) : (

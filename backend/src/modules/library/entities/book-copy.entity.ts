@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, Index, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, Index, JoinColumn, OneToMany } from 'typeorm';
 import { Book } from './book.entity';
+import { Loan } from './loan.entity';
 
 @Entity('book_copies')
 export class BookCopy {
@@ -22,6 +23,9 @@ export class BookCopy {
 
   @Column({ nullable: true })
   location?: string;
+
+  @OneToMany(() => Loan, (loan) => loan.copy)
+  loans?: Loan[];
 
   @Index()
   @Column({ type: 'uuid' })

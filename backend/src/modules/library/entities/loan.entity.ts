@@ -1,5 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { BookCopy } from './book-copy.entity';
+import { Student } from '../../students/entities/student.entity';
+import { Staff } from '../../hr/entities/staff.entity';
 
 @Entity('loans')
 export class Loan {
@@ -15,7 +17,21 @@ export class Loan {
   copy?: BookCopy;
 
   @Column({ type: 'uuid', nullable: true })
-  borrowerId?: string; // typically student.userId or student id
+  studentId?: string;
+
+  @ManyToOne(() => Student, { nullable: true })
+  @JoinColumn({ name: 'studentId' })
+  student?: Student;
+
+  @Column({ type: 'uuid', nullable: true })
+  staffId?: string;
+
+  @ManyToOne(() => Staff, { nullable: true })
+  @JoinColumn({ name: 'staffId' })
+  staff?: Staff;
+
+  @Column({ type: 'uuid', nullable: true })
+  borrowerId?: string;
 
   @Column({ type: 'timestamp' })
   issuedAt!: Date;

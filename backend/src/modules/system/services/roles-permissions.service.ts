@@ -56,21 +56,31 @@ export class RolesPermissionsService implements OnModuleInit {
   private async renameAdminToSuperAdmin() {
     try {
       const adminRole = await this.roleRepository.findOne({ where: { name: 'Admin' } });
+      const superAdminRole = await this.roleRepository.findOne({ where: { name: 'Super Administrator' } });
+
       if (adminRole) {
-        adminRole.name = 'Super Administrator';
-        adminRole.description = 'Complete system access and management';
-        adminRole.isSystem = true;
-        await this.roleRepository.save(adminRole);
-        
-        // Also update the role string in the users table for consistency
-        await this.roleRepository.manager.query(
-          `UPDATE users SET role = 'super administrator' WHERE role = 'admin'`
-        );
-        
-        console.log('✓ Renamed legacy "Admin" role to "Super Administrator" and updated user roles');
+        if (superAdminRole) {
+          // Both exist, just move users and delete legacy admin
+          await this.roleRepository.manager.query(
+            `UPDATE users SET role = 'super administrator' WHERE role = 'admin'`
+          );
+          await this.roleRepository.remove(adminRole);
+          console.log('✓ Merged legacy "Admin" role into existing "Super Administrator"');
+        } else {
+          // Only legacy exists, rename it
+          adminRole.name = 'Super Administrator';
+          adminRole.description = 'Complete system access and management';
+          adminRole.isSystem = true;
+          await this.roleRepository.save(adminRole);
+          
+          await this.roleRepository.manager.query(
+            `UPDATE users SET role = 'super administrator' WHERE role = 'admin'`
+          );
+          console.log('✓ Renamed legacy "Admin" role to "Super Administrator"');
+        }
       }
     } catch (error) {
-      console.error('Error renaming admin role:', error);
+      console.error('Error migrating legacy admin role:', error);
     }
   }
 

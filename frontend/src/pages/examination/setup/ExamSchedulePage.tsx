@@ -113,6 +113,8 @@ const ExamSchedulePage = () => {
     useEffect(() => {
         if (selectedGroup && selectedClass) {
             fetchScheduleData();
+        } else {
+            setScheduleRows([]);
         }
     }, [selectedGroup, selectedClass]);
 
@@ -358,8 +360,19 @@ const ExamSchedulePage = () => {
                         className="flex-1 md:flex-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 shadow-sm"
                         value={selectedTerm}
                         onChange={(e) => {
-                            setSelectedTerm(e.target.value);
-                            setSelectedGroup('');
+                            const term = e.target.value;
+                            setSelectedTerm(term);
+                            
+                            // Auto-select the first group of the new term
+                            const termGroups = groups.filter(g => 
+                                (g.academicYear === settings?.activeSessionName) && 
+                                (!term || g.term === term)
+                            );
+                            if (termGroups.length > 0) {
+                                setSelectedGroup(termGroups[0].id);
+                            } else {
+                                setSelectedGroup('');
+                            }
                         }}
                     >
                         <option value="">All Terms</option>
@@ -398,13 +411,14 @@ const ExamSchedulePage = () => {
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
                     <p className="mt-4">Loading schedule...</p>
                 </div>
-            ) : !selectedClass ? (
+            ) : (!selectedClass || !selectedGroup) ? (
                 <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-12 text-center text-gray-500 dark:text-gray-400">
                     <Calendar className="w-12 h-12 mx-auto text-gray-300 mb-4" />
-                    <p>Select an exam group and class to view or manage the schedule.</p>
+                    <p>Select both an exam group and a class to manage the schedule.</p>
                 </div>
             ) : (
                 <DataTable
+                    key={`${selectedGroup}-${selectedClass}`}
                     columns={columns}
                     data={scheduleRows}
                     searchKey="subjectName"

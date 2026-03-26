@@ -13,6 +13,8 @@ interface ToastContextType {
     showError: (message: string, duration?: number) => void;
     showWarning: (message: string, duration?: number) => void;
     showInfo: (message: string, duration?: number) => void;
+    showLoading: (message: string) => string;
+    hideLoading: (id: string) => void;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
@@ -53,8 +55,18 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         addToast('info', message, duration);
     }, [addToast]);
 
+    const showLoading = useCallback((message: string) => {
+        const id = Math.random().toString(36).substring(2, 9);
+        setToasts((prev) => [...prev, { id, type: 'loading', message }]);
+        return id;
+    }, []);
+
+    const hideLoading = useCallback((id: string) => {
+        removeToast(id);
+    }, [removeToast]);
+
     return (
-        <ToastContext.Provider value={{ showSuccess, showError, showWarning, showInfo }}>
+        <ToastContext.Provider value={{ showSuccess, showError, showWarning, showInfo, showLoading, hideLoading }}>
             {children}
             <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none">
                 <div className="flex flex-col gap-2 pointer-events-auto">

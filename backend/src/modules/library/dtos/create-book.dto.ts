@@ -35,4 +35,20 @@ export class CreateBookDto {
   @IsArray()
   @IsOptional()
   categoryIds?: string[];
+
+  @ApiProperty({ example: 10, required: false })
+  @IsOptional()
+  initialCopies?: number;
+
+  @ApiProperty({ example: 'ACC-001', required: false })
+  @IsOptional()
+  startingBarcode?: string;
+
+  @ApiProperty({ example: '1st Edition', required: false })
+  @IsOptional()
+  edition?: string;
+
+  @ApiProperty({ example: 'English', required: false })
+  @IsOptional()
+  language?: string;
 }

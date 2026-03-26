@@ -18,6 +18,7 @@ export interface BookCopy {
   barcode?: string;
   status: string; // available | loaned | lost
   location?: string;
+  loans?: Loan[];
 }
 
 export interface Book {
@@ -37,11 +38,15 @@ export interface Loan {
   id: string;
   copyId: string;
   borrowerId?: string;
+  studentId?: string;
+  staffId?: string;
   issuedAt: string;
   dueAt: string;
   returnedAt?: string;
   status: string;
   copy?: BookCopy & { book?: Book };
+  student?: any;
+  staff?: any;
 }
 
 export interface LibrarySettings {
@@ -112,7 +117,13 @@ export const libraryService = {
   },
 
   // Loans
-  issueLoan: async (data: { copyId: string; borrowerId: string; dueAt: string }) => {
+  issueLoan: async (data: { 
+    copyId: string; 
+    studentId?: string; 
+    staffId?: string; 
+    dueAt: string; 
+    borrowerId?: string 
+  }) => {
     return api.post<Loan>('/library/loans', data);
   },
   returnLoan: async (loanId: string, returnedAt?: string) => {
@@ -133,6 +144,18 @@ export const libraryService = {
   // Dashboard & Misc
   getStats: async () => {
     return api.get<any>('/library/stats');
+  },
+
+  // Borrower Search
+  searchStudents: async (keyword: string) => {
+    return api.get<any[]>('/students', { params: { keyword } });
+  },
+  searchStaff: async (keyword: string) => {
+    return api.get<any[]>('/hr/staff', { params: { search: keyword } });
+  },
+
+  findActiveLoanByBarcode: async (barcode: string) => {
+    return api.get<any>(`/library/loans/find-by-barcode/${barcode}`);
   },
 
   // Aliases for consistency with component usage

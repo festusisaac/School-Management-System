@@ -18,6 +18,7 @@ import { clsx } from 'clsx';
 import { FeeNoticeTemplate } from '../finance/components/FeeNoticeTemplate';
 import { createRoot } from 'react-dom/client';
 import { useSystem } from '../../context/SystemContext';
+import { cn } from '../../utils/cn';
 
 export default function StudentProfile() {
     const { id } = useParams();

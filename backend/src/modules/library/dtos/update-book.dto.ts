@@ -36,4 +36,14 @@ export class UpdateBookDto {
   @IsArray()
   @IsOptional()
   categoryIds?: string[];
+
+  @ApiPropertyOptional({ example: '1st Edition' })
+  @IsString()
+  @IsOptional()
+  edition?: string;
+
+  @ApiPropertyOptional({ example: 'English' })
+  @IsString()
+  @IsOptional()
+  language?: string;
 }
