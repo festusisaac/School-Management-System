@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Printer, Search, FileText, X, Filter, Eye, Settings, Check } from 'lucide-react';
+import { Printer, Search, FileText, X, Filter, Eye, SlidersHorizontal } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { useSystem } from '../../../context/SystemContext';
 import { examinationService, ExamGroup, GradeScale } from '../../../services/examinationService';
@@ -345,8 +345,8 @@ const ReportCardPage = () => {
                             onClick={() => setShowSettings(!showSettings)}
                             className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all shadow-sm"
                         >
-                            <Settings className={`w-4 h-4 ${showSettings ? 'animate-spin' : ''}`} />
-                            Settings
+                            <SlidersHorizontal className={`w-4 h-4`} />
+                            Layout
                         </button>
                         {students.length > 0 && (
                             <button
@@ -417,82 +417,60 @@ const ReportCardPage = () => {
                     )}
                 </div>
 
-                {/* Report Customization Settings Modal */}
+                {/* Report Layout Options — Modal */}
                 {showSettings && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                        {/* Backdrop */}
                         <div 
-                            className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+                            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                             onClick={() => setShowSettings(false)}
                         />
-                        
-                        {/* Modal Content */}
-                        <div className="bg-white dark:bg-gray-800 w-full max-w-xl rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden relative animate-in zoom-in-95 fade-in duration-200">
-                            <div className="p-6 border-b border-gray-50 dark:border-gray-700 flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/50">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-xl flex items-center justify-center text-primary-600">
-                                        <Settings className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-bold text-gray-900 dark:text-white uppercase tracking-wider text-sm">Report Configuration</h3>
-                                        <p className="text-[11px] text-gray-500 font-medium">Customize report card visibility and metrics</p>
-                                    </div>
+                        <div className="bg-white dark:bg-gray-800 w-full max-w-md rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden relative animate-in zoom-in-95 fade-in duration-200">
+                            <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-sm font-bold text-gray-900 dark:text-white">Layout Options</h3>
+                                    <p className="text-xs text-gray-500 mt-0.5">Toggle what appears on the report card</p>
                                 </div>
                                 <button 
                                     onClick={() => setShowSettings(false)}
-                                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors text-gray-400"
+                                    className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-400"
                                 >
-                                    <X className="w-5 h-5" />
+                                    <X className="w-4 h-4" />
                                 </button>
                             </div>
-
-                            <div className="p-8">
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                                    {[
-                                        { key: 'showPhoto', label: 'Student Photo', desc: 'Display student profile image' },
-                                        { key: 'showHighest', label: 'Highest Score', desc: 'Show top grade in class' },
-                                        { key: 'showLowest', label: 'Lowest Score', desc: 'Show lowest grade in class' },
-                                        { key: 'showAverage', label: 'Class Average', desc: 'Show mean score for subject' },
-                                        { key: 'showSubjectPosition', label: 'Subject Pos.', desc: 'Rank within specific subject' },
-                                        { key: 'showClassPosition', label: 'Class Position', desc: 'Overall student class rank' },
-                                        { key: 'showAttendance', label: 'Attendance', desc: 'Show term attendance stats' },
-                                        { key: 'showCumulative', label: 'Cumulative', desc: 'Show 1st & 2nd term scores' },
-                                    ].map((item) => (
+                            <div className="p-5 space-y-3">
+                                {[
+                                    { key: 'showPhoto', label: 'Student Photo' },
+                                    { key: 'showHighest', label: 'Highest Score' },
+                                    { key: 'showLowest', label: 'Lowest Score' },
+                                    { key: 'showAverage', label: 'Class Average' },
+                                    { key: 'showSubjectPosition', label: 'Subject Position' },
+                                    { key: 'showClassPosition', label: 'Class Position' },
+                                    { key: 'showAttendance', label: 'Attendance' },
+                                    { key: 'showCumulative', label: 'Cumulative' },
+                                ].map((item) => (
+                                    <label key={item.key} className="flex items-center justify-between cursor-pointer select-none group py-1 px-1 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                        <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors font-medium">
+                                            {item.label}
+                                        </span>
                                         <button
-                                            key={item.key}
                                             onClick={() => setConfig({ ...config, [item.key]: !config[item.key] })}
-                                            className={`group flex flex-col items-start p-4 rounded-xl border-2 transition-all text-left hover:scale-[1.02] active:scale-95 ${
-                                                config[item.key]
-                                                    ? 'border-primary-500 bg-primary-50/30 dark:bg-primary-900/10'
-                                                    : 'border-gray-100 dark:border-gray-700 hover:border-gray-300'
+                                            className={`w-9 h-5 rounded-full relative transition-colors duration-200 flex-shrink-0 ${
+                                                config[item.key] ? 'bg-primary-500' : 'bg-gray-300 dark:bg-gray-600'
                                             }`}
                                         >
-                                            <div className="flex items-center justify-between w-full mb-2">
-                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                                                    config[item.key] ? 'bg-primary-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-400'
-                                                }`}>
-                                                    <Check className={`w-4 h-4 ${config[item.key] ? 'opacity-100' : 'opacity-20'}`} />
-                                                </div>
-                                                <div className={`w-2 h-2 rounded-full ${config[item.key] ? 'bg-primary-500 animate-pulse' : 'bg-gray-200 dark:bg-gray-700'}`} />
-                                            </div>
-                                            <span className={`text-[11px] font-black uppercase mb-0.5 ${config[item.key] ? 'text-primary-700 dark:text-primary-300' : 'text-gray-900 dark:text-white'}`}>
-                                                {item.label}
-                                            </span>
-                                            <span className="text-[9px] text-gray-400 dark:text-gray-500 leading-tight">
-                                                {item.desc}
-                                            </span>
+                                            <span className={`absolute top-[3px] w-[14px] h-[14px] rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                                                config[item.key] ? 'translate-x-[18px]' : 'translate-x-[3px]'
+                                            }`} />
                                         </button>
-                                    ))}
-                                </div>
-
+                                    </label>
+                                ))}
                             </div>
-
-                            <div className="p-6 bg-gray-50/50 dark:bg-gray-900/30 border-t border-gray-50 dark:border-gray-700 flex justify-end">
+                            <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-700 flex justify-end">
                                 <button
                                     onClick={() => setShowSettings(false)}
-                                    className="px-6 py-2.5 bg-primary-600 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/25 active:scale-95"
+                                    className="px-4 py-2 bg-primary-600 text-white text-xs font-bold rounded-lg hover:bg-primary-700 transition-all shadow-sm"
                                 >
-                                    Apply Changes
+                                    Done
                                 </button>
                             </div>
                         </div>

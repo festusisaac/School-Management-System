@@ -7,65 +7,56 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 const permissionsData = [
-  // Students
+  // ── Students ──────────────────────────────
   { slug: 'students:view', name: 'View Students', module: 'Students' },
   { slug: 'students:create', name: 'Create Student', module: 'Students' },
   { slug: 'students:edit', name: 'Edit Student', module: 'Students' },
   { slug: 'students:delete', name: 'Delete Student', module: 'Students' },
   { slug: 'students:promote', name: 'Promote Students', module: 'Students' },
 
-  // Academics
-  { slug: 'academics:manage_sessions', name: 'Manage Sessions', module: 'Academics' },
-  { slug: 'academics:manage_terms', name: 'Manage Terms', module: 'Academics' },
-  { slug: 'academics:manage_classes', name: 'Manage Classes', module: 'Academics' },
+  // ── Student Attendance ────────────────────
+  { slug: 'attendance:mark', name: 'Mark Student Attendance', module: 'Student Attendance' },
+  { slug: 'attendance:view_reports', name: 'View Attendance Reports', module: 'Student Attendance' },
+
+  // ── Academics ─────────────────────────────
+  { slug: 'academics:manage_sessions', name: 'Manage Sessions & Terms', module: 'Academics' },
+  { slug: 'academics:manage_classes', name: 'Manage Classes & Sections', module: 'Academics' },
   { slug: 'academics:manage_subjects', name: 'Manage Subjects', module: 'Academics' },
+  { slug: 'academics:assign_teachers', name: 'Assign Class/Subject Teachers', module: 'Academics' },
   { slug: 'academics:manage_timetable', name: 'Manage Timetable', module: 'Academics' },
 
-  // HR
-  { slug: 'hr:manage_staff', name: 'Manage Staff', module: 'HR' },
-  { slug: 'hr:manage_payroll', name: 'Manage Payroll', module: 'HR' },
-  { slug: 'hr:manage_attendance', name: 'Manage Attendance', module: 'HR' },
-  { slug: 'hr:manage_leave', name: 'Manage Leave', module: 'HR' },
-
-  // Finance
-  { slug: 'finance:view_fees', name: 'View Fees', module: 'Finance' },
-  { slug: 'finance:collect_fees', name: 'Collect Fees', module: 'Finance' },
-  { slug: 'finance:manage_expenses', name: 'Manage Expenses', module: 'Finance' },
-  { slug: 'finance:reports', name: 'Financial Reports', module: 'Finance' },
-
-  // Examination
-  { slug: 'exams:manage_setup', name: 'Manage Exam Setup', module: 'Examination' },
+  // ── Examination ───────────────────────────
+  { slug: 'exams:manage_setup', name: 'Manage Exam Groups & Assessment Types', module: 'Examination' },
   { slug: 'exams:manage_schedule', name: 'Manage Exam Schedule', module: 'Examination' },
   { slug: 'exams:manage_grades', name: 'Manage Grade Scales', module: 'Examination' },
-  { slug: 'exams:enter_marks', name: 'Enter Marks', module: 'Examination' },
+  { slug: 'exams:enter_marks', name: 'Enter Marks & Scores', module: 'Examination' },
+  { slug: 'exams:manage_domains', name: 'Manage Affective/Psychomotor Domains', module: 'Examination' },
   { slug: 'exams:manage_admit_cards', name: 'Manage Admit Cards', module: 'Examination' },
-  { slug: 'exams:publish_results', name: 'Publish Results', module: 'Examination' },
-  { slug: 'exams:manage_domains', name: 'Manage Behavioral Domains', module: 'Examination' },
+  { slug: 'exams:process_results', name: 'Process / Approve / Publish / Withhold Results', module: 'Examination' },
+  { slug: 'exams:view_reports', name: 'View Broadsheet & Report Cards', module: 'Examination' },
 
-  // Settings
+  // ── Finance ───────────────────────────────
+  { slug: 'finance:manage_fee_structure', name: 'Manage Fee Structure & Discounts', module: 'Finance' },
+  { slug: 'finance:collect_fees', name: 'Record Payments', module: 'Finance' },
+  { slug: 'finance:view_reports', name: 'View Financial Reports & Debtors', module: 'Finance' },
+  { slug: 'finance:manage_reminders', name: 'Send Payment Reminders', module: 'Finance' },
+
+  // ── HR ────────────────────────────────────
+  { slug: 'hr:manage_staff', name: 'Manage Staff Directory', module: 'HR' },
+  { slug: 'hr:manage_payroll', name: 'Manage Payroll', module: 'HR' },
+  { slug: 'hr:manage_attendance', name: 'Staff Attendance', module: 'HR' },
+  { slug: 'hr:manage_leave', name: 'Manage Leave Types & Approvals', module: 'HR' },
+  { slug: 'hr:manage_departments', name: 'Manage Departments', module: 'HR' },
+
+  // ── Library ───────────────────────────────
+  { slug: 'library:manage_books', name: 'Manage Books (Add/Edit/Delete)', module: 'Library' },
+  { slug: 'library:issue_return', name: 'Issue & Return Books', module: 'Library' },
+  { slug: 'library:view_reports', name: 'View Library Reports', module: 'Library' },
+
+  // ── Settings ──────────────────────────────
   { slug: 'settings:general', name: 'General Settings', module: 'Settings' },
   { slug: 'settings:roles_permissions', name: 'Roles & Permissions', module: 'Settings' },
-  { slug: 'settings:backups', name: 'Manage Backups', module: 'Settings' },
-
-  // Library
-  { slug: 'library:view_books', name: 'View Books', module: 'Library' },
-  { slug: 'library:manage_books', name: 'Manage Books', module: 'Library' },
-  { slug: 'library:issue_return', name: 'Issue/Return Books', module: 'Library' },
-
-  // Dormitory
-  { slug: 'dormitory:manage_hostels', name: 'Manage Hostels', module: 'Dormitory' },
-  { slug: 'dormitory:manage_rooms', name: 'Manage Rooms', module: 'Dormitory' },
-  { slug: 'dormitory:assign_rooms', name: 'Assign Rooms', module: 'Dormitory' },
-
-  // Communication
-  { slug: 'communication:send_sms', name: 'Send SMS', module: 'Communication' },
-  { slug: 'communication:send_email', name: 'Send Email', module: 'Communication' },
-  { slug: 'communication:notice_board', name: 'Notice Board', module: 'Communication' },
-
-  // Reporting
-  { slug: 'reports:attendance', name: 'Attendance Reports', module: 'Reporting' },
-  { slug: 'reports:academic', name: 'Academic Reports', module: 'Reporting' },
-  { slug: 'reports:financial', name: 'Financial Reports', module: 'Reporting' },
+  { slug: 'settings:manage_users', name: 'Manage Users', module: 'Settings' },
 ];
 
 async function seed() {
@@ -104,8 +95,20 @@ async function seed() {
     const rolesToSeed = [
       { name: 'Admin', isSystem: true, permissions: savedPermissions },
       { name: 'Principal', isSystem: true, permissions: savedPermissions.filter(p => !p.slug.startsWith('settings:')) },
-      { name: 'Teacher', isSystem: true, permissions: savedPermissions.filter(p => p.slug.includes('view') || p.slug.includes('enter_marks')) },
-      { name: 'Staff', isSystem: true, permissions: savedPermissions.filter(p => p.slug.includes('view')) },
+      { name: 'Teacher', isSystem: true, permissions: savedPermissions.filter(p => 
+        p.slug.includes('view') || 
+        p.slug === 'exams:enter_marks' || 
+        p.slug === 'exams:manage_domains' ||
+        p.slug === 'exams:view_reports' ||
+        p.slug === 'attendance:mark' ||
+        p.slug === 'attendance:view_reports' ||
+        p.slug === 'students:view'
+      ) },
+      { name: 'Staff', isSystem: true, permissions: savedPermissions.filter(p => 
+        p.slug.includes('view') || 
+        p.slug === 'students:view' ||
+        p.slug === 'attendance:view_reports'
+      ) },
       { name: 'Student', isSystem: true, permissions: savedPermissions.filter(p => p.slug === 'students:view') },
       { name: 'Parent', isSystem: true, permissions: savedPermissions.filter(p => p.slug === 'students:view') },
     ];
