@@ -33,6 +33,11 @@ export class StaffController {
         return this.staffService.findAll(filters, req.user.tenantId);
     }
 
+    @Get('dashboard/stats')
+    async getTeacherDashboardStats(@Request() req: any) {
+        return this.staffService.getTeacherDashboardStats(req.user.email, req.user.tenantId);
+    }
+
     @Get('statistics')
     async getStatistics(@Request() req: any) {
         return this.staffService.getStatistics(req.user.tenantId);

@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import axios from 'axios';
 import { SystemSettingsService } from '../system/services/system-settings.service';
+import * as dns from 'dns';
 
 export interface EmailOptions {
   to: string | string[];
@@ -17,6 +18,12 @@ export class EmailService {
   private transporter: any;
 
   constructor(private readonly systemSettingsService: SystemSettingsService) {
+    // Force use of public DNS if local resolver in Node.js is failing
+    try {
+      dns.setServers(['8.8.8.8', '8.8.4.4']);
+    } catch (e) {
+      this.logger.warn('Failed to set custom DNS servers, using defaults');
+    }
     this.initializeTransporter();
   }
 
@@ -65,14 +72,11 @@ export class EmailService {
         </div>
       `;
 
-      await this.sendEmail({
+      return await this.sendEmail({
         to: email,
         subject: `Welcome to ${schoolName} - Verify Your Email`,
         html,
       });
-
-      this.logger.log(`Registration email sent to ${email}`);
-      return true;
     } catch (error) {
       this.logger.error(`Failed to send registration email to ${email}:`, error);
       return false;
@@ -146,14 +150,11 @@ export class EmailService {
         </div>
       `;
 
-      await this.sendEmail({
+      return await this.sendEmail({
         to: email,
         subject: `Password Reset Request - ${schoolName}`,
         html,
       });
-
-      this.logger.log(`Password reset email sent to ${email}`);
-      return true;
     } catch (error) {
       this.logger.error(`Failed to send password reset email to ${email}:`, error);
       return false;
@@ -179,14 +180,11 @@ export class EmailService {
         </div>
       `;
 
-      await this.sendEmail({
+      return await this.sendEmail({
         to: email,
         subject,
         html,
       });
-
-      this.logger.log(`Notification email sent to ${email}`);
-      return true;
     } catch (error) {
       this.logger.error(`Failed to send notification email to ${email}:`, error);
       return false;

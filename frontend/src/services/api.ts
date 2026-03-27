@@ -938,6 +938,15 @@ class ApiService {
   async getStudentAdmitCard(studentId: string, examGroupId: string) {
     return this.get<any>(`/examination/student/${studentId}/admit-card`, { params: { examGroupId } })
   }
+
+  // Teacher Dashboard API
+  async getTeacherStats() {
+    return this.get<any>('/hr/staff/dashboard/stats')
+  }
+
+  async getTeacherTodayTimetable() {
+    return this.get<any[]>('/academics/timetable/slots/teacher/today')
+  }
 }
 
 export const api = new ApiService()

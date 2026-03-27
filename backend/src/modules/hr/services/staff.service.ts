@@ -163,7 +163,8 @@ export class StaffService {
                 role: staffDto.role || (staffDto.roleId ? undefined : 'staff'),
                 password: staffDto.password,
                 isActive: true,
-                tenantId: tenantId
+                tenantId: tenantId,
+                photo: savedStaff.photo
             });
         }
 
@@ -249,7 +250,8 @@ export class StaffService {
                 role: staffDto.role,
                 password: staffDto.password,
                 isActive: true,
-                tenantId: tenantId
+                tenantId: tenantId,
+                photo: savedStaff.photo
             });
         }
 
@@ -270,6 +272,66 @@ export class StaffService {
             total,
             active,
             onLeave,
+        };
+    }
+
+    async getTeacherDashboardStats(email: string, tenantId: string) {
+        // Resolve staff from email
+        const staff = await this.staffRepository.findOne({
+            where: { email, tenantId },
+        });
+
+        if (!staff) {
+            return {
+                totalStudents: 0,
+                classesToday: 0,
+                pendingHomework: 0,
+                attendanceMissing: 0,
+            };
+        }
+
+        const staffId = staff.id;
+        const today = new Date().getDay(); // 0=Sunday, 1=Monday...
+        const manager = this.staffRepository.manager;
+
+        // Count classes today from timetable
+        let classesToday = 0;
+        try {
+            const result = await manager.query(
+                `SELECT COUNT(*) as count FROM "timetable" WHERE "teacherId" = $1 AND "dayOfWeek" = $2 AND "tenantId" = $3`,
+                [staffId, today, tenantId]
+            );
+            classesToday = parseInt(result[0]?.count || '0', 10);
+        } catch (e) { /* table may not exist yet */ }
+
+        // Count assigned students (distinct students in classes this teacher teaches)
+        let totalStudents = 0;
+        try {
+            const result = await manager.query(
+                `SELECT COUNT(DISTINCT s.id) as count FROM "students" s
+                 INNER JOIN "subject_teachers" st ON st."classId" = s."classId" AND st."tenantId" = s."tenantId"
+                 WHERE st."teacherId" = $1 AND st."tenantId" = $2`,
+                [staffId, tenantId]
+            );
+            totalStudents = parseInt(result[0]?.count || '0', 10);
+        } catch (e) { /* table may not exist yet */ }
+
+        // Count pending homework (homework created by this teacher not yet past due or ungraded)
+        let pendingHomework = 0;
+        try {
+            const result = await manager.query(
+                `SELECT COUNT(*) as count FROM "homework"
+                 WHERE "teacherId" = $1 AND "tenantId" = $2`,
+                [staffId, tenantId]
+            );
+            pendingHomework = parseInt(result[0]?.count || '0', 10);
+        } catch (e) { /* table may not exist yet */ }
+
+        return {
+            totalStudents,
+            classesToday,
+            pendingHomework,
+            attendanceMissing: 0, // TODO: implement when attendance scoping is done
         };
     }
 }

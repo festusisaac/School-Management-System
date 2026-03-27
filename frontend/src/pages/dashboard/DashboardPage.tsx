@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import apiService from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
 import StudentDashboard from './StudentDashboard'
+import TeacherDashboard from './TeacherDashboard'
 
 import { Link } from 'react-router-dom'
 import {
@@ -112,6 +113,10 @@ const DashboardPage: React.FC = () => {
 
   if (isStudentOrParent) {
      return <StudentDashboard />;
+  }
+
+  if (userRole === 'teacher') {
+    return <TeacherDashboard />;
   }
 
   // Fallback data for charts if API returns empty

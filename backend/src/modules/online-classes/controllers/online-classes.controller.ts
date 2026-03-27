@@ -3,8 +3,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { OnlineClassesService } from '../services/online-classes.service';
 import { CreateOnlineClassDto } from '../dto/create-online-class.dto';
 import { UpdateOnlineClassDto } from '../dto/update-online-class.dto';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../../auth/guards/roles.guard';
+import { JwtAuthGuard, RolesGuard } from '@guards/jwt-auth.guard';
 import { OnlineClassStatus } from '../entities/online-class.entity';
 
 @ApiTags('Online Classes')

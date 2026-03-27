@@ -147,7 +147,8 @@ export class StudentsService {
                 password: `Student@${savedStudent.admissionNo}`,
                 role: 'student',
                 roleId: studentRole?.id,
-                tenantId: tenantId
+                tenantId: tenantId,
+                photo: savedStudent.studentPhoto
             });
             await this.studentsRepository.update(savedStudent.id, { userId: studentUser.id });
 
@@ -342,6 +343,19 @@ export class StudentsService {
         // --- Simplified Fee Allocation for MVP ---
         if (feeGroupIds && Array.isArray(feeGroupIds) && feeGroupIds.length > 0) {
             await this.feesService.assignFeesToStudent(id, feeGroupIds, tenantId, feeExclusions);
+        }
+
+        // Sync user account if photo or name changed
+        if (student.userId) {
+            try {
+                await this.usersService.update(student.userId, {
+                    firstName: student.firstName,
+                    lastName: student.lastName,
+                    photo: student.studentPhoto
+                });
+            } catch (err) {
+                console.error(`Failed to sync user account for student ${student.id}:`, err);
+            }
         }
 
         // Return the refreshed student with all relations correctly loaded

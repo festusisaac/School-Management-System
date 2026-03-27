@@ -10,15 +10,22 @@ import {
     UseGuards,
     Request,
 } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { TimetableService } from '../services/timetable.service';
 import { JwtAuthGuard, RolesGuard } from '@guards/jwt-auth.guard';
 import { Roles } from '@decorators/roles.decorator';
 import { UserRole } from '@common/dtos/auth.dto';
+import { Staff } from '@modules/hr/entities/staff.entity';
 
 @Controller('academics/timetable')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class TimetableController {
-    constructor(private readonly timetableService: TimetableService) { }
+    constructor(
+        private readonly timetableService: TimetableService,
+        @InjectRepository(Staff)
+        private readonly staffRepository: Repository<Staff>,
+    ) { }
 
     // --- Period Management ---
     @Post('periods')
@@ -82,6 +89,18 @@ export class TimetableController {
         @Request() req: any
     ) {
         return this.timetableService.getTimetable(classId, sectionId, req.user.tenantId);
+    }
+
+    @Get('slots/teacher/today')
+    async getMyTodayTimetable(@Request() req: any) {
+        // Resolve current user to their staff record via email
+        const staff = await this.staffRepository.findOne({
+            where: { email: req.user.email, tenantId: req.user.tenantId },
+        });
+        if (!staff) {
+            return [];
+        }
+        return this.timetableService.getTeacherTodayTimetable(staff.id, req.user.tenantId);
     }
 
     @Get('slots/teacher/:teacherId')

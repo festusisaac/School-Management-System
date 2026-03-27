@@ -4,6 +4,7 @@ import { useSystem } from '../../context/SystemContext';
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
+import { getFileUrl } from '../../services/api';
 
 interface TopBarProps {
     onMenuClick: () => void;
@@ -106,9 +107,17 @@ export function TopBar({ onMenuClick }: TopBarProps) {
                         onClick={() => setIsProfileOpen(!isProfileOpen)}
                         className="flex items-center gap-3 p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all border border-transparent hover:border-gray-100 dark:hover:border-gray-600"
                     >
-                        <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-200 font-bold text-xs ring-2 ring-white dark:ring-gray-700 shadow-sm uppercase">
-                            {initials}
-                        </div>
+                        {user?.photo ? (
+                            <img
+                                src={getFileUrl(user.photo)}
+                                alt={userName}
+                                className="w-8 h-8 rounded-full object-cover ring-2 ring-white dark:ring-gray-700 shadow-sm"
+                            />
+                        ) : (
+                            <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-200 font-bold text-xs ring-2 ring-white dark:ring-gray-700 shadow-sm uppercase">
+                                {initials}
+                            </div>
+                        )}
                         <div className="text-left hidden md:block">
                             <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 leading-none">{userName}</p>
                             <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">{userRole}</p>

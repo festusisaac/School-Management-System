@@ -84,6 +84,7 @@ import { SystemModule } from '../system/system.module';
         AttendanceService,
         LeaveService,
         PayrollService,
+        TypeOrmModule, // Export TypeOrmModule so Staff repository is injectable in other modules
     ],
 })
 export class HrModule { }

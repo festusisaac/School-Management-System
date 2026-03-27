@@ -192,6 +192,24 @@ export class TimetableService {
         });
     }
 
+    async getTeacherTodayTimetable(teacherId: string, tenantId: string): Promise<any[]> {
+        // JavaScript getDay(): 0=Sunday, 1=Monday, ...
+        const today = new Date().getDay();
+        const slots = await this.timetableRepository.find({
+            where: { teacherId, tenantId, dayOfWeek: today },
+            relations: ['subject', 'period', 'class', 'section'],
+            order: { period: { periodOrder: 'ASC' } },
+        });
+
+        return slots.map(slot => ({
+            id: slot.id,
+            startTime: slot.period?.startTime || '',
+            endTime: slot.period?.endTime || '',
+            subjectName: slot.subject?.name || 'N/A',
+            className: `${slot.class?.name || ''}${slot.section ? ' - ' + slot.section.name : ''}`.trim(),
+        }));
+    }
+
     async getTimetableSlotById(id: string): Promise<Timetable> {
         const slot = await this.timetableRepository.findOne({
             where: { id },

@@ -44,6 +44,9 @@ export class User {
   @Column({ type: 'uuid', nullable: true })
   tenantId!: string;
 
+  @Column({ type: 'varchar', nullable: true })
+  photo?: string;
+
   @Column({ type: 'boolean', default: true })
   isActive!: boolean;
 

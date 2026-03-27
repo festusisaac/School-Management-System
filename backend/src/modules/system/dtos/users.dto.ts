@@ -42,6 +42,11 @@ export class CreateUserDto {
   @IsUUID()
   @IsOptional()
   tenantId?: string;
+
+  @ApiPropertyOptional({ example: '/uploads/students/profile.jpg' })
+  @IsString()
+  @IsOptional()
+  photo?: string;
 }
 
 export class UpdateUserDto {
@@ -80,6 +85,11 @@ export class UpdateUserDto {
   @IsUUID()
   @IsOptional()
   tenantId?: string;
+
+  @ApiPropertyOptional({ example: '/uploads/students/profile.jpg' })
+  @IsString()
+  @IsOptional()
+  photo?: string;
 }
 
 export class UserResponseDto {
@@ -103,6 +113,9 @@ export class UserResponseDto {
 
   @ApiPropertyOptional()
   roleObject?: any;
+
+  @ApiPropertyOptional()
+  photo?: string;
 
   @ApiProperty()
   isActive!: boolean;

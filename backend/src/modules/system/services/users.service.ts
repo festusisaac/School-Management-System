@@ -122,11 +122,12 @@ export class UsersService implements OnModuleInit {
     
     if (user) {
       // Update existing user role if provided
-      if (details.roleId || details.role || details.tenantId) {
+      if (details.roleId || details.role || details.tenantId || details.photo) {
         Object.assign(user, {
           roleId: details.roleId || user.roleId,
           role: details.role || user.role,
           tenantId: details.tenantId || user.tenantId,
+          photo: details.photo || user.photo,
         });
         return this.usersRepository.save(user);
       }
@@ -142,6 +143,7 @@ export class UsersService implements OnModuleInit {
       roleId: details.roleId,
       role: details.role,
       tenantId: details.tenantId,
+      photo: details.photo,
     } as any);
   }
 }

@@ -14,6 +14,8 @@ import * as Students from './pages/students';
 import * as Finance from './pages/finance';
 import * as Examination from './pages/examination';
 import * as Settings from './pages/settings';
+import * as OnlineClasses from './pages/online-classes';
+import * as Homework from './pages/homework';
 import { 
   BookList, 
   BookDetail, 
@@ -73,7 +75,6 @@ function AppRoutes() {
               <Route path="subjects" element={<Academics.SubjectsPage />} />
               <Route path="assign-class-subjects" element={<Academics.ClassSubjectsPage />} />
               <Route path="assign-subject-teachers" element={<Academics.AssignSubjectTeacherPage />} />
-              <Route path="online-classes" element={<Academics.OnlineClassesPage />} />
               <Route path="classes" element={<Academics.ClassPage />} />
               <Route path="sections" element={<Academics.SectionsPage />} />
             </Route>
@@ -111,8 +112,16 @@ function AppRoutes() {
               <Route path="examination/admit-card" element={<Students.StudentAdmitCardPage />} />
               <Route path="examination/results" element={<Students.StudentResultPage />} />
               <Route path="library" element={<Students.StudentLibraryPage />} />
-              <Route path="online-classes" element={<Academics.OnlineClassesPage />} />
+              <Route path="online-classes" element={<OnlineClasses.OnlineClassesPage />} />
+              <Route path="online-classes/history" element={<OnlineClasses.CompletedClassesPage />} />
+              <Route path="homework" element={<Homework.HomeworkPage />} />
             </Route>
+
+            {/* Online Classes Routes */}
+            <Route path="online-classes" element={<OnlineClasses.OnlineClassesPage />} />
+            <Route path="online-classes/schedule" element={<OnlineClasses.OnlineClassesPage />} />
+            <Route path="online-classes/history" element={<OnlineClasses.CompletedClassesPage />} />
+            <Route path="homework" element={<Homework.HomeworkPage />} />
 
             {/* Library Routes */}
             <Route path="library">

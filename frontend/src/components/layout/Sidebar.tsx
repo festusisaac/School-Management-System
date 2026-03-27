@@ -21,6 +21,7 @@ import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useSystem } from '../../context/SystemContext';
 import { useAuthStore } from '../../stores/authStore';
+import { getFileUrl } from '../../services/api';
 
 interface SidebarProps {
     isOpen: boolean;
@@ -63,149 +64,211 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 { label: 'Check Result', path: '/students/examination/results' },
             ]
         },
-        { label: 'Online Classes', icon: Video, path: '/students/online-classes' }
+        { 
+            label: 'Online Classes', 
+            icon: Video, 
+            path: '/students/online-classes'
+        },
+        {
+            label: 'Homework',
+            icon: BookOpen,
+            path: '/students/homework'
+        }
     ];
 
-    const adminNavItems = [
+    const userPermissions = user?.permissions || [];
+    const hasPermission = (permission?: string) => {
+        if (!permission) return true;
+        if (userRole === 'super administrator' || userRole === 'admin') return true;
+        return userPermissions.includes(permission);
+    };
+
+    const staffNavItems = [
         { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
         {
             label: 'Academics',
             icon: BookOpen,
             path: '/academics',
+            permission: 'academics:manage_classes',
             children: [
-                { label: 'School Sections', path: '/academics/school-sections' },
-                { label: 'Classes', path: '/academics/classes' },
-                { label: 'Sections', path: '/academics/sections' },
-                { label: 'Subject Groups', path: '/academics/subject-groups' },
-                { label: 'Subjects', path: '/academics/subjects' },
-                { label: 'Assign Class Subjects', path: '/academics/assign-class-subjects' },
-                { label: 'Assign Subject Teachers', path: '/academics/assign-subject-teachers' },
-                { label: 'Assign Class Teachers', path: '/academics/assign-class-teachers' },
-                { label: 'Class Timetable', path: '/academics/class-timetable' },
-                { label: 'Teachers Timetable', path: '/academics/teachers-timetable' },
-                { label: 'Online Classes', path: '/academics/online-classes' },
-                { label: 'Promote Students', path: '/academics/promotion' },
+                { label: 'School Sections', path: '/academics/school-sections', permission: 'academics:manage_sessions' },
+                { label: 'Classes', path: '/academics/classes', permission: 'academics:manage_classes' },
+                { label: 'Sections', path: '/academics/sections', permission: 'academics:manage_classes' },
+                { label: 'Subject Groups', path: '/academics/subject-groups', permission: 'academics:manage_subjects' },
+                { label: 'Subjects', path: '/academics/subjects', permission: 'academics:manage_subjects' },
+                { label: 'Assign Class Subjects', path: '/academics/assign-class-subjects', permission: 'academics:assign_teachers' },
+                { label: 'Assign Subject Teachers', path: '/academics/assign-subject-teachers', permission: 'academics:assign_teachers' },
+                { label: 'Assign Class Teachers', path: '/academics/assign-class-teachers', permission: 'academics:assign_teachers' },
+                { label: 'Class Timetable', path: '/academics/class-timetable', permission: 'academics:manage_timetable' },
+                { label: 'Teachers Timetable', path: '/academics/teachers-timetable', permission: 'academics:manage_timetable' },
+                { label: 'Promote Students', path: '/academics/promotion', permission: 'students:promote' },
             ]
+        },
+        { 
+            label: 'Online Classes', 
+            icon: Video, 
+            path: '/online-classes',
+            // Defaulting online classes to academics permission or visible to all teachers
+            permission: 'academics:manage_classes',
+            children: [
+                { label: 'Classes Schedule', path: '/online-classes/schedule', permission: 'academics:manage_classes' },
+                { label: 'Completed Classes', path: '/online-classes/history', permission: 'academics:manage_classes' },
+            ]
+        },
+        {
+            label: 'Homework',
+            icon: BookOpen,
+            path: '/homework',
+            permission: 'academics:manage_classes'
         },
         {
             label: 'Human Resource',
             icon: Users,
             path: '/hr',
+            permission: 'hr:manage_staff',
             children: [
-                { label: 'Staff Directory', path: '/hr/staff' },
-                { label: 'Department', path: '/hr/departments' },
-                { label: 'Staff Attendance', path: '/hr/attendance' },
-                { label: 'Payroll', path: '/hr/payroll' },
-                { label: 'Approve Leave Request', path: '/hr/leave/approve' },
-                { label: 'Apply Leave', path: '/hr/leave/apply' },
-                { label: 'Leave Type', path: '/hr/leave-types' },
-                { label: 'Teachers Rating', path: '/hr/ratings' },
+                { label: 'Staff Directory', path: '/hr/staff', permission: 'hr:manage_staff' },
+                { label: 'Department', path: '/hr/departments', permission: 'hr:manage_departments' },
+                { label: 'Staff Attendance', path: '/hr/attendance', permission: 'hr:manage_attendance' },
+                { label: 'Payroll', path: '/hr/payroll', permission: 'hr:manage_payroll' },
+                { label: 'Approve Leave Request', path: '/hr/leave/approve', permission: 'hr:manage_leave' },
+                { label: 'Apply Leave', path: '/hr/leave/apply' }, // No permission needed, accessible to all staff
+                { label: 'Leave Type', path: '/hr/leave-types', permission: 'hr:manage_leave' },
+                { label: 'Teachers Rating', path: '/hr/ratings', permission: 'hr:manage_staff' },
             ]
         },
         {
             label: 'Student Attendance',
             icon: Clock,
             path: '/students/attendance',
+            permission: 'attendance:mark',
             children: [
-                { label: 'Mark Attendance', path: '/students/attendance/mark' },
-                { label: 'Attendance History', path: '/students/attendance/history' },
-                { label: 'Attendance Reports', path: '/students/attendance/reports' },
+                { label: 'Mark Attendance', path: '/students/attendance/mark', permission: 'attendance:mark' },
+                { label: 'Attendance History', path: '/students/attendance/history', permission: 'attendance:view_reports' },
+                { label: 'Attendance Reports', path: '/students/attendance/reports', permission: 'attendance:view_reports' },
             ]
         },
         {
             label: 'Student Information',
             icon: GraduationCap,
             path: '/students',
+            permission: 'students:view',
             children: [
-                { label: 'Student Directory', path: '/students/directory' },
-                { label: 'Student Admission', path: '/students/admission' },
-                { label: 'Online Admission', path: '/students/online-admission' },
-                { label: 'Deactivate Student', path: '/students/deactivated' },
-                { label: 'Student Categories', path: '/students/categories' },
-                { label: 'Student House', path: '/students/houses' },
-                { label: 'Deactivation Reason', path: '/students/deactivate-reasons' },
-                { label: 'Student Profile', path: '/students/profile/:id' },
-                { label: 'Rate Teachers', path: '/students/rate-teachers' },
+                { label: 'Student Directory', path: '/students/directory', permission: 'students:view' },
+                { label: 'Student Admission', path: '/students/admission', permission: 'students:create' },
+                { label: 'Online Admission', path: '/students/online-admission', permission: 'students:create' },
+                { label: 'Library', path: '/students/library', icon: BookOpen, permission: 'library:manage_books' },
+                { label: 'Deactivate Student', path: '/students/deactivated', permission: 'students:delete' },
+                { label: 'Student Categories', path: '/students/categories', permission: 'students:view' },
+                { label: 'Student House', path: '/students/houses', permission: 'students:view' },
+                { label: 'Deactivation Reason', path: '/students/deactivate-reasons', permission: 'students:delete' },
+                { label: 'Student Profile', path: '/students/profile/:id', permission: 'students:view' },
+                { label: 'Rate Teachers', path: '/students/rate-teachers', permission: 'students:view' },
             ]
         },
         {
             label: 'Library',
             icon: BookOpen,
             path: '/library',
+            permission: 'library:manage_books',
             children: [
-                { label: 'Dashboard', path: '/library/dashboard' },
-                { label: 'Books Catalog', path: '/library' },
-                { label: 'Authors', path: '/library/authors' },
-                { label: 'Categories', path: '/library/categories' },
+                { label: 'Dashboard', path: '/library/dashboard', permission: 'library:manage_books' },
+                { label: 'Books Catalog', path: '/library', permission: 'library:manage_books' },
+                { label: 'Authors', path: '/library/authors', permission: 'library:manage_books' },
+                { label: 'Categories', path: '/library/categories', permission: 'library:manage_books' },
                 { type: 'header', label: 'Circulation' },
-                { label: 'Issue Book', path: '/library/issue' },
-                { label: 'Return Book', path: '/library/return' },
-                { label: 'Overdue Loans', path: '/library/overdues' },
+                { label: 'Issue Book', path: '/library/issue', permission: 'library:issue_return' },
+                { label: 'Return Book', path: '/library/return', permission: 'library:issue_return' },
+                { label: 'Overdue Loans', path: '/library/overdues', permission: 'library:view_reports' },
                 { type: 'header', label: 'Setup' },
-                { label: 'Library Settings', path: '/library/settings' },
+                { label: 'Library Settings', path: '/library/settings', permission: 'settings:general' },
             ]
         },
         {
             label: 'Finance',
             icon: CreditCard,
             path: '/finance',
+            permission: 'finance:collect_fees',
             children: [
-                { label: 'Offline Fees Collection', path: '/finance/record-payment' },
-                { label: 'Fees History', path: '/finance/payments' },
-                { label: 'Debtors List', path: '/finance/debtors' },
-                { label: 'Fee Structure', path: '/finance/structures' },
-                { label: 'Discounts', path: '/finance/discounts' },
-                { label: 'Payment Reminders', path: '/finance/reminders' },
-                { label: 'Balance Carry-Forward', path: '/finance/carry-forward' },
+                { label: 'Offline Fees Collection', path: '/finance/record-payment', permission: 'finance:collect_fees' },
+                { label: 'Fees History', path: '/finance/payments', permission: 'finance:view_reports' },
+                { label: 'Debtors List', path: '/finance/debtors', permission: 'finance:view_reports' },
+                { label: 'Fee Structure', path: '/finance/structures', permission: 'finance:manage_fee_structure' },
+                { label: 'Discounts', path: '/finance/discounts', permission: 'finance:manage_fee_structure' },
+                { label: 'Payment Reminders', path: '/finance/reminders', permission: 'finance:manage_reminders' },
+                { label: 'Balance Carry-Forward', path: '/finance/carry-forward', permission: 'finance:manage_fee_structure' },
             ]
         },
         {
             label: 'Examination',
             icon: BookOpen,
             path: '/examination',
+            permission: 'exams:manage_setup',
             children: [
                 // Setup
                 { type: 'header', label: 'Exam Setup' },
-                { label: 'Exam Groups', path: '/examination/setup/groups' },
-                { label: 'Assessment Structure', path: '/examination/setup/structure' },
-                { label: 'Grading System', path: '/examination/setup/grading' },
-                { label: 'Exam Schedules', path: '/examination/setup/schedules' },
-                { label: 'Admit Cards', path: '/examination/setup/admit-cards' },
+                { label: 'Exam Groups', path: '/examination/setup/groups', permission: 'exams:manage_setup' },
+                { label: 'Assessment Structure', path: '/examination/setup/structure', permission: 'exams:manage_setup' },
+                { label: 'Grading System', path: '/examination/setup/grading', permission: 'exams:manage_setup' },
+                { label: 'Exam Schedules', path: '/examination/setup/schedules', permission: 'exams:manage_schedule' },
+                { label: 'Admit Cards', path: '/examination/setup/admit-cards', permission: 'exams:manage_admit_cards' },
 
                 // Entry
-                { type: 'header', label: 'Score Entry' },
-                { label: 'Scoresheet Entry', path: '/examination/entry/scoresheet' },
-                { label: 'Skills & Attributes', path: '/examination/entry/skills' },
-                { label: 'Psychomotor Skills', path: '/examination/entry/psychomotor' },
+                { type: 'header', label: 'Score Entry', permission: 'exams:enter_marks' },
+                { label: 'Scoresheet Entry', path: '/examination/entry/scoresheet', permission: 'exams:enter_marks' },
+                { label: 'Skills & Attributes', path: '/examination/entry/skills', permission: 'exams:manage_domains' },
+                { label: 'Psychomotor Skills', path: '/examination/entry/psychomotor', permission: 'exams:manage_domains' },
 
                 // Reports
-                { type: 'header', label: 'Reports' },
-                { label: 'Class Broadsheet', path: '/examination/reports/class-broadsheet' },
-                { label: 'Subject Broadsheet', path: '/examination/reports/subject-broadsheet' },
-                { label: 'Report Card', path: '/examination/reports/report-card' },
+                { type: 'header', label: 'Reports', permission: 'exams:view_reports' },
+                { label: 'Class Broadsheet', path: '/examination/reports/class-broadsheet', permission: 'exams:view_reports' },
+                { label: 'Subject Broadsheet', path: '/examination/reports/subject-broadsheet', permission: 'exams:view_reports' },
+                { label: 'Report Card', path: '/examination/reports/report-card', permission: 'exams:view_reports' },
 
                 // Control
-                { type: 'header', label: 'Control' },
-                { label: 'Result Management', path: '/examination/control/results' },
-                { label: 'Manage Scratch Cards', path: '/examination/control/scratch-cards' },
+                { type: 'header', label: 'Control', permission: 'exams:process_results' },
+                { label: 'Result Management', path: '/examination/control/results', permission: 'exams:process_results' },
+                { label: 'Manage Scratch Cards', path: '/examination/control/scratch-cards', permission: 'exams:process_results' },
             ]
         },
         {
             label: 'Settings',
             icon: Settings,
             path: '/settings',
+            permission: 'settings:general',
             children: [
                 { type: 'header', label: 'Configuration' },
-                { label: 'General Settings', path: '/settings/general' },
-                { label: 'Academic Sessions', path: '/settings/sessions' },
-                { label: 'Academic Terms', path: '/settings/terms' },
-                { label: 'Roles & Permissions', path: '/settings/roles' },
-                { label: 'User Management', path: '/settings/users' },
+                { label: 'General Settings', path: '/settings/general', permission: 'settings:general' },
+                { label: 'Academic Sessions', path: '/settings/sessions', permission: 'academics:manage_sessions' },
+                { label: 'Academic Terms', path: '/settings/terms', permission: 'academics:manage_sessions' },
+                { label: 'Roles & Permissions', path: '/settings/roles', permission: 'settings:roles_permissions' },
+                { label: 'User Management', path: '/settings/users', permission: 'settings:manage_users' },
             ]
         },
     ];
 
-    const navItems = isStudentOrParent ? studentNavItems : adminNavItems;
+    const filterNavItems = (items: any[]) => {
+        return items
+            .filter(item => {
+                if (item.type === 'header' && !item.permission) return true; // Keep headers by default unless specifically permissioned
+                return hasPermission(item.permission);
+            })
+            .map(item => {
+                if (item.children) {
+                    const filteredChildren = filterNavItems(item.children);
+                    return { ...item, children: filteredChildren };
+                }
+                return item;
+            })
+            .filter(item => {
+                // Remove parents with no children left (except if they are meant to be standalone like Dashboard)
+                if (item.children && item.children.length === 0) return false;
+                return true; 
+            });
+    };
+
+    const finalStaffNavItems = filterNavItems(staffNavItems);
+    const navItems = isStudentOrParent ? studentNavItems : finalStaffNavItems;
 
     const handleNavClick = () => {
         // Close sidebar on mobile after navigation
@@ -249,9 +312,17 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
                     {/* User Avatar */}
                     <div className="flex items-center gap-3 pr-10">
-                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-primary-500/30 flex-shrink-0 uppercase">
-                            {initials}
-                        </div>
+                        {user?.photo ? (
+                            <img
+                                src={getFileUrl(user.photo)}
+                                alt={userName}
+                                className="w-12 h-12 rounded-2xl object-cover shadow-lg shadow-primary-500/30 flex-shrink-0"
+                            />
+                        ) : (
+                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-primary-500/30 flex-shrink-0 uppercase">
+                                {initials}
+                            </div>
+                        )}
                         <div className="min-w-0">
                             <p className="font-bold text-gray-900 dark:text-white truncate leading-tight">{userName}</p>
                             <p className="text-xs font-semibold text-primary-600 dark:text-primary-400 capitalize mt-0.5">{userRoleLabel}</p>

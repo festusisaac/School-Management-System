@@ -23,6 +23,7 @@ import { HrModule } from '@modules/hr/hr.module';
 import { ExaminationModule } from '@modules/examination/examination.module';
 import { SystemModule } from '@modules/system/system.module';
 import { OnlineClassesModule } from '@modules/online-classes/online-classes.module';
+import { HomeworkModule } from '@modules/homework/homework.module';
 
 @Module({
   imports: [
@@ -77,6 +78,7 @@ import { OnlineClassesModule } from '@modules/online-classes/online-classes.modu
     ExaminationModule,
     SystemModule,
     OnlineClassesModule,
+    HomeworkModule,
   ],
   controllers: [AppController],
   providers: [

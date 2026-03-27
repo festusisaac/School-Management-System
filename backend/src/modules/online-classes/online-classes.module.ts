@@ -3,9 +3,14 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { OnlineClassesController } from './controllers/online-classes.controller';
 import { OnlineClassesService } from './services/online-classes.service';
 import { OnlineClass } from './entities/online-class.entity';
+import { CommunicationModule } from '../communication/communication.module';
+import { Student } from '../students/entities/student.entity';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([OnlineClass])],
+    imports: [
+        TypeOrmModule.forFeature([OnlineClass, Student]),
+        CommunicationModule,
+    ],
     controllers: [OnlineClassesController],
     providers: [OnlineClassesService],
     exports: [OnlineClassesService],
