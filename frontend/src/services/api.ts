@@ -687,6 +687,10 @@ class ApiService {
     return this.get<any>('/hr/staff/statistics')
   }
 
+  async getMyProfile() {
+    return this.get<any>('/hr/staff/profile/me')
+  }
+
   // Attendance API methods
   async markAttendance(data: any) {
     return this.post<any>('/hr/attendance/mark', data)

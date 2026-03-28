@@ -133,7 +133,13 @@ export function TopBar({ onMenuClick }: TopBarProps) {
                                 <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
                             </div>
 
-                            <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                            <button 
+                                onClick={() => {
+                                    setIsProfileOpen(false);
+                                    navigate('/hr/staff/profile');
+                                }}
+                                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            >
                                 <UserIcon className="w-4 h-4" />
                                 My Profile
                             </button>

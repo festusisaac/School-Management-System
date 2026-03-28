@@ -43,6 +43,11 @@ export class StaffController {
         return this.staffService.getStatistics(req.user.tenantId);
     }
 
+    @Get('profile/me')
+    async getMyProfile(@Request() req: any) {
+        return this.staffService.findByEmail(req.user.email);
+    }
+
 
     @Get(':id')
     async findOne(@Param('id') id: string, @Request() req: any) {

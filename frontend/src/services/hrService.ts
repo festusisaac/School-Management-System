@@ -17,6 +17,10 @@ export const staffService = {
         return api.getStaffStatistics();
     },
 
+    getMyProfile: async () => {
+        return api.getMyProfile();
+    },
+
     updateStaff: async (id: string, data: any) => {
         return api.updateStaff(id, data);
     },

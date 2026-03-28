@@ -82,6 +82,7 @@ function AppRoutes() {
             {/* HR Routes */}
             <Route path="hr">
               <Route path="staff" element={<HR.StaffDirectoryPage />} />
+              <Route path="staff/profile" element={<HR.StaffProfilePage />} />
               <Route path="departments" element={<HR.DepartmentsPage />} />
               <Route path="attendance" element={<HR.StaffAttendancePage />} />
               <Route path="leave-types" element={<HR.LeaveTypesPage />} />

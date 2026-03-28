@@ -15,10 +15,10 @@ export const usePermissions = () => {
     }
 
     // Role-based check for schools where permissions might not be explicitly assigned to teachers every time
-    // This provides a sensible default for the "Teacher" role
-    if (role === 'teacher') {
+    // This provides a sensible default for anything identified as a teacher
+    if (role?.includes('teacher') || user.isTeachingStaff) {
       // Teachers always have basic student view by default
-      if (permission === 'students:view_directory') return true;
+      if (permission === 'students:view_directory' || permission === 'students:view_profile') return true;
     }
 
     // Aggregate permissions from direct permissions array and roleObject permissions

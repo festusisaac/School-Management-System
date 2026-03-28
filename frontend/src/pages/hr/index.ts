@@ -5,4 +5,5 @@ export { default as LeaveTypesPage } from './LeaveTypesPage';
 export { default as ApproveLeavePage } from './ApproveLeavePage';
 export { default as ApplyLeavePage } from './ApplyLeavePage';
 export { default as PayrollPage } from './PayrollPage';
+export { default as StaffProfilePage } from './StaffProfilePage';
 export { default as TeacherRatingPage } from './TeacherRatingPage';

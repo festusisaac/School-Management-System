@@ -8,6 +8,16 @@ interface TeacherStats {
     classesToday: number;
     pendingHomework: number;
     attendanceMissing: number;
+    recentUngraded: Array<{
+        id: string;
+        submittedAt: string;
+        homeworkTitle: string;
+        studentName: string;
+    }>;
+    leaveSummary: {
+        approvedDays: number;
+        pendingRequests: number;
+    };
 }
 
 interface TimetablePeriod {
@@ -26,7 +36,6 @@ const TeacherDashboard: React.FC = () => {
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                // In a real implementation, this would be a single optimized endpoint
                 const [statsData, timetableData] = await Promise.all([
                     apiService.getTeacherStats(),
                     apiService.getTeacherTodayTimetable()
@@ -133,83 +142,149 @@ const TeacherDashboard: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Today's Classes */}
-                <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                    <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
-                        <h2 className="text-lg font-bold text-gray-900 dark:text-white">Today's Class Schedule</h2>
-                        <Link to="/academics/teachers-timetable" className="text-sm font-medium text-primary-600 hover:bg-primary-50 px-3 py-1.5 rounded-lg transition-colors">
-                            Full Timetable
-                        </Link>
+                <div className="lg:col-span-2 space-y-6">
+                    {/* Today's Classes */}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                        <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
+                            <h2 className="text-lg font-bold text-gray-900 dark:text-white tracking-tight">Today's Class Schedule</h2>
+                            <Link to="/academics/teachers-timetable" className="text-sm font-medium text-primary-600 hover:bg-primary-50 px-3 py-1.5 rounded-lg transition-colors">
+                                Full Timetable
+                            </Link>
+                        </div>
+                        
+                        <div className="p-0">
+                            {todayTimetable.length > 0 ? (
+                                <ul className="divide-y divide-gray-100 dark:divide-gray-700">
+                                    {todayTimetable.map((period, idx) => (
+                                        <li key={idx} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors flex items-center">
+                                            <div className="flex-shrink-0 w-24 text-sm font-bold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700 pr-4 mt-1">
+                                                <div className="text-primary-600 dark:text-primary-400">{period.startTime}</div>
+                                                <div className="text-gray-500 text-xs mt-1">{period.endTime}</div>
+                                            </div>
+                                            <div className="ml-6 flex-1">
+                                                <h3 className="text-base font-bold text-gray-900 dark:text-white">{period.subjectName}</h3>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 flex items-center">
+                                                    <Users className="w-3.5 h-3.5 mr-1.5" /> {period.className}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <button className="text-gray-400 hover:text-primary-600 p-2">
+                                                    <ArrowRight className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <div className="p-12 text-center text-gray-500 dark:text-gray-400">
+                                    <Calendar className="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
+                                    <p className="text-sm font-medium">You have no classes scheduled for today.</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                    
-                    <div className="p-0">
-                        {todayTimetable.length > 0 ? (
-                            <ul className="divide-y divide-gray-100 dark:divide-gray-700">
-                                {todayTimetable.map((period, idx) => (
-                                    <li key={idx} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors flex items-center">
-                                        <div className="flex-shrink-0 w-24 text-sm font-bold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700 pr-4 mt-1">
-                                            <div className="text-primary-600 dark:text-primary-400">{period.startTime}</div>
-                                            <div className="text-gray-500 text-xs mt-1">{period.endTime}</div>
-                                        </div>
-                                        <div className="ml-6 flex-1">
-                                            <h3 className="text-base font-bold text-gray-900 dark:text-white">{period.subjectName}</h3>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 flex items-center">
-                                                <Users className="w-3.5 h-3.5 mr-1.5" /> {period.className}
-                                            </p>
-                                        </div>
-                                        <div>
-                                            {/* Could add a jump to online class button here if it was an online class */}
-                                            <button className="text-gray-400 hover:text-primary-600 p-2">
-                                                <ArrowRight className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
-                        ) : (
-                            <div className="p-12 text-center text-gray-500 dark:text-gray-400">
-                                <Calendar className="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-                                <p className="text-sm font-medium">You have no classes scheduled for today.</p>
-                            </div>
-                        )}
+
+                    {/* Grading Queue */}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                        <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
+                            <h2 className="text-lg font-bold text-gray-900 dark:text-white tracking-tight">Recent Ungraded Assignments</h2>
+                            <Link to="/homework" className="text-sm font-medium text-orange-600 hover:bg-orange-50 px-3 py-1.5 rounded-lg transition-colors">
+                                View All
+                            </Link>
+                        </div>
+                        
+                        <div className="p-0">
+                            {stats && stats.recentUngraded && stats.recentUngraded.length > 0 ? (
+                                <ul className="divide-y divide-gray-100 dark:divide-gray-700">
+                                    {stats.recentUngraded.map((sub, idx) => (
+                                        <li key={idx} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors flex items-center group">
+                                            <div className="flex-shrink-0 w-10 h-10 bg-orange-50 dark:bg-orange-900/20 rounded-lg flex items-center justify-center text-orange-600">
+                                                <FileText size={20} />
+                                            </div>
+                                            <div className="ml-4 flex-1">
+                                                <h3 className="text-sm font-bold text-gray-900 dark:text-white">{sub.studentName}</h3>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{sub.homeworkTitle}</p>
+                                            </div>
+                                            <div className="text-right mr-4">
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                                    {new Date(sub.submittedAt).toLocaleDateString()}
+                                                </p>
+                                            </div>
+                                            <Link to="/homework" className="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-primary-600">
+                                                <ArrowRight size={18} />
+                                            </Link>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <div className="p-12 text-center text-gray-500 dark:text-gray-400">
+                                    <CheckCircle className="w-12 h-12 mx-auto text-gray-200 dark:text-gray-700 mb-3" />
+                                    <p className="text-sm font-medium">Your grading queue is empty!</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
-                {/* Quick Actions Panel */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-                    <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
-                        <h2 className="text-lg font-bold text-gray-900 dark:text-white">Quick Actions</h2>
+                <div className="space-y-6">
+                    {/* Leave Summary Panel */}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                        <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+                            <h2 className="text-lg font-bold text-gray-900 dark:text-white tracking-tight">Leave Status</h2>
+                        </div>
+                        <div className="p-6">
+                            <div className="grid grid-cols-2 gap-4 mb-6">
+                                <div className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-xl border border-primary-100 dark:border-primary-800">
+                                    <p className="text-xs font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider mb-1">Approved</p>
+                                    <p className="text-2xl font-black text-primary-800 dark:text-primary-200">{stats?.leaveSummary.approvedDays || 0} <span className="text-xs font-medium">Days</span></p>
+                                </div>
+                                <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-100 dark:border-orange-800">
+                                    <p className="text-xs font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wider mb-1">Pending</p>
+                                    <p className="text-2xl font-black text-orange-800 dark:text-orange-200">{stats?.leaveSummary.pendingRequests || 0}</p>
+                                </div>
+                            </div>
+                            <Link to="/hr/leave/apply" className="w-full py-3 px-4 bg-gray-900 dark:bg-gray-700 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors">
+                                Apply for Leave <ArrowRight size={16} />
+                            </Link>
+                        </div>
                     </div>
-                    <div className="p-4 space-y-3">
-                        <Link to="/students/attendance/mark" className="flex items-center p-3 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-primary-200 hover:bg-primary-50/50 dark:hover:bg-primary-900/20 group transition-all">
-                            <div className="w-10 h-10 rounded-lg bg-primary-100 dark:bg-primary-900/50 flex items-center justify-center text-primary-600 dark:text-primary-400 group-hover:scale-110 transition-transform">
-                                <CheckCircle className="w-5 h-5" />
-                            </div>
-                            <div className="ml-4">
-                                <p className="text-sm font-bold text-gray-900 dark:text-white">Mark Attendance</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Record daily class presence</p>
-                            </div>
-                        </Link>
 
-                        <Link to="/homework" className="flex items-center p-3 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-orange-200 hover:bg-orange-50/50 dark:hover:bg-orange-900/20 group transition-all">
-                            <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center text-orange-600 dark:text-orange-400 group-hover:scale-110 transition-transform">
-                                <FileText className="w-5 h-5" />
-                            </div>
-                            <div className="ml-4">
-                                <p className="text-sm font-bold text-gray-900 dark:text-white">Manage Homework</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Create or grade assignments</p>
-                            </div>
-                        </Link>
-                        
-                        <Link to="/examination/entry/scoresheet" className="flex items-center p-3 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-purple-200 hover:bg-purple-50/50 dark:hover:bg-purple-900/20 group transition-all">
-                            <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
-                                <BookOpen className="w-5 h-5" />
-                            </div>
-                            <div className="ml-4">
-                                <p className="text-sm font-bold text-gray-900 dark:text-white">Enter Exam Scores</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Input marks for latest exams</p>
-                            </div>
-                        </Link>
+                    {/* Quick Actions Panel */}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                        <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+                            <h2 className="text-lg font-bold text-gray-900 dark:text-white tracking-tight">Quick Actions</h2>
+                        </div>
+                        <div className="p-4 space-y-3">
+                            <Link to="/students/attendance/mark" className="flex items-center p-3 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-primary-200 hover:bg-primary-50/50 dark:hover:bg-primary-900/20 group transition-all">
+                                <div className="w-10 h-10 rounded-lg bg-primary-100 dark:bg-primary-900/50 flex items-center justify-center text-primary-600 dark:text-primary-400 group-hover:scale-110 transition-transform">
+                                    <CheckCircle className="w-5 h-5" />
+                                </div>
+                                <div className="ml-4">
+                                    <p className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">Mark Attendance</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Record daily class presence</p>
+                                </div>
+                            </Link>
+
+                            <Link to="/homework" className="flex items-center p-3 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-orange-200 hover:bg-orange-50/50 dark:hover:bg-orange-900/20 group transition-all">
+                                <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center text-orange-600 dark:text-orange-400 group-hover:scale-110 transition-transform">
+                                    <FileText className="w-5 h-5" />
+                                </div>
+                                <div className="ml-4">
+                                    <p className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">Manage Homework</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Create or grade assignments</p>
+                                </div>
+                            </Link>
+                            
+                            <Link to="/examination/entry/scoresheet" className="flex items-center p-3 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-purple-200 hover:bg-purple-50/50 dark:hover:bg-purple-900/20 group transition-all">
+                                <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
+                                    <BookOpen className="w-5 h-5" />
+                                </div>
+                                <div className="ml-4">
+                                    <p className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">Enter Exam Scores</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Input marks for latest exams</p>
+                                </div>
+                            </Link>
+                        </div>
                     </div>
                 </div>
             </div>
