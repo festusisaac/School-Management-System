@@ -53,7 +53,7 @@ export class StudentsController {
         // Data scoping for Teachers: Only see students in assigned classes
         if (req.user.role === 'teacher') {
             const staffResult = await this.entityManager.query(
-                'SELECT id FROM "staff" WHERE email = $1 AND "tenant_id" = $2 LIMIT 1',
+                'SELECT id FROM "staff" WHERE email = $1 AND "tenantId" = $2 LIMIT 1',
                 [req.user.email, req.user.tenantId]
             );
 
@@ -98,7 +98,7 @@ export class StudentsController {
         // Teachers only see their own students, even if deactivated
         if (req.user.role === 'teacher') {
             const staffResult = await this.entityManager.query(
-                'SELECT id FROM "staff" WHERE email = $1 AND "tenant_id" = $2 LIMIT 1',
+                'SELECT id FROM "staff" WHERE email = $1 AND "tenantId" = $2 LIMIT 1',
                 [req.user.email, req.user.tenantId]
             );
 
@@ -283,7 +283,7 @@ export class StudentsController {
         // Teacher scoping check
         if (req.user.role === 'teacher') {
             const staffResult = await this.entityManager.query(
-                'SELECT id FROM "staff" WHERE email = $1 AND "tenant_id" = $2 LIMIT 1',
+                'SELECT id FROM "staff" WHERE email = $1 AND "tenantId" = $2 LIMIT 1',
                 [req.user.email, req.user.tenantId]
             );
 

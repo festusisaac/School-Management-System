@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, UseInterceptors, UploadedFile, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { LeaveService } from '../services/leave.service';
 import { StaffService } from '../services/staff.service';
@@ -43,14 +43,18 @@ export class LeaveController {
         @UploadedFile() file?: Express.Multer.File
     ) {
         // Find staff record for current user email
-        const staff = await this.staffService.findByEmail(req.user.email);
-        return this.leaveService.createLeaveRequest(staff.id, dto, file);
+        const staffId = await this.staffService.resolveStaffIdByEmail(req.user.email, req.user.tenantId);
+        if (!staffId) {
+            throw new BadRequestException('Your account is not linked to a staff profile. Please add yourself to the Staff Directory to apply for leave.');
+        }
+        return this.leaveService.createLeaveRequest(staffId, dto, file);
     }
 
     @Get('my-requests')
     async getMyRequests(@Request() req: any) {
-        const staff = await this.staffService.findByEmail(req.user.email);
-        return this.leaveService.getStaffLeaveRequests(staff.id);
+        const staffId = await this.staffService.resolveStaffIdByEmail(req.user.email, req.user.tenantId);
+        if (!staffId) return [];
+        return this.leaveService.getStaffLeaveRequests(staffId);
     }
 
     @Get('all-requests')
@@ -60,13 +64,17 @@ export class LeaveController {
 
     @Get('balance')
     async getBalance(@Request() req: any) {
-        const staff = await this.staffService.findByEmail(req.user.email);
-        return this.leaveService.getLeaveBalance(staff.id);
+        const staffId = await this.staffService.resolveStaffIdByEmail(req.user.email, req.user.tenantId);
+        if (!staffId) return [];
+        return this.leaveService.getLeaveBalance(staffId);
     }
 
     @Post('approve/:id')
     async approve(@Param('id') id: string, @Request() req: any, @Body() body: { status: 'Approved' | 'Rejected', comment?: string }) {
-        const staff = await this.staffService.findByEmail(req.user.email);
-        return this.leaveService.approveLeave(id, staff.id, body.status, body.comment);
+        const staffId = await this.staffService.resolveStaffIdByEmail(req.user.email, req.user.tenantId);
+        if (!staffId) {
+            throw new ForbiddenException('Only registered staff members with appropriate permissions can approve leave.');
+        }
+        return this.leaveService.approveLeave(id, staffId, body.status, body.comment);
     }
 }

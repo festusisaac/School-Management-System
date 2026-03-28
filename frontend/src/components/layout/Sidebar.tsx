@@ -120,7 +120,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             icon: Video, 
             path: '/online-classes',
             // Dedicated permission for virtual learning
-            permission: 'online_classes:manage',
             children: [
                 { label: 'Classes Schedule', path: '/online-classes/schedule', permission: 'online_classes:manage' },
                 { label: 'Completed Classes', path: '/online-classes/history', permission: 'online_classes:history' },
@@ -136,7 +135,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             label: 'Human Resource',
             icon: Users,
             path: '/hr',
-            permission: 'hr:manage_staff',
             children: [
                 { label: 'Staff Directory', path: '/hr/staff', permission: 'hr:manage_staff' },
                 { label: 'Department', path: '/hr/departments', permission: 'hr:manage_departments' },
@@ -152,10 +150,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             label: 'Student Attendance',
             icon: Clock,
             path: '/students/attendance',
-            permission: 'attendance:mark',
             children: [
                 { label: 'Mark Attendance', path: '/students/attendance/mark', permission: 'attendance:mark' },
-                { label: 'Attendance History', path: '/students/attendance/history', permission: 'attendance:view_reports' },
+                { label: 'Attendance History', path: '/students/attendance/history', permission: 'attendance:view_history' },
                 { label: 'Attendance Reports', path: '/students/attendance/reports', permission: 'attendance:view_reports' },
             ]
         },
@@ -163,7 +160,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             label: 'Student Information',
             icon: GraduationCap,
             path: '/students',
-            permission: 'students:view_directory',
             children: [
                 { label: 'Student Directory', path: '/students/directory', permission: 'students:view_directory' },
                 { label: 'Student Admission', path: '/students/admission', permission: 'students:create' },
@@ -181,12 +177,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             label: 'Library',
             icon: BookOpen,
             path: '/library',
-            permission: 'library:manage_books',
             children: [
                 { label: 'Dashboard', path: '/library/dashboard', permission: 'library:manage_books' },
-                { label: 'Books Catalog', path: '/library', permission: 'library:manage_books' },
-                { label: 'Authors', path: '/library/authors', permission: 'library:manage_books' },
-                { label: 'Categories', path: '/library/categories', permission: 'library:manage_books' },
+                { label: 'Books Catalog', path: '/library', permission: 'library:view_books' },
+                { label: 'Authors', path: '/library/authors', permission: 'library:view_books' },
+                { label: 'Categories', path: '/library/categories', permission: 'library:view_books' },
                 { type: 'header', label: 'Circulation' },
                 { label: 'Issue Book', path: '/library/issue', permission: 'library:issue_return' },
                 { label: 'Return Book', path: '/library/return', permission: 'library:issue_return' },
@@ -199,10 +194,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             label: 'Finance',
             icon: CreditCard,
             path: '/finance',
-            permission: 'finance:collect_fees',
             children: [
                 { label: 'Offline Fees Collection', path: '/finance/record-payment', permission: 'finance:collect_fees' },
-                { label: 'Fees History', path: '/finance/payments', permission: 'finance:view_reports' },
+                { label: 'Fees History', path: '/finance/payments', permission: 'finance:view_payments' },
                 { label: 'Debtors List', path: '/finance/debtors', permission: 'finance:view_reports' },
                 { label: 'Fee Structure', path: '/finance/structures', permission: 'finance:manage_fee_structure' },
                 { label: 'Discounts', path: '/finance/discounts', permission: 'finance:manage_fee_structure' },
@@ -214,7 +208,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             label: 'Examination',
             icon: BookOpen,
             path: '/examination',
-            permission: 'exams:manage_setup',
             children: [
                 // Setup
                 { type: 'header', label: 'Exam Setup' },
@@ -273,8 +266,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 return item;
             })
             .filter(item => {
-                // Remove parents with no children left (except if they are meant to be standalone like Dashboard)
-                if (item.children && item.children.length === 0) return false;
+                // Remove parents with no non-header children left (except standalone items like Dashboard)
+                if (item.children) {
+                    return item.children.some((child: any) => child.type !== 'header');
+                }
                 return true; 
             });
     };
