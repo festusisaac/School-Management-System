@@ -18,6 +18,7 @@ import { clsx } from 'clsx';
 import { FeeNoticeTemplate } from '../finance/components/FeeNoticeTemplate';
 import { createRoot } from 'react-dom/client';
 import { useSystem } from '../../context/SystemContext';
+import { usePermissions } from '../../hooks/usePermissions';
 import { cn } from '../../utils/cn';
 
 export default function StudentProfile() {
@@ -36,6 +37,7 @@ export default function StudentProfile() {
     const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
     const [verifiedResult, setVerifiedResult] = useState<any>(null);
     const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
+    const { hasPermission } = usePermissions();
     const [loadingAttendance, setLoadingAttendance] = useState(false);
 
     // Document States
@@ -69,18 +71,7 @@ export default function StudentProfile() {
         }
     };
     
-    // Check if user is student
-    const userRole = (() => {
-        try {
-            const token = localStorage.getItem('access_token');
-            if (!token) return null;
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            return payload?.role || null;
-        } catch {
-            return null;
-        }
-    })();
-    const isStudent = userRole?.toLowerCase() === 'student';
+    const isStudent = hasPermission('students:view_self'); // Assuming students only have view_self
 
     const handlePrint = () => {
         window.print();
@@ -122,8 +113,8 @@ export default function StudentProfile() {
     };
 
     const handleDeleteDocument = async (docId: string) => {
-        if (isStudent) {
-            toast.showError('Students are not permitted to delete documents');
+        if (!hasPermission('students:edit')) {
+            toast.showError('You do not have permission to delete documents');
             return;
         }
         if (!window.confirm('Are you sure you want to delete this document?')) return;
@@ -376,17 +367,19 @@ export default function StudentProfile() {
                             ))}
                         </div>
 
-                        <div className="w-full pt-8 grid grid-cols-2 gap-3 mt-auto">
-                            <button
-                                onClick={() => navigate(`/students/admission?id=${student.id}&edit=true`)}
-                                className="flex items-center justify-center gap-2 py-2.5 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition shadow-sm"
-                            >
-                                <Edit className="w-4 h-4" />
-                                <span>Edit</span>
-                            </button>
+                        <div className={`w-full pt-8 ${hasPermission('students:edit') ? 'grid grid-cols-2' : 'flex justify-center'} gap-3 mt-auto`}>
+                            {hasPermission('students:edit') && (
+                                <button
+                                    onClick={() => navigate(`/students/admission?id=${student.id}&edit=true`)}
+                                    className="flex items-center justify-center gap-2 py-2.5 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition shadow-sm w-full"
+                                >
+                                    <Edit className="w-4 h-4" />
+                                    <span>Edit</span>
+                                </button>
+                            )}
                             <button
                                 onClick={handlePrint}
-                                className="flex items-center justify-center gap-2 py-2.5 bg-primary-600 text-white font-medium rounded-xl hover:bg-primary-700 transition shadow-sm"
+                                className={`flex items-center justify-center gap-2 py-2.5 bg-primary-600 text-white font-medium rounded-xl hover:bg-primary-700 transition shadow-sm ${hasPermission('students:edit') ? 'w-full' : 'px-8'}`}
                             >
                                 <Printer className="w-4 h-4" />
                                 <span>Print</span>

@@ -5,6 +5,7 @@ import { CheckCircle, XCircle, Eye, RefreshCw } from 'lucide-react';
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { Modal } from '../../components/ui/modal';
+import { usePermissions } from '../../hooks/usePermissions';
 
 type OnlineApplication = {
     id: string;
@@ -27,6 +28,7 @@ export default function OnlineAdmission() {
     const [loading, setLoading] = useState(true);
     const [selectedApplication, setSelectedApplication] = useState<OnlineApplication | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const { hasPermission } = usePermissions();
     const [actionLoading, setActionLoading] = useState(false);
 
     const fetchAdmissions = async () => {
@@ -108,7 +110,7 @@ export default function OnlineAdmission() {
                     <button onClick={() => handleView(row.original)} className="p-1.5 rounded-lg bg-primary-50 text-primary-600 hover:bg-primary-100" title="View">
                         <Eye className="w-4 h-4" />
                     </button>
-                    {row.original.status === 'pending' && (
+                    {row.original.status === 'pending' && hasPermission('students:create') && (
                         <>
                             <button onClick={() => handleApprove(row.original.id)} className="p-1.5 rounded-lg bg-green-50 text-green-600 hover:bg-green-100" title="Approve">
                                 <CheckCircle className="w-4 h-4" />
@@ -194,7 +196,7 @@ export default function OnlineAdmission() {
                             </div>
                         </div>
 
-                        {selectedApplication.status === 'pending' && (
+                        {selectedApplication.status === 'pending' && hasPermission('students:create') && (
                             <div className="flex gap-3 pt-4 border-t mt-4">
                                 <button
                                     onClick={() => handleApprove(selectedApplication.id)}

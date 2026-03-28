@@ -5,6 +5,7 @@ import { Trash2, Plus } from 'lucide-react';
 import { Modal } from '../../components/ui/modal';
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import { usePermissions } from '../../hooks/usePermissions';
 
 type DeactivateReason = {
     id: string;
@@ -14,6 +15,7 @@ type DeactivateReason = {
 export default function DeactivateReasons() {
     const [data, setData] = useState<DeactivateReason[]>([]);
     const [loading, setLoading] = useState(true);
+    const { hasPermission } = usePermissions();
     const toast = useToast();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [formData, setFormData] = useState({ reason: '' });
@@ -72,7 +74,10 @@ export default function DeactivateReasons() {
             header: 'Reason',
             cell: ({ row }) => <div className="font-medium">{row.original.reason}</div>
         },
-        {
+    ];
+
+    if (hasPermission('students:manage_categories')) {
+        columns.push({
             id: 'actions',
             header: () => <div className="text-right">Action</div>,
             cell: ({ row }) => (
@@ -80,8 +85,8 @@ export default function DeactivateReasons() {
                     <button onClick={() => handleDelete(row.original.id)} className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100"><Trash2 className="w-4 h-4" /></button>
                 </div>
             )
-        }
-    ];
+        });
+    }
 
     return (
         <div className="space-y-6">
@@ -90,9 +95,11 @@ export default function DeactivateReasons() {
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Deactivate Reasons</h1>
                     <p className="text-sm text-gray-500 dark:text-gray-400">Manage reasons for student deactivation</p>
                 </div>
-                <button onClick={() => setIsModalOpen(true)} className="btn btn-primary bg-primary-600 text-white px-4 py-2 rounded-xl flex items-center gap-2">
-                    <Plus className="w-4 h-4" /> Add Reason
-                </button>
+                {hasPermission('students:manage_categories') && (
+                    <button onClick={() => setIsModalOpen(true)} className="btn btn-primary bg-primary-600 text-white px-4 py-2 rounded-xl flex items-center gap-2">
+                        <Plus className="w-4 h-4" /> Add Reason
+                    </button>
+                )}
             </div>
 
             {loading && data.length === 0 ? (

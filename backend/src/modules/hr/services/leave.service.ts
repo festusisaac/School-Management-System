@@ -103,7 +103,7 @@ export class LeaveService {
         });
     }
 
-    async approveLeave(id: string, approverId: string, status: 'Approved' | 'Rejected', comment?: string): Promise<LeaveRequest> {
+    async approveLeave(id: string, approverId: string | null, status: 'Approved' | 'Rejected', comment?: string, adminName?: string): Promise<LeaveRequest> {
         const request = await this.leaveRequestRepository.findOne({ where: { id } });
         if (!request) throw new NotFoundException('Leave request not found');
 
@@ -111,7 +111,8 @@ export class LeaveService {
 
         const approval = this.leaveApprovalRepository.create({
             leaveRequestId: id,
-            approverId,
+            approverId: approverId || undefined,
+            adminApproverName: adminName,
             action: status === 'Approved' ? ApprovalAction.APPROVED : ApprovalAction.REJECTED,
             comments: comment || '',
             approvalLevel: 1, // Default to level 1 for now

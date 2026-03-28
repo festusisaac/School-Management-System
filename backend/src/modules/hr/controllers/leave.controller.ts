@@ -4,9 +4,11 @@ import { LeaveService } from '../services/leave.service';
 import { StaffService } from '../services/staff.service';
 import { CreateLeaveTypeDto, UpdateLeaveTypeDto, CreateLeaveRequestDto } from '../dto/leave.dto';
 import { JwtAuthGuard } from '../../../guards/jwt-auth.guard';
+import { PermissionsGuard } from '../../../guards/permissions.guard';
+import { Permissions } from '../../../decorators/permissions.decorator';
 
 @Controller('hr/leaves')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class LeaveController {
     constructor(
         private readonly leaveService: LeaveService,
@@ -70,11 +72,19 @@ export class LeaveController {
     }
 
     @Post('approve/:id')
+    @Permissions('hr:manage_leave')
     async approve(@Param('id') id: string, @Request() req: any, @Body() body: { status: 'Approved' | 'Rejected', comment?: string }) {
-        const staffId = await this.staffService.resolveStaffIdByEmail(req.user.email, req.user.tenantId);
-        if (!staffId) {
-            throw new ForbiddenException('Only registered staff members with appropriate permissions can approve leave.');
+        const user = req.user;
+        const staffId = await this.staffService.resolveStaffIdByEmail(user.email, user.tenantId);
+        
+        const userRole = (user.role || '').toLowerCase();
+        const isAdmin = userRole === 'super administrator' || userRole === 'admin';
+
+        if (!staffId && !isAdmin) {
+            throw new ForbiddenException('Only registered staff members or administrators with appropriate permissions can approve leave.');
         }
-        return this.leaveService.approveLeave(id, staffId, body.status, body.comment);
+
+        const adminName = isAdmin ? `${user.firstName} ${user.lastName}` : undefined;
+        return this.leaveService.approveLeave(id, staffId || null, body.status, body.comment, adminName);
     }
 }

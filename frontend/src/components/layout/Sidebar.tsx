@@ -21,6 +21,7 @@ import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useSystem } from '../../context/SystemContext';
 import { useAuthStore } from '../../stores/authStore';
+import { usePermissions } from '../../hooks/usePermissions';
 import { getFileUrl } from '../../services/api';
 
 interface SidebarProps {
@@ -76,25 +77,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         }
     ];
 
-    const userPermissions = user?.permissions || user?.roleObject?.permissions?.map((p: any) => p.slug) || [];
-    const hasPermission = (permission?: string) => {
-        if (!permission) return true;
-        
-        // Super Admins and Admins bypass all checks
-        if (userRole === 'super administrator' || userRole === 'admin') return true;
-        
-        // Direct match
-        if (userPermissions.includes(permission)) return true;
-
-        // Fallback: If requesting a 'view' permission, check if they have 'manage' for that same topic
-        // e.g., if checking for 'academics:view_timetable', but they have 'academics:manage_timetable'
-        if (permission.includes(':view_')) {
-            const manageEquivalent = permission.replace(':view_', ':manage_');
-            if (userPermissions.includes(manageEquivalent)) return true;
-        }
-        
-        return false;
-    };
+    const { hasPermission } = usePermissions();
 
     const staffNavItems = [
         { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
@@ -141,9 +124,15 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 { label: 'Staff Attendance', path: '/hr/attendance', permission: 'hr:manage_attendance' },
                 { label: 'Payroll', path: '/hr/payroll', permission: 'hr:manage_payroll' },
                 { label: 'Approve Leave Request', path: '/hr/leave/approve', permission: 'hr:manage_leave' },
-                { label: 'Apply Leave', path: '/hr/leave/apply' }, // No permission needed, accessible to all staff
+                // Only show Apply Leave to actual staff members (not Super Admins or Admins)
+                ...(userRole !== 'super administrator' && userRole !== 'admin' ? [
+                    { label: 'Apply Leave', path: '/hr/leave/apply' }
+                ] : []),
                 { label: 'Leave Type', path: '/hr/leave-types', permission: 'hr:manage_leave' },
-                { label: 'Teachers Rating', path: '/hr/ratings', permission: 'hr:manage_staff' },
+                // Only show Ratings to Super Admin
+                ...(userRole === 'super administrator' ? [
+                    { label: 'Teachers Rating', path: '/hr/ratings', permission: 'hr:manage_staff' }
+                ] : []),
             ]
         },
         {
@@ -160,6 +149,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             label: 'Student Information',
             icon: GraduationCap,
             path: '/students',
+            permission: 'students:view_directory', // Parent now explicitly requires directory view
             children: [
                 { label: 'Student Directory', path: '/students/directory', permission: 'students:view_directory' },
                 { label: 'Student Admission', path: '/students/admission', permission: 'students:create' },
@@ -170,7 +160,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 { label: 'Student House', path: '/students/houses', permission: 'students:manage_categories' },
                 { label: 'Deactivation Reason', path: '/students/deactivate-reasons', permission: 'students:manage_categories' },
                 { label: 'Student Profile', path: '/students/profile/:id', permission: 'students:view_profile' },
-                { label: 'Rate Teachers', path: '/students/rate-teachers', permission: 'students:view_directory' },
+                // Only show Rate Teachers to Super Admin
+                ...(userRole === 'super administrator' ? [
+                    { label: 'Rate Teachers', path: '/students/rate-teachers', permission: 'students:view_directory_disabled' }
+                ] : []),
             ]
         },
         {

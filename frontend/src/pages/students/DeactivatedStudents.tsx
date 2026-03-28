@@ -4,6 +4,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import { RefreshCw } from 'lucide-react';
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import { usePermissions } from '../../hooks/usePermissions';
 
 type DeactivatedStudent = {
     id: string;
@@ -20,6 +21,7 @@ type DeactivatedStudent = {
 export default function DeactivatedStudents() {
     const [data, setData] = useState<DeactivatedStudent[]>([]);
     const toast = useToast();
+    const { hasPermission } = usePermissions();
     const [loading, setLoading] = useState(true);
 
     const fetchDeactivatedStudents = async () => {
@@ -59,14 +61,14 @@ export default function DeactivatedStudents() {
         },
         {
             id: 'actions',
-            cell: () => (
+            cell: () => hasPermission('students:delete') ? (
                 <button
                     onClick={() => toast.showInfo('Enable functionality to be implemented')}
                     className="text-primary-600 hover:underline flex items-center gap-1"
                 >
                     <RefreshCw className="w-3 h-3" /> Enable
                 </button>
-            )
+            ) : null
         }
     ];
 

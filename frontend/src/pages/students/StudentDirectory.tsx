@@ -4,6 +4,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import { Eye, Edit, Trash2, LayoutGrid, List as ListIcon, Search, MoreVertical, Phone } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api, { getFileUrl } from '../../services/api';
+import { usePermissions } from '../../hooks/usePermissions';
 import { clsx } from 'clsx';
 
 // Type definition matching the backend entity
@@ -28,6 +29,7 @@ type Student = {
 export default function StudentDirectory() {
     const [students, setStudents] = useState<Student[]>([]);
     const [loading, setLoading] = useState(true);
+    const { hasPermission, hasAnyPermission } = usePermissions();
     const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
     const [filters, setFilters] = useState({
@@ -90,85 +92,99 @@ export default function StudentDirectory() {
         };
     }, [students]);
 
-    const columns: ColumnDef<Student>[] = [
-        { accessorKey: 'admissionNo', header: 'Admission No' },
-        {
-            accessorKey: 'firstName',
-            header: 'Student Name',
-            cell: ({ row }) => (
-                <div className="flex items-center gap-3">
-                    {row.original.studentPhoto ? (
-                        <img
-                            src={getFileUrl(row.original.studentPhoto)}
-                            alt={row.original.firstName}
-                            className="w-9 h-9 rounded-full object-cover shadow-sm border border-gray-200"
-                        />
-                    ) : (
-                        <div className={clsx(
-                            "w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shadow-sm transition-transform group-hover:scale-110",
-                            row.original.gender === 'Male' ? "bg-primary-500/10 text-primary-600 dark:text-primary-400" : "bg-pink-500/10 text-pink-600 dark:text-pink-400"
-                        )}>
-                            {row.original.firstName[0]}
+    const columns = useMemo<ColumnDef<Student>[]>(() => {
+        const baseColumns: ColumnDef<Student>[] = [
+            { accessorKey: 'admissionNo', header: 'Admission No' },
+            {
+                accessorKey: 'firstName',
+                header: 'Student Name',
+                cell: ({ row }) => (
+                    <div className="flex items-center gap-3">
+                        {row.original.studentPhoto ? (
+                            <img
+                                src={getFileUrl(row.original.studentPhoto)}
+                                alt={row.original.firstName}
+                                className="w-9 h-9 rounded-full object-cover shadow-sm border border-gray-200"
+                            />
+                        ) : (
+                            <div className={clsx(
+                                "w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shadow-sm transition-transform group-hover:scale-110",
+                                row.original.gender === 'Male' ? "bg-primary-500/10 text-primary-600 dark:text-primary-400" : "bg-pink-500/10 text-pink-600 dark:text-pink-400"
+                            )}>
+                                {row.original.firstName[0]}
+                            </div>
+                        )}
+                        <div>
+                            <div className="font-medium text-gray-900 dark:text-white">
+                                {row.original.firstName} {row.original.lastName}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">{row.original.email}</div>
                         </div>
-                    )}
-                    <div>
-                        <div className="font-medium text-gray-900 dark:text-white">
-                            {row.original.firstName} {row.original.lastName}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">{row.original.email}</div>
                     </div>
-                </div>
-            )
-        },
-        { accessorKey: 'rollNo', header: 'Roll No.' },
-        {
-            accessorKey: 'class',
-            header: 'Class',
-            cell: ({ row }) => <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800/50 dark:text-gray-300 border border-transparent dark:border-gray-700/50 rounded-md text-xs font-medium">{row.original.class?.name || '-'} {row.original.section?.name ? `(${row.original.section.name})` : ''}</span>
-        },
-        {
-            accessorKey: 'dob',
-            header: 'DOB',
-            cell: ({ row }) => row.original.dob ? new Date(row.original.dob).toLocaleDateString() : '-'
-        },
-        {
-            accessorKey: 'gender',
-            header: 'Gender',
-            cell: ({ row }) => (
-                <span className={clsx(
-                    "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all",
-                    row.original.gender === 'Male'
-                        ? "bg-primary-50 text-primary-700 border-primary-200 dark:bg-primary-500/10 dark:text-primary-400 dark:border-primary-500/20 shadow-sm shadow-primary-500/5"
-                        : "bg-pink-50 text-pink-700 border-pink-200 dark:bg-pink-500/10 dark:text-pink-400 dark:border-pink-500/20 shadow-sm shadow-pink-500/5"
-                )}>
-                    {row.original.gender}
-                </span>
-            )
-        },
-        {
-            accessorKey: 'category',
-            header: 'Category',
-            cell: ({ row }) => row.original.category?.category || '-'
-        },
-        { accessorKey: 'mobileNumber', header: 'Mobile' },
-        {
-            id: 'actions',
-            header: 'Action',
-            cell: ({ row }) => (
-                <div className="flex items-center gap-2">
-                    <Link to={`/students/profile/${row.original.id}`} className="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-primary-600 dark:hover:text-primary-500 transition-colors" title="View">
-                        <Eye className="w-4 h-4" />
-                    </Link>
-                    <Link to={`/students/edit/${row.original.id}`} className="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-amber-600 dark:hover:text-amber-400 transition-colors" title="Edit">
-                        <Edit className="w-4 h-4" />
-                    </Link>
-                    <button className="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-red-600 dark:hover:text-red-400 transition-colors" title="Delete" onClick={() => { if (window.confirm('Delete student?')) api.deleteStudent(row.original.id).then(fetchStudents) }}>
-                        <Trash2 className="w-4 h-4" />
-                    </button>
-                </div>
-            )
+                )
+            },
+            { accessorKey: 'rollNo', header: 'Roll No.' },
+            {
+                accessorKey: 'class',
+                header: 'Class',
+                cell: ({ row }) => <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800/50 dark:text-gray-300 border border-transparent dark:border-gray-700/50 rounded-md text-xs font-medium">{row.original.class?.name || '-'} {row.original.section?.name ? `(${row.original.section.name})` : ''}</span>
+            },
+            {
+                accessorKey: 'dob',
+                header: 'DOB',
+                cell: ({ row }) => row.original.dob ? new Date(row.original.dob).toLocaleDateString() : '-'
+            },
+            {
+                accessorKey: 'gender',
+                header: 'Gender',
+                cell: ({ row }) => (
+                    <span className={clsx(
+                        "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all",
+                        row.original.gender === 'Male'
+                            ? "bg-primary-50 text-primary-700 border-primary-200 dark:bg-primary-500/10 dark:text-primary-400 dark:border-primary-500/20 shadow-sm shadow-primary-500/5"
+                            : "bg-pink-50 text-pink-700 border-pink-200 dark:bg-pink-500/10 dark:text-pink-400 dark:border-pink-500/20 shadow-sm shadow-pink-500/5"
+                    )}>
+                        {row.original.gender}
+                    </span>
+                )
+            },
+            {
+                accessorKey: 'category',
+                header: 'Category',
+                cell: ({ row }) => row.original.category?.category || '-'
+            },
+            { accessorKey: 'mobileNumber', header: 'Mobile' },
+        ];
+
+        // Only add action column if user has at least one relevant permission
+        if (hasAnyPermission(['students:view_profile', 'students:edit', 'students:delete'])) {
+            baseColumns.push({
+                id: 'actions',
+                header: 'Action',
+                cell: ({ row }) => (
+                    <div className="flex items-center gap-2">
+                        {hasPermission('students:view_profile') && (
+                            <Link to={`/students/profile/${row.original.id}`} className="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-primary-600 dark:hover:text-primary-500 transition-colors" title="View">
+                                <Eye className="w-4 h-4" />
+                            </Link>
+                        )}
+                        {hasPermission('students:edit') && (
+                            <Link to={`/students/edit/${row.original.id}`} className="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-amber-600 dark:hover:text-amber-400 transition-colors" title="Edit">
+                                <Edit className="w-4 h-4" />
+                            </Link>
+                        )}
+                        {hasPermission('students:delete') && (
+                            <button className="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-red-600 dark:hover:text-red-400 transition-colors" title="Delete" onClick={() => { if (window.confirm('Delete student?')) api.deleteStudent(row.original.id).then(fetchStudents) }}>
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                        )}
+                    </div>
+                )
+            });
         }
-    ];
+
+        return baseColumns;
+    }, [students, hasPermission, hasAnyPermission]);
 
     return (
         <div className="space-y-6">
@@ -283,51 +299,59 @@ export default function StudentDirectory() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {students.map((student) => (
                         <div key={student.id} className="group bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800/50 p-6 shadow-sm hover:shadow-md transition-all relative">
-                            <div className="absolute top-4 right-4 z-10">
-                                <button
-                                    onClick={() => setOpenMenuId(openMenuId === student.id ? null : student.id)}
-                                    className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
-                                >
-                                    <MoreVertical className="w-4 h-4" />
-                                </button>
+                             {hasAnyPermission(['students:view_profile', 'students:edit', 'students:delete']) && (
+                                <div className="absolute top-4 right-4 z-10">
+                                    <button
+                                        onClick={() => setOpenMenuId(openMenuId === student.id ? null : student.id)}
+                                        className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                                    >
+                                        <MoreVertical className="w-4 h-4" />
+                                    </button>
 
-                                {openMenuId === student.id && (
-                                    <>
-                                        <div
-                                            className="fixed inset-0 z-10 cursor-default"
-                                            onClick={() => setOpenMenuId(null)}
-                                        ></div>
-                                        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-100 dark:border-gray-800/50 py-1 z-20 animate-in fade-in zoom-in-95 duration-200">
-                                            <Link
-                                                to={`/students/profile/${student.id}`}
-                                                className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-primary-600 dark:hover:text-primary-500 transition-colors"
-                                            >
-                                                <Eye className="w-4 h-4" />
-                                                View Profile
-                                            </Link>
-                                            <Link
-                                                to={`/students/edit/${student.id}`}
-                                                className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
-                                            >
-                                                <Edit className="w-4 h-4" />
-                                                Edit Details
-                                            </Link>
-                                            <button
-                                                onClick={() => {
-                                                    setOpenMenuId(null);
-                                                    if (window.confirm('Delete student?')) {
-                                                        api.deleteStudent(student.id).then(fetchStudents);
-                                                    }
-                                                }}
-                                                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors text-left"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                                Delete Student
-                                            </button>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
+                                    {openMenuId === student.id && (
+                                        <>
+                                            <div
+                                                className="fixed inset-0 z-10 cursor-default"
+                                                onClick={() => setOpenMenuId(null)}
+                                            ></div>
+                                            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-100 dark:border-gray-800/50 py-1 z-20 animate-in fade-in zoom-in-95 duration-200">
+                                                {hasPermission('students:view_profile') && (
+                                                    <Link
+                                                        to={`/students/profile/${student.id}`}
+                                                        className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-primary-600 dark:hover:text-primary-500 transition-colors"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                        View Profile
+                                                    </Link>
+                                                )}
+                                                {hasPermission('students:edit') && (
+                                                    <Link
+                                                        to={`/students/edit/${student.id}`}
+                                                        className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
+                                                    >
+                                                        <Edit className="w-4 h-4" />
+                                                        Edit Details
+                                                    </Link>
+                                                )}
+                                                {hasPermission('students:delete') && (
+                                                    <button
+                                                        onClick={() => {
+                                                            setOpenMenuId(null);
+                                                            if (window.confirm('Delete student?')) {
+                                                                api.deleteStudent(student.id).then(fetchStudents);
+                                                            }
+                                                        }}
+                                                        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors text-left"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                        Delete Student
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            )}
                             <div className="flex flex-col items-center">
                                 {student.studentPhoto ? (
                                     <img
@@ -365,11 +389,13 @@ export default function StudentDirectory() {
                                     )}
                                 </div>
 
-                                <div className="mt-6 flex items-center gap-2 w-full">
-                                    <Link to={`/students/profile/${student.id}`} className="flex-1 btn bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 py-2 rounded-lg text-sm font-medium transition-colors text-center">
-                                        View Profile
-                                    </Link>
-                                </div>
+                                {hasPermission('students:view_profile') && (
+                                    <div className="mt-6 flex items-center gap-2 w-full">
+                                        <Link to={`/students/profile/${student.id}`} className="flex-1 btn bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 py-2 rounded-lg text-sm font-medium transition-colors text-center">
+                                            View Profile
+                                        </Link>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     ))}

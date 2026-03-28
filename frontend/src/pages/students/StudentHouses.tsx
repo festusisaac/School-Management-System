@@ -5,6 +5,7 @@ import { Trash2, Plus } from 'lucide-react';
 import { Modal } from '../../components/ui/modal';
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import { usePermissions } from '../../hooks/usePermissions';
 
 type House = {
     id: string;
@@ -15,6 +16,7 @@ type House = {
 export default function StudentHouses() {
     const [data, setData] = useState<House[]>([]);
     const [loading, setLoading] = useState(true);
+    const { hasPermission } = usePermissions();
     const toast = useToast();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [formData, setFormData] = useState({ houseName: '', description: '' });
@@ -78,7 +80,10 @@ export default function StudentHouses() {
             header: 'Description',
             cell: ({ row }) => <div className="text-gray-500">{row.original.description || '-'}</div>
         },
-        {
+    ];
+
+    if (hasPermission('students:manage_categories')) {
+        columns.push({
             id: 'actions',
             header: () => <div className="text-right">Action</div>,
             cell: ({ row }) => (
@@ -86,8 +91,8 @@ export default function StudentHouses() {
                     <button onClick={() => handleDelete(row.original.id)} className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100"><Trash2 className="w-4 h-4" /></button>
                 </div>
             )
-        }
-    ];
+        });
+    }
 
     return (
         <div className="space-y-6">
@@ -96,9 +101,11 @@ export default function StudentHouses() {
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Student Houses</h1>
                     <p className="text-sm text-gray-500 dark:text-gray-400">Manage student houses</p>
                 </div>
-                <button onClick={() => setIsModalOpen(true)} className="btn btn-primary bg-primary-600 text-white px-4 py-2 rounded-xl flex items-center gap-2">
-                    <Plus className="w-4 h-4" /> Add House
-                </button>
+                {hasPermission('students:manage_categories') && (
+                    <button onClick={() => setIsModalOpen(true)} className="btn btn-primary bg-primary-600 text-white px-4 py-2 rounded-xl flex items-center gap-2">
+                        <Plus className="w-4 h-4" /> Add House
+                    </button>
+                )}
             </div>
 
             {loading && data.length === 0 ? (

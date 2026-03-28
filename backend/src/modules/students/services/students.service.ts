@@ -627,12 +627,18 @@ export class StudentsService {
         });
     }
 
-    async getAttendanceLogs(startDate: string, endDate: string, tenantId: string, classId?: string, sectionId?: string): Promise<StudentAttendance[]> {
+    async getAttendanceLogs(startDate: string, endDate: string, tenantId: string, classId?: string, sectionId?: string, managedClassIds?: string[]): Promise<StudentAttendance[]> {
         const where: any = {
             date: Between(startDate, endDate) as any,
             tenantId
         };
-        if (classId) where.classId = classId;
+        
+        if (classId) {
+            where.classId = classId;
+        } else if (managedClassIds && managedClassIds.length > 0) {
+            where.classId = In(managedClassIds);
+        }
+        
         if (sectionId) where.sectionId = sectionId;
 
         return this.attendanceRepo.find({

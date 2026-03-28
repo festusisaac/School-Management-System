@@ -16,8 +16,11 @@ export class LeaveApproval {
     @Column({ name: 'leave_request_id' })
     leaveRequestId!: string;
 
-    @Column({ name: 'approver_id' })
+    @Column({ name: 'approver_id', nullable: true })
     approverId!: string;
+
+    @Column({ name: 'admin_approver_name', nullable: true })
+    adminApproverName!: string;
 
     @Column({ name: 'approval_level' })
     approvalLevel!: number; // 1 = Department Head, 2 = Principal, etc.
@@ -35,7 +38,7 @@ export class LeaveApproval {
     @JoinColumn({ name: 'leave_request_id' })
     leaveRequest!: LeaveRequest;
 
-    @ManyToOne(() => Staff)
+    @ManyToOne(() => Staff, { nullable: true })
     @JoinColumn({ name: 'approver_id' })
     approver!: Staff;
 

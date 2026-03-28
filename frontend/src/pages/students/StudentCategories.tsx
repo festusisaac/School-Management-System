@@ -5,6 +5,7 @@ import { Trash2, Plus } from 'lucide-react';
 import { Modal } from '../../components/ui/modal';
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import { usePermissions } from '../../hooks/usePermissions';
 
 type Category = {
     id: string;
@@ -14,6 +15,7 @@ type Category = {
 export default function StudentCategories() {
     const [data, setData] = useState<Category[]>([]);
     const [loading, setLoading] = useState(true);
+    const { hasPermission } = usePermissions();
     const toast = useToast();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newCategoryName, setNewCategoryName] = useState('');
@@ -72,7 +74,10 @@ export default function StudentCategories() {
             header: 'Category',
             cell: ({ row }) => <div className="font-medium">{row.original.category}</div>
         },
-        {
+    ];
+
+    if (hasPermission('students:manage_categories')) {
+        columns.push({
             id: 'actions',
             header: () => <div className="text-right">Action</div>,
             cell: ({ row }) => (
@@ -80,8 +85,8 @@ export default function StudentCategories() {
                     <button onClick={() => handleDelete(row.original.id)} className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100"><Trash2 className="w-4 h-4" /></button>
                 </div>
             )
-        }
-    ];
+        });
+    }
 
     return (
         <div className="space-y-6">
@@ -90,11 +95,13 @@ export default function StudentCategories() {
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Student Categories</h1>
                     <p className="text-sm text-gray-500 dark:text-gray-400">Manage student categories</p>
                 </div>
-                <div className="flex gap-2">
-                    <button onClick={() => setIsModalOpen(true)} className="btn btn-primary bg-primary-600 text-white px-4 py-2 rounded-xl flex items-center gap-2">
-                        <Plus className="w-4 h-4" /> Add Category
-                    </button>
-                </div>
+                {hasPermission('students:manage_categories') && (
+                    <div className="flex gap-2">
+                        <button onClick={() => setIsModalOpen(true)} className="btn btn-primary bg-primary-600 text-white px-4 py-2 rounded-xl flex items-center gap-2">
+                            <Plus className="w-4 h-4" /> Add Category
+                        </button>
+                    </div>
+                )}
             </div>
 
             {loading && data.length === 0 ? (
