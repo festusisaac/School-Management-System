@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Video, Calendar as CalendarIcon, Link as LinkIcon, Save, Info } from 'lucide-react';
 import api from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
+import { useAuthStore } from '@stores/authStore';
 
 enum OnlineClassPlatform {
     ZOOM = 'ZOOM',
@@ -16,6 +17,7 @@ interface ScheduleClassModalProps {
 }
 
 export default function ScheduleClassModal({ isOpen, onClose, onSuccess, initialData }: ScheduleClassModalProps) {
+    const { user } = useAuthStore();
     const toast = useToast();
     const [loading, setLoading] = useState(false);
     const [classes, setClasses] = useState<any[]>([]);
@@ -56,9 +58,26 @@ export default function ScheduleClassModal({ isOpen, onClose, onSuccess, initial
                 api.get('/academics/subjects'),
                 api.get('/hr/staff?isTeachingStaff=true'),
             ]);
-            setClasses(Array.isArray(classesRes) ? classesRes : []);
-            setSubjects(Array.isArray(subjectsRes) ? subjectsRes : []);
-            setTeachers(Array.isArray(teachersRes) ? teachersRes : []);
+            
+            const fetchedClasses = Array.isArray(classesRes) ? classesRes : [];
+            const fetchedSubjects = Array.isArray(subjectsRes) ? subjectsRes : [];
+            const fetchedTeachers = Array.isArray(teachersRes) ? teachersRes : [];
+
+            setClasses(fetchedClasses);
+            setSubjects(fetchedSubjects);
+            setTeachers(fetchedTeachers);
+
+            // If user is a teacher, auto-select them and potentially restrict classes
+            const userRole = (user?.role || user?.roleObject?.name || '').toLowerCase();
+            if (userRole === 'teacher' && !initialData) {
+                const currentTeacher = fetchedTeachers.find(t => t.email === user?.email);
+                if (currentTeacher) {
+                    setFormData(prev => ({
+                        ...prev,
+                        teacherId: currentTeacher.id
+                    }));
+                }
+            }
         } catch (error) {
             console.error('Error fetching modal data:', error);
             toast.showError('Failed to load form data');
@@ -171,9 +190,10 @@ export default function ScheduleClassModal({ isOpen, onClose, onSuccess, initial
                                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Teacher *</label>
                                 <select
                                     required
-                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 outline-none transition-all text-sm"
+                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 outline-none transition-all text-sm disabled:opacity-50 disabled:bg-gray-50"
                                     value={formData.teacherId}
                                     onChange={e => setFormData({ ...formData, teacherId: e.target.value })}
+                                    disabled={(user?.role || '').toLowerCase() === 'teacher'}
                                 >
                                     <option value="">Select Teacher</option>
                                     {teachers.map(t => <option key={t.id} value={t.id}>{t.firstName} {t.lastName}</option>)}

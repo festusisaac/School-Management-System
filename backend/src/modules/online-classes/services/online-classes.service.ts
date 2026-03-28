@@ -127,7 +127,7 @@ export class OnlineClassesService {
         await this.onlineClassRepository.remove(onlineClass);
     }
 
-    async findUpcoming(tenantId: string, classId?: string): Promise<OnlineClass[]> {
+    async findUpcoming(tenantId: string, classId?: string, teacherId?: string): Promise<OnlineClass[]> {
         const query = this.onlineClassRepository.createQueryBuilder('oc')
             .leftJoinAndSelect('oc.class', 'class')
             .leftJoinAndSelect('oc.subject', 'subject')
@@ -138,6 +138,10 @@ export class OnlineClassesService {
 
         if (classId) {
             query.andWhere('oc.classId = :classId', { classId });
+        }
+
+        if (teacherId) {
+            query.andWhere('oc.teacherId = :teacherId', { teacherId });
         }
 
         return await query.orderBy('oc.startTime', 'ASC').getMany();

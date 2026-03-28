@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Brackets } from 'typeorm';
 import { Class } from '../entities/class.entity';
 import { Section } from '../entities/section.entity';
 import { Subject } from '../entities/subject.entity';
@@ -27,12 +27,29 @@ export class AcademicsService {
         return this.classRepository.save(newClass);
     }
 
-    async getAllClasses(tenantId: string): Promise<Class[]> {
-        return this.classRepository.find({
-            where: { tenantId },
-            relations: ['sections', 'schoolSection', 'classTeacher'],
-            order: { name: 'ASC' },
-        });
+    async getAllClasses(tenantId: string, teacherId?: string): Promise<Class[]> {
+        const query = this.classRepository.createQueryBuilder('class')
+            .leftJoinAndSelect('class.sections', 'sections')
+            .leftJoinAndSelect('class.schoolSection', 'schoolSection')
+            .leftJoinAndSelect('class.classTeacher', 'classTeacher')
+            .where('class.tenantId = :tenantId', { tenantId });
+
+        if (teacherId) {
+            query.andWhere(new Brackets(qb => {
+                qb.where('class.classTeacherId = :teacherId', { teacherId })
+                    .orWhere('sections.classTeacherId = :teacherId', { teacherId })
+                    .orWhere((qb2: any) => {
+                        const subQuery = qb2.subQuery()
+                            .select('st.classId')
+                            .from('subject_teachers', 'st')
+                            .where('st.teacherId = :teacherId', { teacherId })
+                            .getQuery();
+                        return 'class.id IN (' + subQuery + ')';
+                    });
+            }));
+        }
+
+        return query.orderBy('class.name', 'ASC').getMany();
     }
 
     async getClassById(id: string): Promise<Class> {
@@ -117,12 +134,29 @@ export class AcademicsService {
         return this.sectionRepository.save(newSection);
     }
 
-    async getAllSections(tenantId: string): Promise<Section[]> {
-        return this.sectionRepository.find({
-            where: { tenantId },
-            relations: ['class', 'classTeacher'],
-            order: { class: { name: 'ASC' }, name: 'ASC' },
-        });
+    async getAllSections(tenantId: string, teacherId?: string): Promise<Section[]> {
+        const query = this.sectionRepository.createQueryBuilder('section')
+            .leftJoinAndSelect('section.class', 'class')
+            .leftJoinAndSelect('section.classTeacher', 'classTeacher')
+            .where('section.tenantId = :tenantId', { tenantId });
+
+        if (teacherId) {
+            query.andWhere(new Brackets(qb => {
+                qb.where('section.classTeacherId = :teacherId', { teacherId })
+                    .orWhere((qb2: any) => {
+                        const subQuery = qb2.subQuery()
+                            .select('st.sectionId')
+                            .from('subject_teachers', 'st')
+                            .where('st.teacherId = :teacherId', { teacherId })
+                            .getQuery();
+                        return 'section.id IN (' + subQuery + ')';
+                    });
+            }));
+        }
+
+        return query.orderBy('class.name', 'ASC')
+            .addOrderBy('section.name', 'ASC')
+            .getMany();
     }
 
     async getSectionById(id: string): Promise<Section> {

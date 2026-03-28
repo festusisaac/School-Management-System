@@ -16,11 +16,15 @@ import { Roles } from '@decorators/roles.decorator';
 import { UserRole } from '@common/dtos/auth.dto';
 import { CreateClassDto, UpdateClassDto } from '../dtos/class.dto';
 import { CreateSectionDto, UpdateSectionDto } from '../dtos/section.dto';
+import { StaffService } from '@modules/hr/services/staff.service';
 
 @Controller('academics')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AcademicsController {
-    constructor(private readonly academicsService: AcademicsService) { }
+    constructor(
+        private readonly academicsService: AcademicsService,
+        private readonly staffService: StaffService,
+    ) { }
 
     // --- Classes ---
     @Post('classes')
@@ -33,8 +37,13 @@ export class AcademicsController {
     }
 
     @Get('classes')
-    getAllClasses(@Request() req: any) {
-        return this.academicsService.getAllClasses(req.user.tenantId);
+    async getAllClasses(@Request() req: any) {
+        let teacherId: string | undefined;
+        // If user is a teacher, only get their assigned classes
+        if (req.user.role === UserRole.TEACHER) {
+            teacherId = await this.staffService.resolveStaffIdByEmail(req.user.email, req.user.tenantId);
+        }
+        return this.academicsService.getAllClasses(req.user.tenantId, teacherId);
     }
 
     @Get('classes/:id')
@@ -72,8 +81,13 @@ export class AcademicsController {
     }
 
     @Get('sections')
-    getAllSections(@Request() req: any) {
-        return this.academicsService.getAllSections(req.user.tenantId);
+    async getAllSections(@Request() req: any) {
+        let teacherId: string | undefined;
+        // If user is a teacher, only get their assigned sections
+        if (req.user.role === UserRole.TEACHER) {
+            teacherId = await this.staffService.resolveStaffIdByEmail(req.user.email, req.user.tenantId);
+        }
+        return this.academicsService.getAllSections(req.user.tenantId, teacherId);
     }
 
     @Get('sections/:id')

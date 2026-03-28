@@ -126,7 +126,7 @@ export class HomeworkController {
         // Data scoping for Teachers: See homework for assigned classes
         if (req.user.role === 'teacher') {
             const staffResult = await this.entityManager.query(
-                'SELECT id FROM "staff" WHERE email = $1 AND "tenant_id" = $2 LIMIT 1',
+                'SELECT id FROM "staff" WHERE email = $1 AND "tenantId" = $2 LIMIT 1',
                 [req.user.email, req.user.tenantId]
             );
 

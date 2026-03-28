@@ -102,7 +102,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             label: 'Academics',
             icon: BookOpen,
             path: '/academics',
-            permission: 'academics:manage_classes',
             children: [
                 { label: 'Classes', path: '/academics/classes', permission: 'academics:manage_classes' },
                 { label: 'Sections', path: '/academics/sections', permission: 'academics:manage_classes' },

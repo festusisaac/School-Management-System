@@ -5,13 +5,18 @@ import { CreateOnlineClassDto } from '../dto/create-online-class.dto';
 import { UpdateOnlineClassDto } from '../dto/update-online-class.dto';
 import { JwtAuthGuard, RolesGuard } from '@guards/jwt-auth.guard';
 import { OnlineClassStatus } from '../entities/online-class.entity';
+import { StaffService } from '@modules/hr/services/staff.service';
+import { UserRole } from '@common/dtos/auth.dto';
 
 @ApiTags('Online Classes')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('online-classes')
 export class OnlineClassesController {
-    constructor(private readonly onlineClassesService: OnlineClassesService) {}
+    constructor(
+        private readonly onlineClassesService: OnlineClassesService,
+        private readonly staffService: StaffService,
+    ) {}
 
     @Post()
     @ApiOperation({ summary: 'Create a new online class' })
@@ -21,20 +26,30 @@ export class OnlineClassesController {
 
     @Get()
     @ApiOperation({ summary: 'Get all online classes with filters' })
-    findAll(
+    async findAll(
         @Request() req: any,
         @Query('classId') classId?: string,
         @Query('subjectId') subjectId?: string,
         @Query('teacherId') teacherId?: string,
         @Query('status') status?: OnlineClassStatus,
     ) {
-        return this.onlineClassesService.findAll(req.user.tenantId, { classId, subjectId, teacherId, status });
+        let resolvedTeacherId = teacherId;
+        // If user is a teacher, force filter by their staffId
+        if (req.user.role === UserRole.TEACHER) {
+            resolvedTeacherId = await this.staffService.resolveStaffIdByEmail(req.user.email, req.user.tenantId);
+        }
+        return this.onlineClassesService.findAll(req.user.tenantId, { classId, subjectId, teacherId: resolvedTeacherId, status });
     }
 
     @Get('upcoming')
     @ApiOperation({ summary: 'Get upcoming online classes' })
-    findUpcoming(@Request() req: any, @Query('classId') classId?: string) {
-        return this.onlineClassesService.findUpcoming(req.user.tenantId, classId);
+    async findUpcoming(@Request() req: any, @Query('classId') classId?: string) {
+        let resolvedTeacherId: string | undefined;
+        // If user is a teacher, force filter by their staffId
+        if (req.user.role === UserRole.TEACHER) {
+            resolvedTeacherId = await this.staffService.resolveStaffIdByEmail(req.user.email, req.user.tenantId);
+        }
+        return this.onlineClassesService.findUpcoming(req.user.tenantId, classId, resolvedTeacherId);
     }
 
     @Get(':id')
