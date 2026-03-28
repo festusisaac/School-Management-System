@@ -12,6 +12,7 @@ import { Section } from './section.entity';
 import { Subject } from './subject.entity';
 import { TimetablePeriod } from './timetable-period.entity';
 import { Staff } from '../../hr/entities/staff.entity';
+import { AcademicSession } from '../../system/entities/academic-session.entity';
 
 @Entity('timetables')
 export class Timetable {
@@ -61,6 +62,13 @@ export class Timetable {
 
     @Column({ nullable: false })
     tenantId!: string;
+
+    @Column({ type: 'uuid', nullable: true })
+    sessionId?: string;
+
+    @ManyToOne(() => AcademicSession)
+    @JoinColumn({ name: 'sessionId' })
+    session?: AcademicSession;
 
     @CreateDateColumn()
     createdAt!: Date;

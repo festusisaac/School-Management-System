@@ -23,6 +23,7 @@ import { EmailService } from '../../communication/email.service';
 import { SmsService } from '../../communication/sms.service';
 import { StudentAttendance } from '../entities/student-attendance.entity';
 import { MarkAttendanceDto, BulkMarkAttendanceDto } from '../dtos/student-attendance.dto';
+import { SystemSettingsService } from '../../system/services/system-settings.service';
 
 @Injectable()
 export class StudentsService {
@@ -49,6 +50,7 @@ export class StudentsService {
         private usersService: UsersService,
         private emailService: EmailService,
         private smsService: SmsService,
+        private systemSettingsService: SystemSettingsService,
     ) { }
 
     // --- Students ---
@@ -537,9 +539,11 @@ export class StudentsService {
             attendance.classId = dto.classId;
             attendance.sectionId = dto.sectionId;
         } else {
+            const sessionId = await this.systemSettingsService.getActiveSessionId();
             attendance = this.attendanceRepo.create({
                 ...dto,
-                tenantId
+                tenantId,
+                sessionId: sessionId || undefined
             });
         }
 
@@ -607,19 +611,25 @@ export class StudentsService {
             throw new NotFoundException('Student not found');
         }
 
+        const sessionId = await this.systemSettingsService.getActiveSessionId();
+        const where: any = {
+            studentId: student.id,
+            date: Between(startDate, endDate) as any,
+            tenantId
+        };
+        if (sessionId) where.sessionId = sessionId;
+
         return this.attendanceRepo.find({
-            where: {
-                studentId: student.id,
-                date: Between(startDate, endDate) as any,
-                tenantId
-            },
+            where,
             order: { date: 'ASC' }
         });
     }
 
     async getClassAttendance(classId: string, date: string, tenantId: string, sectionId?: string): Promise<StudentAttendance[]> {
+        const sessionId = await this.systemSettingsService.getActiveSessionId();
         const where: any = { classId, date, tenantId };
         if (sectionId) where.sectionId = sectionId;
+        if (sessionId) where.sessionId = sessionId;
         
         return this.attendanceRepo.find({
             where,
@@ -628,11 +638,13 @@ export class StudentsService {
     }
 
     async getAttendanceLogs(startDate: string, endDate: string, tenantId: string, classId?: string, sectionId?: string, managedClassIds?: string[]): Promise<StudentAttendance[]> {
+        const sessionId = await this.systemSettingsService.getActiveSessionId();
         const where: any = {
             date: Between(startDate, endDate) as any,
             tenantId
         };
         
+        if (sessionId) where.sessionId = sessionId;
         if (classId) {
             where.classId = classId;
         } else if (managedClassIds && managedClassIds.length > 0) {

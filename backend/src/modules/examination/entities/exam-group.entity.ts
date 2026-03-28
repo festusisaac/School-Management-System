@@ -6,6 +6,7 @@ import {
     UpdateDateColumn,
     OneToMany,
 } from 'typeorm';
+import { AcademicSession } from '../../system/entities/academic-session.entity';
 
 @Entity('exam_groups')
 export class ExamGroup {
@@ -38,6 +39,13 @@ export class ExamGroup {
 
     @Column({ nullable: true })
     tenantId?: string;
+
+    @Column({ type: 'uuid', nullable: true })
+    sessionId?: string;
+
+    @ManyToOne(() => AcademicSession)
+    @JoinColumn({ name: 'sessionId' })
+    session?: AcademicSession;
 
     @CreateDateColumn()
     createdAt!: Date;

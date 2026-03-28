@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { Student } from '../../students/entities/student.entity';
 import { FeeGroup } from './fee-group.entity';
+import { AcademicSession } from '../../system/entities/academic-session.entity';
 
 export enum TransactionType {
   FEE_PAYMENT = 'FEE_PAYMENT',
@@ -58,6 +59,13 @@ export class Transaction {
 
   @Column({ type: 'jsonb', nullable: true })
   meta: any | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  sessionId?: string;
+
+  @ManyToOne(() => AcademicSession)
+  @JoinColumn({ name: 'sessionId' })
+  session?: AcademicSession;
 
   @CreateDateColumn()
   createdAt!: Date;

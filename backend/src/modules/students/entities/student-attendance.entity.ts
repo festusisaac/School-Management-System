@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 import { Student } from './student.entity';
 import { Class } from '../../academics/entities/class.entity';
 import { Section } from '../../academics/entities/section.entity';
+import { AcademicSession } from '../../system/entities/academic-session.entity';
 
 export enum AttendanceStatus {
   PRESENT = 'present',
@@ -55,6 +56,14 @@ export class StudentAttendance {
 
   @Column({ nullable: true, type: 'text' })
   remarks?: string;
+
+  @Index()
+  @Column({ type: 'uuid', nullable: true })
+  sessionId?: string;
+
+  @ManyToOne(() => AcademicSession)
+  @JoinColumn({ name: 'sessionId' })
+  session?: AcademicSession;
 
   @Index()
   @Column()

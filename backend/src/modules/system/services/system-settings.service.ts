@@ -106,4 +106,21 @@ export class SystemSettingsService {
             console.error(`SystemSettingsService: ERROR deleting ${relativeFilePath}:`, error);
         }
     }
+
+    /**
+     * Returns the currently active academic session ID.
+     * Used by all modules to scope data to the active session.
+     */
+    async getActiveSessionId(): Promise<string | null> {
+        const settings = await this.getSettings();
+        return settings.currentSessionId || null;
+    }
+
+    /**
+     * Returns the currently active academic term ID.
+     */
+    async getActiveTermId(): Promise<string | null> {
+        const settings = await this.getSettings();
+        return settings.currentTermId || null;
+    }
 }

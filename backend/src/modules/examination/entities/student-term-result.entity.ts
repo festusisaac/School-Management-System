@@ -11,6 +11,7 @@ import { Student } from '../../students/entities/student.entity';
 import { ExamGroup } from './exam-group.entity';
 import { Class } from '../../academics/entities/class.entity';
 import { Section } from '../../academics/entities/section.entity';
+import { AcademicSession } from '../../system/entities/academic-session.entity';
 
 @Entity('student_term_results')
 export class StudentTermResult {
@@ -70,6 +71,13 @@ export class StudentTermResult {
 
     @Column({ nullable: true })
     tenantId?: string;
+
+    @Column({ type: 'uuid', nullable: true })
+    sessionId?: string;
+
+    @ManyToOne(() => AcademicSession)
+    @JoinColumn({ name: 'sessionId' })
+    session?: AcademicSession;
 
     @CreateDateColumn()
     createdAt!: Date;

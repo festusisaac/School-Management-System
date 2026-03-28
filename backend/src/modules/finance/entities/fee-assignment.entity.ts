@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { Student } from '../../students/entities/student.entity';
 import { FeeGroup } from './fee-group.entity';
+import { AcademicSession } from '../../system/entities/academic-session.entity';
 
 @Entity({ name: 'fee_assignments' })
 export class FeeAssignment {
@@ -25,6 +26,13 @@ export class FeeAssignment {
     @Index()
     @Column({ nullable: true })
     tenantId?: string;
+
+    @Column({ type: 'uuid', nullable: true })
+    sessionId?: string;
+
+    @ManyToOne(() => AcademicSession)
+    @JoinColumn({ name: 'sessionId' })
+    academicSession?: AcademicSession;
 
     @CreateDateColumn()
     createdAt!: Date;

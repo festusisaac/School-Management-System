@@ -7,6 +7,7 @@ import { CreateHomeworkDto } from '../dto/create-homework.dto';
 import { UpdateHomeworkDto } from '../dto/update-homework.dto';
 import { EmailService } from '../../communication/email.service';
 import { Student } from '../../students/entities/student.entity';
+import { SystemSettingsService } from '../../system/services/system-settings.service';
 import moment from 'moment';
 
 @Injectable()
@@ -19,12 +20,15 @@ export class HomeworkService {
         @InjectRepository(HomeworkSubmission)
         private readonly submissionRepository: Repository<HomeworkSubmission>,
         private readonly emailService: EmailService,
+        private readonly systemSettingsService: SystemSettingsService,
     ) {}
 
     async create(createDto: CreateHomeworkDto, tenantId: string): Promise<Homework> {
+        const sessionId = await this.systemSettingsService.getActiveSessionId();
         const homework = this.homeworkRepository.create({
             ...createDto,
             tenantId,
+            sessionId: sessionId || undefined,
         });
         const savedHomework = await this.homeworkRepository.save(homework);
 
@@ -78,11 +82,17 @@ export class HomeworkService {
     }
 
     async findAll(tenantId: string, filters: { classId?: string; classIds?: string[]; subjectId?: string; teacherId?: string }, studentId?: string): Promise<Homework[]> {
+        const sessionId = await this.systemSettingsService.getActiveSessionId();
         const query = this.homeworkRepository.createQueryBuilder('hw')
             .leftJoinAndSelect('hw.class', 'class')
             .leftJoinAndSelect('hw.subject', 'subject')
             .leftJoinAndSelect('hw.teacher', 'teacher')
             .where('hw.tenantId = :tenantId', { tenantId });
+
+        // Scope to active session
+        if (sessionId) {
+            query.andWhere('hw.sessionId = :sessionId', { sessionId });
+        }
 
         if (filters.classIds && Array.isArray(filters.classIds)) {
             query.andWhere('hw.classId IN (:...classIds)', { classIds: filters.classIds });

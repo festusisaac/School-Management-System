@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { Staff } from './staff.entity';
+import { AcademicSession } from '../../system/entities/academic-session.entity';
 
 export enum AttendanceStatus {
     PRESENT = 'Present',
@@ -58,6 +59,13 @@ export class StaffAttendance {
     @ManyToOne(() => Staff, staff => staff.attendanceRecords)
     @JoinColumn({ name: 'staff_id' })
     staff!: Staff;
+
+    @Column({ type: 'uuid', nullable: true, name: 'session_id' })
+    sessionId?: string;
+
+    @ManyToOne(() => AcademicSession)
+    @JoinColumn({ name: 'session_id' })
+    session?: AcademicSession;
 
     @CreateDateColumn({ name: 'created_at' })
     createdAt!: Date;
