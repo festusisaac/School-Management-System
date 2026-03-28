@@ -96,7 +96,7 @@ export class HomeworkService {
             query.andWhere('hw.teacherId = :teacherId', { teacherId: filters.teacherId });
         }
 
-        const homeworks = await query.orderBy('hw.dueDate', 'DESC').getMany();
+        const homeworks = await query.orderBy('hw.createdAt', 'DESC').getMany();
 
         if (studentId) {
             const submissions = await this.submissionRepository.find({

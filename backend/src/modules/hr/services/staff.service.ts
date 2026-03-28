@@ -319,66 +319,92 @@ export class StaffService {
 
         const manager = this.staffRepository.manager;
         const staffId = staff.id;
-        const today = new Date().getDay(); // 0=Sunday, 1=Monday...
+        // Timetable dayOfWeek: 1=Monday, 2=Tuesday ... 7=Sunday
+        // JS getDay(): 0=Sunday, 1=Monday ... 6=Saturday
+        const jsDay = new Date().getDay();
+        const timetableDay = jsDay === 0 ? 7 : jsDay; // Convert: Sunday 0->7, rest stays same
         const dateStr = new Date().toISOString().split('T')[0];
 
         // 1. Classes Today (from timetable)
-        const classesTodayResult = await manager.query(
-            `SELECT COUNT(*) as count FROM "timetables" WHERE "teacherId" = $1 AND "dayOfWeek" = $2 AND "tenantId" = $3`,
-            [staffId, today, tenantId]
-        );
-        const classesToday = parseInt(classesTodayResult[0]?.count || '0', 10);
+        let classesToday = 0;
+        try {
+            const result = await manager.query(
+                `SELECT COUNT(*) as count FROM "timetables" WHERE "teacherId" = $1 AND "dayOfWeek" = $2 AND "tenantId" = $3`,
+                [staffId, timetableDay, tenantId]
+            );
+            classesToday = parseInt(result[0]?.count || '0', 10);
+        } catch (e) { console.error('Dashboard: classesToday query error', e); }
 
-        // 2. Total Students (unique students in classes this teacher teaches)
-        const totalStudentsResult = await manager.query(
-            `SELECT COUNT(DISTINCT s.id) as count FROM "students" s 
-             INNER JOIN "timetables" t ON s."classId" = t."classId" 
-             WHERE t."teacherId" = $1 AND s."tenantId" = $2`,
-            [staffId, tenantId]
-        );
-        const totalStudents = parseInt(totalStudentsResult[0]?.count || '0', 10);
+        // 2. Total Students (unique students in classes this teacher teaches via timetable)
+        let totalStudents = 0;
+        try {
+            const result = await manager.query(
+                `SELECT COUNT(DISTINCT s.id) as count FROM "students" s 
+                 INNER JOIN "timetables" t ON s."classId" = t."classId" 
+                 WHERE t."teacherId" = $1 AND t."tenantId" = $2`,
+                [staffId, tenantId]
+            );
+            totalStudents = parseInt(result[0]?.count || '0', 10);
+        } catch (e) { console.error('Dashboard: totalStudents query error', e); }
 
-        // 3. Pending/Ungraded Homework Count
-        const pendingHomeworkResult = await manager.query(
-            `SELECT COUNT(*) as count FROM "homework_submissions" hs 
-             INNER JOIN "homework" h ON hs."homeworkId" = h.id 
-             WHERE h."staffId" = $1 AND h."tenantId" = $2 AND hs.status = 'SUBMITTED' AND hs.grade IS NULL`,
-            [staffId, tenantId]
-        );
-        const pendingHomework = parseInt(pendingHomeworkResult[0]?.count || '0', 10);
+        // 3. Pending/Ungraded Homework Count (homework uses "teacherId" not "staffId")
+        let pendingHomework = 0;
+        try {
+            const result = await manager.query(
+                `SELECT COUNT(*) as count FROM "homework_submissions" hs 
+                 INNER JOIN "homework" h ON hs."homeworkId" = h.id 
+                 WHERE h."teacherId" = $1 AND h."tenantId" = $2 AND hs.status = 'SUBMITTED' AND hs.grade IS NULL`,
+                [staffId, tenantId]
+            );
+            pendingHomework = parseInt(result[0]?.count || '0', 10);
+        } catch (e) { console.error('Dashboard: pendingHomework query error', e); }
 
-        // 4. Missing Registers (as class teacher)
-        const attendanceMissingResult = await manager.query(
-            `SELECT COUNT(*) as count FROM "classes" c 
-             WHERE c."classTeacherId" = $1 AND c."tenantId" = $2 
-             AND NOT EXISTS (SELECT 1 FROM "student_attendance" sa WHERE sa."classId" = c.id AND sa.date = $3)`,
-            [staffId, tenantId, dateStr]
-        );
-        const attendanceMissing = parseInt(attendanceMissingResult[0]?.count || '0', 10);
+        // 4. Missing Registers (classes where this staff is class teacher and no attendance today)
+        let attendanceMissing = 0;
+        try {
+            const result = await manager.query(
+                `SELECT COUNT(*) as count FROM "classes" c 
+                 WHERE c."classTeacherId" = $1 AND c."tenantId" = $2 
+                 AND NOT EXISTS (SELECT 1 FROM "student_attendance" sa WHERE sa."classId" = c.id AND sa.date = $3)`,
+                [staffId, tenantId, dateStr]
+            );
+            attendanceMissing = parseInt(result[0]?.count || '0', 10);
+        } catch (e) { console.error('Dashboard: attendanceMissing query error', e); }
 
-        // 5. Recent Ungraded Submissions (Last 5)
-        const recentUngraded = await manager.query(
-            `SELECT hs.id, hs."submittedAt", h.title as "homeworkTitle", s."firstName" || ' ' || s."lastName" as "studentName" 
-             FROM "homework_submissions" hs 
-             INNER JOIN "homework" h ON hs."homeworkId" = h.id 
-             INNER JOIN "students" s ON hs."studentId" = s.id 
-             WHERE h."staffId" = $1 AND h."tenantId" = $2 AND hs.status = 'SUBMITTED' AND hs.grade IS NULL 
-             ORDER BY hs."submittedAt" DESC LIMIT 5`,
-            [staffId, tenantId]
-        );
+        // 5. Recent Ungraded Submissions (Last 5) – homework uses "teacherId"
+        let recentUngraded: any[] = [];
+        try {
+            recentUngraded = await manager.query(
+                `SELECT hs.id, hs."submittedAt", h.title as "homeworkTitle", 
+                        s."firstName" || ' ' || COALESCE(s."lastName", '') as "studentName" 
+                 FROM "homework_submissions" hs 
+                 INNER JOIN "homework" h ON hs."homeworkId" = h.id 
+                 INNER JOIN "students" s ON hs."studentId" = s.id 
+                 WHERE h."teacherId" = $1 AND h."tenantId" = $2 AND hs.status = 'SUBMITTED' AND hs.grade IS NULL 
+                 ORDER BY hs."submittedAt" DESC LIMIT 5`,
+                [staffId, tenantId]
+            );
+        } catch (e) { console.error('Dashboard: recentUngraded query error', e); }
 
-        // 6. Leave Summary
-        const approvedDaysResult = await manager.query(
-            `SELECT SUM("number_of_days") as sum FROM "leave_requests" 
-             WHERE "staff_id" = $1 AND "tenant_id" = $2 AND status = 'Approved' 
-             AND start_date >= $3`,
-            [staffId, tenantId, `${new Date().getFullYear()}-01-01`]
-        );
-        const pendingRequestsResult = await manager.query(
-            `SELECT COUNT(*) as count FROM "leave_requests" 
-             WHERE "staff_id" = $1 AND "tenant_id" = $2 AND status = 'Pending'`,
-            [staffId, tenantId]
-        );
+        // 6. Leave Summary (leave_requests uses "staff_id" column, no tenantId column on this table)
+        let approvedDays = 0;
+        let pendingRequests = 0;
+        try {
+            const approvedResult = await manager.query(
+                `SELECT COALESCE(SUM("number_of_days"), 0) as sum FROM "leave_requests" 
+                 WHERE "staff_id" = $1 AND status = 'Approved' 
+                 AND "start_date" >= $2`,
+                [staffId, `${new Date().getFullYear()}-01-01`]
+            );
+            approvedDays = parseInt(approvedResult[0]?.sum || '0', 10);
+
+            const pendingResult = await manager.query(
+                `SELECT COUNT(*) as count FROM "leave_requests" 
+                 WHERE "staff_id" = $1 AND status = 'Pending'`,
+                [staffId]
+            );
+            pendingRequests = parseInt(pendingResult[0]?.count || '0', 10);
+        } catch (e) { console.error('Dashboard: leaveSummary query error', e); }
 
         return {
             totalStudents,
@@ -387,8 +413,8 @@ export class StaffService {
             attendanceMissing,
             recentUngraded,
             leaveSummary: {
-                approvedDays: parseInt(approvedDaysResult[0]?.sum || '0', 10),
-                pendingRequests: parseInt(pendingRequestsResult[0]?.count || '0', 10)
+                approvedDays,
+                pendingRequests
             }
         };
     }
