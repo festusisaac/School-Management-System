@@ -12,11 +12,15 @@ import { CreateDeactivateReasonDto } from '../dtos/deactivate-reason.dto';
 import { CreateOnlineAdmissionDto } from '../dtos/create-online-admission.dto';
 import { UpdateOnlineAdmissionStatusDto } from '../dtos/update-online-admission-status.dto';
 import { MarkAttendanceDto, BulkMarkAttendanceDto } from '../dtos/student-attendance.dto';
+import { EntityManager } from 'typeorm';
 
 @Controller('students')
 @UseGuards(JwtAuthGuard)
 export class StudentsController {
-    constructor(private readonly studentsService: StudentsService) { }
+    constructor(
+        private readonly studentsService: StudentsService,
+        private readonly entityManager: EntityManager,
+    ) { }
 
     // --- Students ---
 
@@ -45,11 +49,76 @@ export class StudentsController {
     }
 
     @Get()
-    findAll(@Query() query: any, @Request() req: any) {
+    async findAll(@Query() query: any, @Request() req: any) {
+        // Data scoping for Teachers: Only see students in assigned classes
+        if (req.user.role === 'teacher') {
+            const staffResult = await this.entityManager.query(
+                'SELECT id FROM "staff" WHERE email = $1 AND "tenant_id" = $2 LIMIT 1',
+                [req.user.email, req.user.tenantId]
+            );
+
+            if (staffResult && staffResult.length > 0) {
+                const staffId = staffResult[0].id;
+                
+                // 1. Classes where they are the primary Class Teacher
+                const classTeacherClasses = await this.entityManager.query(
+                    'SELECT id FROM "classes" WHERE "classTeacherId" = $1 AND "tenantId" = $2',
+                    [staffId, req.user.tenantId]
+                );
+                
+                // 2. Classes where they teach specific subjects
+                const subjectTeachers = await this.entityManager.query(
+                    'SELECT DISTINCT "classId" FROM "subject_teachers" WHERE "teacherId" = $1 AND "tenantId" = $2',
+                    [staffId, req.user.tenantId]
+                );
+                
+                const allManagedClassIds = new Set([
+                    ...classTeacherClasses.map((c: any) => c.id),
+                    ...subjectTeachers.map((st: any) => st.classId)
+                ]);
+
+                const classIds = Array.from(allManagedClassIds).filter(Boolean);
+
+                if (classIds.length > 0) {
+                    query.classIds = classIds;
+                } else {
+                    // No assignments, no students
+                    return [];
+                }
+            } else {
+                return [];
+            }
+        }
+
         return this.studentsService.findAll(query, req.user.tenantId);
     }
 
-    findDeactivated(@Request() req: any) {
+    @Get('deactivated')
+    async findDeactivated(@Request() req: any) {
+        // Teachers only see their own students, even if deactivated
+        if (req.user.role === 'teacher') {
+            const staffResult = await this.entityManager.query(
+                'SELECT id FROM "staff" WHERE email = $1 AND "tenant_id" = $2 LIMIT 1',
+                [req.user.email, req.user.tenantId]
+            );
+
+            if (!staffResult || staffResult.length === 0) return [];
+            const staffId = staffResult[0].id;
+
+            const managedClasses = await this.entityManager.query(
+                `SELECT id FROM "classes" WHERE "classTeacherId" = $1 AND "tenantId" = $2
+                 UNION
+                 SELECT DISTINCT "classId" FROM "subject_teachers" WHERE "teacherId" = $1 AND "tenantId" = $2`,
+                [staffId, req.user.tenantId]
+            );
+
+            const classIds = managedClasses.map((c: any) => c.id).filter(Boolean);
+            if (classIds.length === 0) return [];
+
+            const students = await this.studentsService.findDeactivatedStudents(req.user.tenantId);
+            return students.filter(s => classIds.includes(s.classId));
+        }
+
         return this.studentsService.findDeactivatedStudents(req.user.tenantId);
     }
 
@@ -205,12 +274,34 @@ export class StudentsController {
     }
 
     @Get('attendance/class/:classId')
-    getClassAttendance(
+    async getClassAttendance(
         @Param('classId') classId: string,
         @Query('date') date: string,
         @Request() req: any,
         @Query('sectionId') sectionId?: string
     ) {
+        // Teacher scoping check
+        if (req.user.role === 'teacher') {
+            const staffResult = await this.entityManager.query(
+                'SELECT id FROM "staff" WHERE email = $1 AND "tenant_id" = $2 LIMIT 1',
+                [req.user.email, req.user.tenantId]
+            );
+
+            if (!staffResult || staffResult.length === 0) return [];
+            const staffId = staffResult[0].id;
+
+            const isAssigned = await this.entityManager.query(
+                `SELECT 1 FROM "classes" WHERE id = $1 AND "classTeacherId" = $2
+                 UNION
+                 SELECT 1 FROM "subject_teachers" WHERE "classId" = $1 AND "teacherId" = $2`,
+                [classId, staffId]
+            );
+
+            if (!isAssigned || isAssigned.length === 0) {
+                return [];
+            }
+        }
+
         return this.studentsService.getClassAttendance(classId, date, req.user.tenantId, sectionId);
     }
 

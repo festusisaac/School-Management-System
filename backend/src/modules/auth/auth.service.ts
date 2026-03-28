@@ -126,6 +126,20 @@ export class AuthService {
     }
   }
 
+  async getMe(userId: string) {
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+      relations: ['roleObject', 'roleObject.permissions'],
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
+
   private async generateTokens(user: User) {
     const permissions = user.roleObject?.permissions?.map(p => p.slug) || [];
     const payload = {

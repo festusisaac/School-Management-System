@@ -83,11 +83,35 @@ export class TimetableController {
     }
 
     @Get('slots')
-    getTimetable(
+    async getTimetable(
         @Query('classId') classId: string,
         @Query('sectionId') sectionId: string,
         @Request() req: any
     ) {
+        // Data scoping for Teachers: Can only view timetables for assigned classes
+        if (req.user.role === 'teacher') {
+            const staffResult = await this.staffRepository.findOne({
+                where: { email: req.user.email, tenantId: req.user.tenantId },
+                select: ['id']
+            });
+
+            if (!staffResult) return [];
+
+            const staffId = staffResult.id;
+
+            // Check if teacher is assigned to this class (as class teacher or subject teacher)
+            const classCheck = await this.staffRepository.query(
+                `SELECT 1 FROM "classes" WHERE "id" = $1 AND "classTeacherId" = $2 AND "tenantId" = $3
+                 UNION
+                 SELECT 1 FROM "subject_teachers" WHERE "classId" = $1 AND "teacherId" = $2 AND "tenantId" = $3`,
+                [classId, staffId, req.user.tenantId]
+            );
+
+            if (!classCheck || classCheck.length === 0) {
+                return []; // Block access to other classes
+            }
+        }
+
         return this.timetableService.getTimetable(classId, sectionId, req.user.tenantId);
     }
 
@@ -104,7 +128,19 @@ export class TimetableController {
     }
 
     @Get('slots/teacher/:teacherId')
-    getTeacherTimetable(@Param('teacherId') teacherId: string, @Request() req: any) {
+    async getTeacherTimetable(@Param('teacherId') teacherId: string, @Request() req: any) {
+        // Security Check: Teachers can only view their own timetable
+        if (req.user.role === 'teacher') {
+            const staff = await this.staffRepository.findOne({
+                where: { email: req.user.email, tenantId: req.user.tenantId },
+                select: ['id']
+            });
+            
+            if (!staff || staff.id !== teacherId) {
+                return []; // Or throw ForbiddenException if you prefer
+            }
+        }
+        
         return this.timetableService.getTeacherTimetable(teacherId, req.user.tenantId);
     }
 

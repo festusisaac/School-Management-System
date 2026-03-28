@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
+import { Repository, Like, Not } from 'typeorm';
 import { Staff, StaffStatus } from '../entities/staff.entity';
 import { UsersService } from '../../system/services/users.service';
 
@@ -23,7 +23,8 @@ export class StaffService {
         const query = this.staffRepository.createQueryBuilder('staff')
             .leftJoinAndSelect('staff.department', 'department')
             .leftJoinAndSelect('staff.roleObject', 'roleObject')
-            .where('staff.tenantId = :tenantId', { tenantId });
+            .where('staff.tenantId = :tenantId', { tenantId })
+            .andWhere('staff.status != :inactive', { inactive: StaffStatus.INACTIVE });
 
         // Apply filters
         if (filters?.search) {
@@ -75,6 +76,14 @@ export class StaffService {
         }
 
         return staff;
+    }
+
+    async resolveStaffIdByEmail(email: string, tenantId: string): Promise<string | undefined> {
+        const staff = await this.staffRepository.findOne({
+            where: { email, tenantId },
+            select: ['id']
+        });
+        return staff?.id;
     }
 
     async findByEmployeeId(employeeId: string): Promise<Staff> {
@@ -260,12 +269,35 @@ export class StaffService {
 
     async remove(id: string, tenantId: string): Promise<void> {
         const staff = await this.findOne(id, tenantId);
-        staff.status = StaffStatus.INACTIVE;
-        await this.staffRepository.save(staff);
+        const email = staff.email;
+
+        try {
+            // Attempt to hard delete staff member
+            await this.staffRepository.remove(staff);
+
+            // If staff deletion succeeds, also remove their user account
+            await this.usersService.removeByEmail(email, tenantId);
+        } catch (error: any) {
+            // If deletion fails (likely due to FK constraints), fall back to soft delete
+            console.error(`Failed to hard delete staff ${id}, falling back to soft delete:`, error.message);
+            staff.status = StaffStatus.INACTIVE;
+            await this.staffRepository.save(staff);
+
+            // Also deactivate the user account instead of deleting it
+            const user = await this.usersService.findByEmail(email);
+            if (user) {
+                await this.usersService.update(user.id, { isActive: false });
+            }
+        }
     }
 
     async getStatistics(tenantId: string) {
-        const total = await this.staffRepository.count({ where: { tenantId } });
+        const total = await this.staffRepository.count({
+            where: {
+                tenantId,
+                status: Not(StaffStatus.INACTIVE)
+            }
+        });
         const active = await this.staffRepository.count({ where: { status: StaffStatus.ACTIVE, tenantId } });
         const onLeave = await this.staffRepository.count({ where: { status: StaffStatus.ON_LEAVE, tenantId } });
         return {

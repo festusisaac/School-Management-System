@@ -77,14 +77,16 @@ export class HomeworkService {
         }
     }
 
-    async findAll(tenantId: string, filters: { classId?: string; subjectId?: string; teacherId?: string }, studentId?: string): Promise<Homework[]> {
+    async findAll(tenantId: string, filters: { classId?: string; classIds?: string[]; subjectId?: string; teacherId?: string }, studentId?: string): Promise<Homework[]> {
         const query = this.homeworkRepository.createQueryBuilder('hw')
             .leftJoinAndSelect('hw.class', 'class')
             .leftJoinAndSelect('hw.subject', 'subject')
             .leftJoinAndSelect('hw.teacher', 'teacher')
             .where('hw.tenantId = :tenantId', { tenantId });
 
-        if (filters.classId) {
+        if (filters.classIds && Array.isArray(filters.classIds)) {
+            query.andWhere('hw.classId IN (:...classIds)', { classIds: filters.classIds });
+        } else if (filters.classId) {
             query.andWhere('hw.classId = :classId', { classId: filters.classId });
         }
         if (filters.subjectId) {

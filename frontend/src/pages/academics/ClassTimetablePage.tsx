@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Settings, Printer, X, Plus, Trash2, Copy, RefreshCw, ChevronDown, ArrowUp, ArrowDown } from 'lucide-react';
 import api from '../../services/api';
+import { useAuthStore } from '../../stores/authStore';
 
 interface Class {
     id: string;
@@ -120,6 +121,8 @@ const ClassTimetablePage = () => {
     const [showCopyModal, setShowCopyModal] = useState(false);
     const [editingCell, setEditingCell] = useState<{ day: number; periodId: string } | null>(null);
     const [selectedSubject, setSelectedSubject] = useState('');
+    const { user } = useAuthStore();
+    const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.role?.toLowerCase() === 'superadmin';
 
     const printRef = useRef<HTMLDivElement>(null);
 
@@ -219,6 +222,7 @@ const ClassTimetablePage = () => {
     };
 
     const handleCellClick = (dayValue: number, period: Period) => {
+        if (!isAdmin) return; // Teachers can't edit
         if (period.type !== PeriodType.LESSON) return;
         const slot = getSlot(dayValue, period.id);
         setEditingCell({ day: dayValue, periodId: period.id });
@@ -314,8 +318,8 @@ const ClassTimetablePage = () => {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3">
-                        {periods.length === 0 && (
-                            <button
+                        {periods.length === 0 && isAdmin && (
+                             <button
                                 onClick={initializePeriods}
                                 className="flex items-center gap-2 px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg shadow-sm font-medium transition-all hover:shadow text-sm"
                             >
@@ -331,7 +335,7 @@ const ClassTimetablePage = () => {
                             <Printer className="w-4 h-4" />
                             Print
                         </button>
-                        {selectedClass && (selectedSection || sections.filter(s => s.classId === selectedClass).length === 0) && (
+                        {selectedClass && (selectedSection || sections.filter(s => s.classId === selectedClass).length === 0) && isAdmin && (
                             <button
                                 onClick={() => setShowCopyModal(true)}
                                 className="flex items-center gap-2 px-5 py-2.5 bg-secondary-600 hover:bg-secondary-700 text-white rounded-lg shadow-sm font-medium transition-all hover:shadow-md text-sm"
@@ -340,13 +344,15 @@ const ClassTimetablePage = () => {
                                 Copy
                             </button>
                         )}
-                        <button
-                            onClick={() => setShowPeriodModal(true)}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-gray-800 hover:bg-gray-900 text-white rounded-lg shadow-sm font-medium transition-all hover:shadow-md text-sm"
-                        >
-                            <Settings className="w-4 h-4" />
-                            Manage Periods
-                        </button>
+                        {isAdmin && (
+                            <button
+                                onClick={() => setShowPeriodModal(true)}
+                                className="flex items-center gap-2 px-5 py-2.5 bg-gray-800 hover:bg-gray-900 text-white rounded-lg shadow-sm font-medium transition-all hover:shadow-md text-sm"
+                            >
+                                <Settings className="w-4 h-4" />
+                                Manage Periods
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -503,9 +509,10 @@ const ClassTimetablePage = () => {
                                                     return (
                                                         <td
                                                             key={period.id}
-                                                            className={`border border-black p-0 relative transition-colors h-16 ${isEditing ? 'bg-primary-50' : 'hover:bg-gray-50'
+                                                            className={`border border-black p-0 relative transition-colors h-16 ${isEditing ? 'bg-primary-50' : (isAdmin ? 'hover:bg-gray-50' : '')
                                                                 }`}
                                                             onClick={() => handleCellClick(day.value, period)}
+                                                            style={{ cursor: isAdmin ? 'pointer' : 'default' }}
                                                         >
                                                             {isEditing ? (
                                                                 <div className="absolute inset-0 z-10 bg-white flex flex-col p-1">
@@ -547,12 +554,14 @@ const ClassTimetablePage = () => {
                                                                             {slot.roomNumber && (
                                                                                 <span className="text-[10px] text-gray-500">{slot.roomNumber}</span>
                                                                             )}
-                                                                            <button
-                                                                                onClick={(e) => { e.stopPropagation(); handleDeleteSlot(day.value, period.id); }}
-                                                                                className="hidden group-hover:block absolute top-0 right-0 p-1 text-red-500 print:hidden"
-                                                                            >
-                                                                                <Trash2 size={12} />
-                                                                            </button>
+                                                                            {isAdmin && (
+                                                                                <button
+                                                                                    onClick={(e) => { e.stopPropagation(); handleDeleteSlot(day.value, period.id); }}
+                                                                                    className="hidden group-hover:block absolute top-0 right-0 p-1 text-red-500 print:hidden"
+                                                                                >
+                                                                                    <Trash2 size={12} />
+                                                                                </button>
+                                                                            )}
                                                                         </>
                                                                     ) : (
                                                                         <span className="hidden group-hover:block text-gray-300 print:hidden">

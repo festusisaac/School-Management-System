@@ -116,6 +116,15 @@ export class UsersService implements OnModuleInit {
     await this.usersRepository.remove(user);
   }
 
+  async removeByEmail(email: string, tenantId: string): Promise<void> {
+    const user = await this.usersRepository.findOne({
+      where: { email, tenantId },
+    });
+    if (user) {
+      await this.usersRepository.remove(user);
+    }
+  }
+
   // Helper for Staff/Student integration
   async findOrCreateUser(email: string, details: Partial<CreateUserDto>): Promise<User> {
     const user = await this.findByEmail(email);

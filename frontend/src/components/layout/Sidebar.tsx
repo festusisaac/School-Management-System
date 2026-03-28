@@ -76,11 +76,24 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         }
     ];
 
-    const userPermissions = user?.permissions || [];
+    const userPermissions = user?.permissions || user?.roleObject?.permissions?.map((p: any) => p.slug) || [];
     const hasPermission = (permission?: string) => {
         if (!permission) return true;
+        
+        // Super Admins and Admins bypass all checks
         if (userRole === 'super administrator' || userRole === 'admin') return true;
-        return userPermissions.includes(permission);
+        
+        // Direct match
+        if (userPermissions.includes(permission)) return true;
+
+        // Fallback: If requesting a 'view' permission, check if they have 'manage' for that same topic
+        // e.g., if checking for 'academics:view_timetable', but they have 'academics:manage_timetable'
+        if (permission.includes(':view_')) {
+            const manageEquivalent = permission.replace(':view_', ':manage_');
+            if (userPermissions.includes(manageEquivalent)) return true;
+        }
+        
+        return false;
     };
 
     const staffNavItems = [
@@ -91,7 +104,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             path: '/academics',
             permission: 'academics:manage_classes',
             children: [
-                { label: 'School Sections', path: '/academics/school-sections', permission: 'academics:manage_sessions' },
                 { label: 'Classes', path: '/academics/classes', permission: 'academics:manage_classes' },
                 { label: 'Sections', path: '/academics/sections', permission: 'academics:manage_classes' },
                 { label: 'Subject Groups', path: '/academics/subject-groups', permission: 'academics:manage_subjects' },
@@ -99,27 +111,27 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 { label: 'Assign Class Subjects', path: '/academics/assign-class-subjects', permission: 'academics:assign_teachers' },
                 { label: 'Assign Subject Teachers', path: '/academics/assign-subject-teachers', permission: 'academics:assign_teachers' },
                 { label: 'Assign Class Teachers', path: '/academics/assign-class-teachers', permission: 'academics:assign_teachers' },
-                { label: 'Class Timetable', path: '/academics/class-timetable', permission: 'academics:manage_timetable' },
-                { label: 'Teachers Timetable', path: '/academics/teachers-timetable', permission: 'academics:manage_timetable' },
-                { label: 'Promote Students', path: '/academics/promotion', permission: 'students:promote' },
+                { label: 'Class Timetable', path: '/academics/class-timetable', permission: 'academics:view_timetable' },
+                { label: 'Teachers Timetable', path: '/academics/teachers-timetable', permission: 'academics:view_timetable' },
+                { label: 'Promote Students', path: '/academics/promotion', permission: 'academics:promote_students' },
             ]
         },
         { 
             label: 'Online Classes', 
             icon: Video, 
             path: '/online-classes',
-            // Defaulting online classes to academics permission or visible to all teachers
-            permission: 'academics:manage_classes',
+            // Dedicated permission for virtual learning
+            permission: 'online_classes:manage',
             children: [
-                { label: 'Classes Schedule', path: '/online-classes/schedule', permission: 'academics:manage_classes' },
-                { label: 'Completed Classes', path: '/online-classes/history', permission: 'academics:manage_classes' },
+                { label: 'Classes Schedule', path: '/online-classes/schedule', permission: 'online_classes:manage' },
+                { label: 'Completed Classes', path: '/online-classes/history', permission: 'online_classes:history' },
             ]
         },
         {
             label: 'Homework',
             icon: BookOpen,
             path: '/homework',
-            permission: 'academics:manage_classes'
+            permission: 'homework:view'
         },
         {
             label: 'Human Resource',
@@ -152,18 +164,18 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             label: 'Student Information',
             icon: GraduationCap,
             path: '/students',
-            permission: 'students:view',
+            permission: 'students:view_directory',
             children: [
-                { label: 'Student Directory', path: '/students/directory', permission: 'students:view' },
+                { label: 'Student Directory', path: '/students/directory', permission: 'students:view_directory' },
                 { label: 'Student Admission', path: '/students/admission', permission: 'students:create' },
                 { label: 'Online Admission', path: '/students/online-admission', permission: 'students:create' },
                 { label: 'Library', path: '/students/library', icon: BookOpen, permission: 'library:manage_books' },
                 { label: 'Deactivate Student', path: '/students/deactivated', permission: 'students:delete' },
-                { label: 'Student Categories', path: '/students/categories', permission: 'students:view' },
-                { label: 'Student House', path: '/students/houses', permission: 'students:view' },
-                { label: 'Deactivation Reason', path: '/students/deactivate-reasons', permission: 'students:delete' },
-                { label: 'Student Profile', path: '/students/profile/:id', permission: 'students:view' },
-                { label: 'Rate Teachers', path: '/students/rate-teachers', permission: 'students:view' },
+                { label: 'Student Categories', path: '/students/categories', permission: 'students:manage_categories' },
+                { label: 'Student House', path: '/students/houses', permission: 'students:manage_categories' },
+                { label: 'Deactivation Reason', path: '/students/deactivate-reasons', permission: 'students:manage_categories' },
+                { label: 'Student Profile', path: '/students/profile/:id', permission: 'students:view_profile' },
+                { label: 'Rate Teachers', path: '/students/rate-teachers', permission: 'students:view_directory' },
             ]
         },
         {
@@ -239,15 +251,16 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             children: [
                 { type: 'header', label: 'Configuration' },
                 { label: 'General Settings', path: '/settings/general', permission: 'settings:general' },
-                { label: 'Academic Sessions', path: '/settings/sessions', permission: 'academics:manage_sessions' },
-                { label: 'Academic Terms', path: '/settings/terms', permission: 'academics:manage_sessions' },
+                { label: 'School Sections', path: '/academics/school-sections', permission: 'settings:academic_setup' },
+                { label: 'Academic Sessions', path: '/settings/sessions', permission: 'settings:academic_setup' },
+                { label: 'Academic Terms', path: '/settings/terms', permission: 'settings:academic_setup' },
                 { label: 'Roles & Permissions', path: '/settings/roles', permission: 'settings:roles_permissions' },
                 { label: 'User Management', path: '/settings/users', permission: 'settings:manage_users' },
             ]
         },
     ];
 
-    const filterNavItems = (items: any[]) => {
+    const filterNavItems = (items: any[]): any[] => {
         return items
             .filter(item => {
                 if (item.type === 'header' && !item.permission) return true; // Keep headers by default unless specifically permissioned
@@ -255,7 +268,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             })
             .map(item => {
                 if (item.children) {
-                    const filteredChildren = filterNavItems(item.children);
+                    const filteredChildren: any[] = filterNavItems(item.children);
                     return { ...item, children: filteredChildren };
                 }
                 return item;

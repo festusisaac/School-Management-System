@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, ILike, Between } from 'typeorm';
+import { Repository, Like, ILike, Between, In } from 'typeorm';
 import { extname } from 'path';
 import { Student } from '../entities/student.entity';
 import { CreateStudentDto } from '../dtos/create-student.dto';
@@ -197,6 +197,11 @@ export class StudentsService {
 
         if (query.classId && query.classId !== 'undefined' && query.classId !== '') {
             baseWhere.classId = query.classId;
+        }
+
+        // Add support for multiple classIds (for teacher scoping)
+        if (query.classIds && Array.isArray(query.classIds) && query.classIds.length > 0) {
+            baseWhere.classId = In(query.classIds);
         }
         if (query.sectionId && query.sectionId !== 'undefined' && query.sectionId !== '') {
             baseWhere.sectionId = query.sectionId;

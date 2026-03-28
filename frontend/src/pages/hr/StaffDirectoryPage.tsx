@@ -101,6 +101,18 @@ const StaffDirectoryPage = () => {
     const { settings } = useSystem();
 
     const [employeeIdField, setEmployeeIdField] = useState('');
+    const [password, setPassword] = useState('');
+
+    const generatePassword = () => {
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        const special = "@#$%&*";
+        let newPass = "Staff@";
+        for (let i = 0; i < 6; i++) {
+            newPass += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        newPass += special.charAt(Math.floor(Math.random() * special.length));
+        setPassword(newPass);
+    };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, files, multiple } = e.target;
@@ -253,7 +265,14 @@ const StaffDirectoryPage = () => {
                         Export
                     </button>
                     <button
-                        onClick={() => { setEditingStaff(null); setSelectedFiles({}); setEnableLogin(false); setIsTeachingStaff(false); setShowModal(true); }}
+                        onClick={() => { 
+                            setEditingStaff(null); 
+                            setSelectedFiles({}); 
+                            setEnableLogin(false); 
+                            setIsTeachingStaff(false); 
+                            setPassword('');
+                            setShowModal(true); 
+                        }}
                         className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
                     >
                         <Plus size={20} />
@@ -913,21 +932,33 @@ const StaffDirectoryPage = () => {
                                                                     </label>
                                                                 </div>
 
-                                                                {enableLogin && (
+                                                                 {enableLogin && (
                                                                     <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                                                                        <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Initial Password *</label>
+                                                                        <div className="flex justify-between items-center">
+                                                                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Initial Password *</label>
+                                                                            <button 
+                                                                                type="button"
+                                                                                onClick={generatePassword}
+                                                                                className="text-[10px] font-bold text-primary-600 dark:text-primary-400 hover:underline"
+                                                                            >
+                                                                                Generate Secure Password
+                                                                            </button>
+                                                                        </div>
                                                                         <div className="relative">
                                                                             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-500" size={16} />
                                                                             <input
-                                                                                type="password"
+                                                                                type="text" // Using text so user can see it when generating, but browser still respects new-password
                                                                                 name="password"
                                                                                 required={enableLogin}
+                                                                                autoComplete="new-password"
+                                                                                value={password}
+                                                                                onChange={(e) => setPassword(e.target.value)}
                                                                                 placeholder="Enter a secure password"
                                                                                 className="w-full pl-10 pr-4 py-2.5 border border-primary-200 dark:border-primary-900/50 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm"
                                                                             />
                                                                         </div>
                                                                         <p className="text-[10px] text-gray-500 dark:text-gray-400 italic flex items-center gap-1">
-                                                                            <Shield size={10} /> Min. 6 characters. User can change this later.
+                                                                            <Shield size={10} /> Min. 6 characters. Copy this for the staff member.
                                                                         </p>
                                                                     </div>
                                                                 )}

@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { Printer, ChevronDown, Calendar, User, Clock } from 'lucide-react';
 import api from '../../services/api';
+import { useAuthStore } from '../../stores/authStore';
 
 interface Staff {
     id: string;
     firstName: string;
     lastName: string;
+    email: string;
     employeeId: string;
     role: string;
     roleObject?: {
@@ -92,6 +94,9 @@ const TeachersTimetablePage = () => {
     const [periods, setPeriods] = useState<Period[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const { user } = useAuthStore();
+    const isTeacher = user?.role?.toLowerCase() === 'teacher';
+    const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.role?.toLowerCase() === 'superadmin';
 
     const printRef = useRef<HTMLDivElement>(null);
 
@@ -115,11 +120,20 @@ const TeachersTimetablePage = () => {
             // Filter only teachers using isTeachingStaff flag or "Teacher" role
             const teacherList = staffData.filter((s: Staff) => 
                 s.isTeachingStaff === true || 
-                s.roleObject?.name === 'Teacher' || 
-                s.role === 'Teacher'
+                s.roleObject?.name?.toLowerCase() === 'teacher' || 
+                s.role?.toLowerCase() === 'teacher'
             );
             setTeachers(teacherList);
             setPeriods(periodsData.sort((a: Period, b: Period) => a.periodOrder - b.periodOrder));
+
+            // Auto-select current teacher if applicable
+            if (isTeacher) {
+                const currentTeacher = teacherList.find((t: Staff) => t.email === user.email);
+                if (currentTeacher) {
+                    setSelectedTeacher(currentTeacher.id);
+                }
+            }
+            
             setError('');
         } catch (err: any) {
             setError(err.response?.data?.message || 'Failed to fetch data');
@@ -206,9 +220,10 @@ const TeachersTimetablePage = () => {
                             <select
                                 value={selectedTeacher}
                                 onChange={(e) => setSelectedTeacher(e.target.value)}
-                                className="w-full pl-4 pr-10 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all appearance-none cursor-pointer text-gray-900 dark:text-white"
+                                disabled={isTeacher && !isAdmin}
+                                className="w-full pl-4 pr-10 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all appearance-none cursor-pointer text-gray-900 dark:text-white disabled:bg-gray-100 disabled:cursor-not-allowed"
                             >
-                                <option value="">Choose a teacher...</option>
+                                <option value="">{isTeacher ? 'Loading your schedule...' : 'Choose a teacher...'}</option>
                                 {teachers.map(teacher => (
                                     <option key={teacher.id} value={teacher.id}>
                                         {teacher.firstName} {teacher.lastName} ({teacher.employeeId})

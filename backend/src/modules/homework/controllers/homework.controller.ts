@@ -9,6 +9,7 @@ import { HomeworkSubmissionService } from '../services/homework-submission.servi
 import { CreateHomeworkDto } from '../dto/create-homework.dto';
 import { UpdateHomeworkDto } from '../dto/update-homework.dto';
 import { SubmitHomeworkDto, GradeSubmissionDto } from '../dto/submit-homework.dto';
+import { EntityManager } from 'typeorm';
 
 @Controller('homework')
 @UseGuards(JwtAuthGuard)
@@ -17,7 +18,8 @@ export class HomeworkController {
 
     constructor(
         private readonly homeworkService: HomeworkService,
-        private readonly submissionService: HomeworkSubmissionService
+        private readonly submissionService: HomeworkSubmissionService,
+        private readonly entityManager: EntityManager,
     ) {
         // Ensure upload directories exist
         const submissionsPath = join(process.cwd(), 'uploads', 'homework-submissions');
@@ -114,10 +116,43 @@ export class HomeworkController {
     @Get()
     async findAll(@Query() query: any, @Request() req: any) {
         let studentId = undefined;
+        
+        // Data scoping for Students
         if (req.user.role === 'student') {
             const rawId = req.user.studentId || req.user.id;
             studentId = await this.submissionService.resolveStudentId(rawId, req.user.tenantId);
         }
+
+        // Data scoping for Teachers: See homework for assigned classes
+        if (req.user.role === 'teacher') {
+            const staffResult = await this.entityManager.query(
+                'SELECT id FROM "staff" WHERE email = $1 AND "tenant_id" = $2 LIMIT 1',
+                [req.user.email, req.user.tenantId]
+            );
+
+            if (staffResult && staffResult.length > 0) {
+                const staffId = staffResult[0].id;
+
+                // Combine Class Teacher and Subject Teacher assignments
+                const managedClasses = await this.entityManager.query(
+                    `SELECT id FROM "classes" WHERE "classTeacherId" = $1 AND "tenantId" = $2
+                     UNION
+                     SELECT DISTINCT "classId" FROM "subject_teachers" WHERE "teacherId" = $1 AND "tenantId" = $2`,
+                    [staffId, req.user.tenantId]
+                );
+
+                const classIds = managedClasses.map((c: any) => c.id).filter(Boolean);
+
+                if (classIds.length > 0) {
+                    query.classIds = classIds;
+                } else {
+                    return [];
+                }
+            } else {
+                return [];
+            }
+        }
+
         return this.homeworkService.findAll(req.user.tenantId, query, studentId);
     }
 

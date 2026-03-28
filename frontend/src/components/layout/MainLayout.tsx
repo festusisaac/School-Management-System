@@ -1,12 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { useSessionTimeout } from '../../hooks/useSessionTimeout';
+import { useAuthStore } from '../../stores/authStore';
 
 export function MainLayout() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const { WarningModal } = useSessionTimeout();
+    const { refreshUser } = useAuthStore();
+
+    useEffect(() => {
+        refreshUser();
+    }, []);
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex">
