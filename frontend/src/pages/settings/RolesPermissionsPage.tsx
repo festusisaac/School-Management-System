@@ -30,7 +30,11 @@ const RolesPermissionsPage = () => {
                 systemService.getRoles(),
                 systemService.getPermissions()
             ]);
-            setRoles(rolesData || []);
+            // Filter out Parent and Student roles as they are distinct system entities
+            const filteredRoles = (rolesData || []).filter(r => 
+                !['Parent', 'Student'].includes(r.name)
+            );
+            setRoles(filteredRoles);
             setPermissions(permsData || []);
         } catch (error: any) {
             console.error('Fetch Error:', error);

@@ -5,16 +5,11 @@ import {
     UserPlus, 
     Shield, 
     Mail, 
-    Clock, 
     Trash2, 
     Edit2, 
     CheckCircle2, 
     XCircle,
-    MoreVertical,
-    Filter,
     ArrowUpDown,
-    ShieldAlert,
-    UserCheck,
     Lock
 } from 'lucide-react';
 import { systemService, Role } from '../../services/systemService';
@@ -54,7 +49,8 @@ const UsersPage = () => {
                 systemService.getRoles()
             ]);
             setUsers(usersData);
-            setRoles(rolesData);
+            // Filter out roles that are managed outside of system user management
+            setRoles((rolesData || []).filter(r => !['Parent', 'Student'].includes(r.name)));
         } catch (error) {
             console.error('Error fetching users:', error);
             toast.showError('Failed to load users');

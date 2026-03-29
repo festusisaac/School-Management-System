@@ -8,6 +8,7 @@ import { join } from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MaintenanceGuard } from './guards/maintenance.guard';
+import { SystemSetupGuard } from './guards/system-setup.guard';
 
 // Modules
 import { AuthModule } from '@modules/auth/auth.module';
@@ -83,6 +84,10 @@ import { HomeworkModule } from '@modules/homework/homework.module';
   controllers: [AppController],
   providers: [
     AppService,
+    {
+      provide: APP_GUARD,
+      useClass: SystemSetupGuard,
+    },
     {
       provide: APP_GUARD,
       useClass: MaintenanceGuard,

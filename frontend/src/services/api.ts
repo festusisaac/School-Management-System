@@ -127,6 +127,13 @@ class ApiService {
           }
         }
 
+        // Handle System Not Initialized (403 with specific message)
+        if (error.response?.status === 403 && error.response?.data?.error === 'SystemNotInitialized') {
+          if (!window.location.pathname.includes('/setup')) {
+            window.location.href = '/setup'
+          }
+        }
+
         return Promise.reject(error)
       },
     )

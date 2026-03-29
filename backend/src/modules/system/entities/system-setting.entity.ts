@@ -129,6 +129,9 @@ export class SystemSetting {
     @Column({ type: 'int', default: 2 }) // in MB
     maxFileUploadSizeMb!: number;
 
+    @Column({ type: 'boolean', default: false })
+    isInitialized!: boolean;
+
     @CreateDateColumn()
     createdAt!: Date;
 

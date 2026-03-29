@@ -4,6 +4,8 @@ import RegisterPage from '@pages/auth/RegisterPage'
 import DashboardPage from '@pages/dashboard/DashboardPage'
 import MaintenancePage from '@pages/MaintenancePage'
 import LandingPage from './pages/public/LandingPage'
+import SetupWizard from './pages/SetupWizard'
+import { Loader2 } from 'lucide-react'
 import { MainLayout } from './components/layout/MainLayout'
 import { ThemeProvider } from './context/ThemeContext'
 import { ToastProvider } from './context/ToastContext'
@@ -32,7 +34,24 @@ import ScrollToTop from './components/common/ScrollToTop';
 import './App.css'
 
 function AppRoutes() {
-  const { settings } = useSystem();
+  const { settings, loading } = useSystem();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
+        <Loader2 className="animate-spin text-primary-500" size={48} />
+      </div>
+    );
+  }
+
+  // Check for System Initialization
+  const isInitialized = settings?.isInitialized;
+  const isSetupRoute = window.location.pathname === '/setup';
+
+  if (isInitialized === false && !isSetupRoute) {
+    // Force redirect to setup if not initialized
+    return <Router><ScrollToTop /><Routes><Route path="*" element={<SetupWizard />} /></Routes></Router>;
+  }
 
   // Check if user is admin (from stored token payload)
   const getUserRole = (): string | null => {
@@ -53,6 +72,7 @@ function AppRoutes() {
     <Router future={{ v7_relativeSplatPath: true }}>
       <ScrollToTop />
       <Routes>
+        <Route path="/setup" element={<SetupWizard />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/maintenance" element={<MaintenancePage />} />
