@@ -5,6 +5,7 @@ import { systemService, AcademicSession } from '../../services/systemService';
 import { DataTable } from '../../components/ui/data-table';
 import { ColumnDef } from '@tanstack/react-table';
 import { Modal } from '../../components/ui/modal';
+import { useSystem } from '../../context/SystemContext';
 
 const SessionsPage = () => {
     const [sessions, setSessions] = useState<AcademicSession[]>([]);
@@ -14,6 +15,7 @@ const SessionsPage = () => {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [deletingSession, setDeletingSession] = useState<AcademicSession | null>(null);
     const { showSuccess, showError } = useToast();
+    const { refreshSettings } = useSystem();
 
     // Form State
     const [formData, setFormData] = useState({
@@ -57,6 +59,9 @@ const SessionsPage = () => {
             }
             resetForm();
             fetchSessions();
+            if (formData.isActive || editingId) {
+                refreshSettings();
+            }
         } catch (error: any) {
             const message = error.response?.data?.message || 'Failed to save academic session';
             showError(message);
@@ -87,6 +92,7 @@ const SessionsPage = () => {
             setIsDeleteOpen(false);
             setDeletingSession(null);
             fetchSessions();
+            refreshSettings();
         } catch (error: any) {
             showError('Failed to delete session: ' + (error.response?.data?.message || 'Server error'));
         }
