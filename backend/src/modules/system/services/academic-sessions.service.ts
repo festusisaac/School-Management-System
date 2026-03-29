@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not } from 'typeorm';
 import { ModuleRef } from '@nestjs/core';
 import { AcademicSession } from '../entities/academic-session.entity';
+import { AcademicTerm } from '../entities/academic-term.entity';
 import { CreateAcademicSessionDto } from '../dtos/create-academic-session.dto';
 import { UpdateAcademicSessionDto } from '../dtos/update-academic-session.dto';
 import { SystemSettingsService } from './system-settings.service';
@@ -12,6 +13,8 @@ export class AcademicSessionsService {
     constructor(
         @InjectRepository(AcademicSession)
         private readonly sessionRepository: Repository<AcademicSession>,
+        @InjectRepository(AcademicTerm)
+        private readonly termRepository: Repository<AcademicTerm>,
         private readonly moduleRef: ModuleRef,
         private readonly systemSettingsService: SystemSettingsService,
     ) { }
@@ -104,7 +107,15 @@ export class AcademicSessionsService {
         await this.sessionRepository.update({ id: Not(activeId) }, { isActive: false });
 
         // 2. Synchronize the global settings to point to this new session ID
-        await this.systemSettingsService.updateSettings({ currentSessionId: activeId });
+        // Also look for an active term within this brand new active session
+        const activeTerm = await this.termRepository.findOne({
+            where: { sessionId: activeId, isActive: true }
+        });
+
+        await this.systemSettingsService.updateSettings({ 
+            currentSessionId: activeId,
+            currentTermId: activeTerm ? activeTerm.id : null
+        });
     }
 
     async remove(id: string): Promise<void> {

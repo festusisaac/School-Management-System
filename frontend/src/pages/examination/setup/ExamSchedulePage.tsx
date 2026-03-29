@@ -60,39 +60,34 @@ const ExamSchedulePage = () => {
     useEffect(() => {
         const init = async () => {
             try {
-                const [groupsData, classesData, termsData] = await Promise.all([
+                const [groupsData, classesData] = await Promise.all([
                     examinationService.getExamGroups(),
                     api.getClasses(),
-                    systemService.getTerms()
                 ]);
                 setGroups(groupsData || []);
                 setClasses(classesData || []);
-                setTerms(termsData || []);
 
-                // Set initial class
                 if (classesData?.length > 0) setSelectedClass(classesData[0].id);
-
-                // Filter groups based on current session/term if available
-                const sessionToUse = settings?.activeSessionName;
-                const termToUse = selectedTerm || settings?.activeTermName;
-
-                if (groupsData?.length > 0) {
-                    const filtered = groupsData.filter(g =>
-                        (!sessionToUse || g.academicYear === sessionToUse) &&
-                        (!termToUse || g.term === termToUse)
-                    );
-                    if (filtered.length > 0) {
-                        setSelectedGroup(filtered[0].id);
-                    } else {
-                        setSelectedGroup(groupsData[0].id);
-                    }
-                }
             } catch (err) {
-                showError('Failed to load initial data');
+                showError('Failed to load initial metadata');
             }
         };
         init();
     }, []);
+
+    // Load Terms for the Active Session
+    useEffect(() => {
+        const fetchSessionTerms = async () => {
+            if (!settings?.currentSessionId) return;
+            try {
+                const sessionTerms = await systemService.getTermsBySession(settings.currentSessionId);
+                setTerms(sessionTerms || []);
+            } catch (e) {
+                showError('Failed to load terms for the active session');
+            }
+        };
+        fetchSessionTerms();
+    }, [settings?.currentSessionId]);
 
     // Filtered Groups for Selection
     const filteredGroups = groups.filter(g =>

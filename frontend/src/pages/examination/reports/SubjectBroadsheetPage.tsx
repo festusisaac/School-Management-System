@@ -50,15 +50,13 @@ const SubjectBroadsheetPage = () => {
     useEffect(() => {
         const init = async () => {
             try {
-                const [g, c, t, s] = await Promise.all([
+                const [g, c, s] = await Promise.all([
                     examinationService.getExamGroups(),
                     api.getClasses(),
-                    systemService.getTerms(),
-                    api.getSubjects()
+                    api.getSubjects(),
                 ]);
                 setGroups(g || []);
                 setClasses(c || []);
-                setTerms(t || []);
                 setSubjects(s || []);
 
                 const sessionToUse = settings?.activeSessionName;
@@ -79,6 +77,20 @@ const SubjectBroadsheetPage = () => {
         };
         init();
     }, []);
+
+    // 2. Load Terms for the Active Session
+    useEffect(() => {
+        const fetchSessionTerms = async () => {
+            if (!settings?.currentSessionId) return;
+            try {
+                const sessionTerms = await systemService.getTermsBySession(settings.currentSessionId);
+                setTerms(sessionTerms || []);
+            } catch (e) {
+                showError('Failed to load terms for the active session');
+            }
+        };
+        fetchSessionTerms();
+    }, [settings?.currentSessionId]);
 
     useEffect(() => {
         if (!selectedTerm && settings?.activeTermName) {

@@ -30,11 +30,13 @@ export class CreateSystemSettingDto {
     // Sessions Defaults
     @IsUUID()
     @IsOptional()
-    currentSessionId?: string;
+    @ValidateIf((o, v) => v !== null)
+    currentSessionId?: string | null;
 
     @IsUUID()
     @IsOptional()
-    currentTermId?: string;
+    @ValidateIf((o, v) => v !== null)
+    currentTermId?: string | null;
 
     @IsDateString()
     @IsOptional()

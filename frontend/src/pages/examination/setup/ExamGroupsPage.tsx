@@ -55,8 +55,20 @@ const ExamGroupsPage = () => {
 
     useEffect(() => {
         fetchGroups();
-        fetchDropdownData();
     }, []);
+
+    useEffect(() => {
+        const fetchSessionTerms = async () => {
+            if (!settings?.currentSessionId) return;
+            try {
+                const sessionTerms = await systemService.getTermsBySession(settings.currentSessionId);
+                setTerms(sessionTerms || []);
+            } catch (e) {
+                console.error('Failed to fetch session terms', error);
+            }
+        };
+        fetchSessionTerms();
+    }, [settings?.currentSessionId]);
 
     useEffect(() => {
         if (!selectedTerm && settings?.activeTermName) {

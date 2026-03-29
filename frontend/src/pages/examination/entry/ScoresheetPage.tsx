@@ -36,24 +36,36 @@ const ScoresheetPage = () => {
 
     const { showSuccess, showError } = useToast();
 
-    // 1. Load Initial Metadata
+    // 1. Load Classes and Exam Groups
     useEffect(() => {
         const init = async () => {
             try {
-                const [g, c, t] = await Promise.all([
+                const [g, c] = await Promise.all([
                     examinationService.getExamGroups(),
                     api.getClasses(),
-                    systemService.getTerms()
                 ]);
                 setGroups(g || []);
                 setClasses(c || []);
-                setTerms(t || []);
             } catch (e) {
-                showError('Failed to load metadata');
+                showError('Failed to load initial metadata');
             }
         };
         init();
     }, []);
+
+    // 2. Load Terms for the Active Session
+    useEffect(() => {
+        const fetchSessionTerms = async () => {
+            if (!settings?.currentSessionId) return;
+            try {
+                const sessionTerms = await systemService.getTermsBySession(settings.currentSessionId);
+                setTerms(sessionTerms || []);
+            } catch (e) {
+                showError('Failed to load terms for the active session');
+            }
+        };
+        fetchSessionTerms();
+    }, [settings?.currentSessionId]);
 
     useEffect(() => {
         if (!selectedTerm && settings?.activeTermName) {

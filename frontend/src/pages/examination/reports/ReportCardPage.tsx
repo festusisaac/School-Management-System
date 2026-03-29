@@ -48,18 +48,16 @@ const ReportCardPage = () => {
     useEffect(() => {
         const init = async () => {
             try {
-                const [g, c, s, t] = await Promise.all([
+                const [g, c, s] = await Promise.all([
                     examinationService.getExamGroups(),
                     api.getClasses(),
                     examinationService.getGradeScales(),
-                    systemService.getTerms()
                 ]);
                 
                 const loadedGroups = g || [];
                 setGroups(loadedGroups);
                 setClasses(c || []);
                 setGradeScales(s || []);
-                setTerms(t || []);
 
                 // Set initial session/term from settings if available
                 const initialSession = settings?.activeSessionName || '';
@@ -84,6 +82,20 @@ const ReportCardPage = () => {
         };
         init();
     }, [settings?.activeSessionName, settings?.activeTermName]);
+
+    // 2. Load Terms for the Active Session
+    useEffect(() => {
+        const fetchSessionTerms = async () => {
+            if (!settings?.currentSessionId) return;
+            try {
+                const sessionTerms = await systemService.getTermsBySession(settings.currentSessionId);
+                setTerms(sessionTerms || []);
+            } catch (e) {
+                showError('Failed to load terms for the active session');
+            }
+        };
+        fetchSessionTerms();
+    }, [settings?.currentSessionId]);
 
     // Update selected term if settings load later
     useEffect(() => {
