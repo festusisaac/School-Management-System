@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, Not, Between } from 'typeorm';
+import { Repository, In, Not, Between, IsNull } from 'typeorm';
 import { ExamResult } from '../entities/exam-result.entity';
 import { StudentTermResult } from '../entities/student-term-result.entity';
 import { ProcessResultDto, BulkPublishDto } from '../dtos/processing/processing.dto';
@@ -12,6 +12,7 @@ import { StudentAttendance, AttendanceStatus } from '../../students/entities/stu
 
 import { AcademicTerm } from '../../system/entities/academic-term.entity';
 import { AcademicSession } from '../../system/entities/academic-session.entity';
+import { SystemSettingsService } from '../../system/services/system-settings.service';
 
 @Injectable()
 export class ResultProcessingService {
@@ -26,10 +27,12 @@ export class ResultProcessingService {
         private examRepo: Repository<Exam>,
         @InjectRepository(StudentAttendance)
         private attendanceRepo: Repository<StudentAttendance>,
+        private systemSettingsService: SystemSettingsService,
     ) { }
 
     async processResults(dto: ProcessResultDto, tenantId: string) {
         // 1. Aggregate scores per student (Simple Sum)
+        const sessionId = await this.systemSettingsService.getActiveSessionId();
         
         // --- Added: Fetch all students in the class to ensure everyone is processed ---
         const allStudents = await this.examResultRepo.manager.getRepository('Student').find({
@@ -37,7 +40,8 @@ export class ResultProcessingService {
             select: ['id']
         });
         const aggregationMap = new Map();
-const aggregation = await this.examResultRepo
+        
+        const aggregationQuery = this.examResultRepo
             .createQueryBuilder('result')
             .leftJoin('result.exam', 'exam')
             .select('result.studentId', 'studentId')
@@ -45,9 +49,16 @@ const aggregation = await this.examResultRepo
             .addSelect('COUNT(DISTINCT exam.subjectId)', 'subjectCount')
             .where('exam.examGroupId = :groupId', { groupId: dto.examGroupId })
             .andWhere('exam.classId = :classId', { classId: dto.classId })
-            .andWhere('result.tenantId = :tenantId', { tenantId })
+            .andWhere('result.tenantId = :tenantId', { tenantId });
+        
+        if (sessionId) {
+            aggregationQuery.andWhere('result.sessionId = :sessionId', { sessionId });
+        }
+
+        const aggregation = await aggregationQuery
             .groupBy('result.studentId')
             .getRawMany();
+
         for (const res of aggregation) {
             aggregationMap.set(res.studentId, res);
         }
@@ -73,12 +84,16 @@ const aggregation = await this.examResultRepo
 
         for (const student of allStudents) {
             const record = aggregationMap.get(student.id) || { studentId: student.id, totalScore: 0, subjectCount: 0 };
+            
+            const termResultWhere: any = {
+                studentId: record.studentId,
+                examGroupId: dto.examGroupId,
+                tenantId
+            };
+            if (sessionId) termResultWhere.sessionId = sessionId;
+
             let termResult = await this.termResultRepo.findOne({
-                where: {
-                    studentId: record.studentId,
-                    examGroupId: dto.examGroupId,
-                    tenantId
-                },
+                where: termResultWhere,
             });
 
             if (!termResult) {
@@ -86,7 +101,8 @@ const aggregation = await this.examResultRepo
                     studentId: record.studentId,
                     examGroupId: dto.examGroupId,
                     classId: dto.classId,
-                    tenantId
+                    tenantId,
+                    sessionId: sessionId || undefined
                 });
             }
 
@@ -106,7 +122,7 @@ const aggregation = await this.examResultRepo
 
                 if (examGroup) {
                     // 1. Calculate Days School Opened (Unique dates where attendance was taken for this class)
-                    const attendanceDates = await this.attendanceRepo
+                    const attendanceQuery = this.attendanceRepo
                         .createQueryBuilder('attendance')
                         .select('DISTINCT(attendance.date)', 'date')
                         .where('attendance.classId = :classId', { classId: dto.classId })
@@ -114,8 +130,13 @@ const aggregation = await this.examResultRepo
                             start: new Date(examGroup.startDate).toISOString().split('T')[0],
                             end: new Date(examGroup.endDate).toISOString().split('T')[0]
                         })
-                        .andWhere('attendance.tenantId = :tenantId', { tenantId })
-                        .getRawMany();
+                        .andWhere('attendance.tenantId = :tenantId', { tenantId });
+                    
+                    if (sessionId) {
+                        attendanceQuery.andWhere('attendance.sessionId = :sessionId', { sessionId });
+                    }
+
+                    const attendanceDates = await attendanceQuery.getRawMany();
 
                     const actualDaysOpened = attendanceDates.length;
                     // --- User Preference: Use fixed number from term settings if available ---
@@ -126,9 +147,10 @@ const aggregation = await this.examResultRepo
                         where: {
                             studentId: record.studentId,
                             classId: dto.classId,
-                            date: Between(new Date(examGroup.startDate).toISOString().split('T')[0], new Date(examGroup.endDate).toISOString().split('T')[0]),
-                            status: In([AttendanceStatus.PRESENT, AttendanceStatus.LATE, AttendanceStatus.HALFDAY]),
-                            tenantId
+                            date: Between(new Date(examGroup.startDate).toISOString().split('T')[0], new Date(examGroup.endDate).toISOString().split('T')[0]) as any,
+                            status: In([AttendanceStatus.PRESENT, AttendanceStatus.LATE, 'Half-Day']),
+                            tenantId,
+                            sessionId: sessionId || IsNull()
                         }
                     });
 
@@ -144,7 +166,7 @@ const aggregation = await this.examResultRepo
 
         // 3. Calculate and Save Positions (Competition Ranking)
         const allResults = await this.termResultRepo.find({
-            where: { examGroupId: dto.examGroupId, classId: dto.classId, tenantId },
+            where: { examGroupId: dto.examGroupId, classId: dto.classId, tenantId, sessionId: sessionId || IsNull() },
             order: { totalScore: 'DESC' }
         });
 
@@ -158,7 +180,7 @@ const aggregation = await this.examResultRepo
         }
 
         // 4. Calculate and Save Subject-Level Statistics (Performance Benchmarking)
-        const subjectStatsRaw = await this.examResultRepo
+        const subjectStatsQuery = this.examResultRepo
             .createQueryBuilder('result')
             .leftJoin('result.exam', 'exam')
             .select('exam.id', 'examId')
@@ -167,7 +189,13 @@ const aggregation = await this.examResultRepo
             .addSelect('AVG(result.score)', 'average')
             .where('exam.examGroupId = :groupId', { groupId: dto.examGroupId })
             .andWhere('exam.classId = :classId', { classId: dto.classId })
-            .andWhere('result.tenantId = :tenantId', { tenantId })
+            .andWhere('result.tenantId = :tenantId', { tenantId });
+
+        if (sessionId) {
+            subjectStatsQuery.andWhere('result.sessionId = :sessionId', { sessionId });
+        }
+
+        const subjectStatsRaw = await subjectStatsQuery
             .groupBy('exam.id')
             .getRawMany();
 
@@ -183,6 +211,8 @@ const aggregation = await this.examResultRepo
     }
 
     async getBroadsheet(examGroupId: string, classId: string, tenantId: string) {
+        const sessionId = await this.systemSettingsService.getActiveSessionId();
+
         // 1. Fetch academic info for the students in this class
         const allStudents = await this.examResultRepo.manager.getRepository('Student').find({
             where: { classId, tenantId },
@@ -191,7 +221,7 @@ const aggregation = await this.examResultRepo
         });
 
         // 2. Fetch all specific subject scores for all students in this class/group
-        const subjectScoresRaw = await this.examResultRepo
+        const subjectScoresQuery = this.examResultRepo
             .createQueryBuilder('result')
             .leftJoin('result.exam', 'exam')
             .select('result.studentId', 'studentId')
@@ -199,7 +229,13 @@ const aggregation = await this.examResultRepo
             .addSelect('SUM(result.score)', 'totalSubjectScore')
             .where('exam.examGroupId = :examGroupId', { examGroupId })
             .andWhere('exam.classId = :classId', { classId })
-            .andWhere('result.tenantId = :tenantId', { tenantId })
+            .andWhere('result.tenantId = :tenantId', { tenantId });
+        
+        if (sessionId) {
+            subjectScoresQuery.andWhere('result.sessionId = :sessionId', { sessionId });
+        }
+
+        const subjectScoresRaw = await subjectScoresQuery
             .groupBy('result.studentId')
             .addGroupBy('exam.subjectId')
             .getRawMany();
@@ -269,7 +305,7 @@ const aggregation = await this.examResultRepo
 
         // 5. Fetch saved StudentTermResults to get actual status (PUBLISHED, DRAFT) and remarks
         const savedResults = await this.termResultRepo.find({
-            where: { examGroupId, classId, tenantId }
+            where: { examGroupId, classId, tenantId, sessionId: sessionId || IsNull() }
         });
         const savedResultsMap = new Map(savedResults.map(r => [r.studentId, r]));
 
@@ -323,7 +359,6 @@ const aggregation = await this.examResultRepo
         let cumulativeSubjectScores: any[] = [];
         let cumulativeOverallResults: any[] = [];
         
-        // currentGroup is now fetched above
         if (currentGroup) {
             const termName = currentGroup?.term?.toLowerCase() || '';
             const isThirdTerm = termName.includes('third') || termName.includes('3rd');
@@ -346,7 +381,7 @@ const aggregation = await this.examResultRepo
 
             if (prevGroupIds.length > 0) {
                 // For Subject Broadsheet
-                cumulativeSubjectScores = await this.examResultRepo
+                const cumulativeSubjectScoresQuery = this.examResultRepo
                     .createQueryBuilder('result')
                     .leftJoin('result.exam', 'exam')
                     .leftJoin('exam.examGroup', 'group')
@@ -356,19 +391,28 @@ const aggregation = await this.examResultRepo
                     .addSelect('SUM(result.score)', 'termTotal')
                     .where('exam.examGroupId IN (:...prevGroupIds)', { prevGroupIds })
                     .andWhere('exam.classId = :classId', { classId })
-                    .andWhere('result.tenantId = :tenantId', { tenantId })
+                    .andWhere('result.tenantId = :tenantId', { tenantId });
+                
+                if (sessionId) {
+                    cumulativeSubjectScoresQuery.andWhere('result.sessionId = :sessionId', { sessionId });
+                }
+
+                cumulativeSubjectScores = await cumulativeSubjectScoresQuery
                     .groupBy('result.studentId')
                     .addGroupBy('exam.subjectId')
                     .addGroupBy('group.term')
                     .getRawMany();
                 
                 // For Class Broadsheet
+                const cumulativeOverallResultsWhere: any = { 
+                    examGroupId: In(prevGroupIds),
+                    classId,
+                    tenantId
+                };
+                if (sessionId) cumulativeOverallResultsWhere.sessionId = sessionId;
+
                 cumulativeOverallResults = await this.termResultRepo.find({
-                    where: { 
-                        examGroupId: In(prevGroupIds),
-                        classId,
-                        tenantId
-                    },
+                    where: cumulativeOverallResultsWhere,
                     relations: ['examGroup']
                 });
             }
@@ -386,10 +430,16 @@ const aggregation = await this.examResultRepo
     }
 
     async getStudentReportCardData(studentId: string, examGroupId: string, tenantId: string) {
+        const sessionId = await this.systemSettingsService.getActiveSessionId();
+
         // 1. Fetch current summary and groups info
         const currentGroup = await this.examRepo.manager.getRepository(ExamGroup).findOne({ where: { id: examGroupId, tenantId } });
+        
+        const summaryWhere: any = { studentId, examGroupId, tenantId };
+        if (sessionId) summaryWhere.sessionId = sessionId;
+
         const summary = await this.termResultRepo.findOne({
-            where: { studentId, examGroupId, tenantId },
+            where: summaryWhere,
             relations: ['examGroup']
         });
 
@@ -422,12 +472,15 @@ const aggregation = await this.examResultRepo
                 .map(g => g.id);
 
             if (prevGroupIds.length > 0) {
+                const cumulativeSummaryWhere: any = { studentId, examGroupId: In(prevGroupIds), tenantId };
+                if (sessionId) cumulativeSummaryWhere.sessionId = sessionId;
+
                 cumulativeSummary = await this.termResultRepo.find({
-                    where: { studentId, examGroupId: In(prevGroupIds), tenantId },
+                    where: cumulativeSummaryWhere,
                     relations: ['examGroup']
                 });
 
-                cumulativeSubjectScores = await this.examResultRepo
+                const cumulativeSubjectScoresQuery = this.examResultRepo
                     .createQueryBuilder('result')
                     .leftJoin('result.exam', 'exam')
                     .leftJoin('exam.examGroup', 'group')
@@ -436,7 +489,13 @@ const aggregation = await this.examResultRepo
                     .addSelect('SUM(result.score)', 'termTotal')
                     .where('result.studentId = :studentId', { studentId })
                     .andWhere('exam.examGroupId IN (:...prevGroupIds)', { prevGroupIds })
-                    .andWhere('result.tenantId = :tenantId', { tenantId })
+                    .andWhere('result.tenantId = :tenantId', { tenantId });
+                
+                if (sessionId) {
+                    cumulativeSubjectScoresQuery.andWhere('result.sessionId = :sessionId', { sessionId });
+                }
+
+                cumulativeSubjectScores = await cumulativeSubjectScoresQuery
                     .groupBy('exam.subjectId')
                     .addGroupBy('group.term')
                     .getRawMany();
@@ -444,20 +503,29 @@ const aggregation = await this.examResultRepo
         }
 
         // 3. Fetch Exams and scores for current term
+        const examsWhere: any = { examGroupId, tenantId };
+        if (sessionId) examsWhere.sessionId = sessionId;
+
         const exams = await this.examRepo.find({
-            where: { examGroupId, tenantId },
+            where: examsWhere,
             relations: ['subject']
         });
 
         // 3. Fetch student's individual marks (aggregated by subject)
-        const subjectScoresRaw = await this.examResultRepo
+        const subjectScoresQuery = this.examResultRepo
             .createQueryBuilder('result')
             .leftJoin('result.exam', 'exam')
             .select('exam.subjectId', 'subjectId')
             .addSelect('SUM(result.score)', 'totalSubjectScore')
             .where('result.studentId = :studentId', { studentId })
             .andWhere('exam.examGroupId = :examGroupId', { examGroupId })
-            .andWhere('result.tenantId = :tenantId', { tenantId })
+            .andWhere('result.tenantId = :tenantId', { tenantId });
+
+        if (sessionId) {
+            subjectScoresQuery.andWhere('result.sessionId = :sessionId', { sessionId });
+        }
+
+        const subjectScoresRaw = await subjectScoresQuery
             .groupBy('exam.subjectId')
             .getRawMany();
 
@@ -512,12 +580,16 @@ const aggregation = await this.examResultRepo
     }
 
     async bulkPublishResults(dto: BulkPublishDto, tenantId: string) {
+        const sessionId = await this.systemSettingsService.getActiveSessionId();
+        const updateParams: any = { 
+            examGroupId: dto.examGroupId, 
+            classId: dto.classId, 
+            tenantId 
+        };
+        if (sessionId) updateParams.sessionId = sessionId;
+
         await this.termResultRepo.update(
-            { 
-                examGroupId: dto.examGroupId, 
-                classId: dto.classId, 
-                tenantId 
-            },
+            updateParams,
             { status: dto.status }
         );
         return { message: `Successfully ${dto.status.toLowerCase()} results for the class.` };

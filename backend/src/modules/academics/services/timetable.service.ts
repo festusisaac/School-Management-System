@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
+import { SystemSettingsService } from '../../system/services/system-settings.service';
 import { TimetablePeriod, PeriodType } from '../entities/timetable-period.entity';
 import { Timetable } from '../entities/timetable.entity';
 import { SubjectTeacher } from '../entities/subject-teacher.entity';
@@ -16,6 +17,7 @@ export class TimetableService {
         private timetableRepository: Repository<Timetable>,
         @InjectRepository(SubjectTeacher)
         private subjectTeacherRepository: Repository<SubjectTeacher>,
+        private systemSettingsService: SystemSettingsService,
     ) { }
 
     // --- Timetable Periods ---
@@ -362,11 +364,28 @@ export class TimetableService {
                 subjectId: sourceSlot.subjectId,
                 teacherId: null, // Don't copy teacher assignment to avoid conflicts
                 roomNumber: sourceSlot.roomNumber,
+                sessionId: (await this.systemSettingsService.getActiveSessionId()) || undefined
             });
             await this.timetableRepository.save(newSlot);
         }
 
         return this.getTimetable(targetClassId, targetSectionId, tenantId);
+    }
+
+    // Copy timetable from one academic session to another (e.g., when a new session starts)
+    async replicateTimetableForNewSession(oldSessionId: string, newSessionId: string, tenantId: string): Promise<void> {
+        const oldSlots = await this.timetableRepository.find({
+            where: { sessionId: oldSessionId, tenantId }
+        });
+
+        for (const slot of oldSlots) {
+            const { id, createdAt, updatedAt, ...rest } = slot;
+            const newSlot = this.timetableRepository.create({
+                ...rest,
+                sessionId: newSessionId
+            });
+            await this.timetableRepository.save(newSlot);
+        }
     }
 
     // --- Helper Methods ---

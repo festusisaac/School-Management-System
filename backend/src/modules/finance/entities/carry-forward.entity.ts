@@ -14,6 +14,9 @@ export class CarryForward {
   @Column()
   academicYear!: string;
 
+  @Column({ nullable: true })
+  sessionId?: string;
+
   @Index()
   @Column({ nullable: true })
   tenantId?: string;

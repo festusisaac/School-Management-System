@@ -73,10 +73,12 @@ export class FeesService {
         const allocAmount = parseFloat(alloc.amount);
         if (allocAmount > 0) {
           allocatedSum += allocAmount;
+          const sessionId = await this.systemSettingsService.getActiveSessionId();
           const tx = this.transactionRepo.create({
             amount: alloc.amount.toString(),
             studentId: dto.studentId,
             tenantId,
+            sessionId: sessionId || undefined,
             reference: dto.reference || null,
             paymentMethod: dto.paymentMethod || PaymentMethod.CASH,
             type: dto.type || TransactionType.FEE_PAYMENT,
@@ -98,10 +100,12 @@ export class FeesService {
 
     // 2. If no allocations (or sum was 0), create a single transaction
     if (transactions.length === 0) {
+      const sessionId = await this.systemSettingsService.getActiveSessionId();
       const tx = this.transactionRepo.create({
         amount: dto.amount,
         studentId: dto.studentId,
         tenantId,
+        sessionId: sessionId || undefined,
         reference: dto.reference || null,
         paymentMethod: dto.paymentMethod || PaymentMethod.CASH,
         type: dto.type || TransactionType.FEE_PAYMENT,
@@ -203,9 +207,14 @@ export class FeesService {
     // Always use the primary Student ID for all queries
     const resolvedStudentId = student.id;
 
-    // 1. Get all transactions for student
+    const sessionId = await this.systemSettingsService.getActiveSessionId();
+
+    // 1. Get all transactions for student in current session
+    const txWhere: any = { studentId: resolvedStudentId, tenantId };
+    if (sessionId) txWhere.sessionId = sessionId;
+
     const transactions = await this.transactionRepo.find({
-      where: { studentId: resolvedStudentId, tenantId },
+      where: txWhere,
       order: { createdAt: 'DESC' },
     });
 
@@ -223,14 +232,20 @@ export class FeesService {
       }
     }
 
-    // 3. Get Carry Forwards
+    // 3. Get Carry Forwards for current session
+    const cfWhere: any = { studentId: resolvedStudentId, tenantId };
+    if (sessionId) cfWhere.sessionId = sessionId;
+
     const carryForwards = await this.carryRepo.find({
-      where: { studentId: resolvedStudentId, tenantId },
+      where: cfWhere,
     });
 
-    // 4. Get Assignments & Calculate Dues
+    // 4. Get Assignments & Calculate Dues for current session
+    const asWhere: any = { studentId: resolvedStudentId, isActive: true, tenantId };
+    if (sessionId) asWhere.sessionId = sessionId;
+
     const assignments = await this.assignmentRepo.find({
-      where: { studentId: resolvedStudentId, isActive: true, tenantId },
+      where: asWhere,
       relations: ['feeGroup', 'feeGroup.heads'],
     });
 
@@ -288,6 +303,77 @@ export class FeesService {
     };
   }
 
+  // Calculate closing balance for a student in a specific (usually past) session
+  async getSessionBalance(studentId: string, sessionId: string, tenantId: string): Promise<number> {
+    // 1. Transactions for that session
+    const transactions = await this.transactionRepo.find({
+      where: { studentId, sessionId, tenantId },
+    });
+
+    // 2. Assignments for that session
+    const assignments = await this.assignmentRepo.find({
+      where: { studentId, sessionId, tenantId },
+      relations: ['feeGroup', 'feeGroup.heads'],
+    });
+
+    // 3. Carry Forwards for that session
+    const carryForwards = await this.carryRepo.find({
+      where: { studentId, sessionId, tenantId },
+    });
+
+    const paidByHead: Record<string, number> = {};
+    transactions.forEach(tx => {
+      const txAllocations = tx.meta?.allocations || [];
+      if (Array.isArray(txAllocations)) {
+        txAllocations.forEach((a: any) => {
+          if (a.id) paidByHead[a.id] = (paidByHead[a.id] || 0) + parseFloat(a.amount || '0');
+        });
+      }
+    });
+
+    const totalAssigned = assignments.reduce((acc, a) => {
+      const heads = a.feeGroup?.heads || [];
+      return acc + heads.reduce((hAcc, h) => hAcc + parseFloat(h.defaultAmount || '0'), 0);
+    }, 0);
+
+    const totalCarryForward = carryForwards.reduce((acc, cf) => acc + parseFloat(cf.amount || '0'), 0);
+    const totalDue = totalAssigned + totalCarryForward;
+    const totalPaid = transactions.reduce((acc, tx) => acc + parseFloat(tx.amount || '0'), 0);
+
+    return totalDue - totalPaid;
+  }
+
+  // Carry forward all student balances from one session to another
+  async carryForwardAllBalances(oldSessionId: string, newSessionId: string, tenantId: string): Promise<void> {
+    const students = await this.studentRepo.find({ where: { isActive: true, tenantId } });
+    
+    // Fetch old and new session names for labels
+    const oldSession = await this.studentRepo.manager.getRepository('AcademicSession').findOne({ where: { id: oldSessionId } });
+    const academicYearLabel = oldSession ? oldSession.name : 'Previous Session';
+
+    for (const student of students) {
+      const balance = await this.getSessionBalance(student.id, oldSessionId, tenantId);
+      
+      if (balance > 0) {
+        // Only create if not already exists for the new session to prevent duplicates
+        const existing = await this.carryRepo.findOne({
+            where: { studentId: student.id, sessionId: newSessionId, tenantId }
+        });
+
+        if (!existing) {
+            const carryEntry = this.carryRepo.create({
+                studentId: student.id,
+                amount: balance.toFixed(2),
+                academicYear: academicYearLabel,
+                sessionId: newSessionId,
+                tenantId
+            });
+            await this.carryRepo.save(carryEntry);
+        }
+      }
+    }
+  }
+
   // History
   async paymentHistory(options: {
     studentId?: string; // This can now be a search term too
@@ -298,11 +384,16 @@ export class FeesService {
     page?: number;
     limit?: number;
   } = {}, tenantId: string) {
+    const sessionId = await this.systemSettingsService.getActiveSessionId();
     const q = this.transactionRepo.createQueryBuilder('t')
       .leftJoinAndSelect('t.student', 'student')
       .leftJoinAndSelect('student.class', 'class')
       .where('t.tenantId = :tenantId', { tenantId })
       .orderBy('t.createdAt', 'DESC');
+    
+    if (sessionId) {
+      q.andWhere('t.sessionId = :sessionId', { sessionId });
+    }
 
     if (options.studentId) {
       // Check if it looks like a UUID (exact ID match)
@@ -498,10 +589,25 @@ export class FeesService {
         .from('fee_assignments', 'fa')
         .where('fa.studentId = student.id')
         .andWhere('fa.tenantId = :tenantId')
-        .andWhere('fa.isActive = :faActive')
-        .getQuery();
-      return `EXISTS (${subQuery})`;
+        .andWhere('fa.isActive = :faActive');
+      
+      return `EXISTS (${subQuery.getQuery()})`;
     });
+
+    const sessionId = await this.systemSettingsService.getActiveSessionId();
+    if (sessionId) {
+      query.andWhere(qb => {
+        const subQuery = qb.subQuery()
+          .select('1')
+          .from('fee_assignments', 'fa2')
+          .where('fa2.studentId = student.id')
+          .andWhere('fa2.sessionId = :sessionId')
+          .getQuery();
+        return `EXISTS (${subQuery})`;
+      });
+      query.setParameter('sessionId', sessionId);
+    }
+
     query.setParameters({ faActive: true, tenantId });
 
     const students = await query

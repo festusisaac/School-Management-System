@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
+import { SystemSettingsService } from '../../system/services/system-settings.service';
 import { ExamResult } from '../entities/exam-result.entity';
 import { Exam } from '../entities/exam.entity';
 import { AssessmentType } from '../entities/assessment-type.entity';
@@ -21,6 +22,7 @@ export class ScoreEntryService {
         private assessmentTypeRepo: Repository<AssessmentType>,
         @InjectRepository(Exam)
         private examRepo: Repository<Exam>,
+        private systemSettingsService: SystemSettingsService,
     ) { }
 
     // --- Marks Entry ---
@@ -28,8 +30,9 @@ export class ScoreEntryService {
         const savedResults = [];
 
         // Fetch Exam details for denormalization
+        const sessionId = await this.systemSettingsService.getActiveSessionId();
         const exam = await this.examRepo.findOne({
-            where: { id: dto.examId, tenantId }
+            where: { id: dto.examId, tenantId, sessionId: sessionId || IsNull() }
         });
 
         // Fetch AssessmentType once if ID is provided
@@ -50,7 +53,8 @@ export class ScoreEntryService {
             const criteria: any = {
                 examId: dto.examId,
                 studentId: mark.studentId,
-                tenantId
+                tenantId,
+                sessionId: sessionId || IsNull()
             };
 
             // If assessmentTypeId is provided (for granular scores), add it to criteria
@@ -74,7 +78,8 @@ export class ScoreEntryService {
                     classId: exam?.classId,
                     subjectId: exam?.subjectId,
                     examGroupId: exam?.examGroupId,
-                    tenantId
+                    tenantId,
+                    sessionId: sessionId || undefined
                 });
             }
 
@@ -92,7 +97,9 @@ export class ScoreEntryService {
     }
 
     async getMarks(examId: string, tenantId: string, assessmentTypeId?: string) {
+        const sessionId = await this.systemSettingsService.getActiveSessionId();
         const criteria: any = { examId, tenantId };
+        if (sessionId) criteria.sessionId = sessionId;
         if (assessmentTypeId) {
             criteria.assessmentTypeId = assessmentTypeId;
         }
@@ -104,8 +111,12 @@ export class ScoreEntryService {
     }
 
     async getClassMarks(classId: string, examGroupId: string, tenantId: string) {
+        const sessionId = await this.systemSettingsService.getActiveSessionId();
+        const where: any = { classId, examGroupId, tenantId };
+        if (sessionId) where.sessionId = sessionId;
+
         return this.examResultRepo.find({
-            where: { classId, examGroupId, tenantId },
+            where,
             relations: ['assessmentType'],
         });
     }

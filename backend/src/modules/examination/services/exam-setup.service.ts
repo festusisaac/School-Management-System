@@ -9,6 +9,7 @@ import { ExamSchedule } from '../entities/exam-schedule.entity';
 import { AdmitCard } from '../entities/admit-card.entity';
 import { PsychomotorDomain } from '../entities/psychomotor-domain.entity';
 import { AffectiveDomain } from '../entities/affective-domain.entity';
+import { SystemSettingsService } from '../../system/services/system-settings.service';
 import { CreateExamGroupDto, CreateAssessmentTypeDto, CreateGradeScaleDto, CreateExamDto, CreateExamScheduleDto } from '../dtos/setup/create-setup.dto';
 
 @Injectable()
@@ -30,18 +31,28 @@ export class ExamSetupService {
         private psychomotorDomainRepo: Repository<PsychomotorDomain>,
         @InjectRepository(AffectiveDomain)
         private affectiveDomainRepo: Repository<AffectiveDomain>,
+        private systemSettingsService: SystemSettingsService,
     ) { }
 
 
     // --- Exam Groups ---
     async createExamGroup(dto: CreateExamGroupDto, tenantId: string) {
-        const group = this.examGroupRepo.create({ ...dto, tenantId });
+        const sessionId = await this.systemSettingsService.getActiveSessionId();
+        const group = this.examGroupRepo.create({ 
+            ...dto, 
+            tenantId,
+            sessionId: sessionId || undefined 
+        });
         return this.examGroupRepo.save(group);
     }
 
     async findAllExamGroups(tenantId: string) {
+        const sessionId = await this.systemSettingsService.getActiveSessionId();
+        const where: any = { tenantId };
+        if (sessionId) where.sessionId = sessionId;
+
         return this.examGroupRepo.find({ 
-            where: { tenantId },
+            where,
             order: { startDate: 'DESC' } 
         });
     }
@@ -99,13 +110,22 @@ export class ExamSetupService {
 
     // --- Exams ---
     async createExam(dto: CreateExamDto, tenantId: string) {
-        const exam = this.examRepo.create({ ...dto, tenantId });
+        const sessionId = await this.systemSettingsService.getActiveSessionId();
+        const exam = this.examRepo.create({ 
+            ...dto, 
+            tenantId,
+            sessionId: sessionId || undefined
+        });
         return this.examRepo.save(exam);
     }
 
     async getExams(examGroupId: string, tenantId: string) {
+        const sessionId = await this.systemSettingsService.getActiveSessionId();
+        const where: any = { examGroupId, tenantId };
+        if (sessionId) where.sessionId = sessionId;
+
         return this.examRepo.find({
-            where: { examGroupId, tenantId },
+            where,
             relations: ['subject', 'class', 'examGroup'],
         });
     }
@@ -142,8 +162,12 @@ export class ExamSetupService {
     }
 
     async getExamsForClass(classId: string, tenantId: string) {
+        const sessionId = await this.systemSettingsService.getActiveSessionId();
+        const where: any = { classId, tenantId };
+        if (sessionId) where.sessionId = sessionId;
+
         return this.examRepo.find({
-            where: { classId, tenantId },
+            where,
             relations: ['subject', 'class', 'examGroup'],
         });
     }

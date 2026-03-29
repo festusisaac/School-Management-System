@@ -30,6 +30,7 @@ import { ScratchCardLog } from './entities/scratch-card-log.entity';
 import { AcademicSession } from '../system/entities/academic-session.entity';
 import { AcademicTerm } from '../system/entities/academic-term.entity';
 import { SystemSetting } from '../system/entities/system-setting.entity';
+import { SystemModule } from '../system/system.module';
 
 @Module({
     imports: [
@@ -56,6 +57,7 @@ import { SystemSetting } from '../system/entities/system-setting.entity';
             AcademicTerm,
             SystemSetting,
         ]),
+        SystemModule,
     ],
     controllers: [
         ExamSetupController,

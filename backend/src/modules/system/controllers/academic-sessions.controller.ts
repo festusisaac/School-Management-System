@@ -34,4 +34,9 @@ export class AcademicSessionsController {
     remove(@Param('id', ParseUUIDPipe) id: string) {
         return this.sessionsService.remove(id);
     }
+
+    @Post('transition')
+    startTransition(@Body() data: { fromSessionId: string, toSessionId: string, tenantId: string }) {
+        return this.sessionsService.startTransition(data.toSessionId, data.fromSessionId, data.tenantId);
+    }
 }

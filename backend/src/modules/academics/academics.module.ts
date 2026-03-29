@@ -24,12 +24,14 @@ import { SchoolSectionService } from './services/school-section.service';
 
 import { AuthModule } from '@modules/auth/auth.module';
 import { HrModule } from '@modules/hr/hr.module';
+import { SystemModule } from '../system/system.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Class, Section, Subject, SubjectGroup, TimetablePeriod, Timetable, SubjectTeacher, ClassSubject, SchoolSection]),
     AuthModule, // Import AuthModule to get access to JwtService for JwtAuthGuard
     HrModule, // Import HrModule to access Staff entity for class teacher assignment
+    SystemModule,
   ],
   controllers: [AcademicsController, TimetableController, SubjectTeacherController, ClassSubjectController, SchoolSectionController],
   providers: [AcademicsService, TimetableService, SubjectTeacherService, ClassSubjectService, SchoolSectionService],

@@ -1,48 +1,50 @@
 import { DataSource } from 'typeorm';
-import { User } from '../modules/auth/entities/user.entity';
-import { Role } from '../modules/auth/entities/role.entity';
-import { Permission } from '../modules/auth/entities/permission.entity';
 import * as dotenv from 'dotenv';
+import { join } from 'path';
 
-dotenv.config();
+dotenv.config({ path: '.env' });
+
+const AppDataSource = new DataSource({
+  type: 'postgres',
+  host: process.env.DATABASE_HOST || 'localhost',
+  port: Number(process.env.DATABASE_PORT) || 5432,
+  username: process.env.DATABASE_USER || 'sms_user',
+  password: process.env.DATABASE_PASSWORD || 'sms_password',
+  database: process.env.DATABASE_NAME || 'sms_db',
+  schema: 'public'
+});
 
 async function check() {
-  const dataSource = new DataSource({
-    type: 'postgres',
-    host: process.env.DATABASE_HOST || 'localhost',
-    port: parseInt(process.env.DATABASE_PORT || '5432'),
-    username: process.env.DATABASE_USER || 'postgres',
-    password: process.env.DATABASE_PASSWORD || 'postgres',
-    database: process.env.DATABASE_NAME || 'sms_db',
-    entities: [User, Role, Permission],
-    synchronize: false,
-  });
+    try {
+        await AppDataSource.initialize();
+        console.log('✓ Database connected');
 
-  try {
-    await dataSource.initialize();
-    console.log('Database connected!');
+        const migrations = await AppDataSource.query('SELECT * FROM "migrations" ORDER BY "timestamp" DESC');
+        console.log('\n--- Recent Migrations ---');
+        console.table(migrations.slice(0, 5));
 
-    const userRepo = dataSource.getRepository(User);
-    const roleRepo = dataSource.getRepository(Role);
+        const tables = await AppDataSource.query(`
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            AND table_name IN ('class_subject', 'academic_sessions', 'student_attendance')
+        `);
+        console.log('\n--- Tables Check ---');
+        console.table(tables);
 
-    const users = await userRepo.find({ relations: ['roleObject'] });
-    console.log(`Total users: ${users.length}`);
+        const columns = await AppDataSource.query(`
+            SELECT table_name, column_name 
+            FROM information_schema.columns 
+            WHERE table_schema = 'public' 
+            AND column_name = 'sessionId'
+        `);
+        console.log('\n--- sessionId Column Presence ---');
+        console.table(columns);
 
-    users.forEach(u => {
-      console.log(`User: ${u.email}, Role String: ${u.role}, Role Object: ${u.roleObject?.name || 'NULL'}, Role ID: ${u.roleId}, Tenant ID: ${u.tenantId}`);
-    });
-
-    const roles = await roleRepo.find();
-    console.log(`Total roles: ${roles.length}`);
-    roles.forEach(r => {
-        console.log(`Role: ${r.name}, ID: ${r.id}, isSystem: ${r.isSystem}`);
-    });
-
-  } catch (error) {
-    console.error('Error:', error);
-  } finally {
-    await dataSource.destroy();
-  }
+        await AppDataSource.destroy();
+    } catch (err) {
+        console.error('× Check failed:', err);
+    }
 }
 
 check();
