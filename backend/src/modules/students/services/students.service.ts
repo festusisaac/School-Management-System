@@ -643,7 +643,6 @@ export class StudentsService {
             date: Between(startDate, endDate) as any,
             tenantId
         };
-        
         if (sessionId) where.sessionId = sessionId;
         if (classId) {
             where.classId = classId;
