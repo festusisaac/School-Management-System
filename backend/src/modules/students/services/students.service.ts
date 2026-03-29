@@ -525,11 +525,14 @@ export class StudentsService {
     // --- Attendance ---
 
     async markAttendance(dto: MarkAttendanceDto, tenantId: string): Promise<StudentAttendance> {
+        const sessionId = await this.systemSettingsService.getActiveSessionId();
+        
         let attendance = await this.attendanceRepo.findOne({
             where: {
                 studentId: dto.studentId,
                 date: dto.date,
-                tenantId
+                tenantId,
+                sessionId: sessionId || undefined
             }
         });
 
@@ -538,8 +541,9 @@ export class StudentsService {
             attendance.remarks = dto.remarks;
             attendance.classId = dto.classId;
             attendance.sectionId = dto.sectionId;
+            // Always ensure the session matches the current global active session
+            if (sessionId) attendance.sessionId = sessionId;
         } else {
-            const sessionId = await this.systemSettingsService.getActiveSessionId();
             attendance = this.attendanceRepo.create({
                 ...dto,
                 tenantId,

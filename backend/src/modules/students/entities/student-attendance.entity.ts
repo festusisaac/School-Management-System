@@ -14,7 +14,7 @@ export enum AttendanceStatus {
 }
 
 @Entity('student_attendance')
-@Index(['studentId', 'date', 'tenantId'], { unique: true })
+@Index(['studentId', 'date', 'tenantId', 'sessionId'], { unique: true })
 export class StudentAttendance {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
