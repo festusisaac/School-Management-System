@@ -57,8 +57,9 @@ const SessionsPage = () => {
             }
             resetForm();
             fetchSessions();
-        } catch (error) {
-            showError('Failed to save academic session');
+        } catch (error: any) {
+            const message = error.response?.data?.message || 'Failed to save academic session';
+            showError(message);
         }
     };
 

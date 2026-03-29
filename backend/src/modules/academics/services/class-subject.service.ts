@@ -138,4 +138,36 @@ export class ClassSubjectService {
         const classSubject = await this.findOne(id, tenantId);
         await this.classSubjectRepository.remove(classSubject);
     }
+
+    async replicateForNewSession(oldSessionId: string, newSessionId: string, tenantId: string): Promise<void> {
+        const oldAssignments = await this.classSubjectRepository.find({
+            where: { sessionId: oldSessionId, tenantId }
+        });
+
+        for (const assignment of oldAssignments) {
+            // Check if already exists in new session to avoid duplicates
+            const existing = await this.classSubjectRepository.findOne({
+                where: {
+                    classId: assignment.classId,
+                    sectionId: assignment.sectionId || IsNull(),
+                    subjectId: assignment.subjectId,
+                    tenantId,
+                    sessionId: newSessionId
+                }
+            });
+
+            if (!existing) {
+                const newAssignment = this.classSubjectRepository.create({
+                    classId: assignment.classId,
+                    sectionId: assignment.sectionId,
+                    subjectId: assignment.subjectId,
+                    isCore: assignment.isCore,
+                    isActive: assignment.isActive,
+                    tenantId,
+                    sessionId: newSessionId
+                });
+                await this.classSubjectRepository.save(newAssignment);
+            }
+        }
+    }
 }

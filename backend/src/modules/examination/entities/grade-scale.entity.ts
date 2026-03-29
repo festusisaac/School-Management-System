@@ -4,7 +4,10 @@ import {
     Column,
     CreateDateColumn,
     UpdateDateColumn,
+    ManyToOne,
+    JoinColumn
 } from 'typeorm';
+import { AcademicSession } from '../../system/entities/academic-session.entity';
 
 @Entity('grade_scales')
 export class GradeScale {
@@ -29,6 +32,13 @@ export class GradeScale {
 
     @Column({ nullable: true })
     tenantId?: string;
+
+    @Column({ type: 'uuid', nullable: true })
+    sessionId?: string;
+
+    @ManyToOne(() => AcademicSession)
+    @JoinColumn({ name: 'sessionId' })
+    session?: AcademicSession;
 
     @CreateDateColumn()
     createdAt!: Date;

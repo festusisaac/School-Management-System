@@ -83,8 +83,9 @@ const TermsPage = () => {
             }
             resetForm();
             loadData();
-        } catch (error) {
-            showError('Failed to save academic term');
+        } catch (error: any) {
+            const message = error.response?.data?.message || 'Failed to save academic term';
+            showError(message);
         }
     };
 

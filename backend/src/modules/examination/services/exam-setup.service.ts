@@ -250,4 +250,31 @@ export class ExamSetupService {
     async deleteAffectiveDomain(id: string, tenantId: string) {
         return this.affectiveDomainRepo.delete({ id, tenantId });
     }
+
+    async replicateGradeScalesForNewSession(oldSessionId: string, newSessionId: string, tenantId: string): Promise<void> {
+        const oldScales = await this.gradeScaleRepo.find({
+            where: { sessionId: oldSessionId, tenantId }
+        });
+
+        for (const scale of oldScales) {
+            const existing = await this.gradeScaleRepo.findOne({
+                where: {
+                    name: scale.name,
+                    tenantId,
+                    sessionId: newSessionId
+                }
+            });
+
+            if (!existing) {
+                const newScale = this.gradeScaleRepo.create({
+                    name: scale.name,
+                    grades: scale.grades,
+                    isActive: scale.isActive,
+                    tenantId,
+                    sessionId: newSessionId
+                });
+                await this.gradeScaleRepo.save(newScale);
+            }
+        }
+    }
 }

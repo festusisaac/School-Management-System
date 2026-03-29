@@ -11,6 +11,7 @@ import { Section } from './section.entity';
 import { Subject } from './subject.entity';
 import { Class } from './class.entity';
 import { Staff } from '../../hr/entities/staff.entity';
+import { AcademicSession } from '../../system/entities/academic-session.entity';
 
 @Entity('subject_teachers')
 export class SubjectTeacher {
@@ -47,6 +48,13 @@ export class SubjectTeacher {
 
     @Column({ nullable: true })
     tenantId?: string;
+
+    @Column({ type: 'uuid', nullable: true })
+    sessionId?: string;
+
+    @ManyToOne(() => AcademicSession)
+    @JoinColumn({ name: 'sessionId' })
+    session?: AcademicSession;
 
     @CreateDateColumn()
     createdAt!: Date;

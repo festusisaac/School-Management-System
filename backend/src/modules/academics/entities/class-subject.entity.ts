@@ -10,6 +10,7 @@ import {
 import { Class } from './class.entity';
 import { Subject } from './subject.entity';
 import { Section } from './section.entity';
+import { AcademicSession } from '../../system/entities/academic-session.entity';
 
 @Entity('class_subject')
 export class ClassSubject {
@@ -45,6 +46,13 @@ export class ClassSubject {
     @ManyToOne(() => Subject, { eager: true })
     @JoinColumn({ name: 'subject_id' })
     subject!: Subject;
+
+    @Column({ name: 'session_id', type: 'uuid', nullable: true })
+    sessionId?: string;
+
+    @ManyToOne(() => AcademicSession)
+    @JoinColumn({ name: 'session_id' })
+    session?: AcademicSession;
 
     @CreateDateColumn({ name: 'created_at' })
     createdAt!: Date;
