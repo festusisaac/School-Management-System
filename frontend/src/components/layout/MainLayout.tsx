@@ -15,7 +15,7 @@ export function MainLayout() {
     }, []);
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex">
+        <div className="h-screen bg-gray-50 dark:bg-gray-950 flex overflow-hidden">
             {/* Session Timeout Warning */}
             {WarningModal}
 
@@ -26,7 +26,7 @@ export function MainLayout() {
             />
 
             {/* Main Content Area */}
-            <div className="flex-1 flex flex-col min-h-screen transition-all duration-300 overflow-hidden">
+            <div className="flex-1 flex flex-col h-full transition-all duration-300 overflow-hidden">
                 <TopBar onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
 
                 <main className="flex-1 p-4 md:p-8 overflow-y-auto">

@@ -347,6 +347,30 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
                 {/* ── Navigation ── */}
                 <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto overflow-x-hidden">
+                    {/* Academic Context Indicator */}
+                    {(settings.activeSessionName || settings.activeTermName) && (
+                        <div className="mb-4 mx-1 p-3 bg-primary-50/40 dark:bg-primary-900/10 border border-primary-100/50 dark:border-primary-800/50 rounded-xl animate-in fade-in slide-in-from-top-4 duration-500">
+                            <div className="flex items-center gap-2.5">
+                                <div className="p-1.5 bg-primary-100 dark:bg-primary-800 rounded-lg">
+                                    <Calendar className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-[10px] font-black text-primary-600/60 dark:text-primary-400/60 uppercase tracking-widest leading-none mb-1">
+                                        Active Session
+                                    </p>
+                                    <p className="text-[11px] font-bold text-primary-700 dark:text-primary-300 truncate">
+                                        {settings.activeSessionName || 'N/A'}
+                                    </p>
+                                    {settings.activeTermName && (
+                                        <p className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 mt-0.5 truncate uppercase">
+                                            {settings.activeTermName}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {navItems.map((item) => (
                         <div key={item.path}>
                             {item.children ? (

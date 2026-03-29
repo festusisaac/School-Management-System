@@ -79,18 +79,6 @@ export function TopBar({ onMenuClick }: TopBarProps) {
                         className="bg-transparent border-none outline-none text-sm placeholder:text-gray-400 text-gray-700 dark:text-gray-200 w-64"
                     />
                 </div>
-
-                {/* Academic Context Indicator */}
-                {(settings.activeSessionName || settings.activeTermName) && (
-                    <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 bg-primary-50 dark:bg-primary-900/30 border border-primary-100 dark:border-primary-800 rounded-full animate-in fade-in slide-in-from-left-4 duration-500">
-                        <Calendar className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
-                        <span className="text-[11px] font-bold text-primary-700 dark:text-primary-300 uppercase tracking-tight">
-                            {settings.activeSessionName && <span>{settings.activeSessionName} Session</span>}
-                            {settings.activeSessionName && settings.activeTermName && <span className="mx-2 opacity-30">•</span>}
-                            {settings.activeTermName && <span>{settings.activeTermName}</span>}
-                        </span>
-                    </div>
-                )}
             </div>
 
 
