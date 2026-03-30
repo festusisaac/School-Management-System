@@ -15,7 +15,7 @@ export class RolesPermissionsService implements OnModuleInit {
   ) {}
   
   async onModuleInit() {
-    await this.renameAdminToSuperAdmin();
+    // await this.renameAdminToSuperAdmin();
     await this.seedDefaultRoles();
   }
 

@@ -170,8 +170,11 @@ export class TimetableService {
             );
         }
 
+        if (data.teacherId === '') (data as any).teacherId = null;
+        if (data.sectionId === '') (data as any).sectionId = null;
+
         const newSlot = this.timetableRepository.create(data);
-        return this.timetableRepository.save(newSlot);
+        return await this.timetableRepository.save(newSlot) as any as Timetable;
     }
 
     async getTimetable(classId: string, sectionId: string | null, tenantId: string): Promise<Timetable[]> {
@@ -277,8 +280,11 @@ export class TimetableService {
             );
         }
 
+        if (data.teacherId === '') (data as any).teacherId = null;
+        if (data.sectionId === '') (data as any).sectionId = null;
+
         Object.assign(slot, data);
-        return this.timetableRepository.save(slot);
+        return await this.timetableRepository.save(slot) as any as Timetable;
     }
 
     async deleteTimetableSlot(id: string): Promise<void> {

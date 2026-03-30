@@ -35,5 +35,17 @@ export const staffService = {
 
     deleteStaff: async (id: string) => {
         return api.deleteStaff(id);
+    },
+    
+    validateBulkStaff: async (data: any[]) => {
+        return api.validateBulkStaff(data);
+    },
+
+    importBulkStaff: async (data: any[]) => {
+        return api.importBulkStaff(data);
+    },
+
+    getImportStatus: async (jobId: string) => {
+        return api.getStaffImportStatus(jobId);
     }
 };

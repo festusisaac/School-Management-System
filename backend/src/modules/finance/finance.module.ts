@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { FeesController } from './controllers/fees.controller';
 import { FeesService } from './services/fees.service';
@@ -15,12 +15,12 @@ import { DiscountRule } from './entities/discount-rule.entity';
 
 import { FeeAssignment } from './entities/fee-assignment.entity';
 
-import { CommunicationModule } from '../communication/communication.module';
+import { InternalCommunicationModule } from '../internal-communication/internal-communication.module';
 import { SystemModule } from '../system/system.module';
 
 @Module({
   imports: [
-    CommunicationModule,
+    InternalCommunicationModule,
     SystemModule,
     TypeOrmModule.forFeature([
       Transaction,

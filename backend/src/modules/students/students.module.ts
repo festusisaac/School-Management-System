@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { StudentsController } from './controllers/students.controller';
 import { StudentsService } from './services/students.service';
@@ -13,7 +13,9 @@ import { StudentAttendance } from './entities/student-attendance.entity';
 import { Role } from '../auth/entities/role.entity';
 import { FinanceModule } from '../finance/finance.module';
 import { SystemModule } from '../system/system.module';
-import { CommunicationModule } from '../communication/communication.module';
+import { InternalCommunicationModule } from '../internal-communication/internal-communication.module';
+import { BullModule } from '@nestjs/bull';
+import { StudentImportProcessor } from './processors/student-import.processor';
 
 @Module({
   imports: [
@@ -28,12 +30,15 @@ import { CommunicationModule } from '../communication/communication.module';
       StudentAttendance,
       Role
     ]),
-    FinanceModule,
+    forwardRef(() => FinanceModule),
     SystemModule,
-    CommunicationModule,
+    InternalCommunicationModule,
+    BullModule.registerQueue({
+      name: 'student-import',
+    }),
   ],
   controllers: [StudentsController],
-  providers: [StudentsService],
+  providers: [StudentsService, StudentImportProcessor],
   exports: [StudentsService, TypeOrmModule],
 })
 export class StudentsModule { }

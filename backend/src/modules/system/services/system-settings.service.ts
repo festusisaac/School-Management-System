@@ -29,6 +29,7 @@ export class SystemSettingsService {
             dateFormat: 'DD/MM/YYYY',
             timezone: 'UTC',
             startDayOfWeek: 1,
+            isInitialized: false,
         });
         return this.systemSettingRepository.save(newSettings);
     }

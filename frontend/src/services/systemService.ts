@@ -43,6 +43,7 @@ export interface SystemSetting {
     socialLinkedin?: string;
     // System/Security
     isMaintenanceMode?: boolean;
+    isInitialized?: boolean;
     sessionTimeoutMinutes?: number;
     maxFileUploadSizeMb?: number;
     createdAt?: string;
@@ -222,6 +223,22 @@ export const systemService = {
 
     deleteUser: async (id: string) => {
         const response = await api.delete(`/system/users/${id}`);
+        return response;
+    },
+
+    // System Setup
+    getSetupStatus: async () => {
+        const response = await api.get<{ isInitialized: boolean }>('/system/setup/status');
+        return response;
+    },
+
+    initializeSystem: async (data: any) => {
+        // This now expects FormData because of the logo upload
+        const response = await api.post<{ message: string }>('/system/setup/initialize', data, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
         return response;
     },
 };

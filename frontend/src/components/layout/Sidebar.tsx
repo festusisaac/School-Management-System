@@ -14,7 +14,8 @@ import {
     Clock,
     LogOut,
     ChevronRight,
-    Video
+    Video,
+    MessageSquare
 } from 'lucide-react';
 import { useState } from 'react';
 import { clsx } from 'clsx';
@@ -195,6 +196,15 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 { label: 'Discounts', path: '/finance/discounts', permission: 'finance:manage_fee_structure' },
                 { label: 'Payment Reminders', path: '/finance/reminders', permission: 'finance:manage_reminders' },
                 { label: 'Balance Carry-Forward', path: '/finance/carry-forward', permission: 'finance:manage_fee_structure' },
+            ]
+        },
+        {
+            label: 'Communication',
+            icon: MessageSquare,
+            path: '/communication',
+            children: [
+                { label: 'Send Message', path: '/communication/broadcast', permission: 'communication:manage' },
+                { label: 'Message Templates', path: '/communication/templates', permission: 'communication:manage' },
             ]
         },
         {

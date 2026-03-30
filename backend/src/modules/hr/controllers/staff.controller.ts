@@ -22,11 +22,16 @@ import { CreateStaffDto } from '../dto/create-staff.dto';
 import { UpdateStaffDto } from '../dto/update-staff.dto';
 import { StaffFilterDto } from '../dto/staff-filter.dto';
 import { JwtAuthGuard } from '../../../guards/jwt-auth.guard';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
 
 @Controller('hr/staff')
 @UseGuards(JwtAuthGuard)
 export class StaffController {
-    constructor(private readonly staffService: StaffService) { }
+    constructor(
+        private readonly staffService: StaffService,
+        @InjectQueue('staff-import') private readonly staffImportQueue: Queue
+    ) { }
 
     @Get()
     async findAll(@Query() filters: StaffFilterDto, @Request() req: any) {
@@ -135,5 +140,44 @@ export class StaffController {
     @HttpCode(HttpStatus.NO_CONTENT)
     async remove(@Param('id') id: string, @Request() req: any) {
         await this.staffService.remove(id, req.user.tenantId);
+    }
+
+    // --- Bulk Import Endpoints ---
+
+    @Post('bulk/validate')
+    async validateBulk(@Body() data: any[], @Request() req: any) {
+        return this.staffService.validateBulk(data, req.user.tenantId);
+    }
+
+    @Post('bulk/import')
+    @HttpCode(HttpStatus.ACCEPTED)
+    async importBulk(@Body() data: any[], @Request() req: any) {
+        const job = await this.staffImportQueue.add('import-staff', {
+            data,
+            tenantId: req.user.tenantId,
+            userEmail: req.user.email
+        });
+        return { jobId: job.id };
+    }
+
+    @Get('bulk/import/status/:jobId')
+    async getImportStatus(@Param('jobId') jobId: string) {
+        const job = await this.staffImportQueue.getJob(jobId);
+        if (!job) {
+            throw new Error('Job not found');
+        }
+
+        const state = await job.getState();
+        const progress = job.progress();
+        const result = job.returnvalue;
+        const failedReason = job.failedReason;
+
+        return {
+            id: job.id,
+            state,
+            progress,
+            result,
+            failedReason
+        };
     }
 }

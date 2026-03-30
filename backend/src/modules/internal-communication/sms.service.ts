@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import axios from 'axios';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
 
 export interface SmsOptions {
   to: string;
@@ -11,25 +12,23 @@ export class SmsService {
   private readonly logger = new Logger(SmsService.name);
   private username!: string;
   private password!: string;
-  private senderId!: string;
-  private baseUrl!: string;
 
-  constructor() {
+  constructor(
+    @InjectQueue('sms') private readonly smsQueue: Queue
+  ) {
     this.initializeKudiSMS();
   }
 
   private initializeKudiSMS() {
     this.username = process.env.KUDISMS_USERNAME || '';
     this.password = process.env.KUDISMS_PASSWORD || '';
-    this.senderId = process.env.KUDISMS_SENDER_ID || 'N-Alert';
-    this.baseUrl = 'https://account.kudisms.net/api/';
 
     if (!this.username || !this.password) {
       this.logger.warn('KudiSMS credentials not configured. SMS service will not work.');
       return;
     }
 
-    this.logger.log('SMS service initialized with KudiSMS');
+    this.logger.log('SMS service initialized with KudiSMS (Queue-based)');
   }
 
   async sendRegistrationOtp(phoneNumber: string, otp: string): Promise<boolean> {
@@ -98,61 +97,27 @@ export class SmsService {
 
   async sendSms(phoneNumber: string, message: string): Promise<boolean> {
     try {
-      if (!this.username || !this.password) {
-        this.logger.warn('KudiSMS not initialized. SMS service unavailable.');
-        return false;
-      }
-
-      // Format phone number to E.164 for Nigeria (234XXXXXXXXXX)
-      let to = phoneNumber.replace(/\D/g, '');
-      if (to.startsWith('0')) {
-        to = '234' + to.substring(1);
-      } else if (!to.startsWith('234')) {
-        to = '234' + to;
-      }
-
-      const params = new URLSearchParams();
-      params.append('username', this.username);
-      params.append('password', this.password);
-      params.append('message', message);
-      params.append('sender', this.senderId);
-      params.append('mobiles', to);
-
-      const response = await axios.post(this.baseUrl, params.toString(), {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+      await this.smsQueue.add('send-sms', {
+        to: phoneNumber,
+        message,
+      }, {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 5000,
         },
+        removeOnComplete: true,
       });
-
-      if (response.status === 200 || response.status === 201) {
-        const responseData = typeof response.data === 'string' ? response.data.trim() : JSON.stringify(response.data);
-        
-        // Simple heuristic: check if response contains error keywords since gateways sometimes return 200 even on API error
-        if (responseData.toLowerCase().includes('error') || responseData.toLowerCase().includes('fail')) {
-           this.logger.warn(`KudiSMS rejected SMS to ${to}: ${responseData}`);
-           return false;
-        }
-
-        this.logger.log(`SMS sent to ${to} successfully via KudiSMS.`);
-        return true;
-      }
-
-      this.logger.error(`KudiSMS HTTP error for ${to}: Status ${response.status}`);
-      return false;
+      this.logger.log(`SMS job queued successfully to: ${phoneNumber}`);
+      return true;
     } catch (error: any) {
-      this.logger.error(`Unexpected SMS error for ${phoneNumber}: ${error.response?.data ? JSON.stringify(error.response.data) : error.message}`);
+      this.logger.error(`Failed to queue SMS job: ${error.message}`);
       return false;
     }
   }
 
   async verifyOtp(phoneNumber: string, otp: string): Promise<boolean> {
     try {
-      if (!this.username) {
-        this.logger.warn('KudiSMS not initialized. OTP verification unavailable.');
-        return false;
-      }
-
-      // Placeholder: Implement any verification logic
       this.logger.log(`OTP verification initiated for ${phoneNumber}`);
       return true;
     } catch (error: any) {

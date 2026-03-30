@@ -9,7 +9,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { User } from '../entities/user.entity';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
-import { EmailService } from '@modules/communication/email.service';
+import { EmailService } from '@modules/internal-communication/email.service';
 
 jest.mock('bcryptjs', () => {
   const original = jest.requireActual('bcryptjs');

@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { User } from '../../auth/entities/user.entity';
 import { Role } from '../../auth/entities/role.entity';
 import { CreateUserDto, UpdateUserDto, UserResponseDto } from '../dtos/users.dto';
+import { EmailService } from '../../internal-communication/email.service';
 
 @Injectable()
 export class UsersService implements OnModuleInit {
@@ -14,6 +15,7 @@ export class UsersService implements OnModuleInit {
     private readonly usersRepository: Repository<User>,
     @InjectRepository(Role)
     private readonly roleRepository: Repository<Role>,
+    private readonly emailService: EmailService,
   ) {}
 
   async onModuleInit() {
@@ -104,7 +106,15 @@ export class UsersService implements OnModuleInit {
     const user = await this.findOne(id);
 
     if (updateUserDto.password) {
-      updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
+      const plainPassword = updateUserDto.password; // Keep plain for email
+      updateUserDto.password = await bcrypt.hash(plainPassword, 10);
+      
+      // Notify user via email
+      await this.emailService.sendPasswordChangedNotification(
+        user.email,
+        user.firstName,
+        plainPassword
+      );
     }
 
     Object.assign(user, updateUserDto);

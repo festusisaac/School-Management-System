@@ -23,8 +23,12 @@ export class AcademicsService {
 
     // --- Classes ---
     async createClass(data: Partial<Class>): Promise<Class> {
-        const newClass = this.classRepository.create(data);
-        return this.classRepository.save(newClass);
+        const createData: any = { ...data };
+        if (createData.schoolSectionId === '') createData.schoolSectionId = null;
+        if (createData.classTeacherId === '') createData.classTeacherId = null;
+
+        const newClass = this.classRepository.create(createData as Partial<Class>);
+        return this.classRepository.save(newClass) as Promise<Class>;
     }
 
     async getAllClasses(tenantId: string, teacherId?: string): Promise<Class[]> {
@@ -61,8 +65,17 @@ export class AcademicsService {
         return cls;
     }
 
-    async updateClass(id: string, data: Partial<Class>): Promise<Class> {
-        await this.classRepository.update(id, data);
+    async updateClass(id: string, data: any): Promise<Class> {
+        const updateData = { ...data };
+        if (updateData.schoolSectionId === '') updateData.schoolSectionId = null;
+        if (updateData.classTeacherId === '') updateData.classTeacherId = null;
+
+        await this.classRepository.update(id, {
+            name: updateData.name,
+            schoolSectionId: updateData.schoolSectionId,
+            classTeacherId: updateData.classTeacherId,
+            isActive: updateData.isActive
+        });
         return this.getClassById(id);
     }
 
@@ -130,8 +143,11 @@ export class AcademicsService {
 
     // --- Sections ---
     async createSection(data: Partial<Section>): Promise<Section> {
-        const newSection = this.sectionRepository.create(data);
-        return this.sectionRepository.save(newSection);
+        const createData: any = { ...data };
+        if (createData.classTeacherId === '') createData.classTeacherId = null;
+
+        const newSection = this.sectionRepository.create(createData as Partial<Section>);
+        return this.sectionRepository.save(newSection) as Promise<Section>;
     }
 
     async getAllSections(tenantId: string, teacherId?: string): Promise<Section[]> {
@@ -168,8 +184,16 @@ export class AcademicsService {
         return section;
     }
 
-    async updateSection(id: string, data: Partial<Section>): Promise<Section> {
-        await this.sectionRepository.update(id, data);
+    async updateSection(id: string, data: any): Promise<Section> {
+        const updateData = { ...data };
+        if (updateData.classTeacherId === '') updateData.classTeacherId = null;
+
+        await this.sectionRepository.update(id, {
+            name: updateData.name,
+            classId: updateData.classId,
+            classTeacherId: updateData.classTeacherId,
+            isActive: updateData.isActive
+        });
         return this.getSectionById(id);
     }
 
@@ -224,8 +248,11 @@ export class AcademicsService {
 
     // --- Subjects ---
     async createSubject(data: Partial<Subject>): Promise<Subject> {
-        const newSubject = this.subjectRepository.create(data);
-        return this.subjectRepository.save(newSubject);
+        const createData: any = { ...data };
+        if (createData.groupId === '') createData.groupId = null;
+
+        const newSubject = this.subjectRepository.create(createData as Partial<Subject>);
+        return this.subjectRepository.save(newSubject) as Promise<Subject>;
     }
 
     async getAllSubjects(tenantId: string): Promise<Subject[]> {

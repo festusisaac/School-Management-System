@@ -34,6 +34,7 @@ interface DashboardStats {
   students: { total: number; active: number; inactive: number }
   staff: { total: number; teaching: number; nonTeaching: number }
   finance: { totalRevenue: number; outstandingFees: number }
+  academics: { totalClasses: number; totalSubjects: number }
   feesOverview: { unpaid: number; partial: number; paid: number }
   academicHealth: {
     teachersYetToSubmit: number
@@ -120,7 +121,7 @@ const DashboardPage: React.FC = () => {
   }
 
   // Fallback data for charts if API returns empty
-  const enrollmentData = charts?.enrollmentTrends.length
+  const enrollmentData = charts?.enrollmentTrends?.length
     ? charts.enrollmentTrends
     : [
       { month: 'Jan', count: '0' },
@@ -131,15 +132,72 @@ const DashboardPage: React.FC = () => {
       { month: 'Jun', count: '0' },
     ];
 
-  const genderData = charts?.genderDistribution.length
+  const genderData = charts?.genderDistribution?.length
     ? charts.genderDistribution
     : [
       { label: 'Male', value: 1 },
       { label: 'Female', value: 5 }
     ];
 
+  // Onboarding Checklist Logic
+  const isFreshSystem = (stats?.students?.total === 0 && stats?.staff?.total === 1) || (stats?.students?.total === 0 && stats?.staff?.total === 0);
+  const showChecklist = userRole === 'super administrator' && isFreshSystem;
+
+  const checklistItems = [
+    { id: 1, label: 'Create School Sections & Classes', path: '/academics/school-sections', completed: (stats?.academics?.totalClasses ?? 0) > 0 },
+    { id: 2, label: 'Add Subjects & Class Assignments', path: '/academics/subjects', completed: (stats?.academics?.totalSubjects ?? 0) > 0 },
+    { id: 3, label: 'Onboard your first Staff member', path: '/hr/staff', completed: (stats?.staff?.total ?? 0) > 1 },
+    { id: 4, label: 'Admit your first Student', path: '/students/admission', completed: (stats?.students?.total ?? 0) > 0 },
+  ];
+
   return (
     <div className="space-y-6 overflow-x-hidden p-4 sm:p-6 lg:p-8">
+      
+      {/* Onboarding Checklist */}
+      {showChecklist && (
+        <div className="bg-gradient-to-r from-primary-600 to-indigo-700 rounded-2xl p-6 shadow-xl shadow-primary-500/20 text-white animate-in slide-in-from-top duration-500">
+          <div className="flex flex-col md:flex-row gap-6 items-center">
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold flex items-center gap-2">
+                <div className="p-2 bg-white/20 rounded-lg">🚀</div>
+                Welcome, {user?.firstName}! Let's get started.
+              </h2>
+              <p className="text-primary-100 mt-1">Complete these essential steps to get your school running smoothly.</p>
+              
+              <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {checklistItems.map((item) => (
+                  <Link 
+                    key={item.id} 
+                    to={item.path}
+                    className={`flex items-center gap-3 p-3 rounded-xl transition-all ${
+                      item.completed 
+                      ? 'bg-white/10 text-white/50 border border-white/5' 
+                      : 'bg-white text-primary-700 hover:bg-primary-50 shadow-lg'
+                    }`}
+                  >
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                      item.completed ? 'bg-green-500 text-white' : 'bg-primary-100'
+                    }`}>
+                      {item.completed ? '✓' : item.id}
+                    </div>
+                    <span className="text-sm font-semibold">{item.label}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+            <div className="hidden lg:block w-48 text-center bg-white/10 p-4 rounded-2xl border border-white/10 backdrop-blur-sm">
+                <div className="text-3xl font-bold">{Math.round((checklistItems.filter(i => i.completed).length / checklistItems.length) * 100)}%</div>
+                <div className="text-xs uppercase tracking-wider text-primary-100 mt-1 font-bold">Setup Progress</div>
+                <div className="w-full bg-white/20 h-1.5 rounded-full mt-3 overflow-hidden">
+                    <div 
+                      className="bg-white h-full transition-all duration-1000" 
+                      style={{ width: `${(checklistItems.filter(i => i.completed).length / checklistItems.length) * 100}%` }}
+                    ></div>
+                </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
@@ -195,10 +253,10 @@ const DashboardPage: React.FC = () => {
           </div>
           <div className="mt-4 flex items-center text-sm">
             <span className="text-secondary-600 font-medium bg-secondary-100 px-2 py-0.5 rounded-full text-xs">
-              {stats?.staff.teaching} Teaching
+              {stats?.staff?.teaching || 0} Teaching
             </span>
             <span className="text-gray-500 ml-2 text-xs">
-              {stats?.staff.nonTeaching} Non-Teaching
+              {stats?.staff?.nonTeaching || 0} Non-Teaching
             </span>
           </div>
         </div>
@@ -314,13 +372,13 @@ const DashboardPage: React.FC = () => {
             </div>
 
             {/* Low Attendance Alert (Retained as health indicator) */}
-            {stats?.academicHealth?.lowAttendanceClasses && stats.academicHealth.lowAttendanceClasses.length > 0 && (
+            {(stats?.academicHealth?.lowAttendanceClasses?.length ?? 0) > 0 && (
               <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-900/30">
                 <p className="text-xs font-bold text-red-600 dark:text-red-400 uppercase mb-1 flex items-center">
                   ⚠ Low Attendance
                 </p>
                 <p className="text-xs text-gray-800 dark:text-gray-200">
-                  Classes: {stats.academicHealth.lowAttendanceClasses.join(', ')}
+                  Classes: {stats?.academicHealth?.lowAttendanceClasses?.join(', ')}
                 </p>
               </div>
             )}
@@ -352,7 +410,7 @@ const DashboardPage: React.FC = () => {
             <div className="text-sm">
               <p className="text-gray-500 dark:text-gray-400 mb-1 flex items-center"><TrendingUp className="w-3 h-3 text-green-500 mr-1" /> Top Classes</p>
               <div className="flex gap-2">
-                {stats?.studentPerformance?.topPerformingClasses.map((cls, idx) => (
+                {stats?.studentPerformance?.topPerformingClasses?.map((cls, idx) => (
                   <span key={idx} className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-1 rounded text-xs font-bold">{cls}</span>
                 ))}
               </div>
@@ -361,7 +419,7 @@ const DashboardPage: React.FC = () => {
             <div className="text-sm">
               <p className="text-gray-500 dark:text-gray-400 mb-1 flex items-center"><TrendingUp className="w-3 h-3 text-red-500 mr-1 transform rotate-180" /> Needs Improvement</p>
               <div className="flex gap-2">
-                {stats?.studentPerformance?.bottomPerformingClasses.map((cls, idx) => (
+                {stats?.studentPerformance?.bottomPerformingClasses?.map((cls, idx) => (
                   <span key={idx} className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 px-2 py-1 rounded text-xs font-bold">{cls}</span>
                 ))}
               </div>

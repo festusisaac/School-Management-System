@@ -115,7 +115,7 @@ export class Staff {
     @Column({ type: 'date', name: 'date_of_joining' })
     dateOfJoining!: Date;
 
-    @Column({ name: 'department_id' })
+    @Column({ name: 'department_id', nullable: true })
     departmentId!: string;
 
 

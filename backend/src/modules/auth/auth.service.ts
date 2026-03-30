@@ -7,7 +7,7 @@ import * as bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { CreateUserDto, LoginDto } from '@common/dtos/auth.dto';
 import { User } from './entities/user.entity';
-import { EmailService } from '@modules/communication/email.service';
+import { EmailService } from '@modules/internal-communication/email.service';
 
 @Injectable()
 export class AuthService {
@@ -47,7 +47,7 @@ export class AuthService {
         user.firstName,
         `${process.env.FRONTEND_URL || 'http://localhost:3001'}/verify-email?token=sample`,
       )
-      .catch((err) => this.logger.error('Failed to send registration email', err));
+      .catch((err: any) => this.logger.error('Failed to send registration email', err));
 
     const { password, ...userWithoutPassword } = user;
     return {

@@ -1,5 +1,4 @@
 import * as XLSX from 'xlsx';
-import { formatCurrency } from './currency';
 
 export interface ExportColumn {
   header: string;
@@ -115,4 +114,113 @@ export const exportFinancialStatement = (statement: any): void => {
 
   const filename = `financial-statement-${new Date().toISOString().split('T')[0]}.xlsx`;
   XLSX.writeFile(workbook, filename);
+};
+
+/**
+ * Export staff directory to Excel
+ */
+export const exportStaffDirectory = (staff: any[]): void => {
+  const columns: ExportColumn[] = [
+    // Identification
+    { header: 'Staff ID', key: 'employeeId' },
+    { header: 'Full Name', key: 'firstName', formatter: (_val, row) => `${row.firstName} ${row.lastName}` },
+    { header: 'Email', key: 'email' },
+    { header: 'Phone', key: 'phone' },
+    { header: 'Biometric ID', key: 'biometricId' },
+    
+    // Organization
+    { header: 'Department', key: 'department', formatter: (val) => val?.name || 'N/A' },
+    { header: 'Role', key: 'role', formatter: (val) => val?.name || 'N/A' },
+    { header: 'Status', key: 'status' },
+    { header: 'Employment Type', key: 'employmentType' },
+    { header: 'Teaching Staff', key: 'isTeachingStaff', formatter: (val) => val ? 'Yes' : 'No' },
+    { header: 'Date of Joining', key: 'dateOfJoining', formatter: (val) => val ? new Date(val).toLocaleDateString() : 'N/A' },
+    
+    // Personal Details
+    { header: 'Gender', key: 'gender' },
+    { header: 'Date of Birth', key: 'dateOfBirth', formatter: (val) => val ? new Date(val).toLocaleDateString() : 'N/A' },
+    { header: 'Blood Group', key: 'bloodGroup' },
+    { header: 'Marital Status', key: 'maritalStatus' },
+    { header: 'Father Name', key: 'fatherName' },
+    { header: 'Mother Name', key: 'motherName' },
+    
+    // Qualifications & History
+    { header: 'Qualifications', key: 'qualifications' },
+    { header: 'Work Experience', key: 'workExperience' },
+    { header: 'Note', key: 'note' },
+    
+    // Bank Details
+    { header: 'Basic Salary', key: 'basicSalary', formatter: (val) => val ? parseFloat(val).toFixed(2) : '0.00' },
+    { header: 'Bank Name', key: 'bankName' },
+    { header: 'Account Title', key: 'accountTitle' },
+    { header: 'Account Number', key: 'accountNumber' },
+    
+    // Address
+    { header: 'Current Address', key: 'address' },
+    { header: 'Permanent Address', key: 'permanentAddress' },
+    { header: 'City', key: 'city' },
+    { header: 'State', key: 'state' },
+    { header: 'Country', key: 'country' },
+    { header: 'Postal Code', key: 'postalCode' },
+    
+    // Emergency Contact
+    { header: 'Emergency Contact Name', key: 'emergencyContactName' },
+    { header: 'Emergency Contact Phone', key: 'emergencyContactPhone' },
+    { header: 'Emergency Contact Relation', key: 'emergencyContactRelation' },
+    
+    // Social Links
+    { header: 'Facebook', key: 'facebookUrl' },
+    { header: 'Twitter', key: 'twitterUrl' },
+    { header: 'LinkedIn', key: 'linkedinUrl' },
+    { header: 'Instagram', key: 'instagramUrl' },
+  ];
+
+  const filename = `staff-directory-full-${new Date().toISOString().split('T')[0]}.xlsx`;
+  exportToExcel(staff, columns, filename, 'Staff Directory');
+};
+
+/**
+ * Export student directory to Excel
+ */
+export const exportStudents = (students: any[]): void => {
+  const columns: ExportColumn[] = [
+    // Identification
+    { header: 'Admission No', key: 'admissionNo' },
+    { header: 'Roll No', key: 'rollNo' },
+    { header: 'First Name', key: 'firstName' },
+    { header: 'Last Name', key: 'lastName' },
+    { header: 'Gender', key: 'gender' },
+    { header: 'Date of Birth', key: 'dob', formatter: (val) => val ? new Date(val).toLocaleDateString() : 'N/A' },
+    
+    // Organization
+    { header: 'Class', key: 'class', formatter: (val) => val?.name || 'N/A' },
+    { header: 'Section', key: 'section', formatter: (val) => val?.name || 'N/A' },
+    { header: 'Category', key: 'category', formatter: (val) => val?.category || 'N/A' },
+    { header: 'House', key: 'house', formatter: (val) => val?.name || 'N/A' },
+    
+    // Parent Details
+    { header: 'Father Name', key: 'fatherName' },
+    { header: 'Father Phone', key: 'fatherPhone' },
+    { header: 'Mother Name', key: 'motherName' },
+    { header: 'Guardian Name', key: 'guardianName' },
+    { header: 'Guardian Relation', key: 'guardianRelation' },
+    { header: 'Guardian Phone', key: 'guardianPhone' },
+    { header: 'Guardian Email', key: 'guardianEmail' },
+    
+    // Personal Details
+    { header: 'Religion', key: 'religion' },
+    { header: 'Caste', key: 'caste' },
+    { header: 'Blood Group', key: 'bloodGroup' },
+    { header: 'Mobile Number', key: 'mobileNumber' },
+    { header: 'Email', key: 'email' },
+    { header: 'Admission Date', key: 'admissionDate', formatter: (val) => val ? new Date(val).toLocaleDateString() : 'N/A' },
+    
+    // Address
+    { header: 'Current Address', key: 'currentAddress' },
+    { header: 'Permanent Address', key: 'permanentAddress' },
+  ];
+
+  const filename = `student-directory-${new Date().toISOString().split('T')[0]}.xlsx`;
+  
+  exportToExcel(students, columns, filename, 'Student Directory');
 };

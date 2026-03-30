@@ -127,6 +127,13 @@ class ApiService {
           }
         }
 
+        // Handle System Not Initialized (403 with specific message)
+        if (error.response?.status === 403 && error.response?.data?.error === 'SystemNotInitialized') {
+          if (!window.location.pathname.includes('/setup')) {
+            window.location.href = '/setup'
+          }
+        }
+
         return Promise.reject(error)
       },
     )
@@ -615,6 +622,18 @@ class ApiService {
     }
   }
 
+  // Bulk Student Import
+  async validateBulkStudents(data: any[]) {
+    return this.post<any[]>('/students/bulk/validate', data)
+  }
+
+  async importBulkStudents(data: any[]) {
+    return this.post<{ jobId: string }>('/students/bulk/import', data)
+  }
+
+  async getStudentImportStatus(jobId: string) {
+    return this.get<any>(`/students/bulk/import/status/${jobId}`)
+  }
 
   // HR API methods
   async getDepartments() {
@@ -689,6 +708,18 @@ class ApiService {
 
   async getMyProfile() {
     return this.get<any>('/hr/staff/profile/me')
+  }
+
+  async validateBulkStaff(data: any[]) {
+    return this.post<any[]>('/hr/staff/bulk/validate', data)
+  }
+
+  async importBulkStaff(data: any[]) {
+    return this.post<{ jobId: string }>('/hr/staff/bulk/import', data)
+  }
+
+  async getStaffImportStatus(jobId: string) {
+    return this.get<any>(`/hr/staff/bulk/import/status/${jobId}`)
   }
 
   // Attendance API methods
@@ -951,7 +982,69 @@ class ApiService {
   async getTeacherTodayTimetable() {
     return this.get<any[]>('/academics/timetable/slots/teacher/today')
   }
+
+  // Communication Templates
+  async getMessageTemplates(params?: { type?: 'EMAIL' | 'SMS' }) {
+    return this.get<any[]>('/communication/templates', { params })
+  }
+
+  async getMessageTemplateById(id: string) {
+    return this.get<any>(`/communication/templates/${id}`)
+  }
+
+  async createMessageTemplate(data: any) {
+    return this.post<any>('/communication/templates', data)
+  }
+
+  async updateMessageTemplate(id: string, data: any) {
+    return this.put<any>(`/communication/templates/${id}`, data)
+  }
+
+  async deleteMessageTemplate(id: string) {
+    return this.delete<any>(`/communication/templates/${id}`)
+  }
+
+  // Broadcasting
+  async sendBroadcast(data: SendBroadcastDto) {
+    return this.post<{ queued: number }>('/communication/broadcast', data)
+  }
 }
 
 export const api = new ApiService()
 export default api
+
+export enum MessageTemplateType {
+  EMAIL = 'EMAIL',
+  SMS = 'SMS',
+}
+
+export interface MessageTemplate {
+  id: string;
+  name: string;
+  type: MessageTemplateType;
+  subject?: string;
+  body: string;
+  isActive: boolean;
+  tenantId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export enum BroadcastTarget {
+  ALL_STUDENTS = 'ALL_STUDENTS',
+  CLASS = 'CLASS',
+  SECTION = 'SECTION',
+  STAFF = 'STAFF',
+  INDIVIDUAL_STUDENTS = 'INDIVIDUAL_STUDENTS',
+  INDIVIDUAL_STAFF = 'INDIVIDUAL_STAFF',
+}
+
+export interface SendBroadcastDto {
+  channel: 'EMAIL' | 'SMS';
+  target: BroadcastTarget;
+  targetIds?: string[];
+  templateId?: string;
+  subject?: string;
+  body: string;
+  includeParents?: boolean;
+}

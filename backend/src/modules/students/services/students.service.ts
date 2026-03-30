@@ -19,8 +19,8 @@ import { StudentDocument } from '../entities/student-document.entity';
 import { FeesService } from '../../finance/services/fees.service';
 import { UsersService } from '../../system/services/users.service';
 import { Role } from '../../auth/entities/role.entity';
-import { EmailService } from '../../communication/email.service';
-import { SmsService } from '../../communication/sms.service';
+import { EmailService } from '../../internal-communication/email.service';
+import { SmsService } from '../../internal-communication/sms.service';
 import { StudentAttendance } from '../entities/student-attendance.entity';
 import { MarkAttendanceDto, BulkMarkAttendanceDto } from '../dtos/student-attendance.dto';
 import { SystemSettingsService } from '../../system/services/system-settings.service';
@@ -96,6 +96,14 @@ export class StudentsService {
         // 3. Create Student with Parent Link
         let { feeGroupIds, session, documentTitles, feeExclusions, ...studentData } = createStudentDto;
 
+        // Clean UUID fields (convert "" to null)
+        const uuidFields = ['classId', 'sectionId', 'categoryId', 'houseId', 'deactivateReasonId', 'discountProfileId', 'parentId'];
+        uuidFields.forEach(field => {
+            if ((studentData as any)[field] === '') {
+                (studentData as any)[field] = null;
+            }
+        });
+
         // Handle FormData JSON strings
         if (typeof feeGroupIds === 'string') {
             try { feeGroupIds = JSON.parse(feeGroupIds); } catch (e) { }
@@ -107,8 +115,8 @@ export class StudentsService {
             ...studentData,
             parent: parent,
             tenantId: tenantId
-        });
-        const savedStudent = await this.studentsRepository.save(student);
+        } as any);
+        const savedStudent = await this.studentsRepository.save(student) as any as Student;
 
         // 4. Save Documents if any
         if (documentFiles && documentFiles.length > 0) {
@@ -323,7 +331,7 @@ export class StudentsService {
         }
 
         // 3. Save the entity
-        await this.studentsRepository.save(student);
+        await this.studentsRepository.save(student as any);
         console.log('Student entity saved successfully');
 
         // Save new documents if any
@@ -516,10 +524,12 @@ export class StudentsService {
     async promote(data: { studentIds: string[], classId: string, sectionId?: string }, tenantId: string): Promise<void> {
         if (!data.studentIds || data.studentIds.length === 0) return;
         
-        await this.studentsRepository.update({ id: Like(data.studentIds as any), tenantId }, {
-            classId: data.classId,
-            sectionId: (data.sectionId || undefined) as any
-        });
+        const updatePayload: any = {
+            classId: data.classId === '' ? null : data.classId,
+            sectionId: (data.sectionId === '' ? null : data.sectionId) || null
+        };
+
+        await this.studentsRepository.update({ id: In(data.studentIds), tenantId }, updatePayload);
     }
 
     // --- Attendance ---
@@ -641,6 +651,7 @@ export class StudentsService {
         });
     }
 
+
     async getAttendanceLogs(startDate: string, endDate: string, tenantId: string, classId?: string, sectionId?: string, managedClassIds?: string[]): Promise<StudentAttendance[]> {
         const sessionId = await this.systemSettingsService.getActiveSessionId();
         const where: any = {
@@ -661,6 +672,70 @@ export class StudentsService {
             relations: ['student', 'class', 'section'],
             order: { date: 'DESC' }
         });
+    }
+
+    // --- Bulk Import Helpers ---
+
+    async validateBulk(data: any[], tenantId: string): Promise<any[]> {
+        const results: any[] = [];
+        
+        // Fetch all dependencies to avoid multiple DB lookups in a loop
+        const classes = await this.studentsRepository.query('SELECT id, name FROM "classes" WHERE "tenantId" = $1', [tenantId]);
+        const sections = await this.studentsRepository.query('SELECT id, name, "classId" FROM "sections" WHERE "tenantId" = $1', [tenantId]);
+        const categories = await this.categoryRepository.find({ where: { tenantId } });
+        const houses = await this.houseRepository.find({ where: { tenantId } });
+        const existingStudents = await this.studentsRepository.find({ where: { tenantId }, select: ['admissionNo'] });
+        const admissionNos = new Set(existingStudents.map(s => s.admissionNo.toLowerCase()));
+
+        for (const row of data) {
+            const errors: string[] = [];
+            const result: any = { ...row, errors: [] };
+
+            // 1. Required Fields
+            if (!row.admissionNo) errors.push('Admission Number is required');
+            if (!row.firstName) errors.push('First Name is required');
+            if (!row.gender) errors.push('Gender is required');
+            if (!row.dob) errors.push('Date of Birth is required');
+            if (!row.admissionDate) errors.push('Admission Date is required');
+
+            // 2. Duplicate Check
+            if (row.admissionNo && admissionNos.has(row.admissionNo.toString().toLowerCase())) {
+                errors.push(`Duplicate Admission Number: ${row.admissionNo}`);
+            }
+
+            // 3. Resolve Dependencies (Names to IDs)
+            if (row.className) {
+                const cls = classes.find((c: any) => c.name.toLowerCase() === row.className.toLowerCase());
+                if (cls) {
+                    result.classId = cls.id;
+                    if (row.sectionName) {
+                        const sec = sections.find((s: any) => s.name.toLowerCase() === row.sectionName.toLowerCase() && s.classId === cls.id);
+                        if (sec) result.sectionId = sec.id;
+                        else errors.push(`Section "${row.sectionName}" not found in class "${row.className}"`);
+                    }
+                } else {
+                    errors.push(`Class "${row.className}" not found`);
+                }
+            }
+
+            if (row.categoryName) {
+                const cat = categories.find(c => c.category.toLowerCase() === row.categoryName.toLowerCase());
+                if (cat) result.categoryId = cat.id;
+                else errors.push(`Category "${row.categoryName}" not found`);
+            }
+
+            if (row.houseName) {
+                const house = houses.find(h => h.houseName.toLowerCase() === row.houseName.toLowerCase());
+                if (house) result.houseId = house.id;
+                else errors.push(`House "${row.houseName}" not found`);
+            }
+
+            result.validationStatus = errors.length > 0 ? 'Invalid' : 'Valid';
+            result.errors = errors;
+            results.push(result);
+        }
+
+        return results;
     }
 }
 

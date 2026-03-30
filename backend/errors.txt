@@ -1,0 +1,14 @@
+src/modules/auth/auth.module.ts(13,45): error TS2307: Cannot find module '../communication/internal-communication.module' or its corresponding type declarations.
+src/modules/auth/auth.service.ts(10,30): error TS2307: Cannot find module '@modules/communication/email.service' or its corresponding type declarations.
+src/modules/auth/auth.service.ts(50,15): error TS7006: Parameter 'err' implicitly has an 'any' type.
+src/modules/auth/tests/auth.service.spec.ts(12,30): error TS2307: Cannot find module '@modules/communication/email.service' or its corresponding type declarations.
+src/modules/communication/communication.module.ts(14,45): error TS2307: Cannot find module './internal-communication.module' or its corresponding type declarations.
+src/modules/communication/services/broadcast.service.ts(8,30): error TS2307: Cannot find module '../email.service' or its corresponding type declarations.
+src/modules/communication/services/broadcast.service.ts(9,28): error TS2307: Cannot find module '../sms.service' or its corresponding type declarations.
+src/modules/finance/services/fees.service.ts(27,30): error TS2307: Cannot find module '../../communication/email.service' or its corresponding type declarations.
+src/modules/finance/services/fees.service.ts(28,28): error TS2307: Cannot find module '../../communication/sms.service' or its corresponding type declarations.
+src/modules/homework/services/homework.service.ts(8,30): error TS2307: Cannot find module '../../communication/email.service' or its corresponding type declarations.
+src/modules/online-classes/services/online-classes.service.ts(7,30): error TS2307: Cannot find module '../../communication/email.service' or its corresponding type declarations.
+src/modules/students/services/students.service.ts(22,30): error TS2307: Cannot find module '../../communication/email.service' or its corresponding type declarations.
+src/modules/students/services/students.service.ts(23,28): error TS2307: Cannot find module '../../communication/sms.service' or its corresponding type declarations.
+src/modules/system/services/users.service.ts(9,30): error TS2307: Cannot find module '../../communication/email.service' or its corresponding type declarations.

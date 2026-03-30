@@ -9,6 +9,9 @@ import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  // Public registration is disabled for security. 
+  // All system users must be created by an administrator.
+  /*
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Register a new user', description: 'Create a new user account with email, password, and user details' })
@@ -19,6 +22,7 @@ export class AuthController {
   async register(@Body() createUserDto: CreateUserDto) {
     return this.authService.register(createUserDto);
   }
+  */
 
   @Post('login')
   @HttpCode(HttpStatus.OK)

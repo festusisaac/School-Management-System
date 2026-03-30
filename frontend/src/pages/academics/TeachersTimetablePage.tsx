@@ -96,7 +96,7 @@ const TeachersTimetablePage = () => {
     const [error, setError] = useState('');
     const { user } = useAuthStore();
     const isTeacher = user?.role?.toLowerCase() === 'teacher';
-    const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.role?.toLowerCase() === 'superadmin';
+    const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.role?.toLowerCase() === 'superadmin' || user?.role?.toLowerCase() === 'super administrator';
 
     const printRef = useRef<HTMLDivElement>(null);
 

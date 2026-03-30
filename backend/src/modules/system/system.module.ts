@@ -1,8 +1,9 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SystemSetting } from './entities/system-setting.entity';
 import { AcademicSession } from './entities/academic-session.entity';
 import { AcademicTerm } from './entities/academic-term.entity';
+import { ActivityLog } from './entities/activity-log.entity';
 import { SystemSettingsService } from './services/system-settings.service';
 import { AcademicSessionsService } from './services/academic-sessions.service';
 import { AcademicTermsService } from './services/academic-terms.service';
@@ -13,11 +14,14 @@ import { RolesPermissionsController } from './controllers/roles-permissions.cont
 import { Role } from '../auth/entities/role.entity';
 import { Permission } from '../auth/entities/permission.entity';
 import { RolesPermissionsService } from './services/roles-permissions.service';
+import { ActivityLogService } from './services/activity-log.service';
 import { UsersService } from './services/users.service';
 import { UsersController } from './controllers/users.controller';
 import { User } from '../auth/entities/user.entity';
 import { AuthModule } from '../auth/auth.module';
-import { forwardRef } from '@nestjs/common';
+import { SystemSetupController } from './controllers/system-setup.controller';
+import { SystemSetupService } from './services/system-setup.service';
+import { InternalCommunicationModule } from '../internal-communication/internal-communication.module';
 
 @Module({
     imports: [
@@ -25,11 +29,13 @@ import { forwardRef } from '@nestjs/common';
             SystemSetting,
             AcademicSession,
             AcademicTerm,
+            ActivityLog,
             Role,
             Permission,
             User,
         ]),
         forwardRef(() => AuthModule),
+        InternalCommunicationModule,
     ],
     controllers: [
         SystemSettingsController,
@@ -37,20 +43,25 @@ import { forwardRef } from '@nestjs/common';
         AcademicTermsController,
         RolesPermissionsController,
         UsersController,
+        SystemSetupController,
     ],
     providers: [
         SystemSettingsService,
         AcademicSessionsService,
         AcademicTermsService,
         RolesPermissionsService,
+        ActivityLogService,
         UsersService,
+        SystemSetupService,
     ],
     exports: [
         SystemSettingsService,
         AcademicSessionsService,
         AcademicTermsService,
         RolesPermissionsService,
+        ActivityLogService,
         UsersService,
+        SystemSetupService,
     ],
 })
 export class SystemModule { }
