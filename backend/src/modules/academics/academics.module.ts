@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Class } from './entities/class.entity';
 import { Section } from './entities/section.entity';
@@ -29,9 +29,9 @@ import { SystemModule } from '../system/system.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Class, Section, Subject, SubjectGroup, TimetablePeriod, Timetable, SubjectTeacher, ClassSubject, SchoolSection]),
-    AuthModule, // Import AuthModule to get access to JwtService for JwtAuthGuard
-    HrModule, // Import HrModule to access Staff entity for class teacher assignment
-    SystemModule,
+    forwardRef(() => AuthModule), // Import AuthModule to get access to JwtService for JwtAuthGuard
+    forwardRef(() => HrModule), // Import HrModule to access Staff entity for class teacher assignment
+    forwardRef(() => SystemModule),
   ],
   controllers: [AcademicsController, TimetableController, SubjectTeacherController, ClassSubjectController, SchoolSectionController],
   providers: [AcademicsService, TimetableService, SubjectTeacherService, ClassSubjectService, SchoolSectionService],

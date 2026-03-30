@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MulterModule } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -15,6 +15,7 @@ import {
     Payroll,
     TeacherRating,
 } from './entities';
+import { Role } from '../auth/entities/role.entity';
 
 // Services
 import { DepartmentService } from './services/department.service';
@@ -33,17 +34,17 @@ import { PayrollController } from './controllers/payroll.controller';
 import { RatingController } from './controllers/rating.controller';
 
 import { AuthModule } from '../auth/auth.module';
-import { StudentsModule } from '../students/students.module';
 import { SystemModule } from '../system/system.module';
+import { StudentsModule } from '../students/students.module';
 
 import { BullModule } from '@nestjs/bull';
 import { StaffImportProcessor } from './processors/staff-import.processor';
 
 @Module({
     imports: [
-        AuthModule,
-        StudentsModule,
-        SystemModule,
+        forwardRef(() => AuthModule),
+        forwardRef(() => SystemModule),
+        forwardRef(() => StudentsModule),
         TypeOrmModule.forFeature([
             Department,
             Staff,
@@ -53,6 +54,7 @@ import { StaffImportProcessor } from './processors/staff-import.processor';
             LeaveApproval,
             Payroll,
             TeacherRating,
+            Role,
         ]),
         BullModule.registerQueue({
             name: 'staff-import',

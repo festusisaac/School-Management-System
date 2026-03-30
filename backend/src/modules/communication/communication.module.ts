@@ -1,25 +1,31 @@
 import { forwardRef, Module } from '@nestjs/common';
-import { BullModule } from '@nestjs/bull';
-import { EmailService } from './email.service';
-import { SmsService } from './sms.service';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { SystemModule } from '../system/system.module';
-import { EmailProcessor } from './processors/email.processor';
+import { MessageTemplate } from './entities/message-template.entity';
+import { CommunicationLog } from './entities/communication-log.entity';
+import { MessageTemplatesService } from './services/message-templates.service';
+import { MessageTemplatesController } from './controllers/message-templates.controller';
+import { CommunicationController } from './controllers/communication.controller';
+import { BroadcastService } from './services/broadcast.service';
+import { Student } from '../students/entities/student.entity';
+import { Staff } from '../hr/entities/staff.entity';
+import { StudentsModule } from '../students/students.module';
+import { HrModule } from '../hr/hr.module';
+import { InternalCommunicationModule } from '../internal-communication/internal-communication.module';
 
 @Module({
   imports: [
+    TypeOrmModule.forFeature([MessageTemplate, CommunicationLog, Student, Staff]),
+    InternalCommunicationModule,
     forwardRef(() => SystemModule),
-    BullModule.registerQueue({
-      name: 'email',
-    }),
-    BullModule.registerQueue({
-      name: 'sms',
-    }),
-    BullModule.registerQueue({
-      name: 'notifications',
-    }),
+    forwardRef(() => StudentsModule),
+    forwardRef(() => HrModule),
   ],
-  controllers: [],
-  providers: [EmailService, SmsService, EmailProcessor],
-  exports: [EmailService, SmsService],
+  controllers: [MessageTemplatesController, CommunicationController],
+  providers: [
+    MessageTemplatesService,
+    BroadcastService,
+  ],
+  exports: [MessageTemplatesService, BroadcastService, InternalCommunicationModule],
 })
 export class CommunicationModule { }

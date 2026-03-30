@@ -5,7 +5,7 @@ import { Homework } from '../entities/homework.entity';
 import { HomeworkSubmission } from '../entities/submission.entity';
 import { CreateHomeworkDto } from '../dto/create-homework.dto';
 import { UpdateHomeworkDto } from '../dto/update-homework.dto';
-import { EmailService } from '../../communication/email.service';
+import { EmailService } from '../../internal-communication/email.service';
 import { Student } from '../../students/entities/student.entity';
 import { SystemSettingsService } from '../../system/services/system-settings.service';
 import moment from 'moment';

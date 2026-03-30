@@ -18,6 +18,7 @@ import * as Examination from './pages/examination';
 import * as Settings from './pages/settings';
 import * as OnlineClasses from './pages/online-classes';
 import * as Homework from './pages/homework';
+import * as Communication from './pages/communication';
 import { 
   BookList, 
   BookDetail, 
@@ -197,6 +198,12 @@ function AppRoutes() {
                 <Route path="reports/subject-broadsheet" element={<Examination.SubjectBroadsheetPage />} />
                 <Route path="reports/report-card" element={<Examination.ReportCardPage />} />
                 <Route path="reports/report-card/bulk" element={<Examination.BulkReportCardPage />} />
+              </Route>
+
+              {/* Communication Routes */}
+              <Route path="communication">
+                <Route path="templates" element={<Communication.CommunicationTemplates />} />
+                <Route path="broadcast" element={<Communication.SendBroadcast />} />
               </Route>
 
               {/* Settings Routes */}

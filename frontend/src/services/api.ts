@@ -982,7 +982,69 @@ class ApiService {
   async getTeacherTodayTimetable() {
     return this.get<any[]>('/academics/timetable/slots/teacher/today')
   }
+
+  // Communication Templates
+  async getMessageTemplates(params?: { type?: 'EMAIL' | 'SMS' }) {
+    return this.get<any[]>('/communication/templates', { params })
+  }
+
+  async getMessageTemplateById(id: string) {
+    return this.get<any>(`/communication/templates/${id}`)
+  }
+
+  async createMessageTemplate(data: any) {
+    return this.post<any>('/communication/templates', data)
+  }
+
+  async updateMessageTemplate(id: string, data: any) {
+    return this.put<any>(`/communication/templates/${id}`, data)
+  }
+
+  async deleteMessageTemplate(id: string) {
+    return this.delete<any>(`/communication/templates/${id}`)
+  }
+
+  // Broadcasting
+  async sendBroadcast(data: SendBroadcastDto) {
+    return this.post<{ queued: number }>('/communication/broadcast', data)
+  }
 }
 
 export const api = new ApiService()
 export default api
+
+export enum MessageTemplateType {
+  EMAIL = 'EMAIL',
+  SMS = 'SMS',
+}
+
+export interface MessageTemplate {
+  id: string;
+  name: string;
+  type: MessageTemplateType;
+  subject?: string;
+  body: string;
+  isActive: boolean;
+  tenantId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export enum BroadcastTarget {
+  ALL_STUDENTS = 'ALL_STUDENTS',
+  CLASS = 'CLASS',
+  SECTION = 'SECTION',
+  STAFF = 'STAFF',
+  INDIVIDUAL_STUDENTS = 'INDIVIDUAL_STUDENTS',
+  INDIVIDUAL_STAFF = 'INDIVIDUAL_STAFF',
+}
+
+export interface SendBroadcastDto {
+  channel: 'EMAIL' | 'SMS';
+  target: BroadcastTarget;
+  targetIds?: string[];
+  templateId?: string;
+  subject?: string;
+  body: string;
+  includeParents?: boolean;
+}

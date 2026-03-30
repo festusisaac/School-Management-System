@@ -24,8 +24,8 @@ import { DiscountProfile } from '../entities/discount-profile.entity';
 import { DiscountRule } from '../entities/discount-rule.entity';
 import { CreateDiscountProfileDto } from '../dtos/create-discount-profile.dto';
 import { FeeAssignment } from '../entities/fee-assignment.entity';
-import { EmailService } from '../../communication/email.service';
-import { SmsService } from '../../communication/sms.service';
+import { EmailService } from '../../internal-communication/email.service';
+import { SmsService } from '../../internal-communication/sms.service';
 
 @Injectable()
 export class FeesService {

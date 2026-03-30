@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bull';
@@ -11,18 +11,19 @@ import { MaintenanceGuard } from './guards/maintenance.guard';
 import { SystemSetupGuard } from './guards/system-setup.guard';
 
 // Modules
+import { InternalCommunicationModule } from '@modules/internal-communication/internal-communication.module';
 import { AuthModule } from '@modules/auth/auth.module';
+import { SystemModule } from '@modules/system/system.module';
+import { CommunicationModule } from '@modules/communication/communication.module';
 import { StudentsModule } from '@modules/students/students.module';
 import { AcademicsModule } from '@modules/academics/academics.module';
 import { FinanceModule } from '@modules/finance/finance.module';
 import { LibraryModule } from '@modules/library/library.module';
 import { DormitoryModule } from '@modules/dormitory/dormitory.module';
-import { CommunicationModule } from '@modules/communication/communication.module';
 import { ReportingModule } from '@modules/reporting/reporting.module';
 import { BackupModule } from '@modules/backup/backup.module';
 import { HrModule } from '@modules/hr/hr.module';
 import { ExaminationModule } from '@modules/examination/examination.module';
-import { SystemModule } from '@modules/system/system.module';
 import { OnlineClassesModule } from '@modules/online-classes/online-classes.module';
 import { HomeworkModule } from '@modules/homework/homework.module';
 
@@ -65,21 +66,24 @@ import { HomeworkModule } from '@modules/homework/homework.module';
       }),
     }),
 
+    // Core & Shared Infrastructure Modules
+    forwardRef(() => InternalCommunicationModule),
+    forwardRef(() => AuthModule),
+    forwardRef(() => SystemModule),
+
     // Feature Modules
-    AuthModule,
-    StudentsModule,
-    AcademicsModule,
-    FinanceModule,
-    LibraryModule,
-    DormitoryModule,
-    CommunicationModule,
-    ReportingModule,
-    BackupModule,
-    HrModule,
-    ExaminationModule,
-    SystemModule,
-    OnlineClassesModule,
-    HomeworkModule,
+    forwardRef(() => CommunicationModule),
+    forwardRef(() => StudentsModule),
+    forwardRef(() => AcademicsModule),
+    forwardRef(() => FinanceModule),
+    forwardRef(() => HrModule),
+    forwardRef(() => LibraryModule),
+    forwardRef(() => DormitoryModule),
+    forwardRef(() => ReportingModule),
+    forwardRef(() => BackupModule),
+    forwardRef(() => ExaminationModule),
+    forwardRef(() => OnlineClassesModule),
+    forwardRef(() => HomeworkModule),
   ],
   controllers: [AppController],
   providers: [

@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { User } from '../../auth/entities/user.entity';
 import { Role } from '../../auth/entities/role.entity';
 import { CreateUserDto, UpdateUserDto, UserResponseDto } from '../dtos/users.dto';
-import { EmailService } from '../../communication/email.service';
+import { EmailService } from '../../internal-communication/email.service';
 
 @Injectable()
 export class UsersService implements OnModuleInit {

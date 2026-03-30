@@ -10,7 +10,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { User } from './entities/user.entity';
 import { Role } from './entities/role.entity';
 import { Permission } from './entities/permission.entity';
-import { CommunicationModule } from '@modules/communication/communication.module';
+import { InternalCommunicationModule } from '../internal-communication/internal-communication.module';
 
 @Module({
   imports: [
@@ -26,7 +26,7 @@ import { CommunicationModule } from '@modules/communication/communication.module
       }),
     }),
     TypeOrmModule.forFeature([User, Role, Permission]),
-    forwardRef(() => CommunicationModule),
+    InternalCommunicationModule,
   ],
   providers: [AuthService, JwtStrategy],
   controllers: [AuthController],

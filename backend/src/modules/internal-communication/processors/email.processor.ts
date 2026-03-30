@@ -2,7 +2,7 @@ import { Process, Processor, OnQueueProgress, OnQueueCompleted, OnQueueFailed } 
 import { Job } from 'bull';
 import { Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
-import { EmailOptions } from '../email.service';
+import { EmailOptions } from '@modules/internal-communication/email.service';
 
 @Processor('email')
 export class EmailProcessor {

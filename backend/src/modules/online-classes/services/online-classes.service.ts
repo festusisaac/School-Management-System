@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { OnlineClass, OnlineClassStatus } from '../entities/online-class.entity';
 import { CreateOnlineClassDto } from '../dto/create-online-class.dto';
 import { UpdateOnlineClassDto } from '../dto/update-online-class.dto';
-import { EmailService } from '../../communication/email.service';
+import { EmailService } from '../../internal-communication/email.service';
 import { Student } from '../../students/entities/student.entity';
 import moment from 'moment';
 @Injectable()
