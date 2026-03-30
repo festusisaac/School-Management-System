@@ -122,7 +122,7 @@ const ClassTimetablePage = () => {
     const [editingCell, setEditingCell] = useState<{ day: number; periodId: string } | null>(null);
     const [selectedSubject, setSelectedSubject] = useState('');
     const { user } = useAuthStore();
-    const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.role?.toLowerCase() === 'superadmin';
+    const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.role?.toLowerCase() === 'superadmin' || user?.role?.toLowerCase() === 'super administrator';
 
     const printRef = useRef<HTMLDivElement>(null);
 

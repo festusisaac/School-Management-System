@@ -703,7 +703,11 @@ class ApiService {
   }
 
   async importBulkStaff(data: any[]) {
-    return this.post<any>('/hr/staff/bulk/import', data)
+    return this.post<{ jobId: string }>('/hr/staff/bulk/import', data)
+  }
+
+  async getStaffImportStatus(jobId: string) {
+    return this.get<any>(`/hr/staff/bulk/import/status/${jobId}`)
   }
 
   // Attendance API methods

@@ -36,6 +36,9 @@ import { AuthModule } from '../auth/auth.module';
 import { StudentsModule } from '../students/students.module';
 import { SystemModule } from '../system/system.module';
 
+import { BullModule } from '@nestjs/bull';
+import { StaffImportProcessor } from './processors/staff-import.processor';
+
 @Module({
     imports: [
         AuthModule,
@@ -51,6 +54,9 @@ import { SystemModule } from '../system/system.module';
             Payroll,
             TeacherRating,
         ]),
+        BullModule.registerQueue({
+            name: 'staff-import',
+        }),
         MulterModule.register({
             storage: diskStorage({
                 destination: './uploads/leaves',
@@ -76,6 +82,7 @@ import { SystemModule } from '../system/system.module';
         LeaveService,
         PayrollService,
         RatingService,
+        StaffImportProcessor,
     ],
     exports: [
         // Export services for use in other modules

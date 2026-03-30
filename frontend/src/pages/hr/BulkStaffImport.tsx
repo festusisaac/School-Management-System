@@ -36,6 +36,7 @@ const BulkStaffImport: React.FC<BulkStaffImportProps> = ({ onClose, onSuccess })
     const [mapping, setMapping] = useState<Record<string, string>>({});
     const [validationResults, setValidationResults] = useState<any[]>([]);
     const [importResults, setImportResults] = useState<{ success: number, failed: number, records: any[], errors: any[] } | null>(null);
+    const [importProgress, setImportProgress] = useState(0);
     const [loading, setLoading] = useState(false);
     const toast = useToast();
 
@@ -105,8 +106,9 @@ const BulkStaffImport: React.FC<BulkStaffImportProps> = ({ onClose, onSuccess })
     const handleImport = async () => {
         setLoading(true);
         setStep('importing');
+        setImportProgress(0);
+
         try {
-            // Only import valid records (or let backend decide, but here we can filter)
             const validRecords = validationResults.filter(r => r.validationStatus === 'Valid');
             if (validRecords.length === 0) {
                 toast.showWarning('No valid records to import.');
@@ -114,17 +116,40 @@ const BulkStaffImport: React.FC<BulkStaffImportProps> = ({ onClose, onSuccess })
                 return;
             }
 
-            const results = await staffService.importBulkStaff(validRecords);
-            setImportResults(results);
-            console.log('[BulkStaffImport] Results:', results);
-            setStep('complete');
-            if (results.success > 0) {
-                onSuccess();
-            }
+            const { jobId } = await staffService.importBulkStaff(validRecords);
+            
+            // Start Polling
+            const pollInterval = setInterval(async () => {
+                try {
+                    const status = await staffService.getImportStatus(jobId);
+                    
+                    if (status.progress !== undefined) {
+                        setImportProgress(status.progress);
+                    }
+
+                    if (status.state === 'completed') {
+                        clearInterval(pollInterval);
+                        setImportResults(status.result);
+                        setStep('complete');
+                        setLoading(false);
+                        if (status.result.success > 0) {
+                            onSuccess();
+                        }
+                    } else if (status.state === 'failed') {
+                        clearInterval(pollInterval);
+                        toast.showError(`Import failed: ${status.failedReason || 'Unknown error'}`);
+                        setStep('preview');
+                        setLoading(false);
+                    }
+                } catch (err) {
+                    console.error('Polling error:', err);
+                    // We don't clear interval on transient network errors
+                }
+            }, 2000);
+
         } catch (error) {
             toast.showError('Import failed. Please try again.');
             setStep('preview');
-        } finally {
             setLoading(false);
         }
     };
@@ -353,14 +378,26 @@ const BulkStaffImport: React.FC<BulkStaffImportProps> = ({ onClose, onSuccess })
 
                     {step === 'importing' && (
                         <div className="flex flex-col items-center justify-center py-20 animate-in fade-in zoom-in duration-300">
-                            <div className="relative">
-                                <Loader2 className="w-24 h-24 text-primary-600 animate-spin" strokeWidth={1} />
+                            <div className="relative mb-8">
+                                <Loader2 className="w-32 h-32 text-primary-600 animate-spin" strokeWidth={1} />
                                 <div className="absolute inset-0 flex items-center justify-center">
-                                    <Upload className="text-primary-600" size={32} />
+                                    <div className="text-xl font-black text-primary-600 font-mono">
+                                        {importProgress}%
+                                    </div>
                                 </div>
                             </div>
-                            <h4 className="text-2xl font-bold text-gray-900 dark:text-white mt-8">Registering Staff...</h4>
-                            <p className="text-gray-500 dark:text-gray-400 mt-2">Connecting to secure server and creating accounts</p>
+                            <h4 className="text-2xl font-bold text-gray-900 dark:text-white mt-4">Processing Staff Directory</h4>
+                            <p className="text-gray-500 dark:text-gray-400 mt-2 mb-8">Creating secure accounts and hashing credentials...</p>
+                            
+                            <div className="w-full max-w-md bg-gray-100 dark:bg-gray-700 h-2 rounded-full overflow-hidden">
+                                <div 
+                                    className="h-full bg-primary-600 transition-all duration-500 ease-out shadow-lg shadow-primary-200"
+                                    style={{ width: `${importProgress}%` }}
+                                />
+                            </div>
+                            <div className="mt-4 text-xs font-bold text-primary-600 uppercase tracking-widest animate-pulse">
+                                Please do not close this window
+                            </div>
                         </div>
                     )}
 

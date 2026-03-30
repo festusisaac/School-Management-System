@@ -43,5 +43,9 @@ export const staffService = {
 
     importBulkStaff: async (data: any[]) => {
         return api.importBulkStaff(data);
+    },
+
+    getImportStatus: async (jobId: string) => {
+        return api.getStaffImportStatus(jobId);
     }
 };
