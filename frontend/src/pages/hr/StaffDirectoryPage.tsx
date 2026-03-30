@@ -7,6 +7,7 @@ import { getFileUrl } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { useSystem } from '../../context/SystemContext';
 import { formatCurrency, CURRENCY_SYMBOL } from '../../utils/currency';
+import BulkStaffImport from './BulkStaffImport';
 
 interface Department {
     id: string;
@@ -84,6 +85,7 @@ const StaffDirectoryPage = () => {
     const [selectedDepartment, setSelectedDepartment] = useState('');
     const [selectedStatus, setSelectedStatus] = useState('');
     const [showModal, setShowModal] = useState(false);
+    const [showImportModal, setShowImportModal] = useState(false);
     const [showViewModal, setShowViewModal] = useState(false);
     const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
     const [viewingStaff, setViewingStaff] = useState<Staff | null>(null);
@@ -97,6 +99,7 @@ const StaffDirectoryPage = () => {
     const [selectedFiles, setSelectedFiles] = useState<Record<string, string | string[]>>({});
     const [enableLogin, setEnableLogin] = useState(false);
     const [isTeachingStaff, setIsTeachingStaff] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const toast = useToast();
     const { settings } = useSystem();
 
@@ -104,14 +107,14 @@ const StaffDirectoryPage = () => {
     const [password, setPassword] = useState('');
 
     const generatePassword = () => {
-        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        const special = "@#$%&*";
-        let newPass = "Staff@";
-        for (let i = 0; i < 6; i++) {
-            newPass += chars.charAt(Math.floor(Math.random() * chars.length));
+        if (!employeeIdField) {
+            toast.showWarning('Please enter an Employee ID first');
+            return;
         }
-        newPass += special.charAt(Math.floor(Math.random() * special.length));
-        setPassword(newPass);
+        // Extract only the numeric suffix (e.g., PHJC/STF/001 -> 001)
+        const idNumber = employeeIdField.match(/\d+$/)?.[0] || employeeIdField;
+        setPassword(`Staff@${idNumber}`);
+        setShowPassword(true);
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -148,14 +151,27 @@ const StaffDirectoryPage = () => {
         }
     }, [showModal, editingStaff, settings?.staffIdPrefix]);
 
+    // Sync modal state with editingStaff or reset
     useEffect(() => {
         if (editingStaff) {
             setEmployeeIdField(editingStaff.employeeId);
         } else if (!showModal) {
             setEmployeeIdField('');
             setIsTeachingStaff(false);
+            setPassword('');
         }
-    }, [editingStaff, showModal, enableLogin]);
+    }, [editingStaff, showModal]);
+
+    // Auto-generate password for NEW staff as they type the ID
+    useEffect(() => {
+        if (!editingStaff && showModal && employeeIdField) {
+            const idNumber = employeeIdField.match(/\d+$/)?.[0] || employeeIdField;
+            if (idNumber) {
+                setPassword(`Staff@${idNumber}`);
+                setEnableLogin(true); // Auto-enable login when ID is typed for new staff
+            }
+        }
+    }, [employeeIdField, editingStaff, showModal]);
 
     const fetchData = async () => {
         try {
@@ -204,7 +220,7 @@ const StaffDirectoryPage = () => {
     const handleEdit = (staffMember: Staff) => {
         setEditingStaff(staffMember);
         setSelectedFiles({});
-        setEnableLogin(false); // Reset enableLogin when editing existing staff
+        setEnableLogin(true); // Default to ON so you can see the password management section immediately
         setIsTeachingStaff(staffMember.isTeachingStaff || false);
         setShowModal(true);
     };
@@ -256,9 +272,12 @@ const StaffDirectoryPage = () => {
                     <p className="text-gray-600 dark:text-gray-400 mt-1">Manage all staff members and their information</p>
                 </div>
                 <div className="flex gap-3">
-                    <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition-colors">
+                    <button 
+                        onClick={() => setShowImportModal(true)}
+                        className="flex items-center gap-2 px-4 py-2 border border-blue-300 dark:border-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-700 dark:text-blue-300 transition-all font-semibold shadow-sm hover:shadow-md active:scale-95"
+                    >
                         <Upload size={20} />
-                        Import
+                        Bulk Import
                     </button>
                     <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition-colors">
                         <Download size={20} />
@@ -550,7 +569,7 @@ const StaffDirectoryPage = () => {
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Department</label>
-                                                        <select name="departmentId" defaultValue={editingStaff?.departmentId} required className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                                        <select name="departmentId" defaultValue={editingStaff?.departmentId} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                                                             <option value="">Select</option>
                                                             {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                                                         </select>
@@ -910,61 +929,73 @@ const StaffDirectoryPage = () => {
                                                         </div>
                                                     </div>
 
-                                                    {/* Login Credentials */}
-                                                    {!editingStaff && (
-                                                        <div className="bg-primary-50/50 dark:bg-primary-900/10 p-6 rounded-xl border border-primary-100 dark:border-primary-900/30">
-                                                            <h4 className="font-bold text-gray-800 dark:text-gray-200 border-b border-primary-100 dark:border-primary-900/30 pb-2 mb-4 flex items-center gap-2">
-                                                                <Lock size={18} className="text-primary-600 dark:text-primary-400" />
-                                                                System Login Access
-                                                            </h4>
-                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                                <div className="flex items-center">
-                                                                    <label className="relative inline-flex items-center cursor-pointer group">
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            name="enableLogin"
-                                                                            className="sr-only peer"
-                                                                            checked={enableLogin}
-                                                                            onChange={(e) => setEnableLogin(e.target.checked)}
-                                                                        />
-                                                                        <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
-                                                                        <span className="ml-4 text-sm font-bold text-gray-700 dark:text-gray-300 group-hover:text-primary-600 transition-colors">Enable System Login</span>
-                                                                    </label>
-                                                                </div>
-
-                                                                 {enableLogin && (
-                                                                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                                                                        <div className="flex justify-between items-center">
-                                                                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Initial Password *</label>
-                                                                            <button 
-                                                                                type="button"
-                                                                                onClick={generatePassword}
-                                                                                className="text-[10px] font-bold text-primary-600 dark:text-primary-400 hover:underline"
-                                                                            >
-                                                                                Generate Secure Password
-                                                                            </button>
-                                                                        </div>
-                                                                        <div className="relative">
-                                                                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-500" size={16} />
-                                                                            <input
-                                                                                type="text" // Using text so user can see it when generating, but browser still respects new-password
-                                                                                name="password"
-                                                                                required={enableLogin}
-                                                                                autoComplete="new-password"
-                                                                                value={password}
-                                                                                onChange={(e) => setPassword(e.target.value)}
-                                                                                placeholder="Enter a secure password"
-                                                                                className="w-full pl-10 pr-4 py-2.5 border border-primary-200 dark:border-primary-900/50 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm"
-                                                                            />
-                                                                        </div>
-                                                                        <p className="text-[10px] text-gray-500 dark:text-gray-400 italic flex items-center gap-1">
-                                                                            <Shield size={10} /> Min. 6 characters. Copy this for the staff member.
-                                                                        </p>
-                                                                    </div>
-                                                                )}
+                                                    {/* Login Credentials & Password Management */}
+                                                    <div className="bg-primary-50/50 dark:bg-primary-900/10 p-6 rounded-xl border border-primary-100 dark:border-primary-900/30">
+                                                        <h4 className="font-bold text-gray-800 dark:text-gray-200 border-b border-primary-100 dark:border-primary-900/30 pb-2 mb-4 flex items-center gap-2">
+                                                            <Lock size={18} className="text-primary-600 dark:text-primary-400" />
+                                                            System Login & Password Management
+                                                        </h4>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                            <div className="flex items-center">
+                                                                <label className="relative inline-flex items-center cursor-pointer group">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        name="enableLogin"
+                                                                        className="sr-only peer"
+                                                                        checked={enableLogin}
+                                                                        onChange={(e) => setEnableLogin(e.target.checked)}
+                                                                    />
+                                                                    <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                                                                    <span className="ml-4 text-sm font-bold text-gray-700 dark:text-gray-300 group-hover:text-primary-600 transition-colors">
+                                                                        {editingStaff ? 'Manage System Access' : 'Enable System Login'}
+                                                                    </span>
+                                                                </label>
                                                             </div>
+
+                                                            {enableLogin && (
+                                                                <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                                                                    <div className="flex justify-between items-center">
+                                                                        <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                                                            {editingStaff ? 'Update Password (Optional)' : 'Initial Password *'}
+                                                                        </label>
+                                                                        <button 
+                                                                            type="button"
+                                                                            onClick={generatePassword}
+                                                                            className="text-[10px] font-bold text-primary-600 dark:text-primary-400 hover:text-primary-700 flex items-center gap-1 bg-white dark:bg-gray-800 px-2 py-1 rounded border border-primary-100 dark:border-primary-900/50 shadow-sm"
+                                                                        >
+                                                                            <Shield size={10} /> Reset to Default
+                                                                        </button>
+                                                                    </div>
+                                                                    <div className="relative">
+                                                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-500">
+                                                                            <Lock size={16} />
+                                                                        </div>
+                                                                        <input
+                                                                            type={showPassword ? "text" : "password"}
+                                                                            name="password"
+                                                                            autoComplete="new-password"
+                                                                            value={password}
+                                                                            onChange={(e) => setPassword(e.target.value)}
+                                                                            placeholder={editingStaff ? "Leave blank to keep current" : "Enter a secure password"}
+                                                                            className="w-full pl-10 pr-12 py-2.5 border border-primary-200 dark:border-primary-900/50 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm transition-all"
+                                                                        />
+                                                                        <button 
+                                                                            type="button"
+                                                                            onClick={() => setShowPassword(!showPassword)}
+                                                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary-600 transition-colors"
+                                                                        >
+                                                                            {showPassword ? <XCircle size={18} /> : <Eye size={18} />}
+                                                                        </button>
+                                                                    </div>
+                                                                    <p className="text-[10px] text-gray-500 dark:text-gray-400 italic font-medium">
+                                                                        {editingStaff 
+                                                                            ? "Changing the password will automatically notify the staff member via email."
+                                                                            : "The credentials will be securely emailed to the staff member upon save."}
+                                                                    </p>
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                    )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -1346,6 +1377,12 @@ const StaffDirectoryPage = () => {
                     </div>
                 )
             }
+            {showImportModal && (
+                <BulkStaffImport 
+                    onClose={() => setShowImportModal(false)} 
+                    onSuccess={() => fetchData()} 
+                />
+            )}
         </div >
     );
 };

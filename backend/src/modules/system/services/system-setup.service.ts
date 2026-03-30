@@ -134,7 +134,7 @@ export class SystemSetupService {
           role = queryRunner.manager.create(Role, {
             name: roleDef.name,
             description: roleDef.description,
-            isSystem: true,
+            isSystem: false,
             permissions: permissions
           });
           await queryRunner.manager.save(role);

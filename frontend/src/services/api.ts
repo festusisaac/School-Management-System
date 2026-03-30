@@ -698,6 +698,14 @@ class ApiService {
     return this.get<any>('/hr/staff/profile/me')
   }
 
+  async validateBulkStaff(data: any[]) {
+    return this.post<any[]>('/hr/staff/bulk/validate', data)
+  }
+
+  async importBulkStaff(data: any[]) {
+    return this.post<any>('/hr/staff/bulk/import', data)
+  }
+
   // Attendance API methods
   async markAttendance(data: any) {
     return this.post<any>('/hr/attendance/mark', data)

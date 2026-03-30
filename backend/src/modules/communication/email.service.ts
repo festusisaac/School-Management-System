@@ -128,6 +128,52 @@ export class EmailService {
     }
   }
 
+  async sendPasswordChangedNotification(email: string, firstName: string, newPassword: string): Promise<boolean> {
+    try {
+      const schoolName = await this.getSchoolName();
+      const loginUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+      const html = `
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 12px; padding: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+          <div style="text-align: center; margin-bottom: 20px;">
+            <h2 style="color: #2c3e50; margin-bottom: 10px;">Security Update</h2>
+            <p style="color: #7f8c8d;">Your account password has been updated</p>
+          </div>
+          
+          <p>Hi ${firstName},</p>
+          <p>This is to inform you that your password for the <strong>${schoolName}</strong> portal has been changed by the administrator.</p>
+          
+          <div style="background-color: #f8f9fa; padding: 25px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #3498db;">
+            <p style="margin: 0; color: #7f8c8d; font-size: 13px; text-transform: uppercase;">New Login Credentials</p>
+            <p style="margin: 10px 0 0;"><strong>Username:</strong> ${email}</p>
+            <p style="margin: 5px 0 15px;"><strong>New Password:</strong> <span style="font-family: monospace; font-size: 16px; background: #eee; padding: 2px 6px; border-radius: 3px;">${newPassword}</span></p>
+            <p>
+              <a href="${loginUrl}/login" style="display: inline-block; background-color: #3498db; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; transition: all 0.3s ease;">
+                Log In to Portal
+              </a>
+            </p>
+          </div>
+          
+          <p style="color: #e74c3c; font-size: 14px;"><strong>Important:</strong> For your security, we recommend changing this password to one only you know after logging in.</p>
+          
+          <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;" />
+          <p style="color: #95a5a6; font-size: 12px; text-align: center;">
+            This is an automated notification from ${schoolName}.<br />
+            If you did not expect this change, please contact the IT department immediately.
+          </p>
+        </div>
+      `;
+
+      return await this.sendEmail({
+        to: email,
+        subject: `Security Notification - Password Changed - ${schoolName}`,
+        html,
+      });
+    } catch (error) {
+      this.logger.error(`Failed to send password change notification to ${email}:`, error);
+      return false;
+    }
+  }
+
   async sendPasswordResetEmail(email: string, firstName: string, resetLink: string): Promise<boolean> {
     try {
       const schoolName = await this.getSchoolName();

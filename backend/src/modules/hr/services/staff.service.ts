@@ -2,7 +2,11 @@ import { Injectable, NotFoundException, ConflictException, BadRequestException }
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, Not } from 'typeorm';
 import { Staff, StaffStatus } from '../entities/staff.entity';
+import { Department } from '../entities/department.entity';
+import { Role } from '../../auth/entities/role.entity';
 import { UsersService } from '../../system/services/users.service';
+import { ActivityLogService } from '../../system/services/activity-log.service';
+import { In } from 'typeorm';
 
 export interface StaffFilters {
     search?: string;
@@ -16,7 +20,12 @@ export class StaffService {
     constructor(
         @InjectRepository(Staff)
         private readonly staffRepository: Repository<Staff>,
+        @InjectRepository(Department)
+        private readonly departmentRepository: Repository<Department>,
+        @InjectRepository(Role)
+        private readonly roleRepository: Repository<Role>,
         private readonly usersService: UsersService,
+        private readonly activityLogService: ActivityLogService,
     ) { }
 
     async findAll(filters: StaffFilters = {}, tenantId: string): Promise<Staff[]> {
@@ -297,6 +306,138 @@ export class StaffService {
                 await this.usersService.update(user.id, { isActive: false });
             }
         }
+    }
+
+    // --- Bulk Import Methods ---
+
+    async validateBulk(data: any[], tenantId: string) {
+        if (!data || data.length === 0) return [];
+
+        const employees = await this.staffRepository.find({
+            where: { tenantId },
+            select: ['employeeId', 'email']
+        });
+
+        const departments = await this.departmentRepository.find({ where: { tenantId } });
+        const roles = await this.roleRepository.find();
+
+        const existingEmpIds = new Set(employees.map(e => e.employeeId));
+        const existingEmails = new Set(employees.map(e => e.email.toLowerCase()));
+
+        return data.map(item => {
+            const errors: string[] = [];
+            let validationStatus = 'Valid';
+
+            // 1. Check Mandatory Fields
+            if (!item.employeeId) errors.push('Employee ID is required');
+            if (!item.firstName) errors.push('First Name is required');
+            if (!item.lastName) errors.push('Last Name is required');
+            if (!item.email) errors.push('Email is required');
+            if (!item.phone) errors.push('Phone Number is required');
+            if (!item.gender) errors.push('Gender is required');
+            if (!item.roleName) errors.push('Role is required');
+            if (item.basicSalary === undefined || item.basicSalary === null || item.basicSalary === '') {
+                errors.push('Basic Salary is required');
+            }
+
+            // 2. Check Duplicates in DB
+            if (item.employeeId && existingEmpIds.has(item.employeeId)) {
+                errors.push(`Employee ID "${item.employeeId}" already exists`);
+            }
+            if (item.email && existingEmails.has(item.email.toLowerCase())) {
+                errors.push(`Email "${item.email}" already exists`);
+            }
+
+            // 3. Check Duplicates in File
+            const sameIdInFile = data.filter(d => d.employeeId === item.employeeId).length > 1;
+            if (item.employeeId && sameIdInFile) {
+                errors.push(`Duplicate Employee ID "${item.employeeId}" found in file`);
+            }
+
+            // 4. Resolve Department
+            const deptName = item.departmentName || '';
+            const dept = departments.find(d => d.name.toLowerCase() === deptName.toLowerCase());
+            if (deptName && !dept) {
+                errors.push(`Department "${deptName}" not found`);
+            } else if (dept) {
+                item.departmentId = dept.id;
+            }
+
+            // 5. Resolve Role
+            const rName = item.roleName || 'staff';
+            const role = roles.find(r => r.name.toLowerCase() === rName.toLowerCase());
+            if (rName && !role && rName !== 'staff') {
+                errors.push(`Role "${rName}" not found`);
+            } else if (role) {
+                item.roleId = role.id;
+            }
+
+            if (errors.length > 0) validationStatus = 'Invalid';
+
+            return {
+                ...item,
+                validationStatus,
+                errors
+            };
+        });
+    }
+
+    async createBulk(data: any[], tenantId: string, userEmail: string = 'system') {
+        const results = {
+            success: 0,
+            failed: 0,
+            records: [] as Staff[],
+            errors: [] as any[]
+        };
+
+        for (const item of data) {
+            try {
+                // Ensure password logic: Staff@numberSuffix (e.g. PHJC/STF/001 -> Staff@001)
+                const employeeIdStr = String(item.employeeId || '');
+                const idNumber = employeeIdStr.match(/\d+$/)?.[0] || employeeIdStr;
+                const password = `Staff@${idNumber}`;
+                
+                // Stripping UI fields and ensuring correct persistence
+                const { validationStatus, errors, ...staffDataRaw } = item;
+                
+                // Clean UUID fields (convert "" to null)
+                const departmentId = item.departmentId === '' ? null : item.departmentId;
+                const roleId = item.roleId === '' ? null : item.roleId;
+
+                const staffDto = {
+                    ...staffDataRaw,
+                    departmentId,
+                    roleId,
+                    status: StaffStatus.ACTIVE,
+                    enableLogin: true, 
+                    password,
+                    dateOfJoining: item.dateOfJoining || new Date().toISOString(),
+                    employmentType: item.employmentType || 'Full-Time',
+                    gender: item.gender || 'Male',
+                    basicSalary: item.basicSalary || 0
+                };
+
+                const saved = await this.create(staffDto as any, tenantId) as any;
+                results.success++;
+                // Include password in result for display in the summary
+                results.records.push({ ...saved, initialPassword: password });
+            } catch (error: any) {
+                results.failed++;
+                results.errors.push({
+                    employeeId: item.employeeId,
+                    error: error.message
+                });
+            }
+        }
+
+        // Log the activity
+        await this.activityLogService.logAction(
+            userEmail,
+            'BULK_STAFF_IMPORT',
+            `Imported ${results.success} staff members successfully. ${results.failed} failed.`,
+        ).catch((err: any) => console.error('[StaffService] Activity log failed:', err.message));
+
+        return results;
     }
 
     async getStatistics(tenantId: string) {

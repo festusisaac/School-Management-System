@@ -21,6 +21,7 @@ import { User } from '../auth/entities/user.entity';
 import { AuthModule } from '../auth/auth.module';
 import { SystemSetupController } from './controllers/system-setup.controller';
 import { SystemSetupService } from './services/system-setup.service';
+import { CommunicationModule } from '../communication/communication.module';
 
 @Module({
     imports: [
@@ -34,6 +35,7 @@ import { SystemSetupService } from './services/system-setup.service';
             User,
         ]),
         forwardRef(() => AuthModule),
+        forwardRef(() => CommunicationModule),
     ],
     controllers: [
         SystemSettingsController,

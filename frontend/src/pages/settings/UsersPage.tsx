@@ -35,6 +35,7 @@ const UsersPage = () => {
     const [selectedRole, setSelectedRole] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
+    const [showPassword, setShowPassword] = useState(false);
     const toast = useToast();
 
     useEffect(() => {
@@ -269,7 +270,7 @@ const UsersPage = () => {
                                 {editingUser ? <Edit2 className="text-primary-600" /> : <UserPlus className="text-primary-600" />}
                                 {editingUser ? 'Edit System User' : 'Create New User'}
                             </h3>
-                            <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                            <button onClick={() => { setShowModal(false); setShowPassword(false); }} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                                 <XCircle size={24} />
                             </button>
                         </div>
@@ -315,15 +316,31 @@ const UsersPage = () => {
                                     ))}
                                 </select>
                             </div>
-                            {!editingUser && (
-                                <div className="space-y-1">
-                                    <label className="text-xs font-bold text-gray-500 uppercase">Initial Password</label>
-                                    <div className="relative">
-                                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                                        <input type="password" name="password" required className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 bg-white" placeholder="Min. 6 characters" />
-                                    </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-gray-500 uppercase">
+                                    {editingUser ? 'New Password (Optional)' : 'Initial Password'}
+                                </label>
+                                <div className="relative">
+                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                    <input 
+                                        type={showPassword ? "text" : "password"} 
+                                        name="password" 
+                                        required={!editingUser} 
+                                        className="w-full pl-10 pr-12 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 bg-white" 
+                                        placeholder={editingUser ? "Leave blank to keep current" : "Min. 6 characters"} 
+                                    />
+                                    <button 
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                    >
+                                        {showPassword ? <XCircle size={18} /> : <Eye size={18} />}
+                                    </button>
                                 </div>
-                            )}
+                                {editingUser && (
+                                    <p className="text-[10px] text-gray-500 italic">Changing the password will notify the user via email.</p>
+                                )}
+                            </div>
                             
                             <div className="pt-4 flex gap-3">
                                 <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg font-semibold dark:text-white">Cancel</button>

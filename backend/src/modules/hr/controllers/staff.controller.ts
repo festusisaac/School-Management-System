@@ -136,4 +136,16 @@ export class StaffController {
     async remove(@Param('id') id: string, @Request() req: any) {
         await this.staffService.remove(id, req.user.tenantId);
     }
+
+    // --- Bulk Import Endpoints ---
+
+    @Post('bulk/validate')
+    async validateBulk(@Body() data: any[], @Request() req: any) {
+        return this.staffService.validateBulk(data, req.user.tenantId);
+    }
+
+    @Post('bulk/import')
+    async importBulk(@Body() data: any[], @Request() req: any) {
+        return this.staffService.createBulk(data, req.user.tenantId, req.user.email);
+    }
 }

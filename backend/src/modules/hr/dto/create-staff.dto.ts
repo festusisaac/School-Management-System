@@ -85,7 +85,8 @@ export class CreateStaffDto {
     dateOfJoining!: Date;
 
     @IsString()
-    departmentId!: string;
+    @IsOptional()
+    departmentId?: string;
 
     @IsEnum(EmploymentType)
     employmentType!: EmploymentType;
