@@ -29,9 +29,9 @@ export class PermissionsGuard implements CanActivate {
       throw new ForbiddenException('User session not found');
     }
 
-    // Role-based bypass for Super Administrators and Administrators
+    // Role-based bypass for Super Administrators
     const userRole = (user.role || '').toLowerCase();
-    if (userRole === 'super administrator' || userRole === 'admin') {
+    if (userRole === 'super administrator') {
       return true;
     }
 

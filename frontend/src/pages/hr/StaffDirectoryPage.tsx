@@ -8,6 +8,7 @@ import { useToast } from '../../context/ToastContext';
 import { useSystem } from '../../context/SystemContext';
 import { formatCurrency, CURRENCY_SYMBOL } from '../../utils/currency';
 import BulkStaffImport from './BulkStaffImport';
+import { exportStaffDirectory } from '../../utils/excelExport';
 
 interface Department {
     id: string;
@@ -279,7 +280,10 @@ const StaffDirectoryPage = () => {
                         <Upload size={20} />
                         Bulk Import
                     </button>
-                    <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition-colors">
+                    <button 
+                        onClick={() => exportStaffDirectory(filteredStaff)}
+                        className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition-colors"
+                    >
                         <Download size={20} />
                         Export
                     </button>
@@ -548,7 +552,7 @@ const StaffDirectoryPage = () => {
                                                             }}
                                                         >
                                                             <option value="">Select Role</option>
-                                                            {roles.filter(r => r.name !== 'Super Administrator').map(role => (
+                                                            {roles.filter(r => !['Super Administrator', 'Parent', 'Student'].includes(r.name)).map(role => (
                                                                 <option key={role.id} value={role.id}>{role.name}</option>
                                                             ))}
                                                         </select>
