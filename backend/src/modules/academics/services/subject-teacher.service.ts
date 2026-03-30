@@ -23,48 +23,40 @@ export class SubjectTeacherService {
         const savedAssignments = [];
 
         for (const assignment of assignments) {
-            // Check if assignment exists for this class/section and subject
-            let existing = await this.subjectTeacherRepository.findOne({
-                where: {
-                    classId,
-                    sectionId: sectionId || IsNull(),
-                    subjectId: assignment.subjectId,
-                    tenantId,
-                    sessionId: sessionId || undefined as any
-                },
-            });
+            const where = {
+                classId,
+                sectionId: sectionId || IsNull(),
+                subjectId: assignment.subjectId,
+                tenantId,
+                sessionId: sessionId || undefined as any
+            };
+
+            if (!assignment.teacherId) {
+                // UNASSIGN: Delete the assignment record
+                await this.subjectTeacherRepository.delete(where);
+                
+                // Sync with Timetable: Remove teacher from classes for this subject
+                await this.timetableRepository.update(where, { teacherId: null });
+                continue;
+            }
+
+            // ASSIGN or UPDATE:
+            let existing = await this.subjectTeacherRepository.findOne({ where });
 
             if (existing) {
-                // Update teacher
                 existing.teacherId = assignment.teacherId;
             } else {
-                // Create new
                 existing = this.subjectTeacherRepository.create({
-                    classId,
+                    ...where,
                     sectionId: sectionId || null,
-                    subjectId: assignment.subjectId,
                     teacherId: assignment.teacherId,
-                    tenantId,
-                    sessionId: sessionId || undefined
                 });
             }
 
             savedAssignments.push(await this.subjectTeacherRepository.save(existing));
 
-            // Sync with Timetable
-            // Update all existing timetable slots for this class/section and subject to match the assigned teacher
-            await this.timetableRepository.update(
-                {
-                    classId,
-                    sectionId: sectionId || IsNull(),
-                    subjectId: assignment.subjectId,
-                    tenantId,
-                    sessionId: sessionId || undefined as any
-                },
-                {
-                    teacherId: assignment.teacherId
-                }
-            );
+            // Sync with Timetable: Update teacher for this subject
+            await this.timetableRepository.update(where, { teacherId: assignment.teacherId });
         }
 
         return savedAssignments;
@@ -81,16 +73,6 @@ export class SubjectTeacherService {
         });
     }
 
-    async getTeachersForSection(sectionId: string, tenantId: string) {
-        const sessionId = await this.systemSettingsService.getActiveSessionId();
-        const where: any = { sectionId, tenantId };
-        if (sessionId) where.sessionId = sessionId;
-
-        return this.subjectTeacherRepository.find({
-            where,
-            relations: ['subject', 'teacher'],
-        });
-    }
 
     async replicateForNewSession(oldSessionId: string, newSessionId: string, tenantId: string): Promise<void> {
         const oldAssignments = await this.subjectTeacherRepository.find({

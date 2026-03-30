@@ -17,10 +17,11 @@ export class SubjectTeacherController {
     }
 
     @Get()
-    async getTeachersForSection(
-        @Query('sectionId') sectionId: string,
+    async getAssignments(
         @Request() req: any,
+        @Query('classId') classId: string,
+        @Query('sectionId') sectionId?: string,
     ) {
-        return this.subjectTeacherService.getTeachersForSection(sectionId, req.user.tenantId);
+        return this.subjectTeacherService.getTeachersForClassOrSection(req.user.tenantId, classId, sectionId);
     }
 }

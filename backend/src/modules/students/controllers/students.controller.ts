@@ -25,14 +25,27 @@ export class StudentsController {
     ) { }
 
     private async getTeacherManagedClassIds(user: any): Promise<string[] | null> {
-        if (user.role !== 'teacher') return null;
+        const role = (user.role || '').toLowerCase();
+        
+        // 1. Administrators see everything (Full Access)
+        if (role === 'super administrator' || role === 'admin') {
+            return null;
+        }
+
+        // 2. Everyone else (Teachers, Staff, etc.) is scoped by their staff assignments
+        console.log(`[RBAC] Scoping access for user: ${user.email} (Role: ${role})`);
 
         const staffResult = await this.entityManager.query(
-            'SELECT id FROM "staff" WHERE email = $1 AND "tenantId" = $2 LIMIT 1',
+            'SELECT id FROM "staff" WHERE LOWER(email) = LOWER($1) AND "tenantId" = $2 LIMIT 1',
             [user.email, user.tenantId]
         );
 
-        if (!staffResult || staffResult.length === 0) return [];
+        if (!staffResult || staffResult.length === 0) {
+            // Not an admin and no staff record? Return empty to deny access by default
+            console.warn(`[RBAC] Warning: No staff record found for non-admin user ${user.email}`);
+            return [];
+        }
+        
         const staffId = staffResult[0].id;
 
         const classes = await this.entityManager.query(
@@ -42,17 +55,16 @@ export class StudentsController {
             [staffId, user.tenantId]
         );
 
-        return classes.map((c: any) => c.id).filter(Boolean);
+        const ids = classes.map((c: any) => c.id).filter(Boolean);
+        console.log(`[RBAC] Scoping teacher ${user.email} to ${ids.length} classes.`);
+        return ids;
     }
 
     private async validateStudentAccess(studentId: string, tenantId: string, user: any) {
-        if (user.role !== 'teacher') return true;
-
         const classIds = await this.getTeacherManagedClassIds(user);
-        if (!classIds) return true;
+        if (!classIds) return true; // Full access for admins
 
         const student = await this.studentsService.findOne(studentId, tenantId);
-        // Ensure student has a classId before checking it against assigned classes
         if (!student || !student.classId || !classIds.includes(student.classId)) {
             throw new ForbiddenException('You only have permission to access students in your assigned classes.');
         }

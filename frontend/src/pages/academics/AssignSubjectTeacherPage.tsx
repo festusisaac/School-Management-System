@@ -63,13 +63,12 @@ const AssignSubjectTeacherPage = () => {
     }, [selectedClass, selectedSection]);
 
     useEffect(() => {
-        const classArms = sections.filter(s => s.classId === selectedClass);
-        if (selectedSection || (selectedClass && classArms.length === 0)) {
+        if (selectedClass) {
             fetchExistingAssignments();
         } else {
             setAssignments({});
         }
-    }, [selectedClass, selectedSection, sections]);
+    }, [selectedClass, selectedSection]);
 
     const fetchInitialData = async () => {
         try {
@@ -156,10 +155,9 @@ const AssignSubjectTeacherPage = () => {
                 classId: selectedClass,
                 sectionId: selectedSection || undefined,
                 assignments: Object.entries(assignments)
-                    .filter(([_, teacherId]) => teacherId) // Only send assigned ones
                     .map(([subjectId, teacherId]) => ({
                         subjectId,
-                        teacherId
+                        teacherId: teacherId || null // Ensure null is sent for unassignment
                     }))
             };
 

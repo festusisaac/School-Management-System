@@ -5,8 +5,9 @@ export class SubjectTeacherAssignment {
     @IsUUID()
     subjectId!: string;
 
+    @IsOptional()
     @IsUUID()
-    teacherId!: string;
+    teacherId?: string | null;
 }
 
 export class AssignSubjectTeachersDto {
