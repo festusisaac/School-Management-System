@@ -8,21 +8,11 @@ import {
   ChevronRight, 
   ChevronLeft,
   Loader2,
-  Building2,
-  Mail,
-  Phone,
-  MapPin,
-  Lock,
-  User,
-  ShieldCheck,
   Upload,
   X,
   Globe,
-  Settings,
   Hash,
-  MessageSquare,
-  Globe2,
-  Type
+  AlertCircle
 } from 'lucide-react';
 import { systemService } from '../services/systemService';
 import { toast } from 'react-hot-toast';
@@ -166,35 +156,32 @@ export default function SetupWizard() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 py-12">
+    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4 py-12">
       <div className="max-w-4xl w-full mb-8 flex flex-col items-center">
-        <div className="w-16 h-16 bg-primary-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-primary-500/30">
-          <ShieldCheck className="w-8 h-8 text-white" />
-        </div>
-        <h1 className="text-3xl font-black text-gray-900 tracking-tight font-heading text-center">
-          School System Initialization
+        <h1 className="text-3xl font-bold text-gray-900 tracking-tight text-center">
+          System Initialization
         </h1>
-        <p className="text-gray-500 mt-2 text-center text-sm font-medium max-w-md">
-          Finalizing the platform configuration for your school. 
+        <p className="text-gray-500 mt-2 text-center text-sm max-w-md">
+          Complete these steps to configure your school management platform.
         </p>
       </div>
 
-      <div className="max-w-4xl w-full bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+      <div className="max-w-4xl w-full bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
         {/* Step Indicator */}
-        <div className="bg-gray-50/50 border-b border-gray-100 px-8 py-8">
-          <div className="flex items-center justify-between relative px-6">
-            <div className="absolute top-1/2 left-0 w-full h-0.5 bg-gray-200 -translate-y-1/2 z-0" />
+        <div className="bg-gray-50 border-b border-gray-200 px-8 py-6">
+          <div className="flex items-center justify-between relative max-w-2xl mx-auto">
+            <div className="absolute top-5 left-0 w-full h-0.5 bg-gray-200 -z-0" />
             {steps.map((s) => (
-              <div key={s.id} className="relative z-10 flex flex-col items-center group">
+              <div key={s.id} className="relative z-10 flex flex-col items-center">
                 <div className={cn(
-                  "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300",
-                  step === s.id ? "bg-primary-600 text-white ring-8 ring-primary-50 shadow-lg shadow-primary-500/20" :
-                  step > s.id ? "bg-green-500 text-white" : "bg-white border-2 border-gray-200 text-gray-400"
+                  "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 border-2",
+                  step === s.id ? "bg-primary-600 text-white border-primary-600 shadow-sm" :
+                  step > s.id ? "bg-green-500 text-white border-green-500" : "bg-white border-gray-300 text-gray-400"
                 )}>
-                  {step > s.id ? <CheckCircle2 size={24} /> : <s.icon size={22} />}
+                  {step > s.id ? <CheckCircle2 size={20} /> : <s.icon size={18} />}
                 </div>
                 <span className={cn(
-                  "absolute -bottom-8 text-[11px] font-bold uppercase tracking-widest whitespace-nowrap transition-colors",
+                  "mt-2 text-[10px] font-bold uppercase tracking-wider",
                   step >= s.id ? "text-primary-600" : "text-gray-400"
                 )}>
                   {s.title}
@@ -204,129 +191,96 @@ export default function SetupWizard() {
           </div>
         </div>
 
-        <div className="p-8 md:p-12">
+        <div className="p-8 md:p-10">
           {step === 1 && (
             <div className="space-y-8 animate-fadeIn">
-              <div className="flex flex-col md:flex-row gap-12 items-start">
-                <div className="flex flex-col items-center space-y-4">
-                   <label className="text-xs font-black text-gray-500 uppercase tracking-widest">Logo</label>
-                   {logoPreview ? (
+              <div className="grid md:grid-cols-3 gap-10">
+                <div className="md:col-span-1 flex flex-col items-center space-y-4">
+                  <div className="text-sm font-bold text-gray-700">School Logo</div>
+                  {logoPreview ? (
                     <div className="relative group">
-                      <img src={logoPreview} alt="Logo Preview" className="w-40 h-40 object-contain rounded-3xl border-2 border-primary-100 bg-gray-50 p-4" />
-                      <button onClick={removeLogo} className="absolute -top-3 -right-3 w-10 h-10 bg-white border border-gray-100 rounded-full flex items-center justify-center text-red-500 shadow-md hover:bg-red-50 transition-all">
-                        <X size={20} />
+                      <img src={logoPreview} alt="Logo" className="w-40 h-40 object-contain rounded-md border border-gray-200 p-4 bg-white" />
+                      <button onClick={removeLogo} className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-600">
+                        <X size={16} />
                       </button>
                     </div>
                   ) : (
-                    <label className="w-40 h-40 rounded-3xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center cursor-pointer hover:border-primary-400 hover:bg-primary-50 transition-all text-gray-400 group">
-                      <Upload size={40} className="group-hover:text-primary-600 transition-colors mb-3" />
-                      <span className="text-[11px] font-black uppercase tracking-widest text-gray-400 group-hover:text-primary-600 transition-colors">Choose Logo</span>
+                    <label className="w-40 h-40 rounded-md border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-primary-500 hover:bg-primary-50 transition-all text-gray-400">
+                      <Upload size={32} className="mb-2 text-gray-300" />
+                      <span className="text-xs font-semibold">Choose Image</span>
                       <input type="file" className="hidden" accept="image/*" onChange={handleLogoChange} />
                     </label>
                   )}
                 </div>
 
-                <div className="flex-1 grid gap-6">
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-bold text-gray-700">Official Institution Name</label>
-                    <div className="relative group">
-                      <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary-600 transition-colors" size={20} />
-                      <input name="schoolName" value={formData.schoolName} onChange={handleInputChange} placeholder="e.g. St. Peters International Academy" className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-4 pl-12 pr-4 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-600 transition-all" />
-                    </div>
+                <div className="md:col-span-2 space-y-6">
+                  <div>
+                    <label className="block text-gray-700 text-sm font-bold mb-2">Official Institution Name</label>
+                    <input name="schoolName" value={formData.schoolName} onChange={handleInputChange} placeholder="e.g. St. Peters International Academy" className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500/10 focus:border-primary-600 outline-none transition-all" />
                   </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-bold text-gray-700">School Motto / Tagline</label>
-                    <div className="relative group">
-                      <Type className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary-600 transition-colors" size={20} />
-                      <input name="schoolMotto" value={formData.schoolMotto} onChange={handleInputChange} placeholder="e.g. Knowledge is Light" className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-4 pl-12 pr-4 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-600 transition-all" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-bold text-gray-700">Physical Address</label>
-                    <div className="relative group">
-                      <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary-600 transition-colors" size={20} />
-                      <input name="schoolAddress" value={formData.schoolAddress} onChange={handleInputChange} placeholder="123 Education Boulevard, Lagos" className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-4 pl-12 pr-4 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-600 transition-all" />
-                    </div>
+                  <div>
+                    <label className="block text-gray-700 text-sm font-bold mb-2">School Motto / Tagline</label>
+                    <input name="schoolMotto" value={formData.schoolMotto} onChange={handleInputChange} placeholder="e.g. Knowledge is Light" className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500/10 focus:border-primary-600 outline-none transition-all" />
                   </div>
                 </div>
               </div>
 
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 pt-4">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-bold text-gray-700">Email</label>
-                  <div className="relative group">
-                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary-600 transition-colors" size={18} />
-                    <input name="schoolEmail" type="email" value={formData.schoolEmail} onChange={handleInputChange} placeholder="school@mail.com" className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 pl-11 pr-4 text-sm font-medium" />
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="md:col-span-2">
+                  <label className="block text-gray-700 text-sm font-bold mb-2">Physical Address</label>
+                  <input name="schoolAddress" value={formData.schoolAddress} onChange={handleInputChange} placeholder="123 Education Boulevard, Lagos" className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500/10 focus:border-primary-600 outline-none transition-all" />
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-bold text-gray-700">Phone</label>
-                  <div className="relative group">
-                    <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary-600 transition-colors" size={18} />
-                    <input name="schoolPhone" value={formData.schoolPhone} onChange={handleInputChange} placeholder="+234..." className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 pl-11 pr-4 text-sm font-medium" />
-                  </div>
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2">Official Email</label>
+                  <input name="schoolEmail" type="email" value={formData.schoolEmail} onChange={handleInputChange} placeholder="school@mail.com" className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500/10 focus:border-primary-600 outline-none transition-all" />
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-bold text-gray-700">Website</label>
-                  <div className="relative group">
-                    <Globe2 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary-600 transition-colors" size={18} />
-                    <input name="officialWebsite" value={formData.officialWebsite} onChange={handleInputChange} placeholder="www.school.com" className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 pl-11 pr-4 text-sm font-medium" />
-                  </div>
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2">Primary Phone</label>
+                  <input name="schoolPhone" value={formData.schoolPhone} onChange={handleInputChange} placeholder="+234..." className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500/10 focus:border-primary-600 outline-none transition-all" />
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-bold text-gray-700">WhatsApp</label>
-                  <div className="relative group">
-                    <MessageSquare className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary-600 transition-colors" size={18} />
-                    <input name="whatsappNumber" value={formData.whatsappNumber} onChange={handleInputChange} placeholder="+234..." className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 pl-11 pr-4 text-sm font-medium" />
-                  </div>
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2">Official Website (Optional)</label>
+                  <input name="officialWebsite" value={formData.officialWebsite} onChange={handleInputChange} placeholder="www.school.com" className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500/10 focus:border-primary-600 outline-none transition-all" />
+                </div>
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2">WhatsApp Business (Optional)</label>
+                  <input name="whatsappNumber" value={formData.whatsappNumber} onChange={handleInputChange} placeholder="+234..." className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500/10 focus:border-primary-600 outline-none transition-all" />
                 </div>
               </div>
             </div>
           )}
 
           {step === 2 && (
-            <div className="space-y-8 animate-fadeIn">
-              <div className="grid md:grid-cols-2 gap-8">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-bold text-gray-700 text-center">First Name</label>
-                  <div className="relative group">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary-600 transition-colors" size={18} />
-                    <input name="adminFirstName" value={formData.adminFirstName} onChange={handleInputChange} placeholder="e.g. John" className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-4 pl-12 pr-4 text-gray-900 font-medium" />
-                  </div>
+            <div className="space-y-6 animate-fadeIn">
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-3">
+                <AlertCircle className="text-blue-600 shrink-0" size={20} />
+                <p className="text-sm text-blue-700 font-medium">This account will have Global Super Admin privileges.</p>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2">First Name</label>
+                  <input name="adminFirstName" value={formData.adminFirstName} onChange={handleInputChange} placeholder="John" className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500/10 focus:border-primary-600 outline-none transition-all" />
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-bold text-gray-700">Last Name</label>
-                  <div className="relative group">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary-600 transition-colors" size={18} />
-                    <input name="adminLastName" value={formData.adminLastName} onChange={handleInputChange} placeholder="e.g. Doe" className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-4 pl-12 pr-4 text-gray-900 font-medium" />
-                  </div>
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2">Last Name</label>
+                  <input name="adminLastName" value={formData.adminLastName} onChange={handleInputChange} placeholder="Doe" className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500/10 focus:border-primary-600 outline-none transition-all" />
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-sm font-bold text-gray-700">Admin Login Email (Username)</label>
-                <div className="relative group">
-                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary-600 transition-colors" size={18} />
-                   <input name="adminEmail" type="email" value={formData.adminEmail} onChange={handleInputChange} placeholder="admin@domain.com" className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-4 pl-12 pr-4 text-gray-900 font-medium" />
-                </div>
+              <div>
+                <label className="block text-gray-700 text-sm font-bold mb-2">Administrator Email</label>
+                <input name="adminEmail" type="email" value={formData.adminEmail} onChange={handleInputChange} placeholder="admin@domain.com" className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500/10 focus:border-primary-600 outline-none transition-all" />
               </div>
 
-              <div className="grid md:grid-cols-2 gap-8">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-bold text-gray-700">Access Password</label>
-                  <div className="relative group">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary-600 transition-colors" size={18} />
-                    <input name="adminPassword" type="password" value={formData.adminPassword} onChange={handleInputChange} placeholder="••••••••" className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-4 pl-12 pr-4 text-gray-900 font-medium" />
-                  </div>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2">Password</label>
+                  <input name="adminPassword" type="password" value={formData.adminPassword} onChange={handleInputChange} placeholder="••••••••" className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500/10 focus:border-primary-600 outline-none transition-all" />
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-bold text-gray-700">Confirm Password</label>
-                  <div className="relative group">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary-600 transition-colors" size={18} />
-                    <input name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleInputChange} placeholder="••••••••" className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-4 pl-12 pr-4 text-gray-900 font-medium" />
-                  </div>
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2">Confirm Password</label>
+                  <input name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleInputChange} placeholder="••••••••" className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500/10 focus:border-primary-600 outline-none transition-all" />
                 </div>
               </div>
             </div>
@@ -335,50 +289,44 @@ export default function SetupWizard() {
           {step === 3 && (
             <div className="space-y-8 animate-fadeIn">
               <div className="grid md:grid-cols-2 gap-10">
-                {/* Session Card */}
-                <div className="bg-gray-50 p-8 rounded-[2rem] border border-gray-100 flex flex-col h-full">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="p-3 bg-primary-100 text-primary-600 rounded-2xl"><Calendar size={24} /></div>
-                    <h3 className="font-black text-gray-900 uppercase tracking-widest text-sm">Session Details</h3>
+                <div className="space-y-6">
+                  <div className="flex items-center gap-2 text-primary-600 font-bold border-b border-gray-100 pb-2">
+                    <Calendar size={18} />
+                    <span>Academic Session Details</span>
                   </div>
-                  <div className="space-y-6 flex-1">
-                    <div className="space-y-1.5">
-                       <label className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">Session Name</label>
-                       <input name="sessionName" value={formData.sessionName} onChange={handleInputChange} placeholder="2023/2024" className="w-full bg-white border border-gray-200 rounded-2xl py-3.5 px-5 text-gray-900 font-bold focus:ring-4 focus:ring-primary-100 outline-none transition-all" />
+                  <div>
+                    <label className="block text-gray-700 text-xs font-bold mb-2 uppercase tracking-wider">Session Name</label>
+                    <input name="sessionName" value={formData.sessionName} onChange={handleInputChange} placeholder="2023/2024" className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500/10 focus:border-primary-600 outline-none transition-all font-bold" />
+                  </div>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <label className="block text-gray-700 text-xs font-bold mb-2">START DATE</label>
+                      <input type="date" name="sessionStartDate" value={formData.sessionStartDate} onChange={handleInputChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500/10 outline-none" />
                     </div>
-                    <div className="grid gap-4">
-                       <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">Academic Year Start</label>
-                          <input type="date" name="sessionStartDate" value={formData.sessionStartDate} onChange={handleInputChange} className="w-full bg-white border border-gray-200 rounded-2xl py-3.5 px-5 text-sm font-bold outline-none" />
-                       </div>
-                       <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">Academic Year End</label>
-                          <input type="date" name="sessionEndDate" value={formData.sessionEndDate} onChange={handleInputChange} className="w-full bg-white border border-gray-200 rounded-2xl py-3.5 px-5 text-sm font-bold outline-none" />
-                       </div>
+                    <div>
+                      <label className="block text-gray-700 text-xs font-bold mb-2">END DATE</label>
+                      <input type="date" name="sessionEndDate" value={formData.sessionEndDate} onChange={handleInputChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500/10 outline-none" />
                     </div>
                   </div>
                 </div>
 
-                {/* Term Card */}
-                <div className="bg-gray-50 p-8 rounded-[2rem] border border-gray-100 flex flex-col h-full">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="p-3 bg-indigo-100 text-indigo-600 rounded-2xl"><Calendar size={24} /></div>
-                    <h3 className="font-black text-gray-900 uppercase tracking-widest text-sm">Active Term</h3>
+                <div className="space-y-6">
+                  <div className="flex items-center gap-2 text-indigo-600 font-bold border-b border-gray-100 pb-2">
+                    <Calendar size={18} />
+                    <span>First Academic Term</span>
                   </div>
-                  <div className="space-y-6 flex-1">
-                    <div className="space-y-1.5">
-                       <label className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">Term Name</label>
-                       <input name="termName" value={formData.termName} onChange={handleInputChange} placeholder="Freshers Term" className="w-full bg-white border border-gray-200 rounded-2xl py-3.5 px-5 text-gray-900 font-bold focus:ring-4 focus:ring-indigo-100 outline-none transition-all" />
+                  <div>
+                    <label className="block text-gray-700 text-xs font-bold mb-2 uppercase tracking-wider">Term Name</label>
+                    <input name="termName" value={formData.termName} onChange={handleInputChange} placeholder="First Term" className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-600 outline-none transition-all font-bold" />
+                  </div>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <label className="block text-gray-700 text-xs font-bold mb-2">TERM START</label>
+                      <input type="date" name="termStartDate" value={formData.termStartDate} onChange={handleInputChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500/10 outline-none" />
                     </div>
-                    <div className="grid gap-4">
-                       <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">Term Start</label>
-                          <input type="date" name="termStartDate" value={formData.termStartDate} onChange={handleInputChange} className="w-full bg-white border border-gray-200 rounded-2xl py-3.5 px-5 text-sm font-bold outline-none" />
-                       </div>
-                       <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">Term End</label>
-                          <input type="date" name="termEndDate" value={formData.termEndDate} onChange={handleInputChange} className="w-full bg-white border border-gray-200 rounded-2xl py-3.5 px-5 text-sm font-bold outline-none" />
-                       </div>
+                    <div>
+                      <label className="block text-gray-700 text-xs font-bold mb-2">TERM END</label>
+                      <input type="date" name="termEndDate" value={formData.termEndDate} onChange={handleInputChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500/10 outline-none" />
                     </div>
                   </div>
                 </div>
@@ -387,63 +335,51 @@ export default function SetupWizard() {
           )}
 
           {step === 4 && (
-            <div className="space-y-10 animate-fadeIn">
-               <div className="grid md:grid-cols-2 gap-12">
-                  {/* Regional Config */}
+            <div className="space-y-8 animate-fadeIn">
+               <div className="grid md:grid-cols-2 gap-10">
                   <div className="space-y-6">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="p-2.5 bg-primary-100 text-primary-600 rounded-xl"><Globe size={20} /></div>
-                      <h3 className="font-black text-xs uppercase tracking-[0.2em] text-gray-400">Regional Config</h3>
+                    <div className="flex items-center gap-2 text-primary-600 font-bold border-b border-gray-100 pb-2">
+                      <Globe size={18} />
+                      <span>Regional Settings</span>
                     </div>
-                    
-                    <div className="space-y-2">
-                       <label className="text-sm font-bold text-gray-700 px-1">System Timezone</label>
-                       <select name="timezone" value={formData.timezone} onChange={handleInputChange} className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-3.5 px-4 text-sm font-bold outline-none ring-primary-500/10 focus:ring-4 transition-all">
+                    <div>
+                       <label className="block text-gray-700 text-sm font-bold mb-2">Timezone</label>
+                       <select name="timezone" value={formData.timezone} onChange={handleInputChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500/10 outline-none transition-all">
                           {TIMEZONES.map(tz => <option key={tz} value={tz}>{tz}</option>)}
                        </select>
                     </div>
-
-                    <div className="space-y-2">
-                       <label className="text-sm font-bold text-gray-700 px-1">Global Date Format</label>
-                       <select name="dateFormat" value={formData.dateFormat} onChange={handleInputChange} className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-3.5 px-4 text-sm font-bold outline-none ring-primary-500/10 focus:ring-4 transition-all">
+                    <div>
+                       <label className="block text-gray-700 text-sm font-bold mb-2">Preferred Date Format</label>
+                       <select name="dateFormat" value={formData.dateFormat} onChange={handleInputChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500/10 outline-none transition-all">
                           {DATE_FORMATS.map(df => <option key={df} value={df}>{df}</option>)}
                        </select>
                     </div>
                   </div>
 
-                  {/* ID Formats */}
                   <div className="space-y-6">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="p-2.5 bg-amber-100 text-amber-600 rounded-xl"><Hash size={20} /></div>
-                      <h3 className="font-black text-xs uppercase tracking-[0.2em] text-gray-400">Identification Formats</h3>
+                    <div className="flex items-center gap-2 text-amber-600 font-bold border-b border-gray-100 pb-2">
+                      <Hash size={18} />
+                      <span>Identification Formats</span>
                     </div>
-
-                    <div className="space-y-2">
-                       <label className="text-sm font-bold text-gray-700 px-1">Student ID/Admission Number Prefix</label>
-                       <div className="relative group">
-                          <Settings className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                          <input name="admissionNumberPrefix" value={formData.admissionNumberPrefix} onChange={handleInputChange} placeholder="e.g. SCH/STU/" className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-3.5 pl-12 pr-4 text-sm font-bold tracking-tight" />
-                       </div>
-                       <p className="text-[10px] text-gray-400 px-4">Result: {formData.admissionNumberPrefix}001</p>
+                    <div>
+                       <label className="block text-gray-700 text-sm font-bold mb-2">Admission No. Prefix</label>
+                       <input name="admissionNumberPrefix" value={formData.admissionNumberPrefix} onChange={handleInputChange} placeholder="SCH/STU/" className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500/10 focus:border-amber-600 outline-none transition-all font-bold" />
+                       <p className="text-[10px] text-gray-500 mt-1">Preview: {formData.admissionNumberPrefix}001</p>
                     </div>
-
-                    <div className="space-y-2">
-                       <label className="text-sm font-bold text-gray-700 px-1">Staff ID/Employee Prefix</label>
-                       <div className="relative group">
-                          <Settings className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                          <input name="staffIdPrefix" value={formData.staffIdPrefix} onChange={handleInputChange} placeholder="e.g. SCH/STF/" className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-3.5 pl-12 pr-4 text-sm font-bold tracking-tight" />
-                       </div>
-                       <p className="text-[10px] text-gray-400 px-4">Result: {formData.staffIdPrefix}001</p>
+                    <div>
+                       <label className="block text-gray-700 text-sm font-bold mb-2">Staff ID Prefix</label>
+                       <input name="staffIdPrefix" value={formData.staffIdPrefix} onChange={handleInputChange} placeholder="SCH/STF/" className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500/10 focus:border-amber-600 outline-none transition-all font-bold" />
+                       <p className="text-[10px] text-gray-500 mt-1">Preview: {formData.staffIdPrefix}001</p>
                     </div>
                   </div>
                </div>
 
-               <div className="bg-amber-50 border border-amber-100/50 rounded-3xl p-6 flex gap-5 items-start">
-                  <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center shrink-0"><ShieldCheck size={28} /></div>
-                  <div className="space-y-1">
-                     <h4 className="font-black text-sm text-amber-900 tracking-tight">Final Confirmation Required</h4>
-                     <p className="text-amber-700/80 text-xs font-medium leading-relaxed">
-                        Initializing the system will create the database structure for your institution. This action can take a few seconds as we configure your admin account and academic defaults.
+               <div className="bg-amber-50 border border-amber-200 rounded-lg p-5 flex gap-4">
+                  <AlertCircle className="text-amber-600 shrink-0" size={24} />
+                  <div>
+                     <h4 className="font-bold text-amber-900 text-sm uppercase">Confirmation Required</h4>
+                     <p className="text-amber-700 text-xs mt-1 leading-relaxed">
+                        By clicking initialize, the system will finalize all database schemas and institutional settings. This process cannot be undone without a full reset.
                      </p>
                   </div>
                </div>
@@ -451,40 +387,40 @@ export default function SetupWizard() {
           )}
 
           {step === 5 && (
-            <div className="flex flex-col items-center justify-center py-16 text-center space-y-6">
-              <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center text-green-600 mb-2 animate-bounce">
-                <CheckCircle2 size={56} />
+            <div className="flex flex-col items-center justify-center py-12 text-center space-y-6">
+              <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center animate-bounce">
+                <CheckCircle2 size={48} />
               </div>
               <div className="space-y-2">
-                <h2 className="text-4xl font-black text-gray-900">Setup Successful!</h2>
-                <p className="text-gray-500 max-w-sm mx-auto font-bold text-lg">
-                   Welcome to the future of school management.
+                <h2 className="text-3xl font-bold text-gray-900">System Ready!</h2>
+                <p className="text-gray-500 max-w-xs mx-auto text-sm">
+                   Your institutional environment has been successfully configured. redirecting to login...
                 </p>
               </div>
-              <div className="flex items-center gap-3 bg-white px-8 py-4 rounded-3xl border border-gray-100 shadow-sm text-primary-600 font-bold">
-                <Loader2 className="animate-spin" size={24} />
-                <span>Synchronizing Environment...</span>
+              <div className="flex items-center gap-3 text-primary-600 font-semibold px-6 py-3 bg-primary-50 rounded-lg">
+                <Loader2 className="animate-spin" size={20} />
+                <span>Launching Application...</span>
               </div>
             </div>
           )}
 
           {step < 5 && (
-            <div className="mt-16 pt-10 border-t border-gray-100 flex items-center justify-between">
-              <button onClick={prevStep} disabled={step === 1 || loading} className="flex items-center gap-2.5 px-8 py-3.5 text-gray-400 hover:text-gray-900 font-black text-xs uppercase tracking-widest transition-all disabled:opacity-0 active:scale-95">
+            <div className="mt-10 pt-6 border-t border-gray-200 flex items-center justify-between">
+              <button onClick={prevStep} disabled={step === 1 || loading} className="flex items-center gap-2 px-4 py-2 text-gray-500 hover:text-gray-800 disabled:opacity-0 transition-all font-semibold">
                 <ChevronLeft size={20} />
-                Back
+                Go Back
               </button>
 
-              <button onClick={step === 4 ? handleSubmit : nextStep} disabled={loading} className="group flex items-center gap-3 px-10 py-4.5 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white rounded-2xl font-black uppercase tracking-[0.15em] text-xs transition-all shadow-2xl shadow-primary-500/30 active:scale-95">
+              <button onClick={step === 4 ? handleSubmit : nextStep} disabled={loading} className="flex items-center gap-2 px-8 py-2.5 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50 transition-all font-bold shadow-sm">
                 {loading ? (
                   <>
                     <Loader2 size={20} className="animate-spin" />
-                    Initializing...
+                    Initializing System...
                   </>
                 ) : (
                   <>
-                    {step === 4 ? 'Finalize & Initialize' : 'Next Step'}
-                    <ChevronRight size={20} className="group-hover:translate-x-1.5 transition-transform" />
+                    {step === 4 ? 'Complete Initialization' : 'Continue'}
+                    <ChevronRight size={20} />
                   </>
                 )}
               </button>

@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import { Student } from '../../students/entities/student.entity';
 import { Staff } from '../../hr/entities/staff.entity';
 import { Transaction, TransactionType } from '../../finance/entities/transaction.entity';
+import { Class } from '../../academics/entities/class.entity';
+import { Subject } from '../../academics/entities/subject.entity';
 
 @Injectable()
 export class DashboardService {
@@ -14,6 +16,10 @@ export class DashboardService {
         private readonly staffRepository: Repository<Staff>,
         @InjectRepository(Transaction)
         private readonly transactionRepository: Repository<Transaction>,
+        @InjectRepository(Class)
+        private readonly classRepository: Repository<Class>,
+        @InjectRepository(Subject)
+        private readonly subjectRepository: Repository<Subject>,
     ) { }
 
     async getAdminStats() {
@@ -22,10 +28,11 @@ export class DashboardService {
         const inactiveStudents = totalStudents - activeStudents;
 
         const totalStaff = await this.staffRepository.count();
-        // Since we changed the staff model, we'll need to adapt this query later
-        // For now, let's just count total as a fallback
         const teachingStaff = await this.staffRepository.count();
         const nonTeachingStaff = totalStaff - teachingStaff;
+
+        const totalClasses = await this.classRepository.count();
+        const totalSubjects = await this.subjectRepository.count();
 
         const totalRevenueResult = await this.transactionRepository
             .createQueryBuilder('transaction')
@@ -33,12 +40,12 @@ export class DashboardService {
             .where('transaction.type = :type', { type: TransactionType.FEE_PAYMENT })
             .getRawOne();
 
-        // Placeholder for outstanding fees until proper fee module exists
         const outstandingFees = 0;
 
         return {
             students: { total: totalStudents, active: activeStudents, inactive: inactiveStudents },
             staff: { total: totalStaff, teaching: teachingStaff, nonTeaching: nonTeachingStaff },
+            academics: { totalClasses, totalSubjects },
             finance: {
                 totalRevenue: parseFloat(totalRevenueResult?.total || '0'),
                 outstandingFees

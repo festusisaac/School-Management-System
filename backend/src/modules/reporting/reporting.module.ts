@@ -5,10 +5,12 @@ import { DashboardService } from './services/dashboard.service';
 import { Student } from '../students/entities/student.entity';
 import { Staff } from '../hr/entities/staff.entity';
 import { Transaction } from '../finance/entities/transaction.entity';
+import { Class } from '../academics/entities/class.entity';
+import { Subject } from '../academics/entities/subject.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Student, Staff, Transaction]),
+    TypeOrmModule.forFeature([Student, Staff, Transaction, Class, Subject]),
   ],
   controllers: [DashboardController],
   providers: [DashboardService],
