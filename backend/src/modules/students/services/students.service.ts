@@ -96,6 +96,14 @@ export class StudentsService {
         // 3. Create Student with Parent Link
         let { feeGroupIds, session, documentTitles, feeExclusions, ...studentData } = createStudentDto;
 
+        // Clean UUID fields (convert "" to null)
+        const uuidFields = ['classId', 'sectionId', 'categoryId', 'houseId', 'deactivateReasonId', 'discountProfileId', 'parentId'];
+        uuidFields.forEach(field => {
+            if ((studentData as any)[field] === '') {
+                (studentData as any)[field] = null;
+            }
+        });
+
         // Handle FormData JSON strings
         if (typeof feeGroupIds === 'string') {
             try { feeGroupIds = JSON.parse(feeGroupIds); } catch (e) { }
@@ -107,8 +115,8 @@ export class StudentsService {
             ...studentData,
             parent: parent,
             tenantId: tenantId
-        });
-        const savedStudent = await this.studentsRepository.save(student);
+        } as any);
+        const savedStudent = await this.studentsRepository.save(student) as any as Student;
 
         // 4. Save Documents if any
         if (documentFiles && documentFiles.length > 0) {
@@ -323,7 +331,7 @@ export class StudentsService {
         }
 
         // 3. Save the entity
-        await this.studentsRepository.save(student);
+        await this.studentsRepository.save(student as any);
         console.log('Student entity saved successfully');
 
         // Save new documents if any
@@ -516,10 +524,12 @@ export class StudentsService {
     async promote(data: { studentIds: string[], classId: string, sectionId?: string }, tenantId: string): Promise<void> {
         if (!data.studentIds || data.studentIds.length === 0) return;
         
-        await this.studentsRepository.update({ id: Like(data.studentIds as any), tenantId }, {
-            classId: data.classId,
-            sectionId: (data.sectionId || undefined) as any
-        });
+        const updatePayload: any = {
+            classId: data.classId === '' ? null : data.classId,
+            sectionId: (data.sectionId === '' ? null : data.sectionId) || null
+        };
+
+        await this.studentsRepository.update({ id: In(data.studentIds), tenantId }, updatePayload);
     }
 
     // --- Attendance ---

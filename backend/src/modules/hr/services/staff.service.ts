@@ -138,10 +138,14 @@ export class StaffService {
             }
         }
 
-        const staffData = { ...data, tenantId };
+        const staffData: any = { ...data, tenantId };
 
         if (staffData.departmentId === '') {
-            staffData.departmentId = null as any;
+            staffData.departmentId = null;
+        }
+
+        if (staffData.roleId === '') {
+            staffData.roleId = null;
         }
 
         if (files) {
@@ -159,8 +163,8 @@ export class StaffService {
             if (files.signature?.[0]) staffData.signature = `/uploads/staff/${files.signature[0].filename}`;
         }
 
-        const staff = this.staffRepository.create(staffData);
-        const savedStaff = await this.staffRepository.save(staff);
+        const staff = this.staffRepository.create(staffData as Partial<Staff>);
+        const savedStaff = await this.staffRepository.save(staff) as any as Staff;
 
         // Handle user account creation if role/enableLogin is provided
         const staffDto = data as any;
@@ -225,10 +229,14 @@ export class StaffService {
             }
         }
 
-        const updateData = { ...data };
+        const updateData: any = { ...data };
 
         if (updateData.departmentId === '') {
-            updateData.departmentId = null as any;
+            updateData.departmentId = null;
+        }
+
+        if (updateData.roleId === '') {
+            updateData.roleId = null;
         }
 
         if (files) {
@@ -247,7 +255,7 @@ export class StaffService {
         }
 
         Object.assign(staff, updateData);
-        const savedStaff = await this.staffRepository.save(staff);
+        const savedStaff = await this.staffRepository.save(staff) as any as Staff;
 
         // Handle user account updates if role/enableLogin is provided
         const staffDto = data as any;
