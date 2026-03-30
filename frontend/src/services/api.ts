@@ -622,6 +622,18 @@ class ApiService {
     }
   }
 
+  // Bulk Student Import
+  async validateBulkStudents(data: any[]) {
+    return this.post<any[]>('/students/bulk/validate', data)
+  }
+
+  async importBulkStudents(data: any[]) {
+    return this.post<{ jobId: string }>('/students/bulk/import', data)
+  }
+
+  async getStudentImportStatus(jobId: string) {
+    return this.get<any>(`/students/bulk/import/status/${jobId}`)
+  }
 
   // HR API methods
   async getDepartments() {

@@ -14,6 +14,8 @@ import { Role } from '../auth/entities/role.entity';
 import { FinanceModule } from '../finance/finance.module';
 import { SystemModule } from '../system/system.module';
 import { CommunicationModule } from '../communication/communication.module';
+import { BullModule } from '@nestjs/bull';
+import { StudentImportProcessor } from './processors/student-import.processor';
 
 @Module({
   imports: [
@@ -31,9 +33,12 @@ import { CommunicationModule } from '../communication/communication.module';
     FinanceModule,
     SystemModule,
     CommunicationModule,
+    BullModule.registerQueue({
+      name: 'student-import',
+    }),
   ],
   controllers: [StudentsController],
-  providers: [StudentsService],
+  providers: [StudentsService, StudentImportProcessor],
   exports: [StudentsService, TypeOrmModule],
 })
 export class StudentsModule { }

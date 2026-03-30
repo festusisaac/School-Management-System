@@ -1,11 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import { DataTable } from '../../components/ui/data-table';
 import { ColumnDef } from '@tanstack/react-table';
-import { Eye, Edit, Trash2, LayoutGrid, List as ListIcon, Search, MoreVertical, Phone } from 'lucide-react';
+import { Eye, Edit, Trash2, LayoutGrid, List as ListIcon, Search, MoreVertical, Phone, Upload, Download, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api, { getFileUrl } from '../../services/api';
 import { usePermissions } from '../../hooks/usePermissions';
 import { clsx } from 'clsx';
+import BulkStudentImport from './BulkStudentImport';
+import { exportStudents } from '../../utils/excelExport';
 
 // Type definition matching the backend entity
 type Student = {
@@ -37,6 +39,7 @@ export default function StudentDirectory() {
         sectionId: '',
         keyword: ''
     });
+    const [showImportModal, setShowImportModal] = useState(false);
 
     const [classes, setClasses] = useState<any[]>([]);
     const [sections, setSections] = useState<any[]>([]);
@@ -210,6 +213,33 @@ export default function StudentDirectory() {
                         </button>
                     </div>
 
+                    {hasPermission('students:create') && (
+                        <button 
+                            onClick={() => setShowImportModal(true)}
+                            className="flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-4 py-2 rounded-xl text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all shadow-sm"
+                        >
+                            <Upload size={18} className="text-primary-600" />
+                            Import
+                        </button>
+                    )}
+
+                    <button 
+                        onClick={() => exportStudents(students)}
+                        className="flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-4 py-2 rounded-xl text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all shadow-sm"
+                    >
+                        <Download size={18} className="text-green-600" />
+                        Export
+                    </button>
+
+                    {hasPermission('students:create') && (
+                        <Link 
+                            to="/students/admission" 
+                            className="flex items-center gap-2 bg-primary-600 px-4 py-2 rounded-xl text-sm font-bold text-white hover:bg-primary-700 transition-all shadow-md shadow-primary-200 dark:shadow-none"
+                        >
+                            <Plus size={18} />
+                            Add Student
+                        </Link>
+                    )}
                 </div>
             </div>
 
@@ -400,6 +430,16 @@ export default function StudentDirectory() {
                         </div>
                     ))}
                 </div>
+            )}
+
+            {showImportModal && (
+                <BulkStudentImport 
+                    onClose={() => setShowImportModal(false)} 
+                    onSuccess={() => {
+                        setShowImportModal(false);
+                        fetchStudents();
+                    }} 
+                />
             )}
         </div>
     );

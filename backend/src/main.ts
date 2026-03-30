@@ -9,11 +9,16 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { WinstonModule } from 'nest-winston';
 import { logger as winstonLogger } from './config/logger.config';
 import { LoggingInterceptor } from './interceptors/logging.interceptor';
+import { json, urlencoded } from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: WinstonModule.createLogger({ instance: winstonLogger }),
   });
+  
+  app.use(json({ limit: '50mb' }));
+  app.use(urlencoded({ extended: true, limit: '50mb' }));
+
   const configService = app.get(ConfigService);
 
   // Global Prefix

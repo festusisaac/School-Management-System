@@ -651,6 +651,7 @@ export class StudentsService {
         });
     }
 
+
     async getAttendanceLogs(startDate: string, endDate: string, tenantId: string, classId?: string, sectionId?: string, managedClassIds?: string[]): Promise<StudentAttendance[]> {
         const sessionId = await this.systemSettingsService.getActiveSessionId();
         const where: any = {
@@ -671,6 +672,70 @@ export class StudentsService {
             relations: ['student', 'class', 'section'],
             order: { date: 'DESC' }
         });
+    }
+
+    // --- Bulk Import Helpers ---
+
+    async validateBulk(data: any[], tenantId: string): Promise<any[]> {
+        const results: any[] = [];
+        
+        // Fetch all dependencies to avoid multiple DB lookups in a loop
+        const classes = await this.studentsRepository.query('SELECT id, name FROM "classes" WHERE "tenantId" = $1', [tenantId]);
+        const sections = await this.studentsRepository.query('SELECT id, name, "classId" FROM "sections" WHERE "tenantId" = $1', [tenantId]);
+        const categories = await this.categoryRepository.find({ where: { tenantId } });
+        const houses = await this.houseRepository.find({ where: { tenantId } });
+        const existingStudents = await this.studentsRepository.find({ where: { tenantId }, select: ['admissionNo'] });
+        const admissionNos = new Set(existingStudents.map(s => s.admissionNo.toLowerCase()));
+
+        for (const row of data) {
+            const errors: string[] = [];
+            const result: any = { ...row, errors: [] };
+
+            // 1. Required Fields
+            if (!row.admissionNo) errors.push('Admission Number is required');
+            if (!row.firstName) errors.push('First Name is required');
+            if (!row.gender) errors.push('Gender is required');
+            if (!row.dob) errors.push('Date of Birth is required');
+            if (!row.admissionDate) errors.push('Admission Date is required');
+
+            // 2. Duplicate Check
+            if (row.admissionNo && admissionNos.has(row.admissionNo.toString().toLowerCase())) {
+                errors.push(`Duplicate Admission Number: ${row.admissionNo}`);
+            }
+
+            // 3. Resolve Dependencies (Names to IDs)
+            if (row.className) {
+                const cls = classes.find((c: any) => c.name.toLowerCase() === row.className.toLowerCase());
+                if (cls) {
+                    result.classId = cls.id;
+                    if (row.sectionName) {
+                        const sec = sections.find((s: any) => s.name.toLowerCase() === row.sectionName.toLowerCase() && s.classId === cls.id);
+                        if (sec) result.sectionId = sec.id;
+                        else errors.push(`Section "${row.sectionName}" not found in class "${row.className}"`);
+                    }
+                } else {
+                    errors.push(`Class "${row.className}" not found`);
+                }
+            }
+
+            if (row.categoryName) {
+                const cat = categories.find(c => c.category.toLowerCase() === row.categoryName.toLowerCase());
+                if (cat) result.categoryId = cat.id;
+                else errors.push(`Category "${row.categoryName}" not found`);
+            }
+
+            if (row.houseName) {
+                const house = houses.find(h => h.houseName.toLowerCase() === row.houseName.toLowerCase());
+                if (house) result.houseId = house.id;
+                else errors.push(`House "${row.houseName}" not found`);
+            }
+
+            result.validationStatus = errors.length > 0 ? 'Invalid' : 'Valid';
+            result.errors = errors;
+            results.push(result);
+        }
+
+        return results;
     }
 }
 

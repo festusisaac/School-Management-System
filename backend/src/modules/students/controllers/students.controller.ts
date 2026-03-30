@@ -15,6 +15,9 @@ import { MarkAttendanceDto, BulkMarkAttendanceDto } from '../dtos/student-attend
 import { Permissions } from '@decorators/permissions.decorator';
 import { PermissionsGuard } from '@guards/permissions.guard';
 import { EntityManager, In } from 'typeorm';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
+import { HttpStatus, HttpCode } from '@nestjs/common';
 
 @Controller('students')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -22,6 +25,7 @@ export class StudentsController {
     constructor(
         private readonly studentsService: StudentsService,
         private readonly entityManager: EntityManager,
+        @InjectQueue('student-import') private readonly studentImportQueue: Queue
     ) { }
 
     private async getTeacherManagedClassIds(user: any): Promise<string[] | null> {
@@ -339,6 +343,48 @@ export class StudentsController {
         }
 
         return this.studentsService.getAttendanceLogs(startDate, endDate, req.user.tenantId, classId, sectionId);
+    }
+
+    // --- Bulk Import Endpoints ---
+
+    @Post('bulk/validate')
+    @Permissions('students:create')
+    async validateBulk(@Body() data: any[], @Request() req: any) {
+        return this.studentsService.validateBulk(data, req.user.tenantId);
+    }
+
+    @Post('bulk/import')
+    @Permissions('students:create')
+    @HttpCode(HttpStatus.ACCEPTED)
+    async importBulk(@Body() data: any[], @Request() req: any) {
+        const job = await this.studentImportQueue.add('import-students', {
+            data,
+            tenantId: req.user.tenantId,
+            userEmail: req.user.email
+        });
+        return { jobId: job.id };
+    }
+
+    @Get('bulk/import/status/:jobId')
+    @Permissions('students:create')
+    async getImportStatus(@Param('jobId') jobId: string) {
+        const job = await this.studentImportQueue.getJob(jobId);
+        if (!job) {
+            throw new Error('Job not found');
+        }
+
+        const state = await job.getState();
+        const progress = job.progress();
+        const result = job.returnvalue;
+        const failedReason = job.failedReason;
+
+        return {
+            id: job.id,
+            state,
+            progress,
+            result,
+            failedReason
+        };
     }
 }
 

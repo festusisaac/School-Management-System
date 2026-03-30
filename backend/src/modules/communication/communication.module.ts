@@ -3,6 +3,7 @@ import { BullModule } from '@nestjs/bull';
 import { EmailService } from './email.service';
 import { SmsService } from './sms.service';
 import { SystemModule } from '../system/system.module';
+import { EmailProcessor } from './processors/email.processor';
 
 @Module({
   imports: [
@@ -18,7 +19,7 @@ import { SystemModule } from '../system/system.module';
     }),
   ],
   controllers: [],
-  providers: [EmailService, SmsService],
+  providers: [EmailService, SmsService, EmailProcessor],
   exports: [EmailService, SmsService],
 })
 export class CommunicationModule { }

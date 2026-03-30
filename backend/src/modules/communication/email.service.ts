@@ -3,6 +3,8 @@ import * as nodemailer from 'nodemailer';
 import axios from 'axios';
 import { SystemSettingsService } from '../system/services/system-settings.service';
 import * as dns from 'dns';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
 
 export interface EmailOptions {
   to: string | string[];
@@ -17,7 +19,10 @@ export class EmailService {
   private readonly logger = new Logger(EmailService.name);
   private transporter: any;
 
-  constructor(private readonly systemSettingsService: SystemSettingsService) {
+  constructor(
+    private readonly systemSettingsService: SystemSettingsService,
+    @InjectQueue('email') private readonly emailQueue: Queue
+  ) {
     // Force use of public DNS if local resolver in Node.js is failing
     try {
       dns.setServers(['8.8.8.8', '8.8.4.4']);
@@ -351,19 +356,18 @@ export class EmailService {
 
   async sendEmail(options: EmailOptions): Promise<boolean> {
     try {
-      const mailOptions = {
-        from: options.from || process.env.SMTP_FROM_EMAIL || 'noreply@sms.school',
-        to: options.to,
-        subject: options.subject,
-        html: options.html,
-        text: options.text,
-      };
-
-      const info = await this.transporter.sendMail(mailOptions);
-      this.logger.log(`Email sent successfully: ${info.messageId}`);
+      await this.emailQueue.add('send-mail', options, {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 5000,
+        },
+        removeOnComplete: true,
+      });
+      this.logger.log(`Email job queued successfully: ${options.to}`);
       return true;
     } catch (error) {
-      this.logger.error('Failed to send email:', error);
+      this.logger.error('Failed to queue email job:', error);
       return false;
     }
   }
