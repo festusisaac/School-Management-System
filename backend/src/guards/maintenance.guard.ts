@@ -31,9 +31,10 @@ export class MaintenanceGuard implements CanActivate {
       return true;
     }
 
-    // Allow admin users through
+    // Allow administrative users through
     const user = request.user;
-    if (user && user.role === 'Admin') {
+    const adminRoles = ['super administrator', 'administrator', 'admin'];
+    if (user && adminRoles.includes(user.role?.toLowerCase())) {
       return true;
     }
 

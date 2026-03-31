@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { CreditCard, X, ShieldCheck, Loader2, ArrowRight } from 'lucide-react';
-import { formatCurrency } from '../../../utils/currency';
 import api from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
 import { usePaystackPayment } from 'react-paystack';
@@ -64,6 +63,7 @@ export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess }: P
         metadata: {
             custom_fields: [],
             studentId: student.id,
+            tenantId: student.tenantId,
             ...paymentMeta
         }
     };
@@ -123,6 +123,7 @@ export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess }: P
         },
         meta: {
             studentId: student.id,
+            tenantId: student.tenantId,
             allocations: JSON.stringify(paymentMeta.allocations),
             note: paymentMeta.note
         }

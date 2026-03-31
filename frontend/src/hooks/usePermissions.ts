@@ -9,8 +9,8 @@ export const usePermissions = () => {
 
     const role = (user.role || user.roleObject?.name)?.toLowerCase();
     
-    // Super Admin and Admin bypass all checks
-    if (role === 'super administrator' || role === 'admin') {
+    // Super Administrator bypasses ALL checks (Master Key)
+    if (role === 'super administrator') {
       return true;
     }
 

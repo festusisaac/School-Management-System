@@ -10,25 +10,29 @@ export interface SmsOptions {
 @Injectable()
 export class SmsService {
   private readonly logger = new Logger(SmsService.name);
-  private username!: string;
-  private password!: string;
+  private apiKey!: string;
+  private baseUrl!: string;
+  private senderId!: string;
+  private channel!: string;
 
   constructor(
     @InjectQueue('sms') private readonly smsQueue: Queue
   ) {
-    this.initializeKudiSMS();
+    this.initializeTermii();
   }
 
-  private initializeKudiSMS() {
-    this.username = process.env.KUDISMS_USERNAME || '';
-    this.password = process.env.KUDISMS_PASSWORD || '';
+  private initializeTermii() {
+    this.apiKey = process.env.TERMII_API_KEY || '';
+    this.baseUrl = process.env.TERMII_BASE_URL || 'https://api.termii.com';
+    this.senderId = process.env.TERMII_SENDER_ID || 'SMS-SCHOOL';
+    this.channel = process.env.TERMII_CHANNEL || 'generic';
 
-    if (!this.username || !this.password) {
-      this.logger.warn('KudiSMS credentials not configured. SMS service will not work.');
+    if (!this.apiKey) {
+      this.logger.warn('Termii API Key not configured. SMS service will not work.');
       return;
     }
 
-    this.logger.log('SMS service initialized with KudiSMS (Queue-based)');
+    this.logger.log(`SMS service initialized with Termii (Channel: ${this.channel})`);
   }
 
   async sendRegistrationOtp(phoneNumber: string, otp: string): Promise<boolean> {

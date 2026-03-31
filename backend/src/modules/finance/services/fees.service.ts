@@ -60,8 +60,19 @@ export class FeesService {
   // Record an offline/payment
   async recordPayment(dto: CreatePaymentDto, tenantId: string) {
     const paymentAmount = parseFloat(dto.amount);
-
     if (paymentAmount <= 0) throw new BadRequestException('Payment amount must be greater than zero.');
+
+    // Tenancy Validation: Ensure student belongs to this tenant
+    const student = await this.studentRepo.findOne({ where: { id: dto.studentId, tenantId } });
+    if (!student) throw new NotFoundException('Student not found in this school context.');
+
+    // Duplicate check for references
+    if (dto.reference) {
+      const existing = await this.transactionRepo.findOne({
+        where: { reference: dto.reference, tenantId }
+      });
+      if (existing) throw new ConflictException(`Transaction with reference '${dto.reference}' already recorded.`);
+    }
 
     const transactions: Transaction[] = [];
     const allocations = dto.meta?.allocations || [];
@@ -477,72 +488,81 @@ export class FeesService {
 
   // Refund / Reversal
   async refundTransaction(id: string, reason: string, tenantId: string) {
-    const originalTx = await this.transactionRepo.findOne({
-      where: { id, tenantId },
-      relations: ['student']
-    });
+    return this.transactionRepo.manager.transaction(async (manager) => {
+      // Use advisory lock to prevent concurrent refunds for the same transaction
+      await manager.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [`REFUND-${id}`]);
 
-    if (!originalTx) throw new NotFoundException('Transaction not found');
-    if (originalTx.type === TransactionType.REFUND) throw new BadRequestException('Cannot refund a refund transaction');
+      const originalTx = await manager.findOne(Transaction, {
+        where: { id, tenantId },
+        relations: ['student']
+      });
 
-    if (originalTx.meta?.isRefunded) {
-      throw new BadRequestException('Transaction has already been refunded');
-    }
+      if (!originalTx) throw new NotFoundException('Transaction not found');
+      if (originalTx.type === TransactionType.REFUND) throw new BadRequestException('Cannot refund a refund transaction');
 
-    // Map allocations to negative amounts if they exist
-    const originalAllocations = originalTx.meta?.allocations || [];
-    const refundAllocations = Array.isArray(originalAllocations)
-      ? originalAllocations.map((a: any) => ({
-        ...a,
-        amount: (-parseFloat(a.amount || '0')).toString(),
-        // When refunding, we basically reverse the status or set it to a state that getStudentStatement can handle.
-        // Since getStudentStatement purely sums amounts, the negative amount here is sufficient.
-      }))
-      : [];
-
-    const refundTx = this.transactionRepo.create({
-      amount: (-parseFloat(originalTx.amount)).toString(), // Negative amount
-      studentId: originalTx.studentId as string,
-      tenantId,
-      type: TransactionType.REFUND,
-      paymentMethod: originalTx.paymentMethod,
-      reference: `REF-${originalTx.reference || originalTx.id.substring(0, 8)}`,
-      meta: {
-        ...originalTx.meta,
-        allocations: refundAllocations.length > 0 ? refundAllocations : undefined,
-        originalTransactionId: originalTx.id,
-        reason,
-        refundedAt: new Date().toISOString()
+      if (originalTx.meta?.isRefunded) {
+        throw new BadRequestException('Transaction has already been refunded');
       }
+
+      // Map allocations to negative amounts if they exist
+      const originalAllocations = originalTx.meta?.allocations || [];
+      const refundAllocations = Array.isArray(originalAllocations)
+        ? originalAllocations.map((a: any) => ({
+          ...a,
+          amount: (-parseFloat(a.amount || '0')).toString(),
+        }))
+        : [];
+
+      const refundTx = manager.create(Transaction, {
+        amount: (-parseFloat(originalTx.amount)).toString(),
+        studentId: originalTx.studentId as string,
+        tenantId,
+        type: TransactionType.REFUND,
+        paymentMethod: originalTx.paymentMethod,
+        reference: `REF-${originalTx.reference || originalTx.id.substring(0, 8)}`,
+        meta: {
+          ...originalTx.meta,
+          allocations: refundAllocations.length > 0 ? refundAllocations : undefined,
+          originalTransactionId: originalTx.id,
+          reason,
+          refundedAt: new Date().toISOString()
+        }
+      });
+
+      await manager.save(refundTx);
+
+      // Mark original transaction as refunded
+      originalTx.meta = {
+        ...originalTx.meta,
+        isRefunded: true,
+        refundTransactionId: refundTx.id
+      };
+      await manager.save(originalTx);
+
+      return refundTx;
     });
-
-    await this.transactionRepo.save(refundTx);
-
-    // Mark original transaction as refunded
-    originalTx.meta = {
-      ...originalTx.meta,
-      isRefunded: true,
-      refundTransactionId: refundTx.id
-    };
-    await this.transactionRepo.save(originalTx);
-
-    return refundTx;
   }
 
   // Simplified Batch Assignment for MVP
   // Updated Assignment to support exclusions
   async assignFeesToStudent(studentId: string, feeGroupIds: string[], tenantId: string, feeExclusions?: Record<string, string[]>) {
+    const sessionId = await this.systemSettingsService.getActiveSessionId();
+    
     // 1. Remove existing to allow clean overwrite
-    await this.assignmentRepo.delete({ studentId, tenantId });
+    // We only remove for the current session to avoid clearing past history
+    await this.assignmentRepo.delete({ studentId, tenantId, sessionId: sessionId || IsNull() });
 
     // 2. Create new ones
     if (feeGroupIds.length > 0) {
+      const sessionLabel = new Date().getFullYear().toString();
       const assignments = feeGroupIds.map(gid => this.assignmentRepo.create({
         studentId,
         feeGroupId: gid,
         tenantId,
+        sessionId: sessionId || undefined,
+        session: sessionLabel,
         excludedHeadIds: feeExclusions?.[gid] || null,
-        session: new Date().getFullYear().toString()
+        isActive: true,
       }));
       await this.assignmentRepo.save(assignments);
     }
@@ -1046,12 +1066,68 @@ export class FeesService {
       .leftJoinAndSelect('student.class', 'class')
       .where('student.isActive = :isActive AND student.tenantId = :tenantId', { isActive: true, tenantId });
 
-    // Implementation ...
-    return { students: [] }; // Simplified for now
+    if (dto.classIds?.length > 0) query.andWhere('student.classId IN (:...classIds)', { classIds: dto.classIds });
+    if (dto.sectionIds?.length > 0) query.andWhere('student.sectionId IN (:...sectionIds)', { sectionIds: dto.sectionIds });
+    if (dto.categoryIds?.length > 0) query.andWhere('student.categoryId IN (:...categoryIds)', { categoryIds: dto.categoryIds });
+    if (dto.studentIds?.length > 0) query.andWhere('student.id IN (:...studentIds)', { studentIds: dto.studentIds });
+
+    let students = await query.getMany();
+    if (dto.excludeIds?.length > 0) {
+        students = students.filter(s => !dto.excludeIds.includes(s.id));
+    }
+
+    return {
+      total: students.length,
+      conflicts: students.filter(s => !!s.discountProfileId).length,
+      students: students.map(s => ({
+        id: s.id,
+        name: `${s.firstName} ${s.lastName}`,
+        className: s.class?.name || 'No Class',
+        alreadyHasDiscount: !!s.discountProfileId
+      }))
+    };
   }
 
   async simulateBulkFeeAssignment(groupId: string, dto: any, tenantId: string) {
-    return this.simulateDiscountAssignment(dto, tenantId);
+    const query = this.studentRepo.createQueryBuilder('student')
+      .leftJoinAndSelect('student.class', 'class')
+      .where('student.isActive = :isActive AND student.tenantId = :tenantId', { isActive: true, tenantId });
+
+    if (dto.classIds?.length > 0) query.andWhere('student.classId IN (:...classIds)', { classIds: dto.classIds });
+    if (dto.sectionIds?.length > 0) query.andWhere('student.sectionId IN (:...sectionIds)', { sectionIds: dto.sectionIds });
+    if (dto.categoryIds?.length > 0) query.andWhere('student.categoryId IN (:...categoryIds)', { categoryIds: dto.categoryIds });
+    if (dto.studentIds?.length > 0) query.andWhere('student.id IN (:...studentIds)', { studentIds: dto.studentIds });
+
+    let students = await query.getMany();
+    if (dto.excludeIds?.length > 0) {
+      students = students.filter(s => !dto.excludeIds.includes(s.id));
+    }
+
+    if (students.length === 0) {
+      return { total: 0, conflicts: 0, students: [] };
+    }
+
+    const existing = await this.assignmentRepo.find({
+      where: {
+        feeGroupId: groupId,
+        studentId: In(students.map(s => s.id)),
+        tenantId,
+        isActive: true
+      }
+    });
+
+    const alreadyAssignedIds = new Set(existing.map(e => e.studentId));
+
+    return {
+      total: students.length,
+      conflicts: alreadyAssignedIds.size,
+      students: students.map(s => ({
+        id: s.id,
+        name: `${s.firstName} ${s.lastName}`,
+        className: s.class?.name || 'No Class',
+        alreadyHasFee: alreadyAssignedIds.has(s.id)
+      }))
+    };
   }
 
   async bulkAssignFeeGroup(groupId: string, dto: any, tenantId: string) {
@@ -1078,17 +1154,22 @@ export class FeesService {
 
     if (studentsToAssign.length === 0) return { updatedCount: 0 };
 
-    const session = new Date().getFullYear().toString();
+    const sessionId = await this.systemSettingsService.getActiveSessionId();
+    const sessionLabel = new Date().getFullYear().toString();
     const assignments = studentsToAssign.map(s => this.assignmentRepo.create({
       studentId: s.id,
       feeGroupId: groupId,
-      session,
+      sessionId: sessionId || undefined,
+      session: sessionLabel,
       tenantId,
       isActive: true
     }));
 
     await this.assignmentRepo.save(assignments);
-    return { updatedCount: assignments.length };
+    return { 
+      updatedCount: assignments.length,
+      skippedCount: alreadyAssignedIds.size
+    };
   }
 
   async verifyPaystackPayment(reference: string, meta: any, studentId: string, tenantId: string) {
@@ -1125,19 +1206,133 @@ export class FeesService {
   }
 
   async verifyFlutterwavePayment(transactionId: string, meta: any, studentId: string, tenantId: string) {
-    // Similar implementation with tenantId...
-    return { success: false };
+    return this.transactionRepo.manager.transaction(async (manager) => {
+      // Use advisory lock for concurrency protection
+      await manager.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [`FLW-${transactionId}`]);
+      
+      try {
+        const response = await axios.get(`https://api.flutterwave.com/v3/transactions/${transactionId}/verify`, {
+          headers: { Authorization: `Bearer ${process.env.FLUTTERWAVE_SECRET_KEY}` },
+        });
+
+        const data = response.data;
+        if (data.status === 'success' && data.data.status === 'successful') {
+          const amountPaid = data.data.amount;
+          const currency = data.data.currency;
+          
+          // Use transactionId as the reference
+          const reference = `FLW-${transactionId}`;
+
+          const existingTx = await manager.findOne(Transaction, { where: { reference, tenantId } });
+          if (existingTx) throw new ConflictException('Payment already recorded');
+
+          await this.recordPayment({
+            studentId,
+            amount: amountPaid.toString(),
+            paymentMethod: PaymentMethod.ONLINE,
+            reference,
+            type: TransactionType.FEE_PAYMENT,
+            meta: { ...meta, gateway: 'FLUTTERWAVE', flutterwaveData: data.data }
+          }, tenantId);
+
+          return { success: true };
+        }
+        throw new BadRequestException('Payment verification failed');
+      } catch (error: any) {
+        if (error instanceof ConflictException) throw error;
+        console.error('Flutterwave verification error:', error.response?.data || error.message);
+        throw new BadRequestException('Failed to verify payment with Flutterwave');
+      }
+    });
   }
 
   async handlePaystackWebhook(signature: string, body: any) {
-    // Webhooks are tricky because they don't have a user session.
-    // We usually get the tenantId from metadata or by looking up the student.
-    return { status: 'success' };
+    // 1. Verify signature
+    const hash = crypto
+      .createHmac('sha512', process.env.PAYSTACK_SECRET_KEY || '')
+      .update(JSON.stringify(body))
+      .digest('hex');
+
+    if (hash !== signature) {
+      throw new BadRequestException('Invalid signature');
+    }
+
+    if (body.event === 'charge.success') {
+      const data = body.data;
+      const { reference, metadata, amount, customer } = data;
+      
+      // Resolve IDs from metadata (passed from frontend PaymentModal)
+      const tenantId = metadata?.tenantId;
+      const studentId = metadata?.studentId;
+
+      if (!tenantId || !studentId) {
+        console.warn('Paystack webhook missing metadata:', { reference, metadata });
+        return { status: 'ignored', reason: 'Missing metadata' };
+      }
+
+      // Concurrency/Idempotency protection
+      return this.transactionRepo.manager.transaction(async (manager) => {
+        await manager.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [`PAYSTACK-WEBHOOK-${reference}`]);
+
+        const existing = await manager.findOne(Transaction, { where: { reference, tenantId } });
+        if (existing) return { status: 'success', detail: 'Already processed' };
+
+        await this.recordPayment({
+          studentId,
+          amount: (amount / 100).toString(),
+          paymentMethod: PaymentMethod.ONLINE,
+          reference,
+          type: TransactionType.FEE_PAYMENT,
+          meta: { paystackData: data, gateway: 'PAYSTACK', via: 'webhook' }
+        }, tenantId);
+
+        return { status: 'success' };
+      });
+    }
+
+    return { status: 'ignored', event: body.event };
   }
 
   async handleFlutterwaveWebhook(hash: string, body: any) {
-    // Webhooks don't have a user session.
-    // tenantId is resolved from metadata or student lookup.
-    return { status: 'success' };
+    // 1. Verify hash (Flutterwave sends a secret hash header for verification)
+    const secretHash = process.env.FLUTTERWAVE_WEBHOOK_HASH;
+    if (secretHash && hash !== secretHash) {
+      throw new BadRequestException('Invalid secret hash');
+    }
+
+    const { reference, tx_ref, amount, metadata, status, id: flwId } = body;
+    const finalRef = tx_ref || reference;
+
+    if (body.event === 'charge.completed' || (status === 'successful' && !body.event)) {
+      const tenantId = metadata?.tenantId;
+      const studentId = metadata?.studentId;
+
+      if (!tenantId || !studentId) {
+        console.warn('Flutterwave webhook missing metadata:', { finalRef, metadata });
+        return { status: 'ignored', reason: 'Missing metadata' };
+      }
+
+      // Concurrency/Idempotency protection
+      return this.transactionRepo.manager.transaction(async (manager) => {
+        const lockRef = `FLW-WEBHOOK-${finalRef}`;
+        await manager.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [lockRef]);
+
+        const existing = await manager.findOne(Transaction, { where: { reference: finalRef, tenantId } });
+        if (existing) return { status: 'success', detail: 'Already processed' };
+
+        await this.recordPayment({
+          studentId,
+          amount: amount.toString(),
+          paymentMethod: PaymentMethod.ONLINE,
+          reference: finalRef,
+          type: TransactionType.FEE_PAYMENT,
+          meta: { flutterwaveData: body, gateway: 'FLUTTERWAVE', via: 'webhook', flwId }
+        }, tenantId);
+
+        return { status: 'success' };
+      });
+    }
+
+    return { status: 'ignored', event: body.event || status };
   }
 }

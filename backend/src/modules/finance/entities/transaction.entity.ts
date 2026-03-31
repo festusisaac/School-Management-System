@@ -18,6 +18,7 @@ export enum PaymentMethod {
 }
 
 @Entity({ name: 'transactions' })
+@Index(['tenantId', 'reference'], { unique: true })
 export class Transaction {
   @PrimaryGeneratedColumn('uuid')
   id!: string;

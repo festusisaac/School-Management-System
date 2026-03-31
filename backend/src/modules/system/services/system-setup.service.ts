@@ -55,19 +55,25 @@ export class SystemSetupService {
     await queryRunner.startTransaction();
 
     try {
-      // 1. Create Super Admin Role if not exists
+      // 1. Create or Sync Super Admin Role
       let superAdminRole = await queryRunner.manager.findOne(Role, {
         where: { name: 'Super Administrator' },
       });
+
+      const allPermissions = await queryRunner.manager.find(Permission);
 
       if (!superAdminRole) {
         superAdminRole = queryRunner.manager.create(Role, {
           name: 'Super Administrator',
           description: 'Global system administrator with full access.',
           isSystem: true,
+          permissions: allPermissions,
         });
-        superAdminRole = await queryRunner.manager.save(superAdminRole);
+      } else {
+        // Sync permissions if it already exists
+        superAdminRole.permissions = allPermissions;
       }
+      superAdminRole = await queryRunner.manager.save(superAdminRole);
 
       // 1b. Seed Standard Roles
       const standardRoles = [
@@ -141,39 +147,57 @@ export class SystemSetupService {
         }
       }
 
-      // 2. Create the first Academic Session
-      const session = queryRunner.manager.create(AcademicSession, {
-        name: dto.sessionName,
-        isActive: true,
-        startDate: new Date(dto.sessionStartDate),
-        endDate: new Date(dto.sessionEndDate),
+      // 2. Create or find the first Academic Session
+      let savedSession = await queryRunner.manager.findOne(AcademicSession, {
+        where: { name: dto.sessionName }
       });
-      const savedSession = await queryRunner.manager.save(session);
 
-      // 3. Create the first Academic Term
-      const term = queryRunner.manager.create(AcademicTerm, {
-        name: dto.termName,
-        sessionId: savedSession.id,
-        isActive: true,
-        startDate: new Date(dto.termStartDate),
-        endDate: new Date(dto.termEndDate),
-      });
-      const savedTerm = await queryRunner.manager.save(term);
+      if (!savedSession) {
+        const session = queryRunner.manager.create(AcademicSession, {
+          name: dto.sessionName,
+          isActive: true,
+          startDate: new Date(dto.sessionStartDate),
+          endDate: new Date(dto.sessionEndDate),
+        });
+        savedSession = await queryRunner.manager.save(session);
+      }
 
-      // 4. Create the first Super Admin User
-      const hashedPassword = await bcrypt.hash(dto.adminPassword, 10);
-      const tenantId = uuidv4();
-      const adminUser = queryRunner.manager.create(User, {
-        firstName: dto.adminFirstName,
-        lastName: dto.adminLastName,
-        email: dto.adminEmail,
-        password: hashedPassword,
-        roleId: superAdminRole.id,
-        role: 'Super Administrator',
-        tenantId: tenantId,
-        isActive: true,
+      // 3. Create or find the first Academic Term
+      let savedTerm = await queryRunner.manager.findOne(AcademicTerm, {
+        where: { name: dto.termName, sessionId: savedSession.id }
       });
-      await queryRunner.manager.save(adminUser);
+
+      if (!savedTerm) {
+        const term = queryRunner.manager.create(AcademicTerm, {
+          name: dto.termName,
+          sessionId: savedSession.id,
+          isActive: true,
+          startDate: new Date(dto.termStartDate),
+          endDate: new Date(dto.termEndDate),
+        });
+        savedTerm = await queryRunner.manager.save(term);
+      }
+
+      // 4. Create or find the first Super Admin User
+      let adminUser = await queryRunner.manager.findOne(User, {
+        where: { email: dto.adminEmail }
+      });
+
+      if (!adminUser) {
+        const hashedPassword = await bcrypt.hash(dto.adminPassword, 10);
+        const tenantId = uuidv4();
+        adminUser = queryRunner.manager.create(User, {
+          firstName: dto.adminFirstName,
+          lastName: dto.adminLastName,
+          email: dto.adminEmail,
+          password: hashedPassword,
+          roleId: superAdminRole.id,
+          role: 'Super Administrator',
+          tenantId: tenantId,
+          isActive: true,
+        });
+        await queryRunner.manager.save(adminUser);
+      }
 
       // 5. Update System Settings
       settings.schoolName = dto.schoolName;

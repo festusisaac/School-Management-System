@@ -153,6 +153,11 @@ export class FeesController {
     return this.feesService.simulateBulkFeeAssignment(id, dto, req.user.tenantId);
   }
 
+  @Post('students/:studentId/assign')
+  assignFeesToStudent(@Param('studentId') studentId: string, @Body() dto: { feeGroupIds: string[], feeExclusions?: Record<string, string[]> }, @Request() req: any) {
+    return this.feesService.assignFeesToStudent(studentId, dto.feeGroupIds, req.user.tenantId, dto.feeExclusions);
+  }
+
 
   // --- Discounts ---
   @Post('discounts')

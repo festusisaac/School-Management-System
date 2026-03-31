@@ -40,7 +40,7 @@ export class EmailService {
     };
 
     this.transporter = nodemailer.createTransport(smtpConfig);
-    this.logger.log('Email service initialized (Queue-based)');
+    this.logger.log(`Email service initialized via Amazon SES SMTP (Host: ${smtpConfig.host})`);
   }
 
   async sendEmail(options: EmailOptions): Promise<boolean> {

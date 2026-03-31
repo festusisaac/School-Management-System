@@ -155,7 +155,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 { label: 'Student Directory', path: '/students/directory', permission: 'students:view_directory' },
                 { label: 'Student Admission', path: '/students/admission', permission: 'students:create' },
                 { label: 'Online Admission', path: '/students/online-admission', permission: 'students:create' },
-                { label: 'Library', path: '/students/library', icon: BookOpen, permission: 'library:manage_books' },
                 { label: 'Deactivate Student', path: '/students/deactivated', permission: 'students:delete' },
                 { label: 'Student Categories', path: '/students/categories', permission: 'students:manage_categories' },
                 { label: 'Student House', path: '/students/houses', permission: 'students:manage_categories' },

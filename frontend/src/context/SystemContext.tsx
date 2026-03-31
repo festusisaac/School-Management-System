@@ -63,7 +63,10 @@ function applyThemeColors(prefix: string, hex: string | undefined, defaultChanne
 }
 
 export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [settings, setSettings] = useState<SystemSetting>({});
+    const [settings, setSettings] = useState<SystemSetting>(() => {
+        const cached = localStorage.getItem('system_settings');
+        return cached ? JSON.parse(cached) : {};
+    });
     const [loading, setLoading] = useState(true);
 
     const applyColors = useCallback((primaryColor?: string, secondaryColor?: string) => {
@@ -93,6 +96,7 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 }
             }
             
+            localStorage.setItem('system_settings', JSON.stringify(data || {}));
             setSettings(data || {});
             applyColors(data?.primaryColor, data?.secondaryColor);
 

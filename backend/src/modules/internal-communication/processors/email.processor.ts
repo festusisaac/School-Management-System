@@ -25,7 +25,7 @@ export class EmailProcessor {
     };
 
     this.transporter = nodemailer.createTransport(smtpConfig);
-    this.logger.log('Background Email Worker initialized with SMTP configuration');
+    this.logger.log(`Background Email Worker initialized via Amazon SES SMTP (Host: ${smtpConfig.host})`);
   }
 
   @Process('send-mail')

@@ -11,10 +11,10 @@ export interface SmsJobOptions {
 @Processor('sms')
 export class SmsProcessor {
   private readonly logger = new Logger(SmsProcessor.name);
-  private username = process.env.KUDISMS_USERNAME || '';
-  private password = process.env.KUDISMS_PASSWORD || '';
-  private senderId = process.env.KUDISMS_SENDER_ID || 'N-Alert';
-  private baseUrl = 'https://account.kudisms.net/api/';
+  private apiKey = process.env.TERMII_API_KEY || '';
+  private senderId = process.env.TERMII_SENDER_ID || 'SMS-SCHOOL';
+  private baseUrl = process.env.TERMII_BASE_URL || 'https://api.termii.com';
+  private channel = process.env.TERMII_CHANNEL || 'generic';
 
   @Process('send-sms')
   async handleSendSms(job: Job<SmsJobOptions>) {
@@ -23,11 +23,11 @@ export class SmsProcessor {
     try {
       this.logger.log(`Starting background SMS delivery to: ${to}`);
 
-      if (!this.username || !this.password) {
-        throw new Error('KudiSMS credentials not configured');
+      if (!this.apiKey) {
+        throw new Error('Termii API Key not configured');
       }
 
-      // Format phone number (Nigeria 234 prefix logic)
+      // Format phone number (Termii requires international format without +)
       let formattedTo = to.replace(/\D/g, '');
       if (formattedTo.startsWith('0')) {
         formattedTo = '234' + formattedTo.substring(1);
@@ -35,29 +35,27 @@ export class SmsProcessor {
         formattedTo = '234' + formattedTo;
       }
 
-      const params = new URLSearchParams();
-      params.append('username', this.username);
-      params.append('password', this.password);
-      params.append('message', message);
-      params.append('sender', this.senderId);
-      params.append('mobiles', formattedTo);
+      const payload = {
+        api_key: this.apiKey,
+        to: [formattedTo],
+        from: this.senderId,
+        sms: message,
+        type: 'plain',
+        channel: this.channel,
+      };
 
-      const response = await axios.post(this.baseUrl, params.toString(), {
+      const response = await axios.post(`${this.baseUrl}/api/sms/send`, payload, {
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json',
         },
       });
 
       if (response.status === 200 || response.status === 201) {
-        const responseData = typeof response.data === 'string' ? response.data.trim() : JSON.stringify(response.data);
-        if (responseData.toLowerCase().includes('error') || responseData.toLowerCase().includes('fail')) {
-           throw new Error(`KudiSMS rejected SMS: ${responseData}`);
-        }
-        this.logger.log(`SMS delivered to ${formattedTo} successfully.`);
+        this.logger.log(`SMS delivered to ${formattedTo} via Termii successfully.`);
         return true;
       }
 
-      throw new Error(`KudiSMS HTTP Error: ${response.status}`);
+      throw new Error(`Termii HTTP Error: ${response.status} - ${JSON.stringify(response.data)}`);
     } catch (error: any) {
       this.logger.error(`SMS delivery failed to ${to}: ${error.message}`);
       throw error; // Retries handled by Bull
