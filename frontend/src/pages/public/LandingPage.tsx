@@ -11,7 +11,16 @@ import {
   Phone,
   Mail,
   ArrowRight,
-  Heart
+  Heart,
+  Star,
+  Quote,
+  MapPin,
+  Clock,
+  Facebook,
+  Twitter,
+  Instagram,
+  Linkedin,
+  Youtube
 } from 'lucide-react';
 import image16 from '@assets/herobg/image16.jpeg';
 import image17 from '@assets/herobg/image17.jpeg';
@@ -94,6 +103,28 @@ const LandingPage = () => {
   const heroImages = [image16, image17, image18, image20, image24, image43];
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activeGalleryTab, setActiveGalleryTab] = useState('campus');
+  const [currentTestimonial, setCurrentTestimonial] = useState(0);
+
+  const testimonials = [
+    {
+      quote: "The transformation in my son's discipline and academic performance since joining PHJC is remarkable. The teachers truly care about every child's individual growth.",
+      author: "Mrs. Florence Adebayor",
+      role: "Parent of Nursery 2 Student",
+      rating: 5
+    },
+    {
+      quote: "As a parent, I value the spiritual foundation PHJC provides. It's not just about academic excellence; it's about building strong moral character in our children.",
+      author: "Chief Emeka Okoro",
+      role: "Parent of Primary 5 Student",
+      rating: 5
+    },
+    {
+      quote: "The facility is top-notch, especially the science and computer labs. My daughter is already showing great interest in STEM thanks to the school's hands-on approach.",
+      author: "Mrs. Sarah Williams",
+      role: "Parent of S.S. 2 Student",
+      rating: 5
+    }
+  ];
 
   const galleryData = {
     campus: [
@@ -119,6 +150,13 @@ const LandingPage = () => {
     }, 6000);
     return () => clearInterval(timer);
   }, [heroImages.length]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
+    }, 7000);
+    return () => clearInterval(timer);
+  }, [testimonials.length]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -283,17 +321,17 @@ const LandingPage = () => {
           <div className="max-w-7xl mx-auto">
             <div className="bg-white rounded-2xl p-6 md:p-8 shadow-xl border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-8 md:gap-4">
               <div className="text-center md:text-left space-y-0.5">
-                <div className="text-2xl lg:text-3xl font-black font-heading text-primary-600 tracking-tight">2,500+</div>
+                <div className="text-2xl lg:text-3xl font-black font-heading text-primary-600 tracking-tight">500+</div>
                 <div className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Global Alumnae</div>
               </div>
               <div className="hidden md:block h-10 w-px bg-slate-100"></div>
               <div className="text-center md:text-left space-y-0.5">
-                <div className="text-2xl lg:text-3xl font-black font-heading text-primary-600 tracking-tight">15:1</div>
-                <div className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Student-Teacher Ratio</div>
+                <div className="text-2xl lg:text-3xl font-black font-heading text-primary-600 tracking-tight">300+</div>
+                <div className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Student Enrolled</div>
               </div>
               <div className="hidden md:block h-10 w-px bg-slate-100"></div>
               <div className="text-center md:text-left space-y-0.5">
-                <div className="text-2xl lg:text-3xl font-black font-heading text-primary-600 tracking-tight">50+</div>
+                <div className="text-2xl lg:text-3xl font-black font-heading text-primary-600 tracking-tight">30+</div>
                 <div className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Academic Programs</div>
               </div>
               <div className="hidden md:block h-10 w-px bg-slate-100"></div>
@@ -528,9 +566,9 @@ const LandingPage = () => {
       <ScrollReveal>
         <section id="news" className="py-24 md:py-32 bg-slate-50 dark:bg-slate-900/40 transition-colors duration-500 overflow-hidden">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col md:flex-row justify-between items-end gap-6 mb-16">
+            <div className="flex flex-col md:flex-row justify-between items-center md:items-end gap-6 mb-16">
               <div className="space-y-4 max-w-xl text-center md:text-left">
-                <h2 className="text-primary-600 font-bold text-xs uppercase tracking-widest text-center md:text-left">Updates & Events</h2>
+                <h2 className="text-primary-600 font-bold text-xs uppercase tracking-widest">Updates & Events</h2>
                 <h3 className="text-3xl md:text-4xl lg:text-5xl font-heading font-black text-slate-900 dark:text-white leading-tight">
                   News & <span className="text-primary-600">Announcements</span>
                 </h3>
@@ -550,6 +588,7 @@ const LandingPage = () => {
                   tag: 'Sports',
                   date: 'March 24, 2026',
                   title: 'Annual Inter-House Sports Highlights',
+                  slug: 'annual-inter-house-sports-2026',
                   snippet: 'Relive the excitement of our students\' sportsmanship and team spirit during this year\'s athletic competition.'
                 },
                 {
@@ -557,6 +596,7 @@ const LandingPage = () => {
                   tag: 'Academic',
                   date: 'March 15, 2026',
                   title: '100% Success Rate in WAEC 2025',
+                  slug: 'waec-results-success-2025',
                   snippet: 'Celebrating our senior students\' remarkable academic achievement and a flawless pass rate in national exams.'
                 },
                 {
@@ -564,6 +604,7 @@ const LandingPage = () => {
                   tag: 'Notice',
                   date: 'April 02, 2026',
                   title: '2nd Term Resumption Notice',
+                  slug: 'second-term-resumption-notice',
                   snippet: 'Important dates and preparations for the upcoming academic session. We look forward to welcoming our students.'
                 }
               ].map((news, index) => (
@@ -582,7 +623,7 @@ const LandingPage = () => {
                     <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{news.date}</div>
                     <h4 className="text-xl font-heading font-bold text-slate-900 dark:text-white leading-tight group-hover:text-primary-600 transition-colors">{news.title}</h4>
                     <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed line-clamp-3 flex-grow">{news.snippet}</p>
-                    <Link to="/news" className="pt-4 text-xs font-bold text-primary-600 uppercase tracking-widest flex items-center gap-2 hover:gap-3 transition-all">
+                    <Link to={`/news/${news.slug}`} className="pt-4 text-xs font-bold text-primary-600 uppercase tracking-widest flex items-center gap-2 hover:gap-3 transition-all">
                       Read More <ChevronRight size={14} />
                     </Link>
                   </div>
@@ -598,6 +639,182 @@ const LandingPage = () => {
               >
                 View All News <ArrowRight size={18} />
               </Link>
+            </div>
+          </div>
+        </section>
+      </ScrollReveal>
+
+      {/* Parent Testimonials Section */}
+      <ScrollReveal>
+        <section id="testimonials" className="py-24 md:py-32 bg-white dark:bg-transparent overflow-hidden">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16 space-y-4">
+              <h2 className="text-primary-600 font-bold text-xs uppercase tracking-widest text-center">Community Stories</h2>
+              <h3 className="text-3xl md:text-4xl lg:text-5xl font-heading font-black text-slate-900 dark:text-white leading-tight">
+                What Our <span className="text-primary-600">Parents</span> Say
+              </h3>
+            </div>
+
+            <div className="relative max-w-4xl mx-auto">
+              {/* Carousel Container */}
+              <div className="relative h-[400px] md:h-[350px] flex items-center justify-center">
+                {testimonials.map((t, index) => (
+                  <div
+                    key={index}
+                    className={`absolute inset-0 transition-all duration-1000 ease-in-out flex flex-col items-center justify-center text-center space-y-8 ${
+                      index === currentTestimonial 
+                        ? 'opacity-100 translate-x-0 scale-100' 
+                        : 'opacity-0 translate-x-12 scale-95 pointer-events-none'
+                    }`}
+                  >
+                    <div className="relative">
+                      <Quote className="text-primary-100 dark:text-primary-900 absolute -top-8 -left-10 w-20 h-20 -z-10 opacity-50" />
+                      <p className="text-xl md:text-2xl lg:text-3xl font-medium text-slate-700 dark:text-slate-300 leading-relaxed italic px-4">
+                        "{t.quote}"
+                      </p>
+                    </div>
+                    
+                    <div className="pt-4 space-y-3">
+                      <div className="flex justify-center gap-1 text-secondary-500">
+                        {[...Array(t.rating)].map((_, i) => (
+                          <Star key={i} size={18} fill="currentColor" />
+                        ))}
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="text-lg font-bold text-slate-900 dark:text-white">{t.author}</h4>
+                        <p className="text-xs font-bold text-primary-600 uppercase tracking-widest">{t.role}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Navigation Controls */}
+              <div className="flex justify-center gap-3 mt-8">
+                {testimonials.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentTestimonial(index)}
+                    className={`h-2 transition-all duration-500 rounded-full ${
+                      index === currentTestimonial 
+                        ? 'w-8 bg-primary-600' 
+                        : 'w-2 bg-slate-200 dark:bg-slate-800 hover:bg-primary-300'
+                    }`}
+                    aria-label={`Go to slide ${index + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      </ScrollReveal>
+
+      {/* Contact Section */}
+      <ScrollReveal>
+        <section id="contact" className="py-24 md:py-32 bg-slate-50 dark:bg-slate-900/40 transition-colors duration-500 overflow-hidden">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid lg:grid-cols-2 gap-16 items-start">
+              {/* Left Column: Form UI */}
+              <div className="space-y-10 group">
+                <div className="space-y-4">
+                  <h2 className="text-primary-600 font-bold text-xs uppercase tracking-widest">Connect With Us</h2>
+                  <h3 className="text-3xl md:text-4xl lg:text-5xl font-heading font-black text-slate-900 dark:text-white leading-tight">
+                    Questions? <br /> <span className="text-primary-600">Get In Touch</span>
+                  </h3>
+                  <p className="text-lg text-slate-500 dark:text-slate-400 max-w-md">
+                    Our administration is here to help you with admissions, information, or any inquiries you may have.
+                  </p>
+                </div>
+
+                <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-700 space-y-6">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter ml-2">Full Name</label>
+                      <input type="text" placeholder="John Doe" className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-900 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 transition-all font-medium" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter ml-2">Email Address</label>
+                      <input type="email" placeholder="john@example.com" className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-900 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 transition-all font-medium" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter ml-2">Message</label>
+                    <textarea placeholder="How can we help you?" rows={4} className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-900 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 transition-all font-medium resize-none"></textarea>
+                  </div>
+                  <button className="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-4 rounded-2xl shadow-xl shadow-primary-500/20 transition-all active:scale-95 flex items-center justify-center gap-3">
+                    Send Message <ArrowRight size={18} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Right Column: Contact Cards */}
+              <div className="lg:pt-10 space-y-12">
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* Address Card */}
+                  <div className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700 hover-lift space-y-4">
+                    <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/30 rounded-xl flex items-center justify-center text-primary-600">
+                      <MapPin size={24} />
+                    </div>
+                    <div className="space-y-1">
+                      <h4 className="font-heading font-bold text-slate-900 dark:text-white">Our Campus</h4>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                        {settings?.schoolAddress || 'Azhin Kasa, Nigeria'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Contact Card */}
+                  <div className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700 hover-lift space-y-4">
+                    <div className="w-12 h-12 bg-secondary-100 dark:bg-secondary-900/30 rounded-xl flex items-center justify-center text-secondary-600">
+                      <Phone size={24} />
+                    </div>
+                    <div className="space-y-1">
+                      <h4 className="font-heading font-bold text-slate-900 dark:text-white">Phone & Email</h4>
+                      <div className="text-sm text-slate-500 dark:text-slate-400 space-y-1">
+                        <p>{settings?.schoolPhone || '+234 800 000 0000'}</p>
+                        <p className="truncate">{settings?.schoolEmail || 'info@phjcschool.edu.ng'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Hours Card */}
+                  <div className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700 hover-lift space-y-4">
+                    <div className="w-12 h-12 bg-slate-100 dark:bg-slate-700 rounded-xl flex items-center justify-center text-slate-600 dark:text-slate-300">
+                      <Clock size={24} />
+                    </div>
+                    <div className="space-y-1">
+                      <h4 className="font-heading font-bold text-slate-900 dark:text-white">Office Hours</h4>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        Mon - Fri: 8:00 AM - 4:00 PM
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Social Support */}
+                  <div className="bg-primary-600 p-8 rounded-[2rem] shadow-xl shadow-primary-500/20 space-y-4">
+                    <h4 className="font-heading font-bold text-white">Social Media</h4>
+                    <div className="flex flex-wrap gap-3">
+                      {[
+                        { icon: Facebook, href: settings?.socialFacebook },
+                        { icon: Twitter, href: settings?.socialTwitter },
+                        { icon: Instagram, href: settings?.socialInstagram },
+                        { icon: Linkedin, href: settings?.socialLinkedin },
+                        { icon: Youtube, href: settings?.socialYoutube }
+                      ].filter(s => s.href).map((social, i) => (
+                        <a 
+                          key={i} 
+                          href={social.href} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="w-10 h-10 bg-white/20 hover:bg-white text-white hover:text-primary-600 rounded-xl flex items-center justify-center transition-all active:scale-90 shadow-sm"
+                        >
+                          <social.icon size={18} />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>

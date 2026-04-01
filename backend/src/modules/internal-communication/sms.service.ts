@@ -91,7 +91,7 @@ export class SmsService {
     reference: string
   ): Promise<boolean> {
     try {
-      const message = `Payment Success! We've received ${amount} for ${studentName}. Ref: ${reference}. Thank you!`;
+      const message = `Payment Success! We've received ${amount} for ${studentName}. Ref: ${reference}. Please Kindly Check your Mail to Print the Reciept. Thank you!`;
       return await this.sendSms(phoneNumber, message);
     } catch (error: any) {
       this.logger.error(`Failed to send payment receipt SMS to ${phoneNumber}:`, error.message);

@@ -15,7 +15,8 @@ import {
     LogOut,
     ChevronRight,
     Video,
-    MessageSquare
+    MessageSquare,
+    Star
 } from 'lucide-react';
 import { useState } from 'react';
 import { clsx } from 'clsx';
@@ -52,10 +53,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
     const studentNavItems = [
         { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-        { label: 'My Profile', icon: UserIcon, path: `/students/profile/${user?.id || 'me'}` },
+        { label: 'My Profile', icon: UserIcon, path: '/students/profile/me' },
         { label: 'Finance', icon: CreditCard, path: '/students/finance' },
         { label: 'Class Timetable', icon: Calendar, path: '/students/timetable' },
         { label: 'Attendance', icon: Clock, path: '/students/attendance' },
+        { label: 'Rate Teachers', icon: Star, path: '/students/rate-teachers' },
         { label: 'My Library', icon: BookOpen, path: '/students/library' },
         {
             label: 'Examination',
@@ -159,7 +161,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 { label: 'Student Categories', path: '/students/categories', permission: 'students:manage_categories' },
                 { label: 'Student House', path: '/students/houses', permission: 'students:manage_categories' },
                 { label: 'Deactivation Reason', path: '/students/deactivate-reasons', permission: 'students:manage_categories' },
-                { label: 'Student Profile', path: '/students/profile/:id', permission: 'students:view_profile' },
                 // Only show Rate Teachers to Super Admin
                 ...(userRole === 'super administrator' ? [
                     { label: 'Rate Teachers', path: '/students/rate-teachers', permission: 'students:view_directory_disabled' }

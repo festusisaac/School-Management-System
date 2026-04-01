@@ -136,6 +136,25 @@ export class StudentsController {
         return this.studentsService.findOne(req.user.id, req.user.tenantId!);
     }
 
+    @Get('profile/:id')
+    @UseGuards(JwtAuthGuard)
+    async findOneProfile(@Param('id') id: string, @Request() req: any) {
+        if (!req.user?.tenantId) throw new ForbiddenException('Tenant context missing');
+
+        const userRole = (req.user.role || '').toLowerCase();
+        const isSuperAdmin = userRole === 'super administrator';
+        const hasFullAccess = isSuperAdmin || (req.user.permissions || []).includes('students:view_profile');
+
+        if (!hasFullAccess && req.user.id !== id) {
+            const student = await this.studentsService.findByUserId(req.user.id);
+            if (!student || student.id !== id) {
+                throw new ForbiddenException('You only have permission to view your own profile.');
+            }
+        }
+
+        return this.studentsService.findOne(id, req.user.tenantId!);
+    }
+
     @Post('categories')
     @Permissions('students:manage_categories')
     createCategory(@Body() dto: CreateStudentCategoryDto, @Request() req: any) {

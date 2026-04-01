@@ -4,6 +4,8 @@ import LoginPage from '@pages/auth/LoginPage'
 import DashboardPage from '@pages/dashboard/DashboardPage'
 import MaintenancePage from '@pages/MaintenancePage'
 import LandingPage from './pages/public/LandingPage'
+import NewsPage from './pages/public/NewsPage'
+import NewsDetailPage from './pages/public/NewsDetailPage'
 import SetupWizard from './pages/SetupWizard'
 import { MainLayout } from './components/layout/MainLayout'
 import { ThemeProvider } from './context/ThemeContext'
@@ -249,6 +251,8 @@ function AppRoutes() {
           </Route>
         )}
 
+        <Route path="/news" element={<NewsPage />} />
+        <Route path="/news/:slug" element={<NewsDetailPage />} />
         <Route path="/" element={<LandingPage />} />
       </Routes>
     </Router>

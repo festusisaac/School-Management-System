@@ -144,6 +144,7 @@ export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess }: P
                                 transactionId: response.transaction_id.toString(),
                                 meta: paymentMeta,
                                 studentId: student.id,
+                                txRef: flutterwaveConfig.tx_ref,
                             });
                             showSuccess('Payment verified successfully!');
                             setStep('SUCCESS');

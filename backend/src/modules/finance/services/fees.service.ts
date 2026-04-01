@@ -1205,10 +1205,11 @@ export class FeesService {
     });
   }
 
-  async verifyFlutterwavePayment(transactionId: string, meta: any, studentId: string, tenantId: string) {
+  async verifyFlutterwavePayment(transactionId: string, meta: any, studentId: string, tenantId: string, txRef?: string) {
     return this.transactionRepo.manager.transaction(async (manager) => {
-      // Use advisory lock for concurrency protection
-      await manager.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [`FLW-${transactionId}`]);
+      // Use txRef as primary lock if available
+      const lockRef = txRef || `FLW-${transactionId}`;
+      await manager.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [lockRef]);
       
       try {
         const response = await axios.get(`https://api.flutterwave.com/v3/transactions/${transactionId}/verify`, {
@@ -1218,13 +1219,12 @@ export class FeesService {
         const data = response.data;
         if (data.status === 'success' && data.data.status === 'successful') {
           const amountPaid = data.data.amount;
-          const currency = data.data.currency;
           
-          // Use transactionId as the reference
-          const reference = `FLW-${transactionId}`;
+          // Use tx_ref from Flutterwave response to stay consistent with webhooks
+          const reference = data.data.tx_ref || txRef || `FLW-${transactionId}`;
 
           const existingTx = await manager.findOne(Transaction, { where: { reference, tenantId } });
-          if (existingTx) throw new ConflictException('Payment already recorded');
+          if (existingTx) return { success: true, detail: 'Already recorded' };
 
           await this.recordPayment({
             studentId,
@@ -1300,10 +1300,12 @@ export class FeesService {
       throw new BadRequestException('Invalid secret hash');
     }
 
-    const { reference, tx_ref, amount, metadata, status, id: flwId } = body;
-    const finalRef = tx_ref || reference;
+    // 2. Handle nested 'data' object (standard for charge.completed)
+    const data = body.data || body;
+    const { reference, tx_ref, amount, metadata, status, id: flwId } = data;
+    const finalRef = tx_ref || reference || `FLW-${flwId}`;
 
-    if (body.event === 'charge.completed' || (status === 'successful' && !body.event)) {
+    if (body.event === 'charge.completed' || (status === 'successful')) {
       const tenantId = metadata?.tenantId;
       const studentId = metadata?.studentId;
 
@@ -1326,7 +1328,7 @@ export class FeesService {
           paymentMethod: PaymentMethod.ONLINE,
           reference: finalRef,
           type: TransactionType.FEE_PAYMENT,
-          meta: { flutterwaveData: body, gateway: 'FLUTTERWAVE', via: 'webhook', flwId }
+          meta: { flutterwaveData: data, gateway: 'FLUTTERWAVE', via: 'webhook', flwId }
         }, tenantId);
 
         return { status: 'success' };

@@ -181,7 +181,7 @@ class ApiService {
     return this.post<any>('/finance/paystack/verify', data)
   }
 
-  async verifyFlutterwavePayment(data: { transactionId: string, meta: any, studentId: string }) {
+  async verifyFlutterwavePayment(data: { transactionId: string, meta: any, studentId: string, txRef?: string }) {
     return this.post<any>('/finance/flutterwave/verify', data)
   }
 
@@ -829,6 +829,10 @@ class ApiService {
 
   async createRating(data: any) {
     return this.post<any>('/hr/ratings', data)
+  }
+
+  async getMyTeachers() {
+    return this.get<any[]>('/hr/ratings/my-teachers')
   }
 
   async updateRating(id: string, data: any) {

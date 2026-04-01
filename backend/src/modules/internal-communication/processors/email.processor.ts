@@ -35,7 +35,7 @@ export class EmailProcessor {
       this.logger.log(`Starting background email delivery to: ${options.to}`);
       
       const mailOptions = {
-        from: options.from || process.env.SMTP_FROM_EMAIL || 'noreply@sms.school',
+        from: options.from || process.env.SMTP_FROM || process.env.SMTP_FROM_EMAIL || 'noreply@sms.school',
         to: options.to,
         subject: options.subject,
         html: options.html,

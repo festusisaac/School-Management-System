@@ -36,6 +36,7 @@ import { RatingController } from './controllers/rating.controller';
 import { AuthModule } from '../auth/auth.module';
 import { SystemModule } from '../system/system.module';
 import { StudentsModule } from '../students/students.module';
+import { AcademicsModule } from '../academics/academics.module';
 
 import { BullModule } from '@nestjs/bull';
 import { StaffImportProcessor } from './processors/staff-import.processor';
@@ -45,6 +46,7 @@ import { StaffImportProcessor } from './processors/staff-import.processor';
         forwardRef(() => AuthModule),
         forwardRef(() => SystemModule),
         forwardRef(() => StudentsModule),
+        forwardRef(() => AcademicsModule),
         TypeOrmModule.forFeature([
             Department,
             Staff,

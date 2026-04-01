@@ -35,6 +35,6 @@ import { SystemModule } from '../system/system.module';
   ],
   controllers: [AcademicsController, TimetableController, SubjectTeacherController, ClassSubjectController, SchoolSectionController],
   providers: [AcademicsService, TimetableService, SubjectTeacherService, ClassSubjectService, SchoolSectionService],
-  exports: [AcademicsService, TimetableService, ClassSubjectService, SchoolSectionService, TypeOrmModule],
+  exports: [AcademicsService, TimetableService, ClassSubjectService, SchoolSectionService, SubjectTeacherService, TypeOrmModule],
 })
 export class AcademicsModule { }

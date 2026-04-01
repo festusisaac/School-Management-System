@@ -1,4 +1,5 @@
 import { Controller, Post, Body, Get, Query, Param, Delete, Patch, Headers, UseGuards, Request } from '@nestjs/common';
+import { Public } from '../../../decorators/public.decorator';
 import { FeesService } from '../services/fees.service';
 import { CreatePaymentDto } from '../dtos/create-payment.dto';
 import { CreateStructureDto } from '../dtos/create-structure.dto';
@@ -31,16 +32,18 @@ export class FeesController {
   }
 
   @Post('flutterwave/verify')
-  verifyFlutterwavePayment(@Body() dto: { transactionId: string, meta: any, studentId: string }, @Request() req: any) {
-    return this.feesService.verifyFlutterwavePayment(dto.transactionId, dto.meta, dto.studentId, req.user.tenantId);
+  verifyFlutterwavePayment(@Body() dto: { transactionId: string, meta: any, studentId: string, txRef?: string }, @Request() req: any) {
+    return this.feesService.verifyFlutterwavePayment(dto.transactionId, dto.meta, dto.studentId, req.user.tenantId, dto.txRef);
   }
 
   // --- Payment Webhooks (No Auth Guard) ---
+  @Public()
   @Post('paystack/webhook')
   async handlePaystackWebhook(@Headers('x-paystack-signature') signature: string, @Body() body: any) {
     return this.feesService.handlePaystackWebhook(signature, body);
   }
 
+  @Public()
   @Post('flutterwave/webhook')
   async handleFlutterwaveWebhook(@Headers('verif-hash') hash: string, @Body() body: any) {
     return this.feesService.handleFlutterwaveWebhook(hash, body);

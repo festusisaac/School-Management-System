@@ -151,22 +151,22 @@ export default function StudentProfile() {
     }, [id]);
 
     useEffect(() => {
-        if (activeTab === 'Fees' && id && !statement) {
+        if (activeTab === 'Fees' && student?.id && !statement) {
             fetchStatement();
         }
-    }, [activeTab, id]);
+    }, [activeTab, student?.id, statement]);
 
     useEffect(() => {
-        if (activeTab === 'Exam' && id && !examData) {
+        if (activeTab === 'Exam' && student?.id && !examData) {
             fetchExamData();
         }
-    }, [activeTab, id]);
+    }, [activeTab, student?.id, examData]);
 
     const fetchExamData = async () => {
-        if (!id) return;
+        if (!student?.id) return;
         setExamLoading(true);
         try {
-            const data = await api.getStudentExamDashboard(id);
+            const data = await api.getStudentExamDashboard(student.id);
             setExamData(data);
         } catch (error) {
             console.error("Failed to fetch exam dashboard", error);
@@ -176,10 +176,10 @@ export default function StudentProfile() {
     };
 
     const fetchStatement = async () => {
-        if (!id) return;
+        if (!student?.id) return;
         setLoadingStatement(true);
         try {
-            const data = await api.getStudentStatement(id);
+            const data = await api.getStudentStatement(student.id);
             setStatement(data);
         } catch (error) {
             console.error("Failed to fetch statement", error);
