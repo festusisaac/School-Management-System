@@ -116,11 +116,11 @@ const ReportCardTemplate: React.FC<Props> = ({
         }
     };
 
-    // Constants from the settings
+    // Constants from the settings - Alignment with Blade Template
     const colorPrimary = settings.primaryColor || '#2aa06c';
-    const colorHeaderBg = '#eaf6f0'; // Matching Blade .header-table
-    const colorSectionBg = '#d9ead3'; // Matching Blade .section-header
-    const colorBorder = '#218b12ff'; // Matching Blade .bordered-table border
+    const colorHeaderBg = '#eaf6f0';
+    const colorSectionBg = '#d9ead3';
+    const colorBorder = '#2aa06c';
 
     const getTeacherComment = (avg: number) => {
         if (avg >= 95) return "AN EXTRAORDINARY PERFORMANCE! KEEP BLAZING THE TRAIL.";
@@ -145,20 +145,22 @@ const ReportCardTemplate: React.FC<Props> = ({
         <div
             className="bg-white mx-auto text-black print:p-0"
             style={{
-                width: '210mm',
-                minHeight: '297mm', // Natural A4 Height
-                padding: '5mm', // Matching Blade body padding
+                width: '100%',
+                maxWidth: '210mm',
+                minHeight: 'auto', // Removed fixed height to remove sidebar
+                padding: '5mm', // Matching Blade padding exactly
                 fontFamily: "'DejaVu Sans', sans-serif",
-                fontSize: '11px', // Matching Blade base size
-                lineHeight: '1.2', // Matching Blade line height
+                fontSize: '11px',
+                lineHeight: '1.2',
                 WebkitPrintColorAdjust: 'exact',
                 boxSizing: 'border-box',
-                position: 'relative'
+                position: 'relative',
+                margin: '0 auto' // Center in preview
             }}
         >
             <div className="main-container w-full max-w-full m-0 p-0 box-border">
                 {/* HEADER TABLE */}
-                <table className="w-full border-collapse mb-1 header-table" style={{ backgroundColor: colorHeaderBg, border: `1px solid ${colorPrimary}`, tableLayout: 'fixed' }}>
+                <table className="w-full border-collapse mb-[4px] border" style={{ backgroundColor: colorHeaderBg, borderColor: colorBorder }}>
                     <tbody>
                         <tr>
                             <td width="15%" className="text-center p-1">
@@ -190,11 +192,11 @@ const ReportCardTemplate: React.FC<Props> = ({
                 </div>
 
                 {/* STUDENT INFO GRID */}
-                <table className="w-full mb-1 border-collapse" style={{ tableLayout: 'fixed' }}>
+                <table className="w-full mb-[4px] border-collapse" style={{ tableLayout: 'fixed' }}>
                     <tbody>
                         <tr>
                             {/* Personal Data */}
-                            <td width="35%" style={{ verticalAlign: 'top', padding: '0 2px 0 0' }}>
+                            <td width="40%" style={{ verticalAlign: 'top', padding: '0 2px 0 0' }}>
                                 <table className="w-full border-collapse" style={{ border: `1px solid ${colorBorder}` }}>
                                     <tbody>
                                         <tr>
@@ -203,8 +205,8 @@ const ReportCardTemplate: React.FC<Props> = ({
                                             </th>
                                         </tr>
                                         <tr>
-                                            <td className="p-0.5 border" style={{ borderColor: colorBorder }}>Name</td>
-                                            <td className="p-0.5 border font-bold uppercase" style={{ borderColor: colorBorder }}>{data.student.name}</td>
+                                            <td className="p-[3px] border" style={{ borderColor: colorBorder }}>Name</td>
+                                            <td className="p-[3px] border font-bold uppercase" style={{ borderColor: colorBorder }}>{data.student.name}</td>
                                         </tr>
                                         <tr>
                                             <td className="p-[3px] border" style={{ borderColor: colorBorder }}>Date of Birth</td>
@@ -227,8 +229,8 @@ const ReportCardTemplate: React.FC<Props> = ({
                             </td>
 
                             {config.showPhoto && (
-                                <td width="15%" style={{ verticalAlign: 'top', padding: '0 2px' }}>
-                                    <div className="mx-auto flex items-center justify-center border border-gray-300 overflow-hidden" style={{ width: '95px', height: '100px' }}>
+                                <td width="13%" style={{ verticalAlign: 'top', padding: '0 2px' }}>
+                                    <div className="mx-auto flex items-center justify-center border border-gray-300 overflow-hidden" style={{ width: '85px', height: '90px' }}>
                                         {data.student.photoUrl ? (
                                             <img src={getFullUrl(data.student.photoUrl)} className="w-full h-full object-cover" alt="Student" />
                                         ) : (
@@ -239,8 +241,8 @@ const ReportCardTemplate: React.FC<Props> = ({
                             )}
 
                             {/* Attendance & Duration */}
-                            <td width="30%" style={{ verticalAlign: 'top', padding: '0 2px' }}>
-                                <table className="w-full border-collapse mb-0.5" style={{ border: `1px solid ${colorBorder}` }}>
+                            <td width="25%" style={{ verticalAlign: 'top', padding: '0 2px' }}>
+                                <table className="w-full border-collapse mb-[3px]" style={{ border: `1px solid ${colorBorder}` }}>
                                     <tbody>
                                         <tr>
                                             <th colSpan={3} className="text-center font-bold p-[3px]" style={{ backgroundColor: colorSectionBg, border: `1px solid ${colorBorder}` }}>
@@ -248,14 +250,14 @@ const ReportCardTemplate: React.FC<Props> = ({
                                             </th>
                                         </tr>
                                         <tr style={{ fontSize: '9px' }}>
-                                            <td className="text-center p-[3px] border border-b-0" style={{ borderColor: colorBorder }}>No. of Times<br />School Opened</td>
-                                            <td className="text-center p-[3px] border border-b-0" style={{ borderColor: colorBorder }}>No. of Times<br />Present</td>
-                                            <td className="text-center p-[3px] border border-b-0" style={{ borderColor: colorBorder }}>No. of Times<br />Absent</td>
+                                            <td className="text-center p-[1px] border border-b-0" style={{ borderColor: colorBorder }}>No. of Times<br />School Opened</td>
+                                            <td className="text-center p-[1px] border border-b-0" style={{ borderColor: colorBorder }}>No. of Times<br />Present</td>
+                                            <td className="text-center p-[1px] border border-b-0" style={{ borderColor: colorBorder }}>No. of Times<br />Absent</td>
                                         </tr>
                                         <tr>
-                                            <td className="text-center p-0.5 border" style={{ borderColor: colorBorder }}>{data.academicInfo.timesOpened || 0}</td>
-                                            <td className="text-center p-0.5 border" style={{ borderColor: colorBorder }}>{data.academicInfo.timesPresent || 0}</td>
-                                            <td className="text-center p-0.5 border" style={{ borderColor: colorBorder }}>{data.academicInfo.timesAbsent || 0}</td>
+                                            <td className="text-center p-[1px] border" style={{ borderColor: colorBorder }}>{data.academicInfo.timesOpened || 0}</td>
+                                            <td className="text-center p-[1px] border" style={{ borderColor: colorBorder }}>{data.academicInfo.timesPresent || 0}</td>
+                                            <td className="text-center p-[1px] border" style={{ borderColor: colorBorder }}>{data.academicInfo.timesAbsent || 0}</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -267,22 +269,22 @@ const ReportCardTemplate: React.FC<Props> = ({
                                             </th>
                                         </tr>
                                         <tr style={{ fontSize: '9px' }}>
-                                            <td className="text-center p-[3px] border border-b-0" style={{ borderColor: colorBorder }}>Term Begins</td>
-                                            <td className="text-center p-[3px] border border-b-0" style={{ borderColor: colorBorder }}>Term Ends</td>
-                                            <td className="text-center p-[3px] border border-b-0" style={{ borderColor: colorBorder }}>Next Term Begins</td>
+                                            <td className="text-center p-[1px] border border-b-0" style={{ borderColor: colorBorder }}>Term Begins</td>
+                                            <td className="text-center p-[1px] border border-b-0" style={{ borderColor: colorBorder }}>Term Ends</td>
+                                            <td className="text-center p-[1px] border border-b-0" style={{ borderColor: colorBorder }}>Next Term Begins</td>
                                         </tr>
                                         <tr>
-                                            <td className="text-center p-[3px] border font-bold" style={{ borderColor: colorBorder }}>{data.academicInfo.termBegins || ''}</td>
-                                            <td className="text-center p-[3px] border font-bold" style={{ borderColor: colorBorder }}>{data.academicInfo.termEnds || ''}</td>
-                                            <td className="text-center p-[3px] border font-bold" style={{ borderColor: colorBorder }}>{data.academicInfo.nextTermBegins || ''}</td>
+                                            <td className="text-center p-[1px] border font-bold" style={{ borderColor: colorBorder }}>{data.academicInfo.termBegins || ''}</td>
+                                            <td className="text-center p-[1px] border font-bold" style={{ borderColor: colorBorder }}>{data.academicInfo.termEnds || ''}</td>
+                                            <td className="text-center p-[1px] border font-bold" style={{ borderColor: colorBorder }}>{data.academicInfo.nextTermBegins || ''}</td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </td>
 
                             {/* Summary */}
-                            <td width="20%" style={{ verticalAlign: 'top', padding: '0 0 0 2px' }}>
-                                <table className="w-full border-collapse mb-1 bordered-table" style={{ border: `1px solid ${colorBorder}`, tableLayout: 'fixed' }}>
+                            <td width="22%" style={{ verticalAlign: 'top', padding: '0 0 0 2px' }}>
+                                <table className="w-full border-collapse mb-[3px]" style={{ border: `1px solid ${colorBorder}` }}>
                                     <tbody>
                                         <tr>
                                             <td className="text-center font-bold p-[3px] border" style={{ fontSize: '9px', borderColor: colorBorder }}>TOTAL SCORE<br />OBTAINABLE</td>
@@ -325,14 +327,14 @@ const ReportCardTemplate: React.FC<Props> = ({
 
                 {/* ACADEMIC PERFORMANCE HEADER */}
                 <div
-                    className="text-center font-bold p-0.5 uppercase mb-1 mt-1 section-header"
+                    className="text-center font-bold p-0.5 uppercase mb-0 mt-[4px]"
                     style={{ backgroundColor: colorSectionBg, border: `1px solid ${colorPrimary}` }}
                 >
                     ACADEMIC PERFORMANCE
                 </div>
 
                 {/* ACADEMIC PERFORMANCE TABLE */}
-                <table className="w-full border-collapse" style={{ border: `1px solid ${colorBorder}` }}>
+                <table className="w-full border-collapse" style={{ border: `1px solid ${colorBorder}`, tableLayout: 'fixed' }}>
                     <thead>
                         <tr style={{ backgroundColor: colorSectionBg, fontSize: '10px' }}>
                             <th className="border p-1 text-left" rowSpan={2} style={{ borderColor: colorBorder, width: '20%' }}>SUBJECT</th>
@@ -396,7 +398,7 @@ const ReportCardTemplate: React.FC<Props> = ({
 
                 {/* KEYS TO RATING */}
                 <div
-                    className="text-center font-bold p-0.5 uppercase mt-1 section-header"
+                    className="text-center font-bold p-0.5 uppercase mt-[4px]"
                     style={{ backgroundColor: colorSectionBg, border: `1px solid ${colorPrimary}`, fontSize: '9px' }}
                 >
                     KEYS TO RATING
@@ -415,7 +417,7 @@ const ReportCardTemplate: React.FC<Props> = ({
                 </table>
 
                 {/* TRAITS & SKILLS GRID */}
-                <table className="w-full mt-0.5 border-collapse" style={{ tableLayout: 'fixed' }}>
+                <table className="w-full mt-[4px] border-collapse" style={{ tableLayout: 'fixed' }}>
                     <tbody>
                         <tr>
                             <td width="50%" style={{ paddingRight: '2px', verticalAlign: 'top' }}>
@@ -488,7 +490,7 @@ const ReportCardTemplate: React.FC<Props> = ({
                                     </tbody>
                                 </table>
 
-                                <div className="mt-0.5" style={{ border: `1px solid ${colorPrimary}` }}>
+                                <div className="mt-[4px]" style={{ border: `1px solid ${colorPrimary}` }}>
                                     <div className="p-0.5 font-bold uppercase text-center" style={{ backgroundColor: colorSectionBg, borderBottom: `1px solid ${colorPrimary}`, fontSize: '9px' }}>
                                         KEYS TO RATING
                                     </div>
@@ -506,7 +508,7 @@ const ReportCardTemplate: React.FC<Props> = ({
                 </table>
 
                 {/* FOOTER SECTION */}
-                <div className="mt-1 border-[2px] footer-section" style={{ borderColor: colorPrimary }}>
+                <div className="mt-[4px] border-[2px]" style={{ borderColor: colorPrimary }}>
                     <table className="w-full border-collapse">
                         <tbody>
                             <tr>
@@ -560,27 +562,31 @@ const ReportCardTemplate: React.FC<Props> = ({
                         size: A4 portrait;
                         margin: 5mm;
                     }
-                    body {
-                        margin: 0;
-                        padding: 0;
-                        background: white;
+                    html, body {
+                        height: auto !important;
+                        overflow: visible !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        background: white !important;
+                    }
+                    /* Force layout wrappers to expand and hide sidebars during print */
+                    #root, .app-root, [class*="layout"], [class*="main"], [class*="content"], [class*="wrapper"] {
+                        height: auto !important;
+                        overflow: visible !important;
+                        position: static !important;
+                        display: block !important;
                     }
                     .main-container {
                         width: 100%;
                         max-width: 100%;
+                        height: auto;
                         margin: 0;
                         padding: 0;
                     }
-                    .header-bg, .section-header {
+                    * {
+                        box-sizing: border-box;
                         -webkit-print-color-adjust: exact !important;
                         print-color-adjust: exact !important;
-                    }
-                    table {
-                        page-break-inside: auto;
-                    }
-                    tr {
-                        page-break-inside: avoid;
-                        page-break-after: auto;
                     }
                 }
             `}</style>

@@ -372,7 +372,7 @@ const ReportCardPage = () => {
                             : (settings?.sessionEndDate ? new Date(settings.sessionEndDate).toLocaleDateString() : ''),
                         nextTermBegins: (broadsheetResponse as any).termDetails?.nextTermStartDate 
                             ? new Date((broadsheetResponse as any).termDetails.nextTermStartDate).toLocaleDateString()
-                            : (settings?.nextTermStartDate ? new Date(settings.nextTermStartDate).toLocaleDateString() : 'To be announced'),
+                            : (settings?.nextTermStartDate ? new Date(settings.nextTermStartDate).toLocaleDateString() : ''),
                         classTeacherName: teacherName,
                         classTeacherSignature: teacherSign,
                         principalSignature: settings?.invoiceLogo ? getFullUrl(settings.invoiceLogo) : ''
