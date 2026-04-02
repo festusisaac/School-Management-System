@@ -72,7 +72,7 @@ const BulkPrintSection = React.memo(({ students, assessments, config }: {
     return (
         <div className="hidden print:block">
             {students.map((student, idx) => (
-                <div key={idx} style={{ pageBreakAfter: 'always' }}>
+                <div key={idx} style={{ pageBreakAfter: idx === students.length - 1 ? 'auto' : 'always' }}>
                     <ReportCardTemplate data={student} assessments={assessments} config={config} />
                 </div>
             ))}
@@ -473,7 +473,7 @@ const ReportCardPage = () => {
     }, []);
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 print:min-h-0 print:bg-white">
             {/* Screen Content */}
             <div className="p-6 space-y-6 print:hidden">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
