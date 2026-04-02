@@ -29,8 +29,8 @@ export function MainLayout() {
             <div className="flex-1 flex flex-col h-full transition-all duration-300 overflow-hidden">
                 <TopBar onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
 
-                <main className="flex-1 p-4 md:p-8 overflow-y-auto">
-                    <div className="max-w-7xl mx-auto w-full">
+                <main className="flex-1 overflow-y-auto">
+                    <div className="w-full px-4 md:px-8 py-4 md:py-6 max-w-[100%] mx-auto">
                         <Outlet />
                     </div>
                 </main>

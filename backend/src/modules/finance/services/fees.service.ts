@@ -314,6 +314,41 @@ export class FeesService {
     };
   }
 
+  // Lightweight balance check for a student in the current session
+  async getStudentCurrentBalance(studentId: string, tenantId: string): Promise<number> {
+    const sessionId = await this.systemSettingsService.getActiveSessionId();
+    
+    // 1. Transactions
+    const txWhere: any = { studentId, tenantId };
+    if (sessionId) txWhere.sessionId = sessionId;
+    const transactions = await this.transactionRepo.find({ where: txWhere });
+
+    // 2. Carry Forwards
+    const cfWhere: any = { studentId, tenantId };
+    if (sessionId) cfWhere.sessionId = sessionId;
+    const carryForwards = await this.carryRepo.find({ where: cfWhere });
+
+    // 3. Assignments
+    const asWhere: any = { studentId, isActive: true, tenantId };
+    if (sessionId) asWhere.sessionId = sessionId;
+    const assignments = await this.assignmentRepo.find({
+      where: asWhere,
+      relations: ['feeGroup', 'feeGroup.heads'],
+    });
+
+    // 4. Sum up
+    const totalPaid = transactions.reduce((acc, curr) => acc + parseFloat(curr.amount || '0'), 0);
+    const totalCarryForward = carryForwards.reduce((acc, curr) => acc + parseFloat(curr.amount || '0'), 0);
+    
+    const assignedHeads = assignments.flatMap(a => {
+      const excludedIds = a.excludedHeadIds || [];
+      return (a.feeGroup?.heads || []).filter(h => !excludedIds.includes(h.id));
+    });
+    const totalDue = assignedHeads.reduce((acc, curr) => acc + parseFloat(curr.defaultAmount || '0'), 0) + totalCarryForward;
+
+    return totalDue - totalPaid;
+  }
+
   // Calculate closing balance for a student in a specific (usually past) session
   async getSessionBalance(studentId: string, sessionId: string, tenantId: string): Promise<number> {
     // 1. Transactions for that session

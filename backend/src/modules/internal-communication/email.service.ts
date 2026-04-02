@@ -10,6 +10,7 @@ export interface EmailOptions {
   html?: string;
   text?: string;
   from?: string;
+  logId?: string;
 }
 
 @Injectable()
@@ -43,7 +44,7 @@ export class EmailService {
     this.logger.log(`Email service initialized via Amazon SES SMTP (Host: ${smtpConfig.host})`);
   }
 
-  async sendEmail(options: EmailOptions): Promise<boolean> {
+  async sendEmail(options: EmailOptions, delay = 0): Promise<boolean> {
     try {
       await this.emailQueue.add('send-mail', options, {
         attempts: 3,
@@ -52,6 +53,7 @@ export class EmailService {
           delay: 5000,
         },
         removeOnComplete: true,
+        delay,
       });
       return true;
     } catch (error) {

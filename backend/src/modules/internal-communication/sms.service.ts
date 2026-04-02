@@ -5,6 +5,7 @@ import { Queue } from 'bull';
 export interface SmsOptions {
   to: string;
   message: string;
+  logId?: string;
 }
 
 @Injectable()
@@ -38,7 +39,7 @@ export class SmsService {
   async sendRegistrationOtp(phoneNumber: string, otp: string): Promise<boolean> {
     try {
       const message = `Your SMS registration OTP is: ${otp}. Valid for 10 minutes. Do not share with anyone.`;
-      return await this.sendSms(phoneNumber, message);
+      return await this.sendSms({ to: phoneNumber, message });
     } catch (error: any) {
       this.logger.error(`Failed to send registration OTP to ${phoneNumber}:`, error.message);
       return false;
@@ -48,7 +49,7 @@ export class SmsService {
   async sendLoginOtp(phoneNumber: string, otp: string): Promise<boolean> {
     try {
       const message = `Your SMS login OTP is: ${otp}. Valid for 5 minutes. Do not share with anyone.`;
-      return await this.sendSms(phoneNumber, message);
+      return await this.sendSms({ to: phoneNumber, message });
     } catch (error: any) {
       this.logger.error(`Failed to send login OTP to ${phoneNumber}:`, error.message);
       return false;
@@ -58,7 +59,7 @@ export class SmsService {
   async sendPasswordResetOtp(phoneNumber: string, otp: string): Promise<boolean> {
     try {
       const message = `Your password reset OTP is: ${otp}. Valid for 15 minutes. Do not share with anyone.`;
-      return await this.sendSms(phoneNumber, message);
+      return await this.sendSms({ to: phoneNumber, message });
     } catch (error: any) {
       this.logger.error(`Failed to send password reset OTP to ${phoneNumber}:`, error.message);
       return false;
@@ -68,7 +69,7 @@ export class SmsService {
   async sendPaymentReminderSms(phoneNumber: string, studentName: string, balance: string, message?: string): Promise<boolean> {
     try {
       const smsMessage = message || `Payment Reminder: ward ${studentName} has a balance of ${balance}. Kindly clear at your earliest convenience.`;
-      return await this.sendSms(phoneNumber, smsMessage);
+      return await this.sendSms({ to: phoneNumber, message: smsMessage });
     } catch (error: any) {
       this.logger.error(`Failed to send payment reminder SMS to ${phoneNumber}:`, error.message);
       return false;
@@ -77,7 +78,7 @@ export class SmsService {
 
   async sendNotificationSms(phoneNumber: string, message: string): Promise<boolean> {
     try {
-      return await this.sendSms(phoneNumber, message);
+      return await this.sendSms({ to: phoneNumber, message });
     } catch (error: any) {
       this.logger.error(`Failed to send notification SMS to ${phoneNumber}:`, error.message);
       return false;
@@ -92,27 +93,25 @@ export class SmsService {
   ): Promise<boolean> {
     try {
       const message = `Payment Success! We've received ${amount} for ${studentName}. Ref: ${reference}. Please Kindly Check your Mail to Print the Reciept. Thank you!`;
-      return await this.sendSms(phoneNumber, message);
+      return await this.sendSms({ to: phoneNumber, message });
     } catch (error: any) {
       this.logger.error(`Failed to send payment receipt SMS to ${phoneNumber}:`, error.message);
       return false;
     }
   }
 
-  async sendSms(phoneNumber: string, message: string): Promise<boolean> {
+  async sendSms(options: SmsOptions, delay = 0): Promise<boolean> {
     try {
-      await this.smsQueue.add('send-sms', {
-        to: phoneNumber,
-        message,
-      }, {
+      await this.smsQueue.add('send-sms', options, {
         attempts: 3,
         backoff: {
           type: 'exponential',
           delay: 5000,
         },
         removeOnComplete: true,
+        delay,
       });
-      this.logger.log(`SMS job queued successfully to: ${phoneNumber}`);
+      this.logger.log(`SMS job queued successfully to: ${options.to}`);
       return true;
     } catch (error: any) {
       this.logger.error(`Failed to queue SMS job: ${error.message}`);

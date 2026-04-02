@@ -7,6 +7,8 @@ import { MessageTemplate } from '../entities/message-template.entity';
 import { CommunicationLog, CommunicationType, CommunicationStatus } from '../entities/communication-log.entity';
 import { EmailService } from '../../internal-communication/email.service';
 import { SmsService } from '../../internal-communication/sms.service';
+import { FeesService } from '../../finance/services/fees.service';
+import { SystemSettingsService } from '../../system/services/system-settings.service';
 import { SendBroadcastDto, BroadcastTarget } from '../dto/send-broadcast.dto';
 
 @Injectable()
@@ -24,6 +26,8 @@ export class BroadcastService {
     private readonly logRepository: Repository<CommunicationLog>,
     private readonly emailService: EmailService,
     private readonly smsService: SmsService,
+    private readonly feesService: FeesService,
+    private readonly systemSettingsService: SystemSettingsService,
   ) {}
 
   async broadcast(dto: SendBroadcastDto, tenantId: string): Promise<{ queued: number }> {
@@ -37,11 +41,18 @@ export class BroadcastService {
       return { queued: 0 };
     }
 
-    // 2. Process and Queue
+    // 2. Schedule and Queue
     let queuedCount = 0;
+    const now = Date.now();
+    const scheduledAt = dto.scheduledAt ? new Date(dto.scheduledAt) : null;
+    const delay = (scheduledAt && scheduledAt.getTime() > now) ? scheduledAt.getTime() - now : 0;
+    const status = delay > 0 ? CommunicationStatus.SCHEDULED : CommunicationStatus.SENT;
+
     for (const recipient of recipients) {
-      const personalizedBody = this.replacePlaceholders(dto.body, recipient);
-      const personalizedSubject = dto.subject ? this.replacePlaceholders(dto.subject, recipient) : undefined;
+      const personalizedBody = await this.replacePlaceholders(dto.body, recipient, tenantId);
+      const personalizedSubject = dto.subject ? await this.replacePlaceholders(dto.subject, recipient, tenantId) : undefined;
+
+      const data = recipient.data;
 
       // Log the attempt
       const log = this.logRepository.create({
@@ -50,8 +61,11 @@ export class BroadcastService {
         recipientName: recipient.name,
         subject: personalizedSubject,
         body: personalizedBody,
-        status: CommunicationStatus.SENT, // We mark as SENT once queued successfully
+        status,
         tenantId,
+        studentId: data?.admissionNo ? data.id : undefined, // Heuristic: students have admissionNo
+        staffId: data?.employeeId ? data.id : undefined,   // Heuristic: staff have employeeId
+        scheduledAt: scheduledAt || undefined,
       });
       await this.logRepository.save(log);
 
@@ -61,10 +75,15 @@ export class BroadcastService {
           to: recipient.email,
           subject: personalizedSubject || 'School Notification',
           html: personalizedBody,
-        });
+          logId: log.id,
+        }, delay);
         queuedCount++;
       } else if (dto.channel === 'SMS' && recipient.phone) {
-        await this.smsService.sendSms(recipient.phone, personalizedBody);
+        await this.smsService.sendSms({
+          to: recipient.phone,
+          message: personalizedBody,
+          logId: log.id,
+        }, delay);
         queuedCount++;
       }
     }
@@ -134,6 +153,24 @@ export class BroadcastService {
             }));
           }
           break;
+
+      case BroadcastTarget.DEBTORS_ONLY:
+          const debtorsResult = await this.feesService.debtorsList({ limit: 1000 }, tenantId);
+          debtorsResult.items.forEach(d => {
+            recipients.push(...this.extractStudentTarget(d.student, dto.includeParents));
+          });
+          break;
+
+      case BroadcastTarget.PAID_ONLY:
+          // Logic: Get ALL students, then filter out those in the debtors list
+          const allStudents = await this.studentRepository.find({ where: { tenantId, isActive: true }, relations: ['class', 'parent'] });
+          const debtors = await this.feesService.debtorsList({ limit: 1000 }, tenantId);
+          const debtorIds = new Set(debtors.items.map(d => d.id));
+          
+          allStudents.filter(s => !debtorIds.has(s.id)).forEach(s => {
+            recipients.push(...this.extractStudentTarget(s, dto.includeParents));
+          });
+          break;
     }
 
     // Filter out duplicates and missing contact info
@@ -172,22 +209,76 @@ export class BroadcastService {
     return targets;
   }
 
-  private replacePlaceholders(text: string, recipient: any): string {
+  private async replacePlaceholders(text: string, recipient: any, tenantId: string): Promise<string> {
     let result = text;
     const data = recipient.data;
+    const settings = await this.systemSettingsService.getSettings();
+
+    // Determine the name to use in 'Dear {name}'
+    const displayName = data.firstName 
+      ? data.firstName 
+      : (recipient.name && recipient.name !== 'Guardian' ? recipient.name : 'Recipient');
 
     const placeholders: Record<string, string> = {
-      '{student_name}': data.firstName ? `${data.firstName} ${data.lastName || ''}` : recipient.name,
+      '{name}': displayName,
+      '{student_name}': data.firstName ? `${data.firstName} ${data.lastName || ''}`.trim() : (recipient.name || 'Recipient'),
+      '{first_name}': data.firstName || (recipient.name?.split(' ')[0]) || 'Recipient',
+      '{last_name}': data.lastName || '',
+      '{full_name}': data.firstName ? `${data.firstName} ${data.lastName || ''}`.trim() : (recipient.name || 'Recipient'),
       '{admission_no}': data.admissionNo || '',
+      '{admission_number}': data.admissionNo || '',
       '{class_name}': data.class?.name || '',
-      '{guardian_name}': data.parent?.guardianName || '',
-      '{school_name}': 'Our School', // Should fetch from settings
+      '{guardian_name}': data.parent?.guardianName || 'Guardian',
+      '{school_name}': settings.schoolName || 'Our School',
     };
 
+    // Dynamic Balance resolution if placeholder exists
+    if (text.includes('{fee_balance}') && data.id) {
+      try {
+        const balance = await this.feesService.getStudentCurrentBalance(data.id, tenantId);
+        const symbol = settings.currencySymbol || '₦';
+        placeholders['{fee_balance}'] = `${symbol}${balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+      } catch (err) {
+        placeholders['{fee_balance}'] = '0.00';
+      }
+    }
+
+    // Replace placeholders
     for (const [key, value] of Object.entries(placeholders)) {
-      result = result.replace(new RegExp(key, 'g'), value);
+      result = result.replace(new RegExp(key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), value);
     }
 
     return result;
+  }
+
+  async getLogs(tenantId: string, params?: { type?: string; status?: string; limit?: number; page?: number }): Promise<any[]> {
+    const query = this.logRepository.createQueryBuilder('log')
+      .where('log.tenantId = :tenantId', { tenantId })
+      .orderBy('log.createdAt', 'DESC');
+
+    if (params?.type) {
+      query.andWhere('log.type = :type', { type: params.type });
+    }
+
+    if (params?.status) {
+      query.andWhere('log.status = :status', { status: params.status });
+    }
+
+    if (params?.limit) {
+      const page = params.page && params.page > 0 ? params.page : 1;
+      query.skip((page - 1) * params.limit).take(params.limit);
+    } else {
+      query.take(100); // Default limit
+    }
+
+    return await query.getMany();
+  }
+
+  async getLogsByStudent(studentId: string, tenantId: string): Promise<any[]> {
+    return await this.logRepository.find({
+      where: { studentId, tenantId },
+      order: { createdAt: 'DESC' },
+      take: 50
+    });
   }
 }

@@ -8,7 +8,11 @@ export enum CommunicationType {
 export enum CommunicationStatus {
   PENDING = 'PENDING',
   SENT = 'SENT',
+  DELIVERED = 'DELIVERED',
+  OPENED = 'OPENED',
   FAILED = 'FAILED',
+  BOUNCED = 'BOUNCED',
+  SCHEDULED = 'SCHEDULED',
 }
 
 @Entity('communication_logs')
@@ -36,6 +40,27 @@ export class CommunicationLog {
 
   @Column({ type: 'text', nullable: true })
   errorMessage?: string;
+
+  @Column({ nullable: true })
+  providerMessageId?: string; // Correlates with Resend/Termii IDs
+
+  @Column({ type: 'uuid', nullable: true })
+  studentId?: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  staffId?: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  parentId?: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  scheduledAt?: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  deliveredAt?: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  openedAt?: Date;
 
   @Index()
   @Column()

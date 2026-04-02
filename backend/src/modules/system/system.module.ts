@@ -35,7 +35,7 @@ import { InternalCommunicationModule } from '../internal-communication/internal-
             User,
         ]),
         forwardRef(() => AuthModule),
-        InternalCommunicationModule,
+        forwardRef(() => InternalCommunicationModule),
     ],
     controllers: [
         SystemSettingsController,

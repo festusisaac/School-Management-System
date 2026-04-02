@@ -1012,6 +1012,14 @@ class ApiService {
   async sendBroadcast(data: SendBroadcastDto) {
     return this.post<{ queued: number }>('/communication/broadcast', data)
   }
+
+  async getCommunicationLogs(params?: any) {
+    return this.get<any[]>('/communication/logs', { params })
+  }
+
+  async getCommunicationLogsByStudent(studentId: string) {
+    return this.get<any[]>(`/communication/logs/student/${studentId}`)
+  }
 }
 
 export const api = new ApiService()
@@ -1041,6 +1049,8 @@ export enum BroadcastTarget {
   STAFF = 'STAFF',
   INDIVIDUAL_STUDENTS = 'INDIVIDUAL_STUDENTS',
   INDIVIDUAL_STAFF = 'INDIVIDUAL_STAFF',
+  DEBTORS_ONLY = 'DEBTORS_ONLY',
+  PAID_ONLY = 'PAID_ONLY',
 }
 
 export interface SendBroadcastDto {
@@ -1051,4 +1061,5 @@ export interface SendBroadcastDto {
   subject?: string;
   body: string;
   includeParents?: boolean;
+  scheduledAt?: string;
 }

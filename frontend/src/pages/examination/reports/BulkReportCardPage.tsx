@@ -290,7 +290,7 @@ const BulkReportCardPage = () => {
     }
 
     return (
-        <div className="bg-white min-h-screen">
+        <div className="bg-slate-50 min-h-screen">
             <style dangerouslySetInnerHTML={{ __html: `
                 @media print {
                     .no-print { display: none !important; }
@@ -299,7 +299,7 @@ const BulkReportCardPage = () => {
                 }
             ` }} />
             
-            <div className="no-print p-4 bg-gray-100 border-b flex flex-col md:flex-row justify-between items-start md:items-center sticky top-0 z-50 gap-4">
+            <div className="no-print p-4 bg-white/80 backdrop-blur-md border-b flex flex-col md:flex-row justify-between items-start md:items-center sticky top-0 z-50 gap-4 shadow-sm">
                 <div>
                     <h1 className="text-xl font-bold">Bulk Report Card Preview</h1>
                     <div className="flex items-center gap-3 mt-1">
@@ -330,7 +330,7 @@ const BulkReportCardPage = () => {
 
             <div className="flex flex-col items-center">
                 {reportCards.slice((currentPage - 1) * pageSize, currentPage * pageSize).map((data: ReportCardData, index: number) => (
-                    <div key={index} className="page-break w-full max-w-4xl bg-white shadow-xl my-8 print:my-0 print:shadow-none">
+                    <div key={index} className="page-break w-full bg-white shadow-lg my-6 print:my-0 print:shadow-none border border-gray-100">
                         <ReportCardTemplate data={data} assessments={assessments} config={config} />
                     </div>
                 ))}

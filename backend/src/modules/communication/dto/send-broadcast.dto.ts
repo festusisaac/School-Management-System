@@ -7,6 +7,8 @@ export enum BroadcastTarget {
   STAFF = 'STAFF',
   INDIVIDUAL_STUDENTS = 'INDIVIDUAL_STUDENTS',
   INDIVIDUAL_STAFF = 'INDIVIDUAL_STAFF',
+  DEBTORS_ONLY = 'DEBTORS_ONLY',
+  PAID_ONLY = 'PAID_ONLY',
 }
 
 export class SendBroadcastDto {
@@ -35,4 +37,8 @@ export class SendBroadcastDto {
   @IsOptional()
   @IsBoolean()
   includeParents?: boolean;
+
+  @IsOptional()
+  @IsString()
+  scheduledAt?: string; // ISO Date string
 }

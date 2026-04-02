@@ -236,6 +236,7 @@ function AppRoutes() {
               <Route path="communication">
                 <Route path="templates" element={<Communication.CommunicationTemplates />} />
                 <Route path="broadcast" element={<Communication.SendBroadcast />} />
+                <Route path="logs" element={<Communication.CommunicationLogs />} />
               </Route>
 
               {/* Settings Routes */}

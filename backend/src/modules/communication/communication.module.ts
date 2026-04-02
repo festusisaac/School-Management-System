@@ -12,6 +12,7 @@ import { Staff } from '../hr/entities/staff.entity';
 import { StudentsModule } from '../students/students.module';
 import { HrModule } from '../hr/hr.module';
 import { InternalCommunicationModule } from '../internal-communication/internal-communication.module';
+import { FinanceModule } from '../finance/finance.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { InternalCommunicationModule } from '../internal-communication/internal-
     forwardRef(() => SystemModule),
     forwardRef(() => StudentsModule),
     forwardRef(() => HrModule),
+    forwardRef(() => FinanceModule),
   ],
   controllers: [MessageTemplatesController, CommunicationController],
   providers: [

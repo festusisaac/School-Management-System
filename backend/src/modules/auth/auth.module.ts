@@ -26,7 +26,7 @@ import { InternalCommunicationModule } from '../internal-communication/internal-
       }),
     }),
     TypeOrmModule.forFeature([User, Role, Permission]),
-    InternalCommunicationModule,
+    forwardRef(() => InternalCommunicationModule),
   ],
   providers: [AuthService, JwtStrategy],
   controllers: [AuthController],

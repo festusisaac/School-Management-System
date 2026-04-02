@@ -43,6 +43,8 @@ export interface ReportCardData {
         classTeacherName?: string;
         classTeacherSignature?: string;
         principalSignature?: string;
+        teacherComment?: string;
+        principalComment?: string;
     };
     subjects: ReportCardSubject[];
     summary: {
@@ -100,14 +102,9 @@ const ReportCardTemplate: React.FC<Props> = ({
         if (n === undefined || n === null || n === 0 || n === '0') return '-';
         const num = typeof n === 'string' ? parseInt(n) : n;
         if (isNaN(num)) return n;
-
         const lastDigit = num % 10;
         const lastTwoDigits = num % 100;
-
-        if (lastTwoDigits >= 11 && lastTwoDigits <= 13) {
-            return num + "th";
-        }
-
+        if (lastTwoDigits >= 11 && lastTwoDigits <= 13) return num + "th";
         switch (lastDigit) {
             case 1: return num + "st";
             case 2: return num + "nd";
@@ -116,489 +113,455 @@ const ReportCardTemplate: React.FC<Props> = ({
         }
     };
 
-    // Constants from the settings - Alignment with Blade Template
-    const colorPrimary = settings.primaryColor || '#2aa06c';
+    // Styling Constants from Blade Template
+    const colorPrimary = '#2aa06c';
     const colorHeaderBg = '#eaf6f0';
     const colorSectionBg = '#d9ead3';
-    const colorBorder = '#2aa06c';
+    const colorBorderGreen = '#218b12ff';
 
-    const getTeacherComment = (avg: number) => {
-        if (avg >= 95) return "AN EXTRAORDINARY PERFORMANCE! KEEP BLAZING THE TRAIL.";
-        if (avg >= 90) return "AN OUTSTANDING RESULT! KEEP UP THE GOOD WORK.";
-        if (avg >= 80) return "EXCELLENT PERFORMANCE. KEEP MAINTAINING THIS VITALITY.";
-        if (avg >= 70) return "A VERY GOOD RESULT. AIM FOR THE TOP NEXT TERM.";
-        if (avg >= 60) return "A GOOD PERFORMANCE. SUSTAIN YOUR EFFORTS.";
-        if (avg >= 50) return "A FAIR RESULT. YOU CAN DO MUCH BETTER.";
-        if (avg >= 40) return "AVERAGE PERFORMANCE. YOU NEED TO BE MORE SERIOUS.";
-        return "POOR RESULT, REDOUBLE YOUR EFFORTS TO IMPROVE.";
-    };
-
-    const getPrincipalComment = (avg: number) => {
-        if (avg >= 90) return "OUTSTANDING PERFORMANCE. KEEP IT UP!";
-        if (avg >= 75) return "EXCELLENT WORK. HIGHLY RECOMMENDED.";
-        if (avg >= 50) return "GOOD EFFORT. PROMOTED.";
-        if (avg >= 45) return "FAIR PERFORMANCE. PROMOTED ON TRIAL.";
-        return "WEAK PERFORMANCE. NOT PROMOTED.";
+    const containerStyle: React.CSSProperties = {
+        width: '100%',
+        margin: '0 auto',
+        padding: '0', 
+        backgroundColor: 'white',
+        color: '#000',
+        fontFamily: "'DejaVu Sans', sans-serif",
+        fontSize: '11px',
+        lineHeight: '1.2',
+        boxSizing: 'border-box',
+        position: 'relative'
     };
 
     return (
-        <div
-            className="bg-white mx-auto text-black print:mx-0 print:w-full print:max-w-none"
-            style={{
-                width: '100%',
-                maxWidth: '100%', 
-                minHeight: 'auto',
-                padding: '2mm', 
-                fontFamily: "'DejaVu Sans', sans-serif",
-                fontSize: '11px',
-                lineHeight: '1.2',
-                WebkitPrintColorAdjust: 'exact',
-                boxSizing: 'border-box',
-                position: 'relative',
-                margin: '0 auto'
-            }}
-        >
-            <div className="main-container w-full max-w-full m-0 p-0 box-border flex flex-col justify-between" style={{ minHeight: '290mm' }}>
-                <div className="upper-content">
-                    {/* HEADER TABLE */}
-                    <table className="w-full border-collapse mb-[5px] border" style={{ backgroundColor: colorHeaderBg, borderColor: colorBorder }}>
-                    <tbody>
-                        <tr>
-                            <td width="15%" className="text-center p-1">
-                                {(settings.printLogo || settings.primaryLogo || settings.invoiceLogo) ? (
-                                    <img src={getFullUrl(settings.printLogo || settings.primaryLogo || settings.invoiceLogo)} className="w-[80px] h-[80px] object-contain mx-auto" alt="Logo" />
-                                ) : (
-                                    <div className="w-[60px] h-[60px] bg-primary text-white rounded-full flex items-center justify-center font-bold text-[10px] mx-auto uppercase text-center font-black">LOGO</div>
-                                )}
-                            </td>
-                            <td className="text-center">
-                                <div className="text-[20px] font-black uppercase text-primary tracking-tight">{settings.schoolName || 'HISGRACE INTERNATIONAL SCHOOL'}</div>
-                                <div className="text-[12px] font-bold text-gray-700">{settings.schoolAddress || 'Lagos, Nigeria'}</div>
-                                <div className="italic mt-1 text-[11px] text-gray-500 font-medium">"{settings.schoolMotto || 'Excellence & Integrity'}"</div>
-                            </td>
-                            <td width="15%" className="text-center p-1">
-                                {(settings.primaryLogo || settings.invoiceLogo || settings.printLogo) ? (
-                                    <img src={getFullUrl(settings.primaryLogo || settings.invoiceLogo || settings.printLogo)} className="w-[80px] h-[80px] object-contain mx-auto" alt="Logo" />
-                                ) : (
-                                    <div className="w-[60px] h-[60px] bg-primary text-white rounded-full flex items-center justify-center font-bold text-[10px] mx-auto uppercase text-center font-black">LOGO</div>
-                                )}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                {/* TERM TITLE */}
-                <div className="text-center font-bold text-[12px] my-1 uppercase">
-                    {data.examGroup.name} {data.examGroup.term} REPORT SHEET
-                </div>
-
-                {/* STUDENT INFO GRID */}
-                <table className="w-full mb-[5px] border-collapse" style={{ tableLayout: 'fixed' }}>
-                    <tbody>
-                        <tr>
-                            {/* Personal Data */}
-                            <td width="40%" style={{ verticalAlign: 'top', padding: '0 2px 0 0' }}>
-                                <table className="w-full border-collapse" style={{ border: `1px solid ${colorBorder}` }}>
-                                    <tbody>
-                                        <tr>
-                                            <th colSpan={2} className="text-center font-bold p-[3px]" style={{ backgroundColor: colorSectionBg, border: `1px solid ${colorBorder}` }}>
-                                                STUDENT'S PERSONAL DATA
-                                            </th>
-                                        </tr>
-                                        <tr>
-                                            <td className="p-[3px] border" style={{ borderColor: colorBorder }}>Name</td>
-                                            <td className="p-[3px] border font-bold uppercase" style={{ borderColor: colorBorder }}>{data.student.name}</td>
-                                        </tr>
-                                        <tr>
-                                            <td className="p-[3px] border" style={{ borderColor: colorBorder }}>Date of Birth</td>
-                                            <td className="p-[3px] border" style={{ borderColor: colorBorder }}>{data.student.dateOfBirth || ''}</td>
-                                        </tr>
-                                        <tr>
-                                            <td className="p-[3px] border" style={{ borderColor: colorBorder }}>Sex</td>
-                                            <td className="p-[3px] border uppercase" style={{ borderColor: colorBorder }}>{data.student.sex || ''}</td>
-                                        </tr>
-                                        <tr>
-                                            <td className="p-[3px] border" style={{ borderColor: colorBorder }}>Class</td>
-                                            <td className="p-[3px] border uppercase" style={{ borderColor: colorBorder }}>{data.student.class}</td>
-                                        </tr>
-                                        <tr>
-                                            <td className="p-[3px] border" style={{ borderColor: colorBorder }}>Admission No.</td>
-                                            <td className="p-[3px] border" style={{ borderColor: colorBorder }}>{data.student.admissionNumber}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </td>
-
-                            {config.showPhoto && (
-                                <td width="13%" style={{ verticalAlign: 'top', padding: '0 2px' }}>
-                                    <div className="mx-auto flex items-center justify-center border border-gray-300 overflow-hidden" style={{ width: '85px', height: '90px' }}>
-                                        {data.student.photoUrl ? (
-                                            <img src={getFullUrl(data.student.photoUrl)} className="w-full h-full object-cover" alt="Student" />
-                                        ) : (
-                                            <span className="text-gray-300 text-[10px] font-bold">PHOTO</span>
-                                        )}
-                                    </div>
-                                </td>
+        <div style={containerStyle} className="main-container bg-white">
+            {/* Header Table */}
+            <table className="w-full header-table mb-1" style={{ backgroundColor: colorHeaderBg, border: `1px solid ${colorPrimary}`, borderCollapse: 'collapse' }}>
+                <tbody>
+                    <tr>
+                        <td style={{ width: '15%', textAlign: 'center', padding: '5px' }}>
+                            {(settings.printLogo || settings.primaryLogo || settings.invoiceLogo) ? (
+                                <img src={getFullUrl(settings.printLogo || settings.primaryLogo || settings.invoiceLogo)} style={{ width: '60px', height: '60px', objectFit: 'contain' }} alt="Logo" />
+                            ) : (
+                                <div style={{ width: '60px', height: '60px', background: '#9333ea', color: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '10px' }}>LOGO</div>
                             )}
+                        </td>
+                        <td style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#000', textTransform: 'uppercase' }}>{settings.schoolName || 'HISGRACE INTERNATIONAL SCHOOL'}</div>
+                            <div>{settings.schoolAddress || 'Lagos, Nigeria'}</div>
+                            <div style={{ fontStyle: 'italic', marginTop: '2px' }}>"{settings.schoolMotto || 'Excellence & Integrity'}"</div>
+                        </td>
+                        <td style={{ width: '15%', textAlign: 'center', padding: '5px' }}>
+                            {(settings.primaryLogo || settings.invoiceLogo || settings.printLogo) ? (
+                                <img src={getFullUrl(settings.primaryLogo || settings.invoiceLogo || settings.printLogo)} style={{ width: '60px', height: '60px', objectFit: 'contain' }} alt="Logo" />
+                            ) : (
+                                <div style={{ width: '60px', height: '60px', background: '#9333ea', color: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '10px' }}>LOGO</div>
+                            )}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
 
-                            {/* Attendance & Duration */}
-                            <td width="25%" style={{ verticalAlign: 'top', padding: '0 2px' }}>
-                                <table className="w-full border-collapse mb-[4px]" style={{ border: `1px solid ${colorBorder}` }}>
-                                    <tbody>
-                                        <tr>
-                                            <th colSpan={3} className="text-center font-bold p-[3px]" style={{ backgroundColor: colorSectionBg, border: `1px solid ${colorBorder}` }}>
-                                                ATTENDANCE
-                                            </th>
-                                        </tr>
-                                        <tr style={{ fontSize: '9px' }}>
-                                            <td className="text-center p-[1px] border border-b-0" style={{ borderColor: colorBorder }}>No. of Times<br />School Opened</td>
-                                            <td className="text-center p-[1px] border border-b-0" style={{ borderColor: colorBorder }}>No. of Times<br />Present</td>
-                                            <td className="text-center p-[1px] border border-b-0" style={{ borderColor: colorBorder }}>No. of Times<br />Absent</td>
-                                        </tr>
-                                        <tr>
-                                            <td className="text-center p-[1px] border" style={{ borderColor: colorBorder }}>{data.academicInfo.timesOpened || 0}</td>
-                                            <td className="text-center p-[1px] border" style={{ borderColor: colorBorder }}>{data.academicInfo.timesPresent || 0}</td>
-                                            <td className="text-center p-[1px] border" style={{ borderColor: colorBorder }}>{data.academicInfo.timesAbsent || 0}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                <div className="mb-[1px]">
-                                    <table className="w-full border-collapse" style={{ border: `1px solid ${colorBorder}` }}>
+            <div style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '12px', margin: '4px 0', textTransform: 'uppercase' }}>
+                {data.examGroup.name} {data.examGroup.term?.toUpperCase()} REPORT SHEET
+            </div>
+
+            {/* Student Info Grid */}
+            <table style={{ width: '100%', marginBottom: '4px', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+                <tbody>
+                    <tr>
+                        {/* Col 1: Personal Data */}
+                        <td style={{ width: config.showPhoto ? '35%' : '50%', verticalAlign: 'top', padding: '0 2px 0 0' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', border: `1px solid ${colorBorderGreen}` }}>
+                                <tbody>
+                                    <tr><th colSpan={2} style={{ backgroundColor: colorSectionBg, border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}>STUDENT'S PERSONAL DATA</th></tr>
+                                    <tr><td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px' }}>Name</td><td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', fontWeight: 'bold', textTransform: 'uppercase' }}>{data.student.name}</td></tr>
+                                    <tr><td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px' }}>Date of Birth</td><td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px' }}>{data.student.dateOfBirth || ''}</td></tr>
+                                    <tr><td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px' }}>Sex</td><td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textTransform: 'uppercase' }}>{data.student.sex || ''}</td></tr>
+                                    <tr><td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px' }}>Class</td><td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textTransform: 'uppercase' }}>{data.student.class}</td></tr>
+                                    <tr><td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px' }}>Admission No.</td><td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px' }}>{data.student.admissionNumber}</td></tr>
+                                </tbody>
+                            </table>
+                        </td>
+
+                        {/* Col 2: Photo */}
+                        {config.showPhoto && (
+                            <td style={{ width: '15%', verticalAlign: 'top', padding: '0 2px' }}>
+                                <div style={{ height: '100px', width: '95px', border: '1px solid #ccc', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', margin: '0 auto' }}>
+                                    {data.student.photoUrl ? (
+                                        <img src={getFullUrl(data.student.photoUrl)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Student" />
+                                    ) : (
+                                        <span style={{ color: '#ccc', fontSize: '10px' }}>PHOTO</span>
+                                    )}
+                                </div>
+                            </td>
+                        )}
+
+                        {/* Col 3: Attendance & Duration */}
+                        <td style={{ width: config.showPhoto ? '30%' : (config.showAttendance ? '30%' : '50%'), verticalAlign: 'top', padding: '0 2px' }}>
+                            {config.showAttendance ? (
+                                <>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', border: `1px solid ${colorBorderGreen}`, marginBottom: '3px' }}>
                                         <tbody>
-                                            <tr>
-                                                <th colSpan={3} className="text-center font-bold p-[3px]" style={{ backgroundColor: colorSectionBg, border: `1px solid ${colorBorder}` }}>
-                                                    TERMINAL DURATION ({data.academicInfo.terminalDuration || ''})
-                                                </th>
-                                            </tr>
+                                            <tr><th colSpan={3} style={{ backgroundColor: colorSectionBg, border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}>ATTENDANCE</th></tr>
                                             <tr style={{ fontSize: '9px' }}>
-                                                <td className="text-center p-[1px] border border-b-0" style={{ borderColor: colorBorder }}>Term Begins</td>
-                                                <td className="text-center p-[1px] border border-b-0" style={{ borderColor: colorBorder }}>Term Ends</td>
-                                                <td className="text-center p-[1px] border border-b-0" style={{ borderColor: colorBorder }}>Next Term Begins</td>
+                                                <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '1px', textAlign: 'center' }}>No. of Times<br />School Opened</td>
+                                                <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '1px', textAlign: 'center' }}>No. of Times<br />Present</td>
+                                                <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '1px', textAlign: 'center' }}>No. of Times<br />Absent</td>
                                             </tr>
                                             <tr>
-                                                <td className="text-center p-[1px] border font-bold" style={{ borderColor: colorBorder }}>{data.academicInfo.termBegins || ''}</td>
-                                                <td className="text-center p-[1px] border font-bold" style={{ borderColor: colorBorder }}>{data.academicInfo.termEnds || ''}</td>
-                                                <td className="text-center p-[1px] border font-bold" style={{ borderColor: colorBorder }}>{data.academicInfo.nextTermBegins || ''}</td>
+                                                <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}>{data.academicInfo.timesOpened || 0}</td>
+                                                <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}>{data.academicInfo.timesPresent || 0}</td>
+                                                <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}>{data.academicInfo.timesAbsent || 0}</td>
                                             </tr>
                                         </tbody>
                                     </table>
-                                </div>
-                            </td>
-
-                            {/* Summary */}
-                            <td width="22%" style={{ verticalAlign: 'top', padding: '0 0 0 2px' }}>
-                                <table className="w-full border-collapse mb-[4px]" style={{ border: `1px solid ${colorBorder}` }}>
-                                    <tbody>
-                                        <tr>
-                                            <td className="text-center font-bold p-[3px] border" style={{ fontSize: '9px', borderColor: colorBorder }}>TOTAL SCORE<br />OBTAINABLE</td>
-                                            <td className="text-center font-bold p-[3px] border font-black" style={{ borderColor: colorBorder }}>{data.summary.totalObtainable || 0}</td>
-                                        </tr>
-                                        <tr>
-                                            <td className="text-center font-bold p-[3px] border" style={{ fontSize: '9px', borderColor: colorBorder }}>TOTAL SCORE<br />OBTAINED</td>
-                                            <td className="text-center font-bold p-[3px] border font-black" style={{ borderColor: colorBorder }}>{data.summary.totalObtained || 0}</td>
-                                        </tr>
-                                        {config.showAverage && (
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', border: `1px solid ${colorBorderGreen}` }}>
+                                        <tbody>
+                                            <tr><th colSpan={3} style={{ backgroundColor: colorSectionBg, border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}>TERMINAL DURATION ({data.academicInfo.terminalDuration || ''})</th></tr>
+                                            <tr style={{ fontSize: '9px' }}>
+                                                <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '1px', textAlign: 'center' }}>Term Begins</td>
+                                                <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '1px', textAlign: 'center' }}>Term Ends</td>
+                                                <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '1px', textAlign: 'center' }}>Next Term Begins</td>
+                                            </tr>
                                             <tr>
-                                                <td className="text-center font-bold p-[3px] border" style={{ fontSize: '9px', borderColor: colorBorder }}>{data.examGroup.term?.toLowerCase() === 'third term' ? 'TERM AVG' : 'AVERAGE SCORE'}</td>
-                                                <td className="text-center font-bold p-[3px] border font-black" style={{ borderColor: colorBorder }}>{data.summary.averageScore.toFixed(1)}</td>
+                                                <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}>{data.academicInfo.termBegins || ''}</td>
+                                                <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}>{data.academicInfo.termEnds || ''}</td>
+                                                <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}>{data.academicInfo.nextTermBegins || ''}</td>
                                             </tr>
-                                        )}
-                                        {isThirdTerm && config.showCumulative && data.summary.cumulativeAvg && (
-                                            <tr style={{ backgroundColor: '#f0fdf4' }}>
-                                                <td className="text-center font-black p-[3px] border" style={{ fontSize: '9px', borderColor: colorBorder }}>CUM. AVG</td>
-                                                <td className="text-center font-black p-[3px] border font-black text-primary" style={{ borderColor: colorBorder }}>{data.summary.cumulativeAvg.toFixed(1)}</td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                                <table className="w-full border-collapse" style={{ border: `1px solid ${colorBorder}` }}>
+                                        </tbody>
+                                    </table>
+                                </>
+                            ) : (
+                                <div style={{ height: '10px' }} />
+                            )}
+                        </td>
+
+                        {/* Col 4: Summary */}
+                        <td style={{ width: '20%', verticalAlign: 'top', padding: '0 0 0 2px' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', border: `1px solid ${colorBorderGreen}`, marginBottom: '3px' }}>
+                                <tbody>
+                                    <tr>
+                                        <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', fontWeight: 'bold', textAlign: 'center', fontSize: '9px' }}>TOTAL SCORE<br />OBTAINABLE</td>
+                                        <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center', fontWeight: 'bold' }}>{data.summary.totalObtainable || 0}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', fontWeight: 'bold', textAlign: 'center', fontSize: '9px' }}>TOTAL SCORE<br />OBTAINED</td>
+                                        <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center', fontWeight: 'bold' }}>{data.summary.totalObtained || 0}</td>
+                                    </tr>
+                                    {config.showAverage && (
+                                        <tr>
+                                            <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', fontWeight: 'bold', textAlign: 'center', fontSize: '9px' }}>TERM AVERAGE</td>
+                                            <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center', fontWeight: 'bold' }}>{data.summary.averageScore.toFixed(1)}</td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                            {config.showClassPosition && (
+                                <table style={{ width: '100%', borderCollapse: 'collapse', border: `1px solid ${colorBorderGreen}` }}>
                                     <tbody>
                                         <tr>
-                                            <td className="text-center font-bold p-[3px] border" style={{ fontSize: '9px', borderColor: colorBorder }}>No. in Class</td>
-                                            {config.showClassPosition && <td className="text-center font-bold p-[3px] border" style={{ fontSize: '9px', borderColor: colorBorder }}>Position</td>}
+                                            <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', fontWeight: 'bold', textAlign: 'center', fontSize: '9px' }}>No. in Class</td>
+                                            <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', fontWeight: 'bold', textAlign: 'center', fontSize: '9px' }}>Position</td>
                                         </tr>
                                         <tr>
-                                            <td className="text-center p-[3px] border font-black" style={{ borderColor: colorBorder }}>{data.summary.classSize || 0}</td>
-                                            {config.showClassPosition && <td className="text-center p-[3px] border font-black" style={{ borderColor: colorBorder }}>{formatSuffix(data.summary.position)}</td>}
+                                            <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}>{data.summary.classSize || 0}</td>
+                                            <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}>{formatSuffix(data.summary.position)}</td>
                                         </tr>
                                     </tbody>
                                 </table>
+                            )}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            {/* Academic Performance Header */}
+            <div style={{ backgroundColor: colorSectionBg, border: `1px solid ${colorPrimary}`, textAlign: 'center', fontWeight: 'bold', padding: '2px', marginTop: '4px', textTransform: 'uppercase' }}>
+                ACADEMIC PERFORMANCE
+            </div>
+
+            {/* Academic Performance Table */}
+            <table style={{ width: '100%', borderCollapse: 'collapse', border: `1px solid ${colorBorderGreen}`, tableLayout: 'fixed' }}>
+                <thead>
+                    {(() => {
+                        const examAss = assessments.find(a => a.name.toLowerCase().includes('exam'));
+                        const caAsses = assessments.filter(a => a.id !== examAss?.id);
+                        const caColSpan = caAsses.length || 1;
+
+                        if (isThirdTerm) {
+                            return (
+                                <>
+                                    <tr style={{ backgroundColor: colorSectionBg, fontSize: '9px' }}>
+                                        <th rowSpan={3} style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px' }}>SUBJECT</th>
+                                        {config.showCumulative && <th colSpan={2} style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}>B/F</th>}
+                                        <th colSpan={caColSpan} style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}>CA</th>
+                                        <th rowSpan={3} style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center', width: '5%' }}>EXAM</th>
+                                        <th rowSpan={3} style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center', width: '6%' }}>TOTAL</th>
+                                        {config.showCumulative && <th rowSpan={3} style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center', width: '6%' }}>CUM<br />TOT</th>}
+                                        {config.showHighest && <th rowSpan={3} style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center', width: '6%' }}>HIGH. IN CLASS</th>}
+                                        {config.showLowest && <th rowSpan={3} style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center', width: '6%' }}>LOW. IN CLASS</th>}
+                                        {config.showAverage && <th rowSpan={3} style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center', width: '6%' }}>CLASS<br />AVG</th>}
+                                        {config.showSubjectPosition && <th rowSpan={3} style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center', width: '6%' }}>POS.</th>}
+                                        <th rowSpan={3} style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center', width: '6%' }}>GRADE</th>
+                                        <th rowSpan={3} style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center', width: '9%' }}>REMARKS</th>
+                                    </tr>
+                                    <tr style={{ backgroundColor: colorSectionBg, fontSize: '9px' }}>
+                                        {config.showCumulative && (
+                                            <>
+                                                <th rowSpan={2} style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center', width: '6%' }}>1st</th>
+                                                <th rowSpan={2} style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center', width: '6%' }}>2nd</th>
+                                            </>
+                                        )}
+                                        <th colSpan={caColSpan} style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}></th>
+                                    </tr>
+                                    <tr style={{ backgroundColor: colorSectionBg, fontSize: '9px' }}>
+                                        {caAsses.length > 0 ? caAsses.map(a => (
+                                            <th key={a.id} style={{ border: `1px solid ${colorBorderGreen}`, padding: '2px', textAlign: 'center' }}>{a.maxMarks || 20}</th>
+                                        )) : (
+                                            <th style={{ border: `1px solid ${colorBorderGreen}`, padding: '2px', textAlign: 'center' }}>20</th>
+                                        )}
+                                    </tr>
+                                </>
+                            );
+                        } else {
+                            return (
+                                <>
+                                    <tr style={{ backgroundColor: colorSectionBg, fontSize: '10px' }}>
+                                        <th rowSpan={2} style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px' }}>SUBJECT</th>
+                                        <th colSpan={caColSpan} style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}>CA</th>
+                                        <th rowSpan={2} style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center', width: '7%' }}>EXAM</th>
+                                        <th rowSpan={2} style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center', width: '8%' }}>TOTAL</th>
+                                        {config.showHighest && <th rowSpan={2} style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center', width: '7%' }}>HIGHEST</th>}
+                                        {config.showLowest && <th rowSpan={2} style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center', width: '7%' }}>LOWEST</th>}
+                                        {config.showAverage && <th rowSpan={2} style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center', width: '8%' }}>CLASS<br />AVG</th>}
+                                        {config.showSubjectPosition && <th rowSpan={2} style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center', width: '7%' }}>POS.</th>}
+                                        <th rowSpan={2} style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center', width: '7%' }}>GRADE</th>
+                                        <th rowSpan={2} style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center', width: '11%' }}>REMARKS</th>
+                                    </tr>
+                                    <tr style={{ backgroundColor: colorSectionBg, fontSize: '10px' }}>
+                                        {caAsses.length > 0 ? caAsses.map(a => (
+                                            <th key={a.id} style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}>{a.maxMarks || 20}</th>
+                                        )) : (
+                                            <th style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}>20</th>
+                                        )}
+                                    </tr>
+                                </>
+                            );
+                        }
+                    })()}
+                </thead>
+                <tbody>
+                    {(() => {
+                        const examAss = assessments.find(a => a.name.toLowerCase().includes('exam'));
+                        const caAsses = assessments.filter(a => a.id !== examAss?.id);
+                        
+                        return data.subjects.map((subj, i) => {
+                            const examScore = examAss ? subj.scores[examAss.id] : undefined;
+                            const cumTot = (subj.cumulative?.term1 || 0) + (subj.cumulative?.term2 || 0) + subj.totalScore;
+
+                            return (
+                                <tr key={i} style={{ fontSize: '10px' }}>
+                                    <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'left' }}>{subj.subjectName}</td>
+                                    {isThirdTerm && config.showCumulative && (
+                                        <>
+                                            <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}>{subj.cumulative?.term1 ?? '-'}</td>
+                                            <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}>{subj.cumulative?.term2 ?? '-'}</td>
+                                        </>
+                                    )}
+                                    {caAsses.length > 0 ? caAsses.map(a => (
+                                        <td key={a.id} style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}>{subj.scores[a.id] ?? ''}</td>
+                                    )) : (
+                                        <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}></td>
+                                    )}
+                                    <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}>{examScore ?? ''}</td>
+                                    <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}>{subj.totalScore || 0}</td>
+                                    {isThirdTerm && config.showCumulative && (
+                                        <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}>{cumTot}</td>
+                                    )}
+                                    {config.showHighest && <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}>{subj.highestInClass ?? '-'}</td>}
+                                    {config.showLowest && <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}>{subj.lowestInClass ?? '-'}</td>}
+                                    {config.showAverage && <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}>{subj.classAvg ? subj.classAvg.toFixed(1) : '-'}</td>}
+                                    {config.showSubjectPosition && <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}>{subj.positionInSubject || '-'}</td>}
+                                    <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}>{subj.grade}</td>
+                                    <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center', fontSize: '9px' }}>{subj.remark}</td>
+                                </tr>
+                            );
+                        });
+                    })()}
+                    {/* Filler Rows */}
+                    {(() => {
+                        const examAss = assessments.find(a => a.name.toLowerCase().includes('exam'));
+                        const caAsses = assessments.filter(a => a.id !== examAss?.id);
+                        const caCount = caAsses.length || 1;
+                        
+                        return Array.from({ length: Math.max(0, 10 - data.subjects.length) }).map((_, i) => (
+                            <tr key={i} style={{ height: '18px' }}>
+                                <td style={{ border: `1px solid ${colorBorderGreen}` }}>&nbsp;</td>
+                                {isThirdTerm && config.showCumulative && <><td style={{ border: `1px solid ${colorBorderGreen}` }}></td><td style={{ border: `1px solid ${colorBorderGreen}` }}></td></>}
+                                {Array.from({ length: caCount }).map((_, idx) => (
+                                    <td key={idx} style={{ border: `1px solid ${colorBorderGreen}` }}></td>
+                                ))}
+                                <td style={{ border: `1px solid ${colorBorderGreen}` }}></td><td style={{ border: `1px solid ${colorBorderGreen}` }}></td>
+                                {isThirdTerm && config.showCumulative && <td style={{ border: `1px solid ${colorBorderGreen}` }}></td>}
+                                {config.showHighest && <td style={{ border: `1px solid ${colorBorderGreen}` }}></td>}
+                                {config.showLowest && <td style={{ border: `1px solid ${colorBorderGreen}` }}></td>}
+                                {config.showAverage && <td style={{ border: `1px solid ${colorBorderGreen}` }}></td>}
+                                {config.showSubjectPosition && <td style={{ border: `1px solid ${colorBorderGreen}` }}></td>}
+                                <td style={{ border: `1px solid ${colorBorderGreen}` }}></td><td style={{ border: `1px solid ${colorBorderGreen}` }}></td>
+                            </tr>
+                        ));
+                    })()}
+                </tbody>
+            </table>
+
+            {/* Keys Area */}
+            <div style={{ backgroundColor: colorSectionBg, border: `1px solid ${colorPrimary}`, textAlign: 'center', fontWeight: 'bold', padding: '1px', marginTop: '4px', fontSize: '9px' }}>
+                KEYS TO RATING
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', border: `1px solid ${colorBorderGreen}`, fontSize: '9px' }}>
+                <tbody>
+                    <tr>
+                        <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '2px', textAlign: 'center' }}>100-70 (EXCELLENT)</td>
+                        <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '2px', textAlign: 'center' }}>60-69 (VERY GOOD)</td>
+                        <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '2px', textAlign: 'center' }}>50-59 (GOOD)</td>
+                        <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '2px', textAlign: 'center' }}>45-49 (FAIR)</td>
+                        <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '2px', textAlign: 'center' }}>40-44 (POOR)</td>
+                        <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '2px', textAlign: 'center' }}>0-39 (VERY POOR)</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            {/* Traits & Skills Row */}
+            <table style={{ width: '100%', marginTop: '4px', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+                <tbody>
+                    <tr>
+                        <td style={{ paddingRight: '2px', verticalAlign: 'top', width: '50%' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', border: `1px solid ${colorBorderGreen}` }}>
+                                <tbody>
+                                    <tr><th colSpan={6} style={{ backgroundColor: colorSectionBg, border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}>AFFECTIVE TRAITS</th></tr>
+                                    <tr style={{ fontSize: '9px' }}>
+                                        <th style={{ border: `1px solid ${colorBorderGreen}`, width: '40%' }}></th>
+                                        <th style={{ border: `1px solid ${colorBorderGreen}` }}>1</th><th style={{ border: `1px solid ${colorBorderGreen}` }}>2</th><th style={{ border: `1px solid ${colorBorderGreen}` }}>3</th><th style={{ border: `1px solid ${colorBorderGreen}` }}>4</th><th style={{ border: `1px solid ${colorBorderGreen}` }}>5</th>
+                                    </tr>
+                                    {(data.affectiveTraits && data.affectiveTraits.length > 0 ? data.affectiveTraits : [
+                                        { name: 'Punctuality', rating: 1 }, { name: 'Neatness', rating: 1 },
+                                        { name: 'Politeness', rating: 1 }, { name: 'Attendance', rating: 1 },
+                                        { name: 'Co-operation', rating: 1 }, { name: 'Self control', rating: 1 },
+                                        { name: 'Sense of responsibility', rating: 1 }, { name: 'Industry', rating: 1 },
+                                        { name: 'Persistence', rating: 1 }
+                                    ]).map((t, i) => (
+                                        <tr key={i}>
+                                            <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '2px', fontSize: '9px' }}>{t.name}</td>
+                                            {[1, 2, 3, 4, 5].map(v => (
+                                                <td key={v} style={{ border: `1px solid ${colorBorderGreen}`, padding: '1px', textAlign: 'center' }}>
+                                                    {t.rating === v ? <span style={{ fontFamily: 'DejaVu Sans', fontSize: '9px' }}>&#10003;</span> : ''}
+                                                </td>
+                                            ))}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </td>
+                        <td style={{ paddingLeft: '2px', verticalAlign: 'top', width: '50%' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', border: `1px solid ${colorBorderGreen}` }}>
+                                <tbody>
+                                    <tr><th colSpan={6} style={{ backgroundColor: colorSectionBg, border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}>PSYCHOMOTOR SKILLS</th></tr>
+                                    <tr style={{ fontSize: '9px' }}>
+                                        <th style={{ border: `1px solid ${colorBorderGreen}`, width: '40%' }}></th>
+                                        <th style={{ border: `1px solid ${colorBorderGreen}` }}>1</th><th style={{ border: `1px solid ${colorBorderGreen}` }}>2</th><th style={{ border: `1px solid ${colorBorderGreen}` }}>3</th><th style={{ border: `1px solid ${colorBorderGreen}` }}>4</th><th style={{ border: `1px solid ${colorBorderGreen}` }}>5</th>
+                                    </tr>
+                                    {(data.psychomotorSkills && data.psychomotorSkills.length > 0 ? data.psychomotorSkills : [
+                                        { name: 'Hand Writing', rating: 1 }, { name: 'Fluency', rating: 1 },
+                                        { name: 'Games', rating: 1 }, { name: 'Sports', rating: 1 },
+                                        { name: 'Crafts', rating: 1 }, { name: 'Drawing', rating: 1 }
+                                    ]).map((s, i) => (
+                                        <tr key={i}>
+                                            <td style={{ border: `1px solid ${colorBorderGreen}`, padding: '2px', fontSize: '9px' }}>{s.name}</td>
+                                            {[1, 2, 3, 4, 5].map(v => (
+                                                <td key={v} style={{ border: `1px solid ${colorBorderGreen}`, padding: '1px', textAlign: 'center' }}>
+                                                    {s.rating === v ? <span style={{ fontFamily: 'DejaVu Sans', fontSize: '9px' }}>&#10003;</span> : ''}
+                                                </td>
+                                            ))}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            
+                            <div style={{ border: `1px solid ${colorPrimary}`, marginTop: '4px' }}>
+                                <div style={{ backgroundColor: colorSectionBg, borderBottom: `1px solid ${colorPrimary}`, padding: '2px', fontSize: '9px', textAlign: 'center', fontWeight: 'bold' }}>KEYS TO RATING</div>
+                                <div style={{ padding: '3px', fontSize: '9px' }}>
+                                    <div style={{ marginBottom: '2px' }}>5. Excellent | 4. Good | 3. Fair | 2. Poor | 1. Very Poor</div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            {/* Footer */}
+            <div style={{ border: `2px solid ${colorPrimary}`, marginTop: '4px' }} className="footer-section">
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <tbody>
+                        <tr>
+                            <td style={{ padding: '4px', verticalAlign: 'top' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                    <tbody>
+                                        <tr>
+                                            <td style={{ paddingBottom: '8px', borderBottom: `1px solid ${colorPrimary}` }}>
+                                                <strong>Class Teacher's Comments:</strong> {data.academicInfo.teacherComment || ''}
+                                                <span style={{ float: 'right' }}>
+                                                    <strong>Sign.:</strong> 
+                                                    {data.academicInfo.classTeacherSignature ? (
+                                                        <img src={data.academicInfo.classTeacherSignature} alt="" style={{ height: '25px', maxWidth: '80px', objectFit: 'contain', verticalAlign: 'middle' }} />
+                                                    ) : (
+                                                        <span style={{ display: 'inline-block', width: '50px', borderBottom: '1px solid #000' }}></span>
+                                                    )}
+                                                    <strong>Date:</strong> {new Date().toLocaleDateString()}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style={{ paddingTop: '8px', paddingBottom: '8px', borderBottom: `1px solid ${colorPrimary}` }}>
+                                                <strong>Principal's Comments:</strong> {data.academicInfo.principalComment || ''}
+                                                <span style={{ float: 'right' }}>
+                                                    <strong>Sign.:</strong> 
+                                                    {data.academicInfo.principalSignature || settings?.invoiceLogo ? (
+                                                        <img src={data.academicInfo.principalSignature || getFullUrl(settings?.invoiceLogo || '')} alt="" style={{ height: '25px', maxWidth: '80px', objectFit: 'contain', verticalAlign: 'middle' }} />
+                                                    ) : (
+                                                        <span style={{ display: 'inline-block', width: '50px', borderBottom: '1px solid #000' }}></span>
+                                                    )}
+                                                    <strong>Date:</strong> {new Date().toLocaleDateString()}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style={{ paddingTop: '8px' }}>
+                                                <strong>Promotion Status:</strong> <span style={{ fontWeight: 'bold' }}>{data.academicInfo.promotionStatus || (data.summary.averageScore >= 50 ? 'PROMOTED TO NEXT CLASS' : 'NOT PROMOTED')}</span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </td>
+                            <td style={{ width: '110px', borderLeft: `2px solid ${colorPrimary}`, verticalAlign: 'middle', textAlign: 'center' }}>
+                                <div style={{ height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colorPrimary, fontWeight: 'bold' }}>
+                                    {settings?.schoolStamp ? (
+                                        <img src={getFullUrl(settings.schoolStamp)} alt="Stamp" style={{ maxWidth: '90px', maxHeight: '70px', objectFit: 'contain' }} />
+                                    ) : (
+                                        'STAMP'
+                                    )}
+                                </div>
                             </td>
                         </tr>
                     </tbody>
                 </table>
-
-                    {/* ACADEMIC PERFORMANCE HEADER */}
-                    <div
-                        className="text-center font-bold p-0.5 uppercase mb-0 mt-[5px]"
-                        style={{ backgroundColor: colorSectionBg, border: `1px solid ${colorPrimary}` }}
-                    >
-                        ACADEMIC PERFORMANCE
-                    </div>
-
-                    {/* ACADEMIC PERFORMANCE TABLE */}
-                <table className="w-full border-collapse" style={{ border: `1px solid ${colorBorder}`, tableLayout: 'fixed' }}>
-                <thead>
-                    <tr style={{ backgroundColor: colorSectionBg, fontSize: '10px' }}>
-                        <th className="border p-1 text-left" rowSpan={2} style={{ borderColor: colorBorder, width: '20%' }}>SUBJECT</th>
-                        <th className="border p-0 text-center" colSpan={assessments.length} style={{ borderColor: colorBorder }}>ASSESSMENTS</th>
-                        <th className="border p-1 text-center" rowSpan={2} style={{ borderColor: colorBorder, width: '7%' }}>TOTAL<br />SCORE</th>
-                        {config.showHighest && <th className="border p-1 text-center" rowSpan={2} style={{ borderColor: colorBorder, width: '7%' }}>HIGHEST<br />IN CLASS</th>}
-                        {config.showLowest && <th className="border p-1 text-center" rowSpan={2} style={{ borderColor: colorBorder, width: '7%' }}>LOWEST<br />IN CLASS</th>}
-                        {config.showAverage && <th className="border p-1 text-center" rowSpan={2} style={{ borderColor: colorBorder, width: '7%' }}>CLASS<br />AVERAGE</th>}
-                        {config.showSubjectPosition && <th className="border p-1 text-center" rowSpan={2} style={{ borderColor: colorBorder, width: '7%' }}>POS.</th>}
-                        {isThirdTerm && config.showCumulative && (
-                            <>
-                                <th className="border p-1 text-center" rowSpan={2} style={{ borderColor: colorBorder, width: '5%' }}>1ST T</th>
-                                <th className="border p-1 text-center" rowSpan={2} style={{ borderColor: colorBorder, width: '5%' }}>2ND T</th>
-                                <th className="border p-1 text-center font-bold" rowSpan={2} style={{ borderColor: colorBorder, width: '6%', backgroundColor: '#f0fdf4' }}>CUM.<br />TOT</th>
-                                <th className="border p-1 text-center font-bold" rowSpan={2} style={{ borderColor: colorBorder, width: '6%', backgroundColor: '#f0fdf4' }}>CUM.<br />AVG</th>
-                            </>
-                        )}
-                        <th className="border p-1 text-center" rowSpan={2} style={{ borderColor: colorBorder, width: '5%' }}>GRADE</th>
-                        <th className="border p-1 text-center" rowSpan={2} style={{ borderColor: colorBorder, width: '12%' }}>REMARKS</th>
-                    </tr>
-                    <tr style={{ backgroundColor: colorSectionBg, fontSize: '9px' }}>
-                        {assessments.map(ass => (
-                            <th key={ass.id} className="border p-1 text-center" style={{ borderColor: colorBorder }}>
-                                {ass.name}<br />({ass.maxMarks})
-                            </th>
-                        ))}
-                    </tr>
-                </thead>
-                <tbody>
-                    {data.subjects.map((subj, i) => (
-                        <tr key={i} style={{ fontSize: '10px' }}>
-                            <td className="border p-[3px] text-left font-bold" style={{ borderColor: colorBorder }}>{subj.subjectName}</td>
-                            {assessments.map(ass => (
-                                <td key={ass.id} className="border p-[3px] text-center" style={{ borderColor: colorBorder }}>
-                                    {subj.scores[ass.id] ?? ''}
-                                </td>
-                            ))}
-                            <td className="border p-[3px] text-center font-bold" style={{ borderColor: colorBorder }}>{subj.totalScore || 0}</td>
-                            {config.showHighest && <td className="border p-[3px] text-center" style={{ borderColor: colorBorder }}>{subj.highestInClass || '-'}</td>}
-                            {config.showLowest && <td className="border p-[3px] text-center" style={{ borderColor: colorBorder }}>{subj.lowestInClass || '-'}</td>}
-                            {config.showAverage && <td className="border p-[3px] text-center" style={{ borderColor: colorBorder }}>{subj.classAvg ? subj.classAvg.toFixed(1) : '-'}</td>}
-                            {config.showSubjectPosition && <td className="border p-[3px] text-center" style={{ borderColor: colorBorder }}>{subj.positionInSubject || '-'}</td>}
-                            {isThirdTerm && config.showCumulative && (
-                                <>
-                                    <td className="border p-[3px] text-center" style={{ borderColor: colorBorder }}>{subj.cumulative?.term1 ?? '-'}</td>
-                                    <td className="border p-[3px] text-center" style={{ borderColor: colorBorder }}>{subj.cumulative?.term2 ?? '-'}</td>
-                                    <td className="border p-[3px] text-center font-bold" style={{ borderColor: colorBorder, backgroundColor: '#f0fdf4' }}>
-                                        {(subj.cumulative?.term1 || 0) + (subj.cumulative?.term2 || 0) + subj.totalScore}
-                                    </td>
-                                    <td className="border p-[3px] text-center font-bold" style={{ borderColor: colorBorder, backgroundColor: '#f0fdf4' }}>
-                                        {(((subj.cumulative?.term1 || 0) + (subj.cumulative?.term2 || 0) + subj.totalScore) / 3).toFixed(1)}
-                                    </td>
-                                </>
-                            )}
-                            <td className="border p-[3px] text-center font-bold" style={{ borderColor: colorBorder }}>{subj.grade}</td>
-                            <td className="border p-[3px] text-center font-bold" style={{ fontSize: '9px', borderColor: colorBorder }}>{subj.remark}</td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-
-            {/* KEYS TO RATING */}
-            <div
-                className="text-center font-bold p-0.5 uppercase mt-[5px]"
-                style={{ backgroundColor: colorSectionBg, border: `1px solid ${colorPrimary}`, fontSize: '9px' }}
-            >
-                KEYS TO RATING
             </div>
-            <table className="w-full border-collapse" style={{ fontSize: '9px', border: `1px solid ${colorBorder}` }}>
-                <tbody>
-                    <tr>
-                        <td className="text-center border p-0.5" style={{ borderColor: colorBorder }}>100-70 (EXCELLENT)</td>
-                        <td className="text-center border p-0.5" style={{ borderColor: colorBorder }}>60-69 (VERY GOOD)</td>
-                        <td className="text-center border p-0.5" style={{ borderColor: colorBorder }}>50-59 (GOOD)</td>
-                        <td className="text-center border p-0.5" style={{ borderColor: colorBorder }}>45-49 (FAIR)</td>
-                        <td className="text-center border p-0.5" style={{ borderColor: colorBorder }}>40-44 (POOR)</td>
-                        <td className="text-center border p-0.5" style={{ borderColor: colorBorder }}>0-39 (VERY POOR)</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
 
-        <div className="lower-content">
-            {/* TRAITS & SKILLS GRID */}
-            <table className="w-full mt-[5px] border-collapse" style={{ tableLayout: 'fixed' }}>
-            <tbody>
-                <tr>
-                    <td width="50%" style={{ paddingRight: '2px', verticalAlign: 'top' }}>
-                        <table className="w-full border-collapse" style={{ border: `1px solid ${colorBorder}` }}>
-                            <tbody>
-                                <tr>
-                                    <th colSpan={6} className="text-center font-bold p-[3px]" style={{ backgroundColor: colorSectionBg, border: `1px solid ${colorBorder}` }}>
-                                        AFFECTIVE TRAITS
-                                    </th>
-                                </tr>
-                                <tr style={{ fontSize: '9px' }}>
-                                    <th className="border" style={{ borderColor: colorBorder, width: '40%' }}></th>
-                                    <th className="border" style={{ borderColor: colorBorder }}>1</th>
-                                    <th className="border" style={{ borderColor: colorBorder }}>2</th>
-                                    <th className="border" style={{ borderColor: colorBorder }}>3</th>
-                                    <th className="border" style={{ borderColor: colorBorder }}>4</th>
-                                    <th className="border" style={{ borderColor: colorBorder }}>5</th>
-                                </tr>
-                                {/* Dynamic Affective Traits */}
-                                {(data.affectiveTraits && data.affectiveTraits.length > 0 ? data.affectiveTraits : [
-                                    { name: 'Punctuality', rating: 1 }, { name: 'Neatness', rating: 1 },
-                                    { name: 'Politeness', rating: 1 }, { name: 'Attendance', rating: 1 },
-                                    { name: 'Co-operation', rating: 1 }, { name: 'Self control', rating: 1 },
-                                    { name: 'Sense of responsibility', rating: 1 }, { name: 'Industry', rating: 1 },
-                                    { name: 'Persistence', rating: 1 }
-                                ]).map((t, i) => (
-                                    <tr key={i}>
-                                        <td className="border p-0.5 px-1 truncate" style={{ fontSize: '9px', borderColor: colorBorder }}>{t.name}</td>
-                                        {[1, 2, 3, 4, 5].map(v => (
-                                            <td key={v} className="border text-center p-0.5" style={{ borderColor: colorBorder, minWidth: '20px' }}>
-                                                {t.rating === v ? '✓' : ''}
-                                            </td>
-                                        ))}
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </td>
-                    <td width="50%" style={{ paddingLeft: '2px', verticalAlign: 'top' }}>
-                        <table className="w-full border-collapse" style={{ border: `1px solid ${colorBorder}` }}>
-                            <tbody>
-                                <tr>
-                                    <th colSpan={6} className="text-center font-bold p-[3px]" style={{ backgroundColor: colorSectionBg, border: `1px solid ${colorBorder}` }}>
-                                        PSYCHOMOTOR SKILLS
-                                    </th>
-                                </tr>
-                                <tr style={{ fontSize: '9px' }}>
-                                    <th className="border" style={{ borderColor: colorBorder, width: '40%' }}></th>
-                                    <th className="border" style={{ borderColor: colorBorder }}>1</th>
-                                    <th className="border" style={{ borderColor: colorBorder }}>2</th>
-                                    <th className="border" style={{ borderColor: colorBorder }}>3</th>
-                                    <th className="border" style={{ borderColor: colorBorder }}>4</th>
-                                    <th className="border" style={{ borderColor: colorBorder }}>5</th>
-                                </tr>
-                                {/* Dynamic Psychomotor Skills */}
-                                {(data.psychomotorSkills && data.psychomotorSkills.length > 0 ? data.psychomotorSkills : [
-                                    { name: 'Hand Writing', rating: 1 }, { name: 'Fluency', rating: 1 },
-                                    { name: 'Games', rating: 1 }, { name: 'Sports', rating: 1 },
-                                    { name: 'Crafts', rating: 1 }, { name: 'Drawing', rating: 1 }
-                                ]).map((s, i) => (
-                                    <tr key={i}>
-                                        <td className="border p-0.5 px-1 truncate" style={{ fontSize: '9px', borderColor: colorBorder }}>{s.name}</td>
-                                        {[1, 2, 3, 4, 5].map(v => (
-                                            <td key={v} className="border text-center p-0.5" style={{ borderColor: colorBorder, minWidth: '20px' }}>
-                                                {s.rating === v ? '✓' : ''}
-                                            </td>
-                                        ))}
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-
-                        <div className="mt-[5px]" style={{ border: `1px solid ${colorPrimary}` }}>
-                            <div className="p-0.5 font-bold uppercase text-center" style={{ backgroundColor: colorSectionBg, borderBottom: `1px solid ${colorPrimary}`, fontSize: '9px' }}>
-                                KEYS TO RATING
-                            </div>
-                            <div className="p-1 px-2" style={{ fontSize: '9px' }}>
-                                <div className="mb-px font-bold">5. Excellent</div>
-                                <div className="mb-px font-bold">4. Good</div>
-                                <div className="mb-px font-bold">3. Fair</div>
-                                <div className="mb-px font-bold">2. Poor</div>
-                                <div className="font-bold">1. Very Poor</div>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-            </tbody>
-            </table>
-
-            {/* FOOTER SECTION */}
-            <div className="mt-[5px] border-[2px]" style={{ borderColor: colorPrimary }}>
-            <table className="w-full border-collapse">
-                <tbody>
-                    <tr>
-                        <td className="p-1 pr-2 align-top">
-                            <div className="pb-2 mb-2 border-b" style={{ borderColor: colorPrimary }}>
-                                <span className="font-bold">Class Teacher's Comments:</span> <span className="font-bold italic uppercase">{getTeacherComment(data.summary.averageScore)}</span>
-                                <div className="float-right font-bold text-[10px] mt-1">
-                                    <span>Sign.:</span> 
-                                    <span className="inline-block w-[60px] border-b border-black text-center h-[24px] align-middle relative">
-                                        {data.academicInfo.classTeacherSignature ? (
-                                            <img src={data.academicInfo.classTeacherSignature} alt="Teacher Sign" className="absolute inset-0 w-full h-full object-contain -top-2" />
-                                        ) : <span className="opacity-60">✒️</span>}
-                                    </span>
-                                    <span className="ml-4">Date:</span> <span>{new Date().toLocaleDateString()}</span>
-                                </div>
-                                <div className="clear-both"></div>
-                            </div>
-                            <div className="pb-2 mb-2 border-b" style={{ borderColor: colorPrimary }}>
-                                <span className="font-bold">Principal's Comments:</span> <span className="font-bold italic uppercase">{getPrincipalComment(data.summary.averageScore)}</span>
-                                <div className="float-right font-bold text-[10px] mt-1 md:mt-2">
-                                    <span>Sign.:</span> 
-                                    <span className="inline-block w-[60px] border-b border-black text-center h-[24px] align-middle relative">
-                                        {data.academicInfo.principalSignature || settings?.invoiceLogo ? (
-                                            <img src={data.academicInfo.principalSignature || getFullUrl(settings?.invoiceLogo || '')} alt="Principal Sign" className="absolute inset-0 w-full h-full object-contain -top-2" />
-                                        ) : <span className="opacity-60">🖊️</span>}
-                                    </span>
-                                    <span className="ml-4">Date:</span> <span>{new Date().toLocaleDateString()}</span>
-                                </div>
-                                <div className="clear-both"></div>
-                            </div>
-                            <div>
-                                <span className="font-bold underline italic">Promotion Status:</span> <span className="font-black uppercase ml-1">{data.academicInfo.promotionStatus || (data.summary.averageScore >= 50 ? 'PROMOTED' : data.summary.averageScore >= 45 ? 'PROMOTED ON TRIAL' : 'NOT PROMOTED')}</span>
-                            </div>
-                        </td>
-                        <td className="w-[110px] border-l-[2px] align-middle text-center p-2" style={{ borderColor: colorPrimary }}>
-                            <div className="h-[70px] flex items-center justify-center font-bold uppercase" style={{ color: colorPrimary }}>
-                                <div className="w-16 h-16 rounded-full border-[3px] border-red-600 flex items-center justify-center p-1 -rotate-[22deg] opacity-60">
-                                    <span className="text-[7px] text-red-600 leading-tight">STAMP/<br />SEAL</span>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
             <style>{`
                 @media print {
-                    @page {
-                        size: A4 portrait;
-                        margin: 0;
-                    }
-                    /* NUCLEAR OPTION: Clear all layout constraints and backgrounds during print */
-                    html, body, #root, #__next, .app-root, main, [class*="layout"], [class*="MainLayout"], [class*="wrapper"], [class*="container"] {
-                        height: auto !important;
-                        min-height: 0 !important;
-                        max-height: none !important;
-                        overflow: visible !important;
-                        position: static !important;
-                        width: 100% !important;
-                        margin: 0 !important;
-                        padding: 0 !important;
-                        display: block !important;
-                        background: white !important; /* Forces gray/ash dash backgrounds to white */
-                        box-shadow: none !important;
-                    }
-                    /* Ensure headers/sidebars/modals are truly gone */
-                    .print\:hidden, aside, nav, header, .no-print, [class*="modal-backdrop"], .fixed.inset-0 {
-                        display: none !important;
-                    }
-                    .main-container {
-                        width: 100%;
-                        max-width: 100%;
-                        height: auto !important;
-                        overflow: visible !important;
-                        margin: 0;
-                        padding: 0;
-                        background: white !important;
-                    }
-                    * {
-                        box-sizing: border-box;
-                        -webkit-print-color-adjust: exact !important;
-                        print-color-adjust: exact !important;
-                    }
+                    @page { margin: 5mm; size: A4 portrait; }
+                    body { margin: 0; padding: 0; background: white; }
+                    .main-container { padding: 5mm !important; width: 100%; margin: 0; }
+                    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                 }
             `}</style>
         </div>

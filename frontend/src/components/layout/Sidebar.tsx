@@ -205,6 +205,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             children: [
                 { label: 'Send Message', path: '/communication/broadcast', permission: 'communication:manage' },
                 { label: 'Message Templates', path: '/communication/templates', permission: 'communication:manage' },
+                { label: 'Communication History', path: '/communication/logs', permission: 'communication:manage' },
             ]
         },
         {

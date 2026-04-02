@@ -7,7 +7,7 @@ import {
     FileText, GraduationCap, ClipboardList, Clock, CheckCircle2,
     QrCode as QrCodeIcon, Barcode as BarcodeIcon, ShieldAlert, ShieldCheck,
     KeySquare, CalendarDays, CreditCard, ArrowRight, MapPinned,
-    Trash2, Download, Upload, Info
+    Trash2, Download, Upload, Info, MessageSquare, Mail
 } from 'lucide-react';
 import { format, subMonths, isToday } from 'date-fns';
 import api, { getFileUrl } from '../../services/api';
@@ -39,6 +39,8 @@ export default function StudentProfile() {
     const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
     const { hasPermission } = usePermissions();
     const [loadingAttendance, setLoadingAttendance] = useState(false);
+    const [communications, setCommunications] = useState<any[]>([]);
+    const [loadingCommunications, setLoadingCommunications] = useState(false);
 
     // Document States
     const [isUploadingDoc, setIsUploadingDoc] = useState(false);
@@ -54,7 +56,22 @@ export default function StudentProfile() {
         if (activeTab === 'Attendance' && student?.id) {
             fetchAttendance();
         }
+        if (activeTab === 'Communication' && student?.id) {
+            fetchCommunications();
+        }
     }, [activeTab, student?.id]);
+
+    const fetchCommunications = async () => {
+        try {
+            setLoadingCommunications(true);
+            const data = await api.getCommunicationLogsByStudent(student.id);
+            setCommunications(data);
+        } catch (error) {
+            console.error('Error fetching communications:', error);
+        } finally {
+            setLoadingCommunications(false);
+        }
+    };
 
     const fetchAttendance = async () => {
         try {
@@ -256,8 +273,8 @@ export default function StudentProfile() {
         { id: 'Profile', label: 'Profile', icon: User },
         { id: 'Fees', label: 'Fees', icon: DollarSign },
         { id: 'Exam', label: 'Exam', icon: GraduationCap },
-        { id: 'CBSE Examination', label: 'CBSE Examination', icon: BookOpen },
         { id: 'Attendance', label: 'Attendance', icon: Clock },
+        { id: 'Communication', label: 'Communication', icon: MessageSquare },
         { id: 'Documents', label: 'Documents', icon: FileText }
     ];
 

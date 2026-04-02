@@ -597,7 +597,7 @@ export class StudentsService {
             const message = `Attendance Alert: Your child, ${studentName}, was marked ABSENT today (${formattedDate}). Kindly contact the school for any clarification.`;
 
             if (parentPhone) {
-                await this.smsService.sendSms(parentPhone, message);
+                await this.smsService.sendSms({ to: parentPhone, message });
             }
 
             if (parentEmail) {
