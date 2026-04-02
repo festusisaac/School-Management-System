@@ -63,7 +63,10 @@ export class FeesService {
     if (paymentAmount <= 0) throw new BadRequestException('Payment amount must be greater than zero.');
 
     // Tenancy Validation: Ensure student belongs to this tenant
-    const student = await this.studentRepo.findOne({ where: { id: dto.studentId, tenantId } });
+    const student = await this.studentRepo.findOne({ 
+        where: { id: dto.studentId, tenantId },
+        relations: ['class']
+    });
     if (!student) throw new NotFoundException('Student not found in this school context.');
 
     // Duplicate check for references
@@ -93,6 +96,7 @@ export class FeesService {
             reference: dto.reference || null,
             paymentMethod: dto.paymentMethod || PaymentMethod.CASH,
             type: dto.type || TransactionType.FEE_PAYMENT,
+            schoolSectionId: student.class?.schoolSectionId,
             meta: {
               ...dto.meta,
               allocations: [alloc],
@@ -120,6 +124,7 @@ export class FeesService {
         reference: dto.reference || null,
         paymentMethod: dto.paymentMethod || PaymentMethod.CASH,
         type: dto.type || TransactionType.FEE_PAYMENT,
+        schoolSectionId: student.class?.schoolSectionId,
         meta: dto.meta || {}
       });
       transactions.push(tx);
@@ -427,6 +432,7 @@ export class FeesService {
     endDate?: string;
     method?: PaymentMethod;
     type?: TransactionType;
+    sectionId?: string;
     page?: number;
     limit?: number;
   } = {}, tenantId: string) {
@@ -439,6 +445,10 @@ export class FeesService {
     
     if (sessionId) {
       q.andWhere('t.sessionId = :sessionId', { sessionId });
+    }
+
+    if (options.sectionId) {
+      q.andWhere('t.schoolSectionId = :sectionId', { sectionId: options.sectionId });
     }
 
     if (options.studentId) {
@@ -617,6 +627,7 @@ export class FeesService {
     limit?: number | string;
     minBalance?: number;
     riskLevel?: string;
+    sectionId?: string;
   } = {}, tenantId: string) {
     const page = Number(options.page || 1);
     const limit = Number(options.limit || 50);
@@ -661,6 +672,19 @@ export class FeesService {
         return `EXISTS (${subQuery})`;
       });
       query.setParameter('sessionId', sessionId);
+    }
+
+    if (options.sectionId) {
+      query.andWhere(qb => {
+        const subQuery = qb.subQuery()
+          .select('1')
+          .from('classes', 'cls')
+          .where('cls.id = student.classId')
+          .andWhere('cls.schoolSectionId = :sectionId')
+          .getQuery();
+        return `EXISTS (${subQuery})`;
+      });
+      query.setParameter('sectionId', options.sectionId);
     }
 
     query.setParameters({ faActive: true, tenantId });

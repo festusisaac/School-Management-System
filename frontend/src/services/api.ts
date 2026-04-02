@@ -309,16 +309,16 @@ class ApiService {
   }
 
   // Dashboard API methods
-  async getAdminStats() {
-    return this.get<any>('/reporting/dashboard/admin/stats')
+  async getAdminStats(params?: any) {
+    return this.get<any>('/reporting/dashboard/admin/stats', { params })
   }
 
-  async getAdminCharts() {
-    return this.get<any>('/reporting/dashboard/admin/charts')
+  async getAdminCharts(params?: any) {
+    return this.get<any>('/reporting/dashboard/admin/charts', { params })
   }
 
-  async getRecentActivities() {
-    return this.get<any>('/reporting/dashboard/admin/activities')
+  async getRecentActivities(params?: any) {
+    return this.get<any>('/reporting/dashboard/admin/activities', { params })
   }
 
   // Classes
@@ -1020,6 +1020,31 @@ class ApiService {
   async getCommunicationLogsByStudent(studentId: string) {
     return this.get<any[]>(`/communication/logs/student/${studentId}`)
   }
+
+  // Noticeboard
+  async getNotices(params?: { audience?: string }) {
+    return this.get<Notice[]>(`/communication/notices`, { params })
+  }
+
+  async getNoticesForAdmin() {
+    return this.get<Notice[]>(`/communication/notices/admin`)
+  }
+
+  async getNoticeById(id: string) {
+    return this.get<Notice>(`/communication/notices/${id}`)
+  }
+
+  async createNotice(data: Partial<Notice>) {
+    return this.post<Notice>(`/communication/notices`, data)
+  }
+
+  async updateNotice(id: string, data: Partial<Notice>) {
+    return this.patch<Notice>(`/communication/notices/${id}`, data)
+  }
+
+  async deleteNotice(id: string) {
+    return this.delete<void>(`/communication/notices/${id}`)
+  }
 }
 
 export const api = new ApiService()
@@ -1062,4 +1087,47 @@ export interface SendBroadcastDto {
   body: string;
   includeParents?: boolean;
   scheduledAt?: string;
+}
+
+export enum NoticeType {
+  ANNOUNCEMENT = 'Announcement',
+  ACADEMIC = 'Academic',
+  EVENT = 'Event',
+  EMERGENCY = 'Emergency',
+  MAINTENANCE = 'Maintenance'
+}
+
+export enum NoticeAudience {
+  ALL = 'All',
+  STUDENTS = 'Students',
+  STAFF = 'Staff'
+}
+
+export enum NoticePriority {
+  LOW = 'Low',
+  MEDIUM = 'Medium',
+  HIGH = 'High',
+  CRITICAL = 'Critical'
+}
+
+export interface Notice {
+  id: string;
+  title: string;
+  content: string;
+  type: NoticeType;
+  targetAudience: NoticeAudience;
+  priority: NoticePriority;
+  isSticky: boolean;
+  isActive: boolean;
+  authorId: string;
+  author?: {
+    firstName: string;
+    lastName: string;
+    photo?: string;
+  };
+  expiresAt?: string;
+  attachments?: string[];
+  tenantId: string;
+  createdAt: string;
+  updatedAt: string;
 }

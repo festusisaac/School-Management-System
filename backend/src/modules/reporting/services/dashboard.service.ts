@@ -22,22 +22,32 @@ export class DashboardService {
         private readonly subjectRepository: Repository<Subject>,
     ) { }
 
-    async getAdminStats() {
-        const totalStudents = await this.studentRepository.count();
-        const activeStudents = await this.studentRepository.count({ where: { isActive: true } });
+    async getAdminStats(tenantId: string, sectionId?: string) {
+        let studentQb = this.studentRepository.createQueryBuilder('student').where('student.tenantId = :tenantId', { tenantId });
+        let staffQb = this.staffRepository.createQueryBuilder('staff').where('staff.tenantId = :tenantId', { tenantId });
+        let transQb = this.transactionRepository.createQueryBuilder('transaction').where('transaction.tenantId = :tenantId', { tenantId }).andWhere('transaction.type = :type', { type: TransactionType.FEE_PAYMENT });
+        let classQb = this.classRepository.createQueryBuilder('cls').where('cls.tenantId = :tenantId', { tenantId });
+
+        if (sectionId) {
+            studentQb.innerJoin('student.class', 'cls', 'cls.schoolSectionId = :sectionId', { sectionId });
+            staffQb.innerJoin('staff.sections', 'section', 'section.id = :sectionId', { sectionId });
+            transQb.andWhere('transaction.schoolSectionId = :sectionId', { sectionId });
+            classQb.andWhere('cls.schoolSectionId = :sectionId', { sectionId });
+        }
+
+        const totalStudents = await studentQb.getCount();
+        const activeStudents = await studentQb.andWhere('student.isActive = :isActive', { isActive: true }).getCount();
         const inactiveStudents = totalStudents - activeStudents;
 
         const totalStaff = await this.staffRepository.count();
         const teachingStaff = await this.staffRepository.count();
         const nonTeachingStaff = totalStaff - teachingStaff;
 
-        const totalClasses = await this.classRepository.count();
+        const totalClasses = await classQb.getCount();
         const totalSubjects = await this.subjectRepository.count();
 
-        const totalRevenueResult = await this.transactionRepository
-            .createQueryBuilder('transaction')
+        const totalRevenueResult = await transQb
             .select('SUM(transaction.amount)', 'total')
-            .where('transaction.type = :type', { type: TransactionType.FEE_PAYMENT })
             .getRawOne();
 
         const outstandingFees = 0;
@@ -77,15 +87,23 @@ export class DashboardService {
         };
     }
 
-    async getAdminCharts() {
-        // Gender Distribution
-        const maleStudents = await this.studentRepository.count({ where: { gender: 'Male' } });
-        const femaleStudents = await this.studentRepository.count({ where: { gender: 'Female' } });
+    async getAdminCharts(tenantId: string, sectionId?: string) {
+        let maleQb = this.studentRepository.createQueryBuilder('student').where('student.tenantId = :tenantId', { tenantId }).andWhere('student.gender = :gender', { gender: 'Male' });
+        let femaleQb = this.studentRepository.createQueryBuilder('student').where('student.tenantId = :tenantId', { tenantId }).andWhere('student.gender = :gender', { gender: 'Female' });
+        let enrollQb = this.studentRepository.createQueryBuilder('student').where('student.tenantId = :tenantId', { tenantId });
+
+        if (sectionId) {
+            maleQb.innerJoin('student.class', 'cls1', 'cls1.schoolSectionId = :sectionId', { sectionId });
+            femaleQb.innerJoin('student.class', 'cls2', 'cls2.schoolSectionId = :sectionId', { sectionId });
+            enrollQb.innerJoin('student.class', 'cls3', 'cls3.schoolSectionId = :sectionId', { sectionId });
+        }
+
+        const maleStudents = await maleQb.getCount();
+        const femaleStudents = await femaleQb.getCount();
 
         // Enrollment Trends (simplified to last 6 students for now, real trend requires date grouping)
         // For a real chart, we would group by month created_at
-        const enrollmentData = await this.studentRepository
-            .createQueryBuilder('student')
+        const enrollmentData = await enrollQb
             .select("TO_CHAR(student.createdAt, 'Mon')", 'month')
             .addSelect('COUNT(student.id)', 'count')
             .groupBy("TO_CHAR(student.createdAt, 'Mon')")
@@ -102,18 +120,17 @@ export class DashboardService {
         };
     }
 
-    async getRecentActivities() {
-        const recentEnrollments = await this.studentRepository.find({
-            order: { createdAt: 'DESC' },
-            take: 5,
-            select: ['id', 'firstName', 'lastName', 'createdAt'],
-        });
+    async getRecentActivities(tenantId: string, sectionId?: string) {
+        let studQb = this.studentRepository.createQueryBuilder('student').where('student.tenantId = :tenantId', { tenantId }).orderBy('student.createdAt', 'DESC').take(5);
+        let transQb = this.transactionRepository.createQueryBuilder('transaction').where('transaction.tenantId = :tenantId', { tenantId }).andWhere('transaction.type = :type', { type: TransactionType.FEE_PAYMENT }).orderBy('transaction.createdAt', 'DESC').take(5);
 
-        const recentPayments = await this.transactionRepository.find({
-            where: { type: TransactionType.FEE_PAYMENT },
-            order: { createdAt: 'DESC' },
-            take: 5,
-        });
+        if (sectionId) {
+            studQb.innerJoin('student.class', 'cls', 'cls.schoolSectionId = :sectionId', { sectionId });
+            transQb.andWhere('transaction.schoolSectionId = :sectionId', { sectionId });
+        }
+
+        const recentEnrollments = await studQb.getMany();
+        const recentPayments = await transQb.getMany();
 
         return {
             recentEnrollments,

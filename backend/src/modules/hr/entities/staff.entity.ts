@@ -1,9 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany, Index, Unique } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany, Index, Unique, ManyToMany, JoinTable } from 'typeorm';
 import { Department } from './department.entity';
 import { Role } from '../../auth/entities/role.entity';
 import { StaffAttendance } from './staff-attendance.entity';
 import { LeaveRequest } from './leave-request.entity';
 import { Payroll } from './payroll.entity';
+import { SchoolSection } from '../../academics/entities/school-section.entity';
 
 export enum EmploymentType {
     FULL_TIME = 'Full-Time',
@@ -229,6 +230,14 @@ export class Staff {
 
     @OneToMany(() => Payroll, payroll => payroll.staff)
     payrollRecords!: Payroll[];
+
+    @ManyToMany(() => SchoolSection)
+    @JoinTable({
+        name: 'staff_school_sections',
+        joinColumn: { name: 'staffId', referencedColumnName: 'id' },
+        inverseJoinColumn: { name: 'schoolSectionId', referencedColumnName: 'id' }
+    })
+    sections!: SchoolSection[];
 
     @Index()
     @Column({ nullable: false })

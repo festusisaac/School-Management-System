@@ -181,4 +181,9 @@ export class CreateStaffDto {
     @IsString()
     @IsOptional()
     signature?: string;
+
+    @IsArray()
+    @IsString({ each: true })
+    @IsOptional()
+    sectionIds?: string[];
 }

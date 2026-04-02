@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { Staff } from './staff.entity';
+import { SchoolSection } from '../../academics/entities/school-section.entity';
 
 export enum PayrollStatus {
     PENDING = 'Pending',
@@ -81,6 +82,13 @@ export class Payroll {
     @ManyToOne(() => Staff, staff => staff.payrollRecords)
     @JoinColumn({ name: 'staff_id' })
     staff!: Staff;
+
+    @Column({ type: 'uuid', nullable: true, name: 'school_section_id' })
+    schoolSectionId?: string;
+
+    @ManyToOne(() => SchoolSection)
+    @JoinColumn({ name: 'school_section_id' })
+    schoolSection?: SchoolSection;
 
     @CreateDateColumn({ name: 'created_at' })
     createdAt!: Date;

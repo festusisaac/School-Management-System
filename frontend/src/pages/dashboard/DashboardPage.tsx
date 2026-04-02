@@ -3,6 +3,7 @@ import apiService from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
 import StudentDashboard from './StudentDashboard'
 import TeacherDashboard from './TeacherDashboard'
+import { useSystem } from '../../context/SystemContext'
 
 import { Link } from 'react-router-dom'
 import {
@@ -73,6 +74,7 @@ const DashboardPage: React.FC = () => {
   const { user } = useAuthStore()
   const userRole = (user?.role || user?.roleObject?.name || '').toLowerCase()
   const isStudentOrParent = userRole === 'student' || userRole === 'parent'
+  const { activeSectionId } = useSystem()
 
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [activities, setActivities] = useState<RecentActivity | null>(null)
@@ -86,10 +88,11 @@ const DashboardPage: React.FC = () => {
           return;
       }
       try {
+        const queryParams = activeSectionId ? `?sectionId=${activeSectionId}` : '';
         const [statsData, activitiesData, chartsData] = await Promise.all([
-          apiService.getAdminStats(),
-          apiService.getRecentActivities(),
-          apiService.getAdminCharts(),
+          apiService.getAdminStats(activeSectionId ? { sectionId: activeSectionId } : undefined),
+          apiService.getRecentActivities(activeSectionId ? { sectionId: activeSectionId } : undefined),
+          apiService.getAdminCharts(activeSectionId ? { sectionId: activeSectionId } : undefined),
         ])
         setStats(statsData)
         setActivities(activitiesData)
@@ -102,7 +105,7 @@ const DashboardPage: React.FC = () => {
     }
 
     fetchData()
-  }, [])
+  }, [activeSectionId])
 
   if (loading) {
     return (

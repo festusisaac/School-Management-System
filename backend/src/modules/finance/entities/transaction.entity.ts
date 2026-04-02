@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, Jo
 import { Student } from '../../students/entities/student.entity';
 import { FeeGroup } from './fee-group.entity';
 import { AcademicSession } from '../../system/entities/academic-session.entity';
+import { SchoolSection } from '../../academics/entities/school-section.entity';
 
 export enum TransactionType {
   FEE_PAYMENT = 'FEE_PAYMENT',
@@ -67,6 +68,14 @@ export class Transaction {
   @ManyToOne(() => AcademicSession)
   @JoinColumn({ name: 'sessionId' })
   session?: AcademicSession;
+
+  @Index()
+  @Column({ type: 'uuid', nullable: true })
+  schoolSectionId?: string;
+
+  @ManyToOne(() => SchoolSection)
+  @JoinColumn({ name: 'schoolSectionId' })
+  schoolSection?: SchoolSection;
 
   @CreateDateColumn()
   createdAt!: Date;

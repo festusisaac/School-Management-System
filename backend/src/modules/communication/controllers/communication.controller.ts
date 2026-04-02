@@ -13,20 +13,20 @@ export class CommunicationController {
   constructor(private readonly broadcastService: BroadcastService) {}
 
   @Post('broadcast')
-  @Permissions('communication:manage')
+  @Permissions('communication:send_broadcast')
   async broadcast(@Body() dto: SendBroadcastDto, @Request() req: any) {
     this.logger.log(`Broadcast request received: ${dto.target} via ${dto.channel}`);
     return await this.broadcastService.broadcast(dto, req.user.tenantId);
   }
 
   @Get('logs')
-  @Permissions('communication:view')
+  @Permissions('communication:view_logs')
   async getLogs(@Query() params: any, @Request() req: any) {
     return await this.broadcastService.getLogs(req.user.tenantId, params);
   }
 
   @Get('logs/student/:studentId')
-  @Permissions('communication:view')
+  @Permissions('communication:view_logs')
   async getLogsByStudent(@Param('studentId') studentId: string, @Request() req: any) {
     return await this.broadcastService.getLogsByStudent(studentId, req.user.tenantId);
   }

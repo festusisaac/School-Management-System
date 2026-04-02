@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { systemService, SystemSetting } from '../services/systemService';
-import { getFileUrl } from '../services/api';
+import { api, getFileUrl } from '../services/api';
 import { updateCurrencyConfig, formatCurrency as genericFormatCurrency, formatCurrencyCompact as genericFormatCurrencyCompact } from '../utils/currency';
 
 interface SchoolInfo {
@@ -22,6 +22,9 @@ interface SystemContextType {
     formatCurrency: (amount: number | string | undefined | null, includeSymbol?: boolean) => string;
     formatCurrencyCompact: (amount: number | string | undefined | null) => string;
     getSchoolInfo: () => SchoolInfo;
+    activeSectionId: string;
+    setActiveSectionId: (id: string) => void;
+    availableSections: any[];
 }
 
 const SystemContext = createContext<SystemContextType | undefined>(undefined);
@@ -68,6 +71,17 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         return cached ? JSON.parse(cached) : {};
     });
     const [loading, setLoading] = useState(true);
+    
+    // Multi-Section Multi-Tenancy Architecture 🚀
+    const [activeSectionId, setActiveSectionIdState] = useState<string>(() => {
+        return localStorage.getItem('active_section_id') || '';
+    });
+    const [availableSections, setAvailableSections] = useState<any[]>([]);
+
+    const setActiveSectionId = useCallback((id: string) => {
+        setActiveSectionIdState(id);
+        localStorage.setItem('active_section_id', id);
+    }, []);
 
     const applyColors = useCallback((primaryColor?: string, secondaryColor?: string) => {
         applyThemeColors('primary', primaryColor, [2, 132, 199]);   // Default #0284c7
@@ -78,6 +92,14 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         try {
             const data = await systemService.getSettings();
             
+            // Try fetching sections using the base api call
+            try {
+                const sectData = await api.getSchoolSections();
+                setAvailableSections(sectData || []);
+            } catch (e) {
+                console.error('Failed to load sections', e);
+            }
+
             // Fetch session and term names
             if (data?.currentSessionId) {
                 try {
@@ -173,7 +195,10 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             getFullUrl, 
             formatCurrency, 
             formatCurrencyCompact,
-            getSchoolInfo
+            getSchoolInfo,
+            activeSectionId,
+            setActiveSectionId,
+            availableSections
         }}>
             {children}
         </SystemContext.Provider>

@@ -69,6 +69,13 @@ export const seedPermissions = async (dataSource: DataSource) => {
     { slug: 'exams:manage_domains', name: 'Manage Domains & Skills', module: 'Examination', description: 'Record psychomotor and attribute scores' },
     { slug: 'exams:view_reports', name: 'Examination Reports', module: 'Examination', description: 'Broadsheets and student report cards' },
     { slug: 'exams:process_results', name: 'Process & Publish Results', module: 'Examination', description: 'Manage results visibility and scratch cards' },
+
+    // Communication
+    { slug: 'communication:view_notices', name: 'View Noticeboard', module: 'Communication', description: 'View school-wide notices and announcements' },
+    { slug: 'communication:manage_notices', name: 'Manage Notices', module: 'Communication', description: 'Create, edit, and delete noticeboard items' },
+    { slug: 'communication:send_broadcast', name: 'Send Broadcast', module: 'Communication', description: 'Send Email or SMS broadcasts to students and staff' },
+    { slug: 'communication:manage_templates', name: 'Manage Templates', module: 'Communication', description: 'Create and edit reusable communication templates' },
+    { slug: 'communication:view_logs', name: 'View Comm Logs', module: 'Communication', description: 'Audit history of sent messages and notifications' },
   ];
 
   // Get all current slugs in the database

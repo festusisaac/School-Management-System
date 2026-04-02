@@ -5,6 +5,7 @@ export interface IUser {
   lastName: string;
   role: 'admin' | 'principal' | 'teacher' | 'student' | 'parent' | 'staff';
   tenantId: string;
+  permissions?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -14,6 +15,7 @@ export interface IAuthPayload {
   email: string;
   role: string;
   tenantId: string;
+  permissions?: string[];
   iat: number;
   exp: number;
 }

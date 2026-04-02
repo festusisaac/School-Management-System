@@ -3,10 +3,13 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { SystemModule } from '../system/system.module';
 import { MessageTemplate } from './entities/message-template.entity';
 import { CommunicationLog } from './entities/communication-log.entity';
+import { Notice } from './entities/notice.entity';
 import { MessageTemplatesService } from './services/message-templates.service';
 import { MessageTemplatesController } from './controllers/message-templates.controller';
 import { CommunicationController } from './controllers/communication.controller';
+import { NoticeboardController } from './controllers/noticeboard.controller';
 import { BroadcastService } from './services/broadcast.service';
+import { NoticeboardService } from './services/noticeboard.service';
 import { Student } from '../students/entities/student.entity';
 import { Staff } from '../hr/entities/staff.entity';
 import { StudentsModule } from '../students/students.module';
@@ -16,18 +19,34 @@ import { FinanceModule } from '../finance/finance.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([MessageTemplate, CommunicationLog, Student, Staff]),
+    TypeOrmModule.forFeature([
+      MessageTemplate,
+      CommunicationLog,
+      Notice,
+      Student,
+      Staff
+    ]),
     InternalCommunicationModule,
     forwardRef(() => SystemModule),
     forwardRef(() => StudentsModule),
     forwardRef(() => HrModule),
     forwardRef(() => FinanceModule),
   ],
-  controllers: [MessageTemplatesController, CommunicationController],
+  controllers: [
+    MessageTemplatesController,
+    CommunicationController,
+    NoticeboardController
+  ],
   providers: [
     MessageTemplatesService,
     BroadcastService,
+    NoticeboardService,
   ],
-  exports: [MessageTemplatesService, BroadcastService, InternalCommunicationModule],
+  exports: [
+    MessageTemplatesService,
+    BroadcastService,
+    NoticeboardService,
+    InternalCommunicationModule
+  ],
 })
 export class CommunicationModule { }

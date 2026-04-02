@@ -57,11 +57,12 @@ export class FeesController {
     @Query('endDate') endDate?: string,
     @Query('method') method?: any,
     @Query('type') type?: any,
+    @Query('sectionId') sectionId?: string,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
     @Request() req?: any
   ) {
-    return this.feesService.paymentHistory({ studentId, startDate, endDate, method, type, page, limit }, req.user.tenantId);
+    return this.feesService.paymentHistory({ studentId, startDate, endDate, method, type, sectionId, page, limit }, req.user.tenantId);
   }
 
   @Get('statement/:studentId')
@@ -83,9 +84,10 @@ export class FeesController {
     @Query('limit') limit?: number,
     @Query('minBalance') minBalance?: number,
     @Query('riskLevel') riskLevel?: string,
+    @Query('sectionId') sectionId?: string,
     @Request() req?: any
   ) {
-    return this.feesService.debtorsList({ classId, search, page, limit, minBalance, riskLevel }, req.user.tenantId);
+    return this.feesService.debtorsList({ classId, search, page, limit, minBalance, riskLevel, sectionId }, req.user.tenantId);
   }
 
   @Get('family/:studentId')

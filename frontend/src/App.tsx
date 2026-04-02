@@ -33,6 +33,7 @@ import {
   BookAddEdit 
 } from '@pages/library';
 import ScrollToTop from './components/common/ScrollToTop';
+import { Toaster } from 'react-hot-toast';
 import './App.css'
 
 function AppRoutes() {
@@ -237,6 +238,8 @@ function AppRoutes() {
                 <Route path="templates" element={<Communication.CommunicationTemplates />} />
                 <Route path="broadcast" element={<Communication.SendBroadcast />} />
                 <Route path="logs" element={<Communication.CommunicationLogs />} />
+                <Route path="noticeboard" element={<Communication.Noticeboard />} />
+                <Route path="manage-notices" element={<Communication.ManageNotices />} />
               </Route>
 
               {/* Settings Routes */}
@@ -266,6 +269,17 @@ function App() {
       <ThemeProvider>
         <ToastProvider>
           <AppRoutes />
+          <Toaster 
+            position="top-right"
+            toastOptions={{
+              className: 'dark:bg-gray-800 dark:text-white',
+              style: {
+                borderRadius: '12px',
+                background: '#fff',
+                color: '#333',
+              },
+            }}
+          />
         </ToastProvider>
       </ThemeProvider>
     </SystemProvider>

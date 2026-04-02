@@ -12,7 +12,7 @@ interface TopBarProps {
 
 export function TopBar({ onMenuClick }: TopBarProps) {
     const { theme, toggleTheme } = useTheme();
-    const { settings, getFullUrl } = useSystem();
+    const { settings, getFullUrl, activeSectionId, setActiveSectionId, availableSections } = useSystem();
     const navigate = useNavigate();
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -83,6 +83,23 @@ export function TopBar({ onMenuClick }: TopBarProps) {
 
 
             <div className="flex items-center gap-3">
+                {/* Global Section Context Switcher */}
+                {availableSections && availableSections.length > 0 && (
+                    <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Scope:</span>
+                        <select 
+                            value={activeSectionId}
+                            onChange={(e) => setActiveSectionId(e.target.value)}
+                            className="bg-transparent border-none text-sm font-bold text-primary-700 dark:text-primary-400 focus:ring-0 cursor-pointer outline-none pl-1 pr-6 hover:text-primary-800 transition-colors"
+                        >
+                            <option value="">All Sections</option>
+                            {availableSections.map((sec) => (
+                                <option key={sec.id} value={sec.id}>{sec.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+                
                 {/* Theme Toggle */}
                 <button
                     onClick={toggleTheme}

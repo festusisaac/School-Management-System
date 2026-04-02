@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
+import NoticeNotification from '../communication/NoticeNotification';
 import { useSessionTimeout } from '../../hooks/useSessionTimeout';
 import { useAuthStore } from '../../stores/authStore';
 
@@ -16,6 +17,9 @@ export function MainLayout() {
 
     return (
         <div className="h-screen bg-gray-50 dark:bg-gray-950 flex overflow-hidden">
+            {/* Global Notice Notification Trigger */}
+            <NoticeNotification />
+
             {/* Session Timeout Warning */}
             {WarningModal}
 

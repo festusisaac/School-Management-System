@@ -35,6 +35,12 @@ export class PermissionsGuard implements CanActivate {
       return true;
     }
 
+    // Automatically allow students and parents to view notices
+    if (requiredPermissions.includes('communication:view_notices') && 
+        (userRole === 'student' || userRole === 'parent')) {
+      return true;
+    }
+
     // Check if user has ALL required permissions for the action
     const userPermissions = user.permissions || [];
     const hasAllPermissions = requiredPermissions.every(permission =>

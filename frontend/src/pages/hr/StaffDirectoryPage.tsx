@@ -3,7 +3,7 @@ import { Plus, Search, Users, UserCheck, UserX, Download, Upload, Trash2, Edit2,
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { staffService } from '../../services/hrService';
 import { systemService, Role } from '../../services/systemService';
-import { getFileUrl } from '../../services/api';
+import { api, getFileUrl } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { useSystem } from '../../context/SystemContext';
 import { formatCurrency, CURRENCY_SYMBOL } from '../../utils/currency';
@@ -41,6 +41,8 @@ interface Staff {
     role?: string;
     roleId?: string; // Added roleId
     isTeachingStaff?: boolean;
+    sections?: any[];
+    sectionIds?: string[];
     fatherName?: string;
     motherName?: string;
     maritalStatus?: string;
@@ -82,6 +84,7 @@ const StaffDirectoryPage = () => {
     const [filteredStaff, setFilteredStaff] = useState<Staff[]>([]);
     const [departments, setDepartments] = useState<Department[]>([]);
     const [roles, setRoles] = useState<Role[]>([]);
+    const [sections, setSections] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedDepartment, setSelectedDepartment] = useState('');
@@ -101,6 +104,7 @@ const StaffDirectoryPage = () => {
     const [selectedFiles, setSelectedFiles] = useState<Record<string, string | string[]>>({});
     const [enableLogin, setEnableLogin] = useState(false);
     const [isTeachingStaff, setIsTeachingStaff] = useState(false);
+    const [selectedSectionIds, setSelectedSectionIds] = useState<string[]>([]);
     const [showPassword, setShowPassword] = useState(false);
 
     // Pagination State
@@ -108,7 +112,7 @@ const StaffDirectoryPage = () => {
     const pageSize = 50;
 
     const toast = useToast();
-    const { settings } = useSystem();
+    const { settings, activeSectionId } = useSystem();
 
     const [employeeIdField, setEmployeeIdField] = useState('');
     const [password, setPassword] = useState('');
@@ -145,7 +149,7 @@ const StaffDirectoryPage = () => {
 
     useEffect(() => {
         fetchData();
-    }, []);
+    }, [activeSectionId]);
 
     useEffect(() => {
         filterStaff();
@@ -162,10 +166,12 @@ const StaffDirectoryPage = () => {
     useEffect(() => {
         if (editingStaff) {
             setEmployeeIdField(editingStaff.employeeId);
+            setSelectedSectionIds(editingStaff.sections?.map((s: any) => s.id) || []);
         } else if (!showModal) {
             setEmployeeIdField('');
             setIsTeachingStaff(false);
             setPassword('');
+            setSelectedSectionIds([]);
         }
     }, [editingStaff, showModal]);
 
@@ -183,16 +189,18 @@ const StaffDirectoryPage = () => {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [staffData, depts, rolesData, stats] = await Promise.all([
-                staffService.getAllStaff(),
+            const [staffData, depts, rolesData, stats, sectionsData] = await Promise.all([
+                staffService.getAllStaff(activeSectionId ? { sectionId: activeSectionId } : undefined),
                 staffService.getDepartments().catch(() => []),
                 systemService.getRoles().catch(() => []),
-                staffService.getStaffStatistics().catch(() => ({ total: 0, active: 0, onLeave: 0 }))
+                staffService.getStaffStatistics().catch(() => ({ total: 0, active: 0, onLeave: 0 })),
+                api.getSchoolSections().catch(() => [])
             ]);
 
             setStaff(staffData || []);
             setDepartments(depts || []);
             setRoles(rolesData || []);
+            setSections(sectionsData || []);
             setStatistics(stats);
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -487,6 +495,9 @@ const StaffDirectoryPage = () => {
                                 <form onSubmit={async (e) => {
                                     e.preventDefault();
                                     const formData = new FormData(e.currentTarget);
+                                    
+                                    // Append multi-select sections array
+                                    selectedSectionIds.forEach(id => formData.append('sectionIds[]', id));
                                     // The backend accepts 'dateOfBirth' and 'dateOfJoining' as date strings or objects, 
                                     // but FormData sends strings. This is fine if backend DTO checks for IsString or IsDateString.
                                     // If validation requires cleanup, we might need manual mapping, but sending FormData directly is supported by my plan.
@@ -596,6 +607,31 @@ const StaffDirectoryPage = () => {
                                                             <option value="">Select</option>
                                                             {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                                                         </select>
+                                                    </div>
+
+                                                    <div className="lg:col-span-1">
+                                                        <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 drop-shadow-sm">Assigned Sections</label>
+                                                        <div className="space-y-2 border border-gray-300 dark:border-gray-600 rounded-lg p-3 bg-white dark:bg-gray-700 max-h-32 overflow-y-auto w-full shadow-sm">
+                                                            {sections.length > 0 ? sections.map(section => (
+                                                                <label key={section.id} className="flex items-center gap-3 cursor-pointer p-1.5 hover:bg-gray-50 dark:hover:bg-gray-600/50 rounded-md transition-colors w-full">
+                                                                    <input 
+                                                                        type="checkbox" 
+                                                                        checked={selectedSectionIds.includes(section.id)}
+                                                                        onChange={(e) => {
+                                                                            if (e.target.checked) {
+                                                                                setSelectedSectionIds([...selectedSectionIds, section.id]);
+                                                                            } else {
+                                                                                setSelectedSectionIds(selectedSectionIds.filter(id => id !== section.id));
+                                                                            }
+                                                                        }}
+                                                                        className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 shrink-0" 
+                                                                    />
+                                                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200 select-none flex-1 font-sans">{section.name}</span>
+                                                                </label>
+                                                            )) : (
+                                                                <p className="text-sm text-gray-500 dark:text-gray-400 p-1 font-sans italic">No sections created yet.</p>
+                                                            )}
+                                                        </div>
                                                     </div>
 
                                                     {/* Row 2 */}

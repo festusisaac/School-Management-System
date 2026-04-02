@@ -26,25 +26,25 @@ export class MessageTemplatesController {
   constructor(private readonly templatesService: MessageTemplatesService) {}
 
   @Post()
-  @Permissions('communication:manage')
+  @Permissions('communication:manage_templates')
   async create(@Body() createDto: CreateMessageTemplateDto, @Request() req: any) {
     return await this.templatesService.create(createDto, req.user.tenantId);
   }
 
   @Get()
-  @Permissions('communication:view')
+  @Permissions('communication:manage_templates')
   async findAll(@Query('type') type: MessageTemplateType, @Request() req: any) {
     return await this.templatesService.findAll(req.user.tenantId, type);
   }
 
   @Get(':id')
-  @Permissions('communication:view')
+  @Permissions('communication:manage_templates')
   async findOne(@Param('id') id: string, @Request() req: any) {
     return await this.templatesService.findOne(id, req.user.tenantId);
   }
 
   @Put(':id')
-  @Permissions('communication:manage')
+  @Permissions('communication:manage_templates')
   async update(
     @Param('id') id: string,
     @Body() updateDto: UpdateMessageTemplateDto,
@@ -54,7 +54,7 @@ export class MessageTemplatesController {
   }
 
   @Delete(':id')
-  @Permissions('communication:manage')
+  @Permissions('communication:manage_templates')
   async remove(@Param('id') id: string, @Request() req: any) {
     return await this.templatesService.remove(id, req.user.tenantId);
   }

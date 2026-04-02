@@ -77,6 +77,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             label: 'Homework',
             icon: BookOpen,
             path: '/students/homework'
+        },
+        {
+            label: 'Noticeboard',
+            icon: MessageSquare,
+            path: '/communication/noticeboard'
         }
     ];
 
@@ -203,9 +208,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             icon: MessageSquare,
             path: '/communication',
             children: [
-                { label: 'Send Message', path: '/communication/broadcast', permission: 'communication:manage' },
-                { label: 'Message Templates', path: '/communication/templates', permission: 'communication:manage' },
-                { label: 'Communication History', path: '/communication/logs', permission: 'communication:manage' },
+                { label: 'Noticeboard', path: '/communication/noticeboard', permission: 'communication:view_notices' },
+                { label: 'Send Message', path: '/communication/broadcast', permission: 'communication:send_broadcast' },
+                { label: 'Message Templates', path: '/communication/templates', permission: 'communication:manage_templates' },
+                { label: 'Communication History', path: '/communication/logs', permission: 'communication:view_logs' },
+                { label: 'Manage Notices', path: '/communication/manage-notices', permission: 'communication:manage_notices' },
             ]
         },
         {

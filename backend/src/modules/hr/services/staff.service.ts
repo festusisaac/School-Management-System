@@ -13,6 +13,7 @@ export interface StaffFilters {
     departmentId?: string;
     status?: StaffStatus;
     employmentType?: string;
+    sectionId?: string;
 }
 
 @Injectable()
@@ -56,6 +57,13 @@ export class StaffService {
             query.andWhere('staff.employmentType = :employmentType', { employmentType: filters.employmentType });
         }
 
+        if (filters?.sectionId) {
+            query.innerJoin('staff.sections', 'section', 'section.id = :sectionId', { sectionId: filters.sectionId });
+        } else {
+            // Include sections explicitly if no filter is applied
+            query.leftJoinAndSelect('staff.sections', 'sections');
+        }
+
         query.orderBy('staff.firstName', 'ASC');
 
         return query.getMany();
@@ -64,7 +72,7 @@ export class StaffService {
     async findOne(id: string, tenantId: string): Promise<Staff> {
         const staff = await this.staffRepository.findOne({
             where: { id, tenantId },
-            relations: ['department', 'roleObject', 'attendanceRecords', 'leaveRequests', 'payrollRecords'],
+            relations: ['department', 'roleObject', 'attendanceRecords', 'leaveRequests', 'payrollRecords', 'sections'],
         });
 
         if (!staff) {
@@ -157,6 +165,11 @@ export class StaffService {
             staffData.roleId = null;
         }
 
+        const inputData = data as any;
+        if (inputData.sectionIds && Array.isArray(inputData.sectionIds)) {
+            staffData.sections = inputData.sectionIds.map((id: string) => ({ id }));
+        }
+
         if (files) {
             if (files.photo?.[0]) staffData.photo = `/uploads/staff/${files.photo[0].filename}`;
             if (files.resume?.[0]) staffData.resume = `/uploads/staff/${files.resume[0].filename}`;
@@ -246,6 +259,11 @@ export class StaffService {
 
         if (updateData.roleId === '') {
             updateData.roleId = null;
+        }
+
+        const inputUpdateData = data as any;
+        if (inputUpdateData.sectionIds && Array.isArray(inputUpdateData.sectionIds)) {
+            updateData.sections = inputUpdateData.sectionIds.map((id: string) => ({ id }));
         }
 
         if (files) {
