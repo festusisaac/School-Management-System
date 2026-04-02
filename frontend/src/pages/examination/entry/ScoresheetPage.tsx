@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Save, AlertCircle, FileText, Calendar, Info } from 'lucide-react';
+import { Save, AlertCircle, FileText, Calendar, Info, Loader2 } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { examinationService, ExamGroup, Exam, AssessmentType } from '../../../services/examinationService';
 import api from '../../../services/api';
 import BulkScoreImport from './BulkScoreImport';
+import { TablePagination } from '../../../components/ui/TablePagination';
 import { useSystem } from '../../../context/SystemContext';
 import { systemService, AcademicTerm } from '../../../services/systemService';
 
@@ -32,6 +33,11 @@ const ScoresheetPage = () => {
     const [currentExam, setCurrentExam] = useState<Exam | null>(null);
     const [students, setStudents] = useState<StudentRow[]>([]);
     const [loading, setLoading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 50;
     const [isImportOpen, setIsImportOpen] = useState(false);
 
     const { showSuccess, showError } = useToast();
@@ -107,6 +113,7 @@ const ScoresheetPage = () => {
             setStudents([]);
             setCurrentExam(null);
         }
+        setCurrentPage(1); // Reset page on filter change
     }, [selectedGroup, selectedClass, selectedSubject]);
 
     const fetchScoresheet = async () => {
@@ -196,6 +203,7 @@ const ScoresheetPage = () => {
         }
 
         try {
+            setIsSaving(true);
             // Save individually for each assessment type
             for (const assessment of assessments) {
                 const marksToSave = students
@@ -219,6 +227,8 @@ const ScoresheetPage = () => {
             fetchScoresheet();
         } catch (error) {
             showError('Failed to save scores');
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -279,10 +289,15 @@ const ScoresheetPage = () => {
                         </button>
                         <button
                             onClick={handleSave}
-                            className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-all shadow-sm"
+                            disabled={isSaving}
+                            className={`flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-all shadow-sm disabled:opacity-70 disabled:cursor-not-allowed`}
                         >
-                            <Save className="w-4 h-4" />
-                            Save Scores
+                            {isSaving ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                <Save className="w-4 h-4" />
+                            )}
+                            {isSaving ? 'Saving...' : 'Save Scores'}
                         </button>
                     </div>
                 )}
@@ -431,46 +446,61 @@ const ScoresheetPage = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                                {students.map((student, index) => (
-                                    <tr key={student.studentId} className="group hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
-                                        <td className="px-6 py-4 text-xs font-mono text-gray-400">{index + 1}</td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex flex-col">
-                                                <span className="font-medium text-gray-900 dark:text-white">{student.studentName}</span>
-                                                <span className="text-xs text-gray-500">{student.admissionNumber}</span>
-                                            </div>
-                                        </td>
+                                {students.slice((currentPage - 1) * pageSize, currentPage * pageSize).map((student, index) => {
+                                    const actualIndex = (currentPage - 1) * pageSize + index;
+                                    return (
+                                        <tr key={student.studentId} className="group hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
+                                            <td className="px-6 py-4 text-xs font-mono text-gray-400">{actualIndex + 1}</td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex flex-col">
+                                                    <span className="font-medium text-gray-900 dark:text-white">{student.studentName}</span>
+                                                    <span className="text-xs text-gray-500">{student.admissionNumber}</span>
+                                                </div>
+                                            </td>
 
-                                        {assessments.map(ass => {
-                                            const currentScore = parseFloat(student.scores[ass.id]);
+                                            {assessments.map(ass => {
+                                                const currentScore = parseFloat(student.scores[ass.id]);
 
-                                            return (
-                                                <td key={ass.id} className="px-4 py-3">
-                                                    <div className="relative">
-                                                        <input
-                                                            type="number"
-                                                            min="0"
-                                                            max={ass.maxMarks}
-                                                            className={`w-full text-center border-2 rounded-md py-1.5 px-2 text-sm outline-none transition-all
-                                                                ${currentScore > ass.maxMarks
-                                                                    ? 'border-red-300 bg-red-50 text-red-600 focus:border-red-500'
-                                                                    : 'border-transparent bg-gray-50 focus:bg-white focus:border-primary-500 focus:shadow-sm dark:bg-gray-800 dark:border-transparent'}`}
-                                                            value={student.scores[ass.id] || ''}
-                                                            onChange={(e) => handleScoreChange(index, ass.id, e.target.value)}
-                                                            placeholder="-"
-                                                        />
-                                                    </div>
-                                                </td>
-                                            );
-                                        })}
+                                                return (
+                                                    <td key={ass.id} className="px-4 py-3">
+                                                        <div className="relative">
+                                                            <input
+                                                                type="number"
+                                                                min="0"
+                                                                max={ass.maxMarks}
+                                                                className={`w-full text-center border-2 rounded-md py-1.5 px-2 text-sm outline-none transition-all
+                                                                    ${currentScore > ass.maxMarks
+                                                                        ? 'border-red-300 bg-red-50 text-red-600 focus:border-red-500'
+                                                                        : 'border-transparent bg-gray-50 focus:bg-white focus:border-primary-500 focus:shadow-sm dark:bg-gray-800 dark:border-transparent'}`}
+                                                                value={student.scores[ass.id] || ''}
+                                                                onChange={(e) => handleScoreChange(actualIndex, ass.id, e.target.value)}
+                                                                placeholder="-"
+                                                            />
+                                                        </div>
+                                                    </td>
+                                                );
+                                            })}
 
-                                        <td className="px-6 py-4 text-center font-bold text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800">
-                                            {calculateTotal(student)}
-                                        </td>
-                                    </tr>
-                                ))}
+                                            <td className="px-6 py-4 text-center font-bold text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800">
+                                                {calculateTotal(student)}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
+                        
+                        <div className="border-t border-gray-100 dark:border-gray-800/50 bg-gray-50/30 dark:bg-gray-800/20">
+                            <TablePagination 
+                                currentPage={currentPage}
+                                totalItems={students.length}
+                                pageSize={pageSize}
+                                onPageChange={(page) => {
+                                    setCurrentPage(page);
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }}
+                            />
+                        </div>
                     </div>
                 )}
             </div>

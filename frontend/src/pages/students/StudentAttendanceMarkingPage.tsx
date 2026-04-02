@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
     Calendar, 
     Search, 
@@ -9,11 +9,10 @@ import {
     AlertCircle, 
     Users,
     ChevronDown,
-    Filter,
-    Check,
-    Palmtree
+    Palmtree,
 } from 'lucide-react';
 import api from '../../services/api';
+import { TablePagination } from '../../components/ui/TablePagination';
 import { useToast } from '../../context/ToastContext';
 import { format } from 'date-fns';
 import { clsx } from 'clsx';
@@ -44,6 +43,11 @@ const StudentAttendanceMarkingPage: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 50;
+
     const toast = useToast();
 
     useEffect(() => {
@@ -115,6 +119,7 @@ const StudentAttendanceMarkingPage: React.FC = () => {
         };
 
         fetchStudentData();
+        setCurrentPage(1); // Reset page on filter/date change
     }, [selectedClass, selectedSection, date]);
 
     const handleStatusChange = (studentId: string, status: 'present' | 'absent' | 'late' | 'medical' | 'holiday') => {
@@ -313,7 +318,7 @@ const StudentAttendanceMarkingPage: React.FC = () => {
                                     </td>
                                 </tr>
                             ) : (
-                                filteredStudents.map((student, i) => (
+                                filteredStudents.slice((currentPage - 1) * pageSize, currentPage * pageSize).map((student, i) => (
                                     <tr key={student.id} className="group hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
                                         <td className="px-5 py-3 text-center text-[10px] font-bold text-gray-400">
                                             {i + 1}
@@ -380,6 +385,18 @@ const StudentAttendanceMarkingPage: React.FC = () => {
                             )}
                         </tbody>
                     </table>
+                </div>
+                
+                <div className="border-t border-gray-100 dark:border-gray-800/50 bg-gray-50/30 dark:bg-gray-800/20">
+                    <TablePagination 
+                        currentPage={currentPage}
+                        totalItems={filteredStudents.length}
+                        pageSize={pageSize}
+                        onPageChange={(page) => {
+                            setCurrentPage(page);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                    />
                 </div>
             </div>
         </div>

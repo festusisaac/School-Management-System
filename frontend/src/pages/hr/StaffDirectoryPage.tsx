@@ -9,6 +9,7 @@ import { useSystem } from '../../context/SystemContext';
 import { formatCurrency, CURRENCY_SYMBOL } from '../../utils/currency';
 import BulkStaffImport from './BulkStaffImport';
 import { exportStaffDirectory } from '../../utils/excelExport';
+import { TablePagination } from '../../components/ui/TablePagination';
 
 interface Department {
     id: string;
@@ -101,6 +102,11 @@ const StaffDirectoryPage = () => {
     const [enableLogin, setEnableLogin] = useState(false);
     const [isTeachingStaff, setIsTeachingStaff] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 50;
+
     const toast = useToast();
     const { settings } = useSystem();
 
@@ -216,6 +222,7 @@ const StaffDirectoryPage = () => {
         }
 
         setFilteredStaff(filtered);
+        setCurrentPage(1);
     };
 
     const handleEdit = (staffMember: Staff) => {
@@ -401,7 +408,7 @@ const StaffDirectoryPage = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                {filteredStaff.map((member) => (
+                                {filteredStaff.slice((currentPage - 1) * pageSize, currentPage * pageSize).map((member) => (
                                     <tr key={member.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
@@ -451,6 +458,18 @@ const StaffDirectoryPage = () => {
                                 ))}
                             </tbody>
                         </table>
+                        
+                        <div className="border-t border-gray-100 dark:border-gray-800/50 bg-gray-50/30 dark:bg-gray-800/20">
+                            <TablePagination 
+                                currentPage={currentPage}
+                                totalItems={filteredStaff.length}
+                                pageSize={pageSize}
+                                onPageChange={(page) => {
+                                    setCurrentPage(page);
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }}
+                            />
+                        </div>
                     </div>
                 )}
             </div>

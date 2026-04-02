@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Save, Plus, Settings, Edit2, Trash2, AlertTriangle, Activity } from 'lucide-react';
+import { Save, Plus, Settings, Edit2, Trash2, AlertTriangle, Activity, Loader2 } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { examinationService, ExamGroup, PsychomotorDomain } from '../../../services/examinationService';
 import api from '../../../services/api';
 import { Modal } from '../../../components/ui/modal';
+import { TablePagination } from '../../../components/ui/TablePagination';
 import { useSystem } from '../../../context/SystemContext';
 import { systemService, AcademicTerm } from '../../../services/systemService';
 
@@ -28,6 +29,11 @@ const PsychomotorPage = () => {
 
     const [students, setStudents] = useState<StudentRow[]>([]);
     const [loading, setLoading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 50;
 
     const [isDomainModalOpen, setIsDomainModalOpen] = useState(false);
     const [isDeleteDomainOpen, setIsDeleteDomainOpen] = useState(false);
@@ -91,6 +97,7 @@ const PsychomotorPage = () => {
         } else {
             setStudents([]);
         }
+        setCurrentPage(1); // Reset page on filter change
     }, [selectedGroup, selectedClass, domains]);
 
     const fetchData = async () => {
@@ -133,6 +140,7 @@ const PsychomotorPage = () => {
 
     const handleSave = async () => {
         try {
+            setIsSaving(true);
             const ratingsToSave = [];
             for (const student of students) {
                 for (const domainId in student.ratings) {
@@ -159,6 +167,8 @@ const PsychomotorPage = () => {
             showSuccess('Assessment saved successfully');
         } catch (error) {
             showError('Failed to save data');
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -223,10 +233,15 @@ const PsychomotorPage = () => {
                     {students.length > 0 && (
                         <button
                             onClick={handleSave}
-                            className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-all shadow-sm text-sm font-medium"
+                            disabled={isSaving}
+                            className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-all shadow-sm text-sm font-medium disabled:opacity-70 disabled:cursor-not-allowed"
                         >
-                            <Save className="w-4 h-4" />
-                            Save Assessment
+                            {isSaving ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                <Save className="w-4 h-4" />
+                            )}
+                            {isSaving ? 'Saving...' : 'Save Assessment'}
                         </button>
                     )}
                 </div>
@@ -323,36 +338,51 @@ const PsychomotorPage = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                                {students.map((student, sIdx) => (
-                                    <tr key={student.studentId} className="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
-                                        <td className="px-6 py-4">
-                                            <div className="flex flex-col">
-                                                <span className="font-medium text-gray-900 dark:text-white">{student.studentName}</span>
-                                                <span className="text-xs text-gray-400 font-medium">ID: {student.admissionNumber}</span>
-                                            </div>
-                                        </td>
-                                        {domains.map(d => (
-                                            <td key={d.id} className="px-4 py-3 text-center">
-                                                <div className="relative">
-                                                    <select
-                                                        className="w-full text-center bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all cursor-pointer hover:border-gray-300"
-                                                        value={student.ratings[d.id] || ''}
-                                                        onChange={(e) => handleRatingChange(sIdx, d.id, e.target.value)}
-                                                    >
-                                                        <option value="">-</option>
-                                                        <option value="5">5 - Excellent</option>
-                                                        <option value="4">4 - Very Good</option>
-                                                        <option value="3">3 - Good</option>
-                                                        <option value="2">2 - Fair</option>
-                                                        <option value="1">1 - Poor</option>
-                                                    </select>
+                                {students.slice((currentPage - 1) * pageSize, currentPage * pageSize).map((student, index) => {
+                                    const actualIndex = (currentPage - 1) * pageSize + index;
+                                    return (
+                                        <tr key={student.studentId} className="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
+                                            <td className="px-6 py-4">
+                                                <div className="flex flex-col">
+                                                    <span className="font-medium text-gray-900 dark:text-white">{student.studentName}</span>
+                                                    <span className="text-xs text-gray-400 font-medium">ID: {student.admissionNumber}</span>
                                                 </div>
                                             </td>
-                                        ))}
-                                    </tr>
-                                ))}
+                                            {domains.map(d => (
+                                                <td key={d.id} className="px-4 py-3 text-center">
+                                                    <div className="relative">
+                                                        <select
+                                                            className="w-full text-center bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all cursor-pointer hover:border-gray-300"
+                                                            value={student.ratings[d.id] || ''}
+                                                            onChange={(e) => handleRatingChange(actualIndex, d.id, e.target.value)}
+                                                        >
+                                                            <option value="">-</option>
+                                                            <option value="5">5 - Excellent</option>
+                                                            <option value="4">4 - Very Good</option>
+                                                            <option value="3">3 - Good</option>
+                                                            <option value="2">2 - Fair</option>
+                                                            <option value="1">1 - Poor</option>
+                                                        </select>
+                                                    </div>
+                                                </td>
+                                            ))}
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
+                        
+                        <div className="border-t border-gray-100 dark:border-gray-800/50 bg-gray-50/30 dark:bg-gray-800/20">
+                            <TablePagination 
+                                currentPage={currentPage}
+                                totalItems={students.length}
+                                pageSize={pageSize}
+                                onPageChange={(page) => {
+                                    setCurrentPage(page);
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }}
+                            />
+                        </div>
                     </div>
                 )}
             </div>

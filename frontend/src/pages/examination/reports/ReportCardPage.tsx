@@ -7,6 +7,79 @@ import api from '../../../services/api';
 import { systemService, AcademicTerm } from '../../../services/systemService';
 import ReportCardTemplate, { ReportCardData, ReportCardSubject } from '../../../components/examination/ReportCardTemplate';
 import { useSearchParams } from 'react-router-dom';
+import { groupById, identifyTerm } from '../../../utils/reportingUtils';
+import React, { useCallback } from 'react';
+
+// Memoized Row Component to prevent full table re-renders
+const StudentRow = React.memo(({ student, idx, onSelect, onPrint }: { 
+    student: ReportCardData, 
+    idx: number, 
+    onSelect: (s: ReportCardData) => void, 
+    onPrint: (s: ReportCardData) => void 
+}) => {
+    return (
+        <tr className="hover:bg-primary-50/30 dark:hover:bg-primary-900/10 transition-colors cursor-pointer group" onClick={() => onSelect(student)}>
+            <td className="px-6 py-4 text-center text-gray-400 font-medium">{idx + 1}</td>
+            <td className="px-6 py-4">
+                <div className="flex items-center gap-3">
+                    {student.student.photoUrl ? (
+                        <img src={student.student.photoUrl} className="w-10 h-10 rounded-full object-cover border-2 border-white dark:border-gray-700 shadow-sm" alt="" />
+                    ) : (
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-secondary-600 flex items-center justify-center text-white font-bold text-xs shadow-sm text-center">
+                            {student.student.name ? student.student.name.split(' ').filter(Boolean).map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) : '??'}
+                        </div>
+                    )}
+                    <div>
+                        <p className="font-bold text-gray-900 dark:text-white group-hover:text-primary-600 transition-colors">{student.student.name}</p>
+                        <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{student.student.admissionNumber}</p>
+                    </div>
+                </div>
+            </td>
+            <td className="px-6 py-4 text-center font-medium text-gray-600 dark:text-gray-400">{student.subjects.length}</td>
+            <td className="px-6 py-4 text-center font-black text-gray-900 dark:text-white">{student.summary.totalObtained}</td>
+            <td className="px-6 py-4 text-center font-bold text-primary-600">
+                {student.summary.averageScore.toFixed(1)}%
+            </td>
+            <td className="px-6 py-4 text-right">
+                <div className="flex items-center justify-end gap-2">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onSelect(student); }}
+                        title="View Report Card"
+                        className="p-2 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-lg hover:bg-primary-600 hover:text-white transition-all shadow-sm border border-primary-100 dark:border-primary-800"
+                    >
+                        <Eye className="w-4 h-4" />
+                    </button>
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onPrint(student); }}
+                        title="Print Individual Card"
+                        className="p-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-lg hover:bg-emerald-600 hover:text-white transition-all shadow-sm border border-emerald-100 dark:border-emerald-800"
+                    >
+                        <Printer className="w-4 h-4" />
+                    </button>
+                </div>
+            </td>
+        </tr>
+    );
+});
+
+// Memoized Print Section to avoid re-rendering 40+ report cards on every parent state change
+const BulkPrintSection = React.memo(({ students, assessments, config }: { 
+    students: ReportCardData[], 
+    assessments: any[], 
+    config: any 
+}) => {
+    if (students.length === 0) return null;
+    return (
+        <div className="hidden print:block">
+            {students.map((student, idx) => (
+                <div key={idx} style={{ pageBreakAfter: 'always' }}>
+                    <ReportCardTemplate data={student} assessments={assessments} config={config} />
+                </div>
+            ))}
+        </div>
+    );
+});
+
 
 
 const ReportCardPage = () => {
@@ -24,6 +97,7 @@ const ReportCardPage = () => {
     const [selectedTerm, setSelectedTerm] = useState<string>(searchParams.get('termName') || settings?.activeTermName || '');
 
     const [students, setStudents] = useState<ReportCardData[]>([]);
+    const [printData, setPrintData] = useState<ReportCardData[]>([]);
     const [loading, setLoading] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState<ReportCardData | null>(null);
 
@@ -123,12 +197,23 @@ const ReportCardPage = () => {
         if (!selectedGroup || !selectedClass) return;
         setLoading(true);
         try {
+            // 1. Define Local Interfaces for clear typing
+            interface BroadsheetResponse {
+                results: any[];
+                subjectScores: any[];
+                subjectStats: any[];
+                cumulativeSubjectScores: any[];
+                cumulativeOverallResults: any[];
+                termDetails?: any;
+                examGroup?: any;
+            }
+
             // 1. Fetch all necessary data in parallel
             const [
                 assessmentTypes, 
                 allMarks, 
                 allExams, 
-                broadsheetResponse,
+                broadsheetData,
                 affDomains,
                 psycDomains,
                 allSkills,
@@ -138,13 +223,15 @@ const ReportCardPage = () => {
                 examinationService.getAssessmentTypes(selectedGroup),
                 examinationService.getClassMarks(selectedClass, selectedGroup),
                 examinationService.getExams(selectedGroup),
-                examinationService.getBroadsheet(selectedClass, selectedGroup).catch(() => ({ results: [], subjectScores: [], subjectStats: [], cumulativeSubjectScores: [], cumulativeOverallResults: [] })) as any,
+                examinationService.getBroadsheet(selectedClass, selectedGroup).catch(() => ({ results: [], subjectScores: [], subjectStats: [], cumulativeSubjectScores: [], cumulativeOverallResults: [] })),
                 examinationService.getAffectiveDomains(),
                 examinationService.getPsychomotorDomains(),
                 examinationService.getSkills(selectedGroup),
                 examinationService.getPsychomotor(selectedGroup),
                 api.getClassById(selectedClass).catch(() => null)
             ]);
+
+            const broadsheetResponse = broadsheetData as BroadsheetResponse;
 
             setAssessments(assessmentTypes || []);
 
@@ -158,36 +245,90 @@ const ReportCardPage = () => {
             const cumulativeSubjectScores = (broadsheetResponse as any)?.cumulativeSubjectScores || [];
             const cumulativeOverallResults = (broadsheetResponse as any)?.cumulativeOverallResults || [];
 
-            // 2. Group individual marks (CA1, CA2, etc) by studentId for O(1) lookup
-            const marksByStudent = (allMarks as any[]).reduce((acc: Record<string, any[]>, mark: any) => {
-                const sId = mark.studentId;
-                if (!acc[sId]) acc[sId] = [];
-                acc[sId].push(mark);
-                return acc;
-            }, {});
+            // 2. Optimized Lookup Maps (O(1))
+            const marksByStudent = groupById(allMarks as any[], 'studentId');
+            
+            // Map studentId_subjectId_assessmentId -> score
+            const marksByStudentSubjAss = new Map<string, number>();
+            (allMarks as any[]).forEach(m => {
+                const key = `${m.studentId}_${m.subjectId}_${m.assessmentTypeId}`;
+                marksByStudentSubjAss.set(key, m.score);
+            });
 
-            // 3. Map the processed results into ReportCardData format
+            // Map studentId_subjectId -> score record
+            const subjectEnrichedLookup = new Map<string, any>();
+            broadsheetResponse.subjectScores.forEach(s => {
+                subjectEnrichedLookup.set(`${s.studentId}_${s.subjectId}`, s);
+            });
+
+            // Map subjectId -> stats
+            const subjectStatsLookup = new Map<string, any>();
+            broadsheetResponse.subjectStats.forEach(s => {
+                subjectStatsLookup.set(s.subjectId, s);
+            });
+
+            // Map studentId_subjectId -> { term1, term2 }
+            const cumulativeSubjLookup = new Map<string, { term1: number; term2: number }>();
+            broadsheetResponse.cumulativeSubjectScores.forEach(c => {
+                const sId = c.studentId || c.studentid;
+                const subId = c.subjectId || c.subjectid;
+                const key = `${sId}_${subId}`;
+                const existing = cumulativeSubjLookup.get(key) || { term1: 0, term2: 0 };
+                const term = identifyTerm(c.term);
+                if (term === 'first') existing.term1 = parseFloat(c.termTotal || 0);
+                else if (term === 'second') existing.term2 = parseFloat(c.termTotal || 0);
+                cumulativeSubjLookup.set(key, existing);
+            });
+
+            // Map studentId -> { term1Avg, term2Avg }
+            const cumulativeOverallLookup = new Map<string, { term1: number; term2: number }>();
+            broadsheetResponse.cumulativeOverallResults.forEach(r => {
+                const sId = r.studentId || r.studentid;
+                const existing = cumulativeOverallLookup.get(sId) || { term1: 0, term2: 0 };
+                const term = identifyTerm(r.examGroup?.term);
+                if (term === 'first') existing.term1 = parseFloat(r.averageScore || 0);
+                else if (term === 'second') existing.term2 = parseFloat(r.averageScore || 0);
+                cumulativeOverallLookup.set(sId, existing);
+            });
+
+            const examsBySubject = new Map<string, any>();
+            allExams.forEach((e: any) => {
+                if (e.classId === selectedClass) examsBySubject.set(e.subjectId, e);
+            });
+
+            const affDomainLookup = new Map<string, string>();
+            affDomains.forEach(d => affDomainLookup.set(d.id, d.name));
+            
+            const psycDomainLookup = new Map<string, string>();
+            psycDomains.forEach(d => psycDomainLookup.set(d.id, d.name));
+
+            const skillsByStudent = groupById(allSkills, 'studentId');
+            const psycByStudent = groupById(allPsyc, 'studentId');
+
+
+            // 3. Map the processed results into ReportCardData format (using O(1) Lookups)
             const reports: ReportCardData[] = termResults.map((result: any) => {
                 const student = result.student;
-                const studentMarks = marksByStudent[student.id] || [];
+                const studentId = student.id;
+                const studentMarks = marksByStudent.get(studentId) || [];
                 
                 // Get all subjects this student took based on their marks
-                const studentSubjects = Array.from(new Set(studentMarks.map((m: any) => m.subjectId)));
+                const studentSubjectsIds = Array.from(new Set(studentMarks.map((m: any) => m.subjectId)));
 
-                const processedSubjects: ReportCardSubject[] = studentSubjects.map((subId: any) => {
-                    const exam = allExams.find((e: any) => e.subjectId === subId && e.classId === selectedClass);
+                const processedSubjects: ReportCardSubject[] = studentSubjectsIds.map((subId: any) => {
+                    const exam = examsBySubject.get(subId);
                     const subjectName = exam?.subject?.name || 'Unknown';
                     
-                    // Individual assessment scores (CA1, CA2, Exam)
+                    // Individual assessment scores
                     const scores: Record<string, number | undefined> = {};
                     assessmentTypes.forEach(ass => {
-                        const m = studentMarks.find((mark: any) => mark.assessmentTypeId === ass.id && mark.subjectId === subId);
-                        scores[ass.id] = m ? m.score : undefined;
+                        scores[ass.id] = marksByStudentSubjAss.get(`${studentId}_${subId}_${ass.id}`);
                     });
 
-                    // Pre-calculated subject metrics from backend
-                    const enriched = subjectEnrichedScores.find((s: any) => s.studentId === student.id && s.subjectId === subId);
-                    const stats = subjectStats.find((s: any) => s.subjectId === subId);
+                    // Pre-calculated subject metrics
+                    const enriched = subjectEnrichedLookup.get(`${studentId}_${subId}`);
+                    const stats = subjectStatsLookup.get(subId);
+                    const cumulative = cumulativeSubjLookup.get(`${studentId}_${subId}`) || { term1: 0, term2: 0 };
 
                     return {
                         subjectName,
@@ -195,39 +336,15 @@ const ReportCardPage = () => {
                         totalScore: enriched?.totalSubjectScore || 0,
                         grade: enriched?.grade || 'F',
                         remark: enriched?.remark || 'VERY POOR',
-                        highestInClass: stats ? parseFloat(stats.highestScore) : undefined,
-                        lowestInClass: stats ? parseFloat(stats.lowestScore) : undefined,
-                        classAvg: stats ? parseFloat(stats.averageScore) : undefined,
+                        highestInClass: stats ? parseFloat(stats.highestScore || 0) : undefined,
+                        lowestInClass: stats ? parseFloat(stats.lowestScore || 0) : undefined,
+                        classAvg: stats ? parseFloat(stats.averageScore || 0) : undefined,
                         positionInSubject: enriched?.positionInSubject,
-                        cumulative: {
-                            term1: parseFloat(cumulativeSubjectScores.find((c: any) => 
-                                (c.studentId || c.studentid) === student.id && 
-                                (c.subjectId || c.subjectid) === subId && 
-                                (c.term?.toLowerCase().includes('first') || c.term?.toLowerCase().includes('1st'))
-                            )?.termTotal || 0),
-                            term2: parseFloat(cumulativeSubjectScores.find((c: any) => 
-                                (c.studentId || c.studentid) === student.id && 
-                                (c.subjectId || c.subjectid) === subId && 
-                                (c.term?.toLowerCase().includes('second') || c.term?.toLowerCase().includes('2nd'))
-                            )?.termTotal || 0),
-                        }
+                        cumulative
                     };
                 });
 
-                // Map skills and psychomotor for this student
-                const studentSkills = allSkills
-                    .filter((s: any) => s.studentId === student.id)
-                    .map((s: any) => ({
-                        name: affDomains.find(d => d.id === s.domainId)?.name || 'Unknown',
-                        rating: parseInt(s.rating) || 1
-                    }));
-
-                const studentPsyc = allPsyc
-                    .filter((p: any) => p.studentId === student.id)
-                    .map((p: any) => ({
-                        name: psycDomains.find(d => d.id === p.domainId)?.name || 'Unknown',
-                        rating: parseInt(p.rating) || 1
-                    }));
+                const cumOverall = cumulativeOverallLookup.get(studentId) || { term1: 0, term2: 0 };
 
                 return {
                     student: {
@@ -261,8 +378,14 @@ const ReportCardPage = () => {
                         principalSignature: settings?.invoiceLogo ? getFullUrl(settings.invoiceLogo) : ''
                     },
                     subjects: processedSubjects,
-                    affectiveTraits: studentSkills,
-                    psychomotorSkills: studentPsyc,
+                    affectiveTraits: (skillsByStudent.get(studentId) || []).map((s: any) => ({
+                        name: affDomainLookup.get(s.domainId) || 'Unknown',
+                        rating: parseInt(s.rating) || 1
+                    })),
+                    psychomotorSkills: (psycByStudent.get(studentId) || []).map((p: any) => ({
+                        name: psycDomainLookup.get(p.domainId) || 'Unknown',
+                        rating: parseInt(p.rating) || 1
+                    })),
                     summary: {
                         totalObtainable: processedSubjects.length * 100,
                         totalObtained: result.totalScore || 0,
@@ -270,16 +393,9 @@ const ReportCardPage = () => {
                         position: result.position || 0,
                         classSize: termResults.length,
                         cumulativeAvg: (() => {
-                            const t1Avg = cumulativeOverallResults.find((r: any) => 
-                                r.studentId === student.id && 
-                                (r.examGroup?.term?.toLowerCase().includes('first') || r.examGroup?.term?.toLowerCase().includes('1st'))
-                            )?.averageScore || 0;
-                            const t2Avg = cumulativeOverallResults.find((r: any) => 
-                                r.studentId === student.id && 
-                                (r.examGroup?.term?.toLowerCase().includes('second') || r.examGroup?.term?.toLowerCase().includes('2nd'))
-                            )?.averageScore || 0;
-                            if (t1Avg > 0 || t2Avg > 0) {
-                                return (parseFloat(t1Avg) + parseFloat(t2Avg) + (result.averageScore || 0)) / 3;
+                            const { term1, term2 } = cumOverall;
+                            if (term1 > 0 || term2 > 0) {
+                                return (term1 + term2 + (result.averageScore || 0)) / 3;
                             }
                             return undefined;
                         })()
@@ -331,17 +447,30 @@ const ReportCardPage = () => {
         return { grade: 'F', remark: 'VERY POOR' };
     };
 
-    const handlePrint = () => {
-        window.print();
-    };
+    const handlePrint = useCallback(() => {
+        // Load all students into print DOM and then trigger print
+        setPrintData(students);
+        setTimeout(() => {
+            window.print();
+            // Clear print DOM after dialog is handled (prevents long term memory/dom bloat)
+            setPrintData([]);
+        }, 150);
+    }, [students]);
 
-    const printSingle = (student: ReportCardData) => {
+    const printSingle = useCallback((student: ReportCardData) => {
+        // Only load this single student into the print DOM
+        setPrintData([student]);
         setSelectedStudent(student);
         setTimeout(() => {
             window.print();
             setSelectedStudent(null);
-        }, 300);
-    };
+            setPrintData([]);
+        }, 400);
+    }, []);
+
+    const handleSelectStudent = useCallback((student: ReportCardData) => {
+        setSelectedStudent(student);
+    }, []);
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -533,51 +662,15 @@ const ReportCardPage = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                                {filteredStudents.map((student, idx) => {
-                                    return (
-                                        <tr key={idx} className="hover:bg-primary-50/30 dark:hover:bg-primary-900/10 transition-colors cursor-pointer group" onClick={() => setSelectedStudent(student)}>
-                                            <td className="px-6 py-4 text-center text-gray-400 font-medium">{idx + 1}</td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    {student.student.photoUrl ? (
-                                                        <img src={student.student.photoUrl} className="w-10 h-10 rounded-full object-cover border-2 border-white dark:border-gray-700 shadow-sm" alt="" />
-                                                    ) : (
-                                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-secondary-600 flex items-center justify-center text-white font-bold text-xs shadow-sm text-center">
-                                                            {student.student.name ? student.student.name.split(' ').filter(Boolean).map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) : '??'}
-                                                        </div>
-                                                    )}
-                                                    <div>
-                                                        <p className="font-bold text-gray-900 dark:text-white group-hover:text-primary-600 transition-colors">{student.student.name}</p>
-                                                        <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{student.student.admissionNumber}</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-center font-medium text-gray-600 dark:text-gray-400">{student.subjects.length}</td>
-                                            <td className="px-6 py-4 text-center font-black text-gray-900 dark:text-white">{student.summary.totalObtained}</td>
-                                            <td className="px-6 py-4 text-center font-bold text-primary-600">
-                                                {student.summary.averageScore.toFixed(1)}%
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); setSelectedStudent(student); }}
-                                                        title="View Report Card"
-                                                        className="p-2 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-lg hover:bg-primary-600 hover:text-white transition-all shadow-sm border border-primary-100 dark:border-primary-800"
-                                                    >
-                                                        <Eye className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); printSingle(student); }}
-                                                        title="Print Individual Card"
-                                                        className="p-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-lg hover:bg-emerald-600 hover:text-white transition-all shadow-sm border border-emerald-100 dark:border-emerald-800"
-                                                    >
-                                                        <Printer className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
+                                {filteredStudents.map((student, idx) => (
+                                    <StudentRow 
+                                        key={idx} 
+                                        student={student} 
+                                        idx={idx} 
+                                        onSelect={handleSelectStudent} 
+                                        onPrint={printSingle} 
+                                    />
+                                ))}
                             </tbody>
                         </table>
                     </div>
@@ -595,14 +688,8 @@ const ReportCardPage = () => {
                 )}
             </div>
 
-            {/* Print Content (Visible only when printing) */}
-            <div className="hidden print:block">
-                {students.map((student, idx) => (
-                    <div key={idx} style={{ pageBreakAfter: 'always' }}>
-                        <ReportCardTemplate data={student} assessments={assessments} config={config} />
-                    </div>
-                ))}
-            </div>
+            {/* Print Content (Visible only when printing) - Using printData for smart loading */}
+            <BulkPrintSection students={printData} assessments={assessments} config={config} />
 
             {/* Modal for Single View */}
             {selectedStudent && (

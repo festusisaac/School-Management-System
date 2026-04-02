@@ -118,9 +118,9 @@ const ReportCardTemplate: React.FC<Props> = ({
 
     // Constants from the settings
     const colorPrimary = settings.primaryColor || '#2aa06c';
-    const colorHeaderBg = '#f8fafc';
-    const colorSectionBg = settings.secondaryColor ? `${settings.secondaryColor}20` : '#eaf6f0';
-    const colorBorder = settings.primaryColor || '#218b12ff';
+    const colorHeaderBg = '#eaf6f0'; // Matching Blade .header-table
+    const colorSectionBg = '#d9ead3'; // Matching Blade .section-header
+    const colorBorder = '#218b12ff'; // Matching Blade .bordered-table border
 
     const getTeacherComment = (avg: number) => {
         if (avg >= 95) return "AN EXTRAORDINARY PERFORMANCE! KEEP BLAZING THE TRAIL.";
@@ -146,17 +146,19 @@ const ReportCardTemplate: React.FC<Props> = ({
             className="bg-white mx-auto text-black print:p-0"
             style={{
                 width: '210mm',
-                minHeight: '297mm',
-                padding: '5mm',
+                minHeight: '297mm', // Natural A4 Height
+                padding: '5mm', // Matching Blade body padding
                 fontFamily: "'DejaVu Sans', sans-serif",
-                fontSize: '11px',
-                lineHeight: '1.2',
+                fontSize: '11px', // Matching Blade base size
+                lineHeight: '1.2', // Matching Blade line height
                 WebkitPrintColorAdjust: 'exact',
+                boxSizing: 'border-box',
+                position: 'relative'
             }}
         >
             <div className="main-container w-full max-w-full m-0 p-0 box-border">
                 {/* HEADER TABLE */}
-                <table className="w-full border-collapse mb-1" style={{ backgroundColor: colorHeaderBg, border: `1px solid ${colorPrimary}` }}>
+                <table className="w-full border-collapse mb-1 header-table" style={{ backgroundColor: colorHeaderBg, border: `1px solid ${colorPrimary}`, tableLayout: 'fixed' }}>
                     <tbody>
                         <tr>
                             <td width="15%" className="text-center p-1">
@@ -201,8 +203,8 @@ const ReportCardTemplate: React.FC<Props> = ({
                                             </th>
                                         </tr>
                                         <tr>
-                                            <td className="p-[3px] border" style={{ borderColor: colorBorder }}>Name</td>
-                                            <td className="p-[3px] border font-bold uppercase" style={{ borderColor: colorBorder }}>{data.student.name}</td>
+                                            <td className="p-0.5 border" style={{ borderColor: colorBorder }}>Name</td>
+                                            <td className="p-0.5 border font-bold uppercase" style={{ borderColor: colorBorder }}>{data.student.name}</td>
                                         </tr>
                                         <tr>
                                             <td className="p-[3px] border" style={{ borderColor: colorBorder }}>Date of Birth</td>
@@ -238,7 +240,7 @@ const ReportCardTemplate: React.FC<Props> = ({
 
                             {/* Attendance & Duration */}
                             <td width="30%" style={{ verticalAlign: 'top', padding: '0 2px' }}>
-                                <table className="w-full border-collapse mb-1" style={{ border: `1px solid ${colorBorder}` }}>
+                                <table className="w-full border-collapse mb-0.5" style={{ border: `1px solid ${colorBorder}` }}>
                                     <tbody>
                                         <tr>
                                             <th colSpan={3} className="text-center font-bold p-[3px]" style={{ backgroundColor: colorSectionBg, border: `1px solid ${colorBorder}` }}>
@@ -251,9 +253,9 @@ const ReportCardTemplate: React.FC<Props> = ({
                                             <td className="text-center p-[3px] border border-b-0" style={{ borderColor: colorBorder }}>No. of Times<br />Absent</td>
                                         </tr>
                                         <tr>
-                                            <td className="text-center p-[3px] border" style={{ borderColor: colorBorder }}>{data.academicInfo.timesOpened || 0}</td>
-                                            <td className="text-center p-[3px] border" style={{ borderColor: colorBorder }}>{data.academicInfo.timesPresent || 0}</td>
-                                            <td className="text-center p-[3px] border" style={{ borderColor: colorBorder }}>{data.academicInfo.timesAbsent || 0}</td>
+                                            <td className="text-center p-0.5 border" style={{ borderColor: colorBorder }}>{data.academicInfo.timesOpened || 0}</td>
+                                            <td className="text-center p-0.5 border" style={{ borderColor: colorBorder }}>{data.academicInfo.timesPresent || 0}</td>
+                                            <td className="text-center p-0.5 border" style={{ borderColor: colorBorder }}>{data.academicInfo.timesAbsent || 0}</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -280,7 +282,7 @@ const ReportCardTemplate: React.FC<Props> = ({
 
                             {/* Summary */}
                             <td width="20%" style={{ verticalAlign: 'top', padding: '0 0 0 2px' }}>
-                                <table className="w-full border-collapse mb-1" style={{ border: `1px solid ${colorBorder}` }}>
+                                <table className="w-full border-collapse mb-1 bordered-table" style={{ border: `1px solid ${colorBorder}`, tableLayout: 'fixed' }}>
                                     <tbody>
                                         <tr>
                                             <td className="text-center font-bold p-[3px] border" style={{ fontSize: '9px', borderColor: colorBorder }}>TOTAL SCORE<br />OBTAINABLE</td>
@@ -323,7 +325,7 @@ const ReportCardTemplate: React.FC<Props> = ({
 
                 {/* ACADEMIC PERFORMANCE HEADER */}
                 <div
-                    className="text-center font-bold p-0.5 uppercase mb-0 mt-1"
+                    className="text-center font-bold p-0.5 uppercase mb-1 mt-1 section-header"
                     style={{ backgroundColor: colorSectionBg, border: `1px solid ${colorPrimary}` }}
                 >
                     ACADEMIC PERFORMANCE
@@ -394,7 +396,7 @@ const ReportCardTemplate: React.FC<Props> = ({
 
                 {/* KEYS TO RATING */}
                 <div
-                    className="text-center font-bold p-0.5 uppercase mt-1"
+                    className="text-center font-bold p-0.5 uppercase mt-1 section-header"
                     style={{ backgroundColor: colorSectionBg, border: `1px solid ${colorPrimary}`, fontSize: '9px' }}
                 >
                     KEYS TO RATING
@@ -413,7 +415,7 @@ const ReportCardTemplate: React.FC<Props> = ({
                 </table>
 
                 {/* TRAITS & SKILLS GRID */}
-                <table className="w-full mt-1 border-collapse" style={{ tableLayout: 'fixed' }}>
+                <table className="w-full mt-0.5 border-collapse" style={{ tableLayout: 'fixed' }}>
                     <tbody>
                         <tr>
                             <td width="50%" style={{ paddingRight: '2px', verticalAlign: 'top' }}>
@@ -486,7 +488,7 @@ const ReportCardTemplate: React.FC<Props> = ({
                                     </tbody>
                                 </table>
 
-                                <div className="mt-1" style={{ border: `1px solid ${colorPrimary}` }}>
+                                <div className="mt-0.5" style={{ border: `1px solid ${colorPrimary}` }}>
                                     <div className="p-0.5 font-bold uppercase text-center" style={{ backgroundColor: colorSectionBg, borderBottom: `1px solid ${colorPrimary}`, fontSize: '9px' }}>
                                         KEYS TO RATING
                                     </div>
@@ -504,7 +506,7 @@ const ReportCardTemplate: React.FC<Props> = ({
                 </table>
 
                 {/* FOOTER SECTION */}
-                <div className="mt-1 border-[2px]" style={{ borderColor: colorPrimary }}>
+                <div className="mt-1 border-[2px] footer-section" style={{ borderColor: colorPrimary }}>
                     <table className="w-full border-collapse">
                         <tbody>
                             <tr>
@@ -567,6 +569,18 @@ const ReportCardTemplate: React.FC<Props> = ({
                         width: 100%;
                         max-width: 100%;
                         margin: 0;
+                        padding: 0;
+                    }
+                    .header-bg, .section-header {
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                    }
+                    table {
+                        page-break-inside: auto;
+                    }
+                    tr {
+                        page-break-inside: avoid;
+                        page-break-after: auto;
                     }
                 }
             `}</style>
@@ -574,4 +588,4 @@ const ReportCardTemplate: React.FC<Props> = ({
     );
 };
 
-export default ReportCardTemplate;
+export default React.memo(ReportCardTemplate);

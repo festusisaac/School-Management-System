@@ -4,6 +4,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import { Eye, Edit, Trash2, LayoutGrid, List as ListIcon, Search, MoreVertical, Phone, Upload, Download, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api, { getFileUrl } from '../../services/api';
+import { TablePagination } from '../../components/ui/TablePagination';
 import { usePermissions } from '../../hooks/usePermissions';
 import { clsx } from 'clsx';
 import BulkStudentImport from './BulkStudentImport';
@@ -41,6 +42,10 @@ export default function StudentDirectory() {
     });
     const [showImportModal, setShowImportModal] = useState(false);
 
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 24; // Multi-row friendly for grid view
+
     const [classes, setClasses] = useState<any[]>([]);
     const [sections, setSections] = useState<any[]>([]);
 
@@ -50,6 +55,7 @@ export default function StudentDirectory() {
 
     useEffect(() => {
         fetchStudents();
+        setCurrentPage(1); // Reset page on filter change
     }, [filters.classId, filters.sectionId]); // Keyword handled by local filter or debounce in future
 
     const fetchInitialData = async () => {
@@ -83,6 +89,7 @@ export default function StudentDirectory() {
 
     const handleSearch = () => {
         fetchStudents();
+        setCurrentPage(1);
     };
 
     // Calculate stats client-side for now
@@ -324,11 +331,25 @@ export default function StudentDirectory() {
                     <p className="text-gray-500 font-medium animate-pulse">Loading students...</p>
                 </div>
             ) : viewMode === 'list' ? (
-                <DataTable columns={columns} data={students} />
+                <div className="space-y-4">
+                    <DataTable columns={columns} data={students.slice((currentPage - 1) * pageSize, currentPage * pageSize)} />
+                    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800/50 rounded-xl overflow-hidden shadow-sm">
+                        <TablePagination
+                            currentPage={currentPage}
+                            totalItems={students.length}
+                            pageSize={pageSize}
+                            onPageChange={(page) => {
+                                setCurrentPage(page);
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                        />
+                    </div>
+                </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {students.map((student) => (
-                        <div key={student.id} className="group bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800/50 p-6 shadow-sm hover:shadow-md transition-all relative">
+                <div className="space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {students.slice((currentPage - 1) * pageSize, currentPage * pageSize).map((student) => (
+                            <div key={student.id} className="group bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800/50 p-6 shadow-sm hover:shadow-md transition-all relative">
                              {hasAnyPermission(['students:view_profile', 'students:edit', 'students:delete']) && (
                                 <div className="absolute top-4 right-4 z-10">
                                     <button
@@ -429,6 +450,18 @@ export default function StudentDirectory() {
                             </div>
                         </div>
                     ))}
+                    </div>
+                    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800/50 rounded-xl overflow-hidden shadow-sm">
+                        <TablePagination
+                            currentPage={currentPage}
+                            totalItems={students.length}
+                            pageSize={pageSize}
+                            onPageChange={(page) => {
+                                setCurrentPage(page);
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                        />
+                    </div>
                 </div>
             )}
 

@@ -4,6 +4,8 @@ import { ExamSetupService } from './services/exam-setup.service';
 import { ScoreEntryService } from './services/score-entry.service';
 import { ResultProcessingService } from './services/result-processing.service';
 import { ResultControlService } from './services/result-control.service';
+import { BullModule } from '@nestjs/bull';
+import { ScoreImportProcessor } from './processors/score-import.processor';
 import { ExamSetupController } from './controllers/exam-setup.controller';
 import { ScoreEntryController } from './controllers/score-entry.controller';
 import { ResultProcessingController } from './controllers/result-processing.controller';
@@ -58,6 +60,9 @@ import { SystemModule } from '../system/system.module';
             SystemSetting,
         ]),
         SystemModule,
+        BullModule.registerQueue({
+            name: 'score-import',
+        }),
     ],
     controllers: [
         ExamSetupController,
@@ -70,7 +75,8 @@ import { SystemModule } from '../system/system.module';
         ExamSetupService,
         ScoreEntryService,
         ResultProcessingService,
-        ResultControlService
+        ResultControlService,
+        ScoreImportProcessor
     ],
     exports: [
         ExamSetupService,

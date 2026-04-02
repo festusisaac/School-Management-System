@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Download, Search, Filter, Printer } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { examinationService, ExamGroup } from '../../../services/examinationService';
 import api from '../../../services/api';
 import { utils, writeFile } from 'xlsx';
+import { TablePagination } from '../../../components/ui/TablePagination';
+import { identifyTerm, createIdLookupMap, groupById } from '../../../utils/reportingUtils';
 import { useSystem } from '../../../context/SystemContext';
 import { systemService, AcademicTerm } from '../../../services/systemService';
 import { useSearchParams } from 'react-router-dom';
@@ -35,9 +37,16 @@ const ClassBroadsheetPage = () => {
     const [terms, setTerms] = useState<AcademicTerm[]>([]);
     const [selectedTerm, setSelectedTerm] = useState<string>(searchParams.get('termName') || settings?.activeTermName || '');
 
-    const [rows, setRows] = useState<BroadsheetRow[]>([]);
-    const [subjects, setSubjects] = useState<string[]>([]); // Array of subject names for columns
     const [loading, setLoading] = useState(false);
+    const [rawData, setRawData] = useState<{
+        students: any[];
+        allSubjects: any[];
+        broadsheet: any;
+    } | null>(null);
+
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 50;
 
     const { showError, showSuccess } = useToast();
 
@@ -110,110 +119,131 @@ const ClassBroadsheetPage = () => {
         if (selectedGroup && selectedClass) {
             fetchBroadsheetData();
         } else {
-            setRows([]);
-            setSubjects([]);
+            setRawData(null);
         }
+        setCurrentPage(1); // Reset page on filter change
     }, [selectedGroup, selectedClass]);
 
     const fetchBroadsheetData = async () => {
         setLoading(true);
         try {
-            // 1. Fetch Students (Source of Truth)
-            // 2. Fetch Subjects (for ID -> Name mapping)
-            const [studentsData, allSubjects] = await Promise.all([
+            const [students, allSubjects, broadsheet] = await Promise.all([
                 api.getStudents({ classId: selectedClass, limit: 1000 }),
-                api.getSubjects()
+                api.getSubjects(),
+                examinationService.getBroadsheet(selectedClass, selectedGroup)
             ]);
 
-            const subjectMap = new Map<string, string>();
-            allSubjects.forEach((s: any) => subjectMap.set(s.id, s.name));
-
-            // 3. Fetch Optimized Broadsheet Data (One call now!)
-            const broadsheetData: any = await examinationService.getBroadsheet(selectedClass, selectedGroup);
-            const termResults = broadsheetData.results || [];
-            const subjectScoresRaw = broadsheetData.subjectScores || [];
-            const cumulativeOverallResults = broadsheetData.cumulativeOverallResults || [];
-
-            // Identify which subjects have scores
-            const scheduledSubjectIds = Array.from(new Set(subjectScoresRaw.map((s: any) => s.subjectId || s.subjectid))) as string[];
-            const subjectNames = scheduledSubjectIds
-                .map(id => subjectMap.get(id) || 'Unknown')
-                .sort();
-
-            setSubjects(subjectNames);
-
-            // Map subjectId to Name for easy score retrieval
-            const idToNameMap = new Map<string, string>();
-            scheduledSubjectIds.forEach(id => idToNameMap.set(id, subjectMap.get(id) || 'Unknown'));
-
-            // Pre-group raw subject scores by studentId
-            const studentSubjectMap = new Map<string, Record<string, number>>();
-            subjectScoresRaw.forEach((item: any) => {
-                // Handle potential lowercase keys from raw SQL
-                const sId = item.studentId || item.studentid;
-                const subjId = item.subjectId || item.subjectid;
-                const rawScore = item.totalSubjectScore || item.totalsubjectscore || 0;
-
-                const subjName = idToNameMap.get(subjId) || 'Unknown';
-                if (!studentSubjectMap.has(sId)) {
-                    studentSubjectMap.set(sId, {});
-                }
-                studentSubjectMap.get(sId)![subjName] = parseFloat(rawScore);
+            setRawData({
+                students: students || [],
+                allSubjects: allSubjects || [],
+                broadsheet: broadsheet || {}
             });
-
-            // 5. Merge Data across all students in class
-            const processedRows: BroadsheetRow[] = studentsData.map((student: any) => {
-                const termResult = termResults.find((r: any) => r.studentId === student.id);
-                const scores = studentSubjectMap.get(student.id) || {};
-
-                let calculatedTotal = 0;
-                let subjectCount = 0;
-                Object.values(scores).forEach(s => {
-                    calculatedTotal += s;
-                    subjectCount++;
-                });
-
-                return {
-                    studentId: student.id,
-                    studentName: `${student.firstName} ${student.lastName}`,
-                    admissionNumber: student.admissionNumber || student.admissionNo || 'N/A',
-                    totalScore: termResult ? parseFloat(termResult.totalScore) : calculatedTotal,
-                    averageScore: termResult ? parseFloat(termResult.averageScore) : (subjectCount > 0 ? calculatedTotal / subjectCount : 0),
-                    position: termResult?.position || 0, 
-                    subjectScores: scores,
-                    cumulative: {
-                        term1: parseFloat(cumulativeOverallResults.find((r: any) => r.studentId === student.id && r.examGroup?.term?.toLowerCase() === 'first term')?.totalScore || 0),
-                        term2: parseFloat(cumulativeOverallResults.find((r: any) => r.studentId === student.id && r.examGroup?.term?.toLowerCase() === 'second term')?.totalScore || 0),
-                    }
-                };
-            });
-
-            // 6. Sort by Position (if available) or Total Score
-            processedRows.sort((a, b) => {
-                if (a.position && b.position) return a.position - b.position;
-                return b.totalScore - a.totalScore;
-            });
-            
-            // Recalculate positions only if missing or forced
-            if (processedRows.every(r => r.position === 0)) {
-                let currentRank = 1;
-                processedRows.forEach((row, index) => {
-                    if (index > 0 && row.totalScore < processedRows[index - 1].totalScore) {
-                        currentRank = index + 1;
-                    }
-                    row.position = currentRank;
-                });
-            }
-
-            setRows(processedRows);
-
         } catch (error) {
-            console.error(error);
-            showError('Failed to build broadsheet');
+            console.error('Broadsheet Fetch Error:', error);
+            showError('Failed to fetch broadsheet data');
+            setRawData(null);
         } finally {
             setLoading(false);
         }
     };
+
+    // HIGH PERFORMANCE PROCESSING
+    const { rows, subjects } = useMemo(() => {
+        if (!rawData) return { rows: [], subjects: [] };
+        const { students, allSubjects, broadsheet } = rawData;
+
+        // Interface for results returned in the broadsheet
+        interface BroadsheetResult {
+            studentId: string;
+            totalScore: string | number;
+            averageScore: string | number;
+            position: number;
+        }
+
+        const termResults = (broadsheet.results || []) as BroadsheetResult[];
+        const subjectScoresRaw = broadsheet.subjectScores || [];
+        const cumulativeOverallResults = broadsheet.cumulativeOverallResults || [];
+
+        // 1. Create Lookup Maps (O(1))
+        const subjectLookup = createIdLookupMap(allSubjects, 'id');
+        const termResultMap = createIdLookupMap<BroadsheetResult>(termResults, 'studentId');
+        
+        const cumulativeOverallMap = new Map<string, { term1: number; term2: number }>();
+        cumulativeOverallResults.forEach((r: any) => {
+            const sId = (r.studentId || r.studentid)?.toString();
+            if (!sId) return;
+            const existing = cumulativeOverallMap.get(sId) || { term1: 0, term2: 0 };
+            const term = identifyTerm(r.examGroup?.term);
+            if (term === 'first') existing.term1 = parseFloat(r.totalScore || 0);
+            else if (term === 'second') existing.term2 = parseFloat(r.totalScore || 0);
+            cumulativeOverallMap.set(sId, existing);
+        });
+
+        // 2. Identify and Sort Subjects
+        const scheduledSubjectIds = Array.from(new Set(subjectScoresRaw.map((s: any) => (s.subjectId || s.subjectid)?.toString()))).filter(Boolean) as string[];
+        const subjectNames = scheduledSubjectIds
+            .map(id => (subjectLookup.get(id) as any)?.name || 'Unknown')
+            .sort();
+
+        // 3. Map subjectId to Name
+        const idToNameMap = new Map<string, string>();
+        scheduledSubjectIds.forEach(id => idToNameMap.set(id, (subjectLookup.get(id) as any)?.name || 'Unknown'));
+
+        // 4. Pre-group scores by student (O(N))
+        const studentSubjectMap = new Map<string, Record<string, number>>();
+        subjectScoresRaw.forEach((item: any) => {
+            const sId = (item.studentId || item.studentid)?.toString();
+            const subjId = (item.subjectId || item.subjectid)?.toString();
+            if (!sId || !subjId) return;
+
+            const rawScore = item.totalSubjectScore || item.totalsubjectscore || 0;
+            const subjName = idToNameMap.get(subjId) || 'Unknown';
+            
+            if (!studentSubjectMap.has(sId)) studentSubjectMap.set(sId, {});
+            studentSubjectMap.get(sId)![subjName] = parseFloat(rawScore);
+        });
+
+        // 5. Merge Data across all students
+        const processedRows: BroadsheetRow[] = students.map((student: any) => {
+            const sId = student.id?.toString();
+            const termResult = termResultMap.get(sId);
+            const scores = studentSubjectMap.get(sId) || {};
+            const cumulative = cumulativeOverallMap.get(sId) || { term1: 0, term2: 0 };
+
+            let calculatedTotal = 0;
+            let subjectCount = 0;
+            // Use for...in for performance in hot loop
+            for (const key in scores) {
+                calculatedTotal += scores[key];
+                subjectCount++;
+            }
+
+            return {
+                studentId: sId,
+                studentName: `${student.firstName} ${student.lastName}`,
+                admissionNumber: student.admissionNumber || student.admissionNo || 'N/A',
+                totalScore: termResult ? parseFloat(termResult.totalScore.toString()) : calculatedTotal,
+                averageScore: termResult ? parseFloat(termResult.averageScore.toString()) : (subjectCount > 0 ? calculatedTotal / subjectCount : 0),
+                position: termResult?.position || 0, 
+                subjectScores: scores,
+                cumulative
+            };
+        });
+
+        // 6. Sort and Rank (O(N log N))
+        processedRows.sort((a, b) => b.totalScore - a.totalScore);
+        
+        // Always ensure positions are correct based on totalScore
+        let currentRank = 1;
+        processedRows.forEach((row, index) => {
+            if (index > 0 && row.totalScore < processedRows[index - 1].totalScore) {
+                currentRank = index + 1;
+            }
+            row.position = currentRank;
+        });
+
+        return { rows: processedRows, subjects: subjectNames };
+    }, [rawData]);
 
     const handleExport = () => {
         if (rows.length === 0) return;
@@ -381,7 +411,7 @@ const ClassBroadsheetPage = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-800 whitespace-nowrap">
-                            {rows.map((row) => (
+                            {rows.slice((currentPage - 1) * pageSize, currentPage * pageSize).map((row) => (
                                 <tr key={row.studentId} className="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
                                     <td className="px-4 py-3 text-center font-black text-primary-600 dark:text-primary-400 sticky left-0 bg-white dark:bg-gray-800 z-10 border-r border-gray-100 dark:border-gray-700 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
                                         <span className="bg-primary-50 dark:bg-primary-900/20 px-2 py-1 rounded text-[11px]">
@@ -430,6 +460,18 @@ const ClassBroadsheetPage = () => {
                             ))}
                         </tbody>
                         </table>
+                        
+                        <div className="border-t border-gray-100 dark:border-gray-800/50 bg-gray-50/30 dark:bg-gray-800/20">
+                            <TablePagination 
+                                currentPage={currentPage}
+                                totalItems={rows.length}
+                                pageSize={pageSize}
+                                onPageChange={(page) => {
+                                    setCurrentPage(page);
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }}
+                            />
+                        </div>
                     </div>
                 )}
             </div>
