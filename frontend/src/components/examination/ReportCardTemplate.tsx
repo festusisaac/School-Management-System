@@ -143,12 +143,12 @@ const ReportCardTemplate: React.FC<Props> = ({
 
     return (
         <div
-            className="bg-white mx-auto text-black print:p-0"
+            className="bg-white mx-auto text-black print:mx-0 print:w-full print:max-w-none"
             style={{
                 width: '100%',
-                maxWidth: '210mm',
+                maxWidth: '100%', 
                 minHeight: 'auto',
-                padding: '5mm', // Matching Blade padding exactly
+                padding: '2mm', 
                 fontFamily: "'DejaVu Sans', sans-serif",
                 fontSize: '11px',
                 lineHeight: '1.2',
@@ -158,7 +158,7 @@ const ReportCardTemplate: React.FC<Props> = ({
                 margin: '0 auto'
             }}
         >
-            <div className="main-container w-full max-w-full m-0 p-0 box-border flex flex-col justify-between" style={{ minHeight: '280mm' }}>
+            <div className="main-container w-full max-w-full m-0 p-0 box-border flex flex-col justify-between" style={{ minHeight: '290mm' }}>
                 <div className="upper-content">
                     {/* HEADER TABLE */}
                     <table className="w-full border-collapse mb-[5px] border" style={{ backgroundColor: colorHeaderBg, borderColor: colorBorder }}>
@@ -565,7 +565,7 @@ const ReportCardTemplate: React.FC<Props> = ({
                 @media print {
                     @page {
                         size: A4 portrait;
-                        margin: 5mm;
+                        margin: 0;
                     }
                     /* NUCLEAR OPTION: Clear all layout constraints and backgrounds during print */
                     html, body, #root, #__next, .app-root, main, [class*="layout"], [class*="MainLayout"], [class*="wrapper"], [class*="container"] {
@@ -574,6 +574,7 @@ const ReportCardTemplate: React.FC<Props> = ({
                         max-height: none !important;
                         overflow: visible !important;
                         position: static !important;
+                        width: 100% !important;
                         margin: 0 !important;
                         padding: 0 !important;
                         display: block !important;
