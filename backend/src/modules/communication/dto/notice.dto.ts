@@ -36,6 +36,10 @@ export class CreateNoticeDto {
   @IsString({ each: true })
   @IsOptional()
   attachments?: string[];
+
+  @IsUUID()
+  @IsOptional()
+  schoolSectionId?: string;
 }
 
 export class UpdateNoticeDto {
@@ -75,4 +79,8 @@ export class UpdateNoticeDto {
   @IsString({ each: true })
   @IsOptional()
   attachments?: string[];
+
+  @IsUUID()
+  @IsOptional()
+  schoolSectionId?: string;
 }

@@ -95,10 +95,19 @@ export class BroadcastService {
     const recipients: any[] = [];
 
     switch (dto.target) {
-      case BroadcastTarget.ALL_STUDENTS:
-        const students = await this.studentRepository.find({ where: { tenantId, isActive: true }, relations: ['class', 'parent'] });
+      case BroadcastTarget.ALL_STUDENTS: {
+        const qb = this.studentRepository.createQueryBuilder('student')
+          .leftJoinAndSelect('student.class', 'class')
+          .leftJoinAndSelect('student.parent', 'parent')
+          .where('student.tenantId = :tenantId', { tenantId })
+          .andWhere('student.isActive = true');
+        if (dto.sectionId) {
+          qb.andWhere('class.schoolSectionId = :sectionId', { sectionId: dto.sectionId });
+        }
+        const students = await qb.getMany();
         students.forEach(s => recipients.push(...this.extractStudentTarget(s, dto.includeParents)));
         break;
+      }
 
       case BroadcastTarget.CLASS:
         if (dto.targetIds?.length) {
@@ -154,23 +163,34 @@ export class BroadcastService {
           }
           break;
 
-      case BroadcastTarget.DEBTORS_ONLY:
-          const debtorsResult = await this.feesService.debtorsList({ limit: 1000 }, tenantId);
+      case BroadcastTarget.DEBTORS_ONLY: {
+          const debtorsResult = await this.feesService.debtorsList({ limit: 1000, sectionId: dto.sectionId }, tenantId);
           debtorsResult.items.forEach(d => {
             recipients.push(...this.extractStudentTarget(d.student, dto.includeParents));
           });
           break;
+      }
 
-      case BroadcastTarget.PAID_ONLY:
-          // Logic: Get ALL students, then filter out those in the debtors list
-          const allStudents = await this.studentRepository.find({ where: { tenantId, isActive: true }, relations: ['class', 'parent'] });
-          const debtors = await this.feesService.debtorsList({ limit: 1000 }, tenantId);
+      case BroadcastTarget.PAID_ONLY: {
+          // Logic: Get ALL students (filtered by section), then filter out those in the debtors list
+          const qb = this.studentRepository.createQueryBuilder('student')
+            .leftJoinAndSelect('student.class', 'class')
+            .leftJoinAndSelect('student.parent', 'parent')
+            .where('student.tenantId = :tenantId', { tenantId })
+            .andWhere('student.isActive = true');
+          if (dto.sectionId) {
+            qb.andWhere('class.schoolSectionId = :sectionId', { sectionId: dto.sectionId });
+          }
+          const allStudents = await qb.getMany();
+          
+          const debtors = await this.feesService.debtorsList({ limit: 1000, sectionId: dto.sectionId }, tenantId);
           const debtorIds = new Set(debtors.items.map(d => d.id));
           
           allStudents.filter(s => !debtorIds.has(s.id)).forEach(s => {
             recipients.push(...this.extractStudentTarget(s, dto.includeParents));
           });
           break;
+      }
     }
 
     // Filter out duplicates and missing contact info

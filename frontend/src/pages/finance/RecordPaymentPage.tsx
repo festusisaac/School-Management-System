@@ -63,7 +63,7 @@ interface FinancialStatement {
 
 export default function RecordPaymentPage() {
     const { showError, showSuccess } = useToast();
-    const { getSchoolInfo } = useSystem();
+    const { getSchoolInfo, activeSectionId } = useSystem();
 
     const [keyword, setKeyword] = useState('');
     const [debouncedKeyword, setDebouncedKeyword] = useState('');
@@ -112,7 +112,10 @@ export default function RecordPaymentPage() {
         setLoading(true);
         setHasSearched(true);
         try {
-            const results = await api.getStudents({ keyword: debouncedKeyword });
+            const results = await api.getStudents({ 
+                keyword: debouncedKeyword,
+                schoolSectionId: activeSectionId || undefined
+            });
             setStudents(results as any);
         } catch (error) {
             showError('Search failed');

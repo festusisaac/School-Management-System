@@ -24,6 +24,7 @@ import {
   SendBroadcastDto 
 } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import { useSystem } from '../../context/SystemContext';
 
 const SendBroadcast = () => {
   const [loading, setLoading] = useState(false);
@@ -31,6 +32,7 @@ const SendBroadcast = () => {
   const [templates, setTemplates] = useState<MessageTemplate[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
   const toast = useToast();
+  const { activeSectionId } = useSystem();
 
   // Form State
   const [formData, setFormData] = useState<SendBroadcastDto>({
@@ -47,17 +49,23 @@ const SendBroadcast = () => {
 
   useEffect(() => {
     fetchInitialData();
-  }, []);
+  }, [activeSectionId]);
 
   const fetchInitialData = async () => {
     try {
       setLoading(true);
       const [tplData, clsData] = await Promise.all([
         api.getMessageTemplates(),
-        api.get('/academics/classes')
+        api.get<any[]>('/academics/classes')
       ]);
       setTemplates(tplData);
-      setClasses(clsData);
+      
+      const allClasses = Array.isArray(clsData) ? clsData : [];
+      const activeClasses = activeSectionId 
+        ? allClasses.filter((c: any) => c.schoolSectionId === activeSectionId)
+        : allClasses;
+      
+      setClasses(activeClasses);
     } catch (error) {
       toast.showError('Failed to load initial data');
     } finally {
@@ -127,7 +135,11 @@ const SendBroadcast = () => {
 
     try {
       setSending(true);
-      const response = await api.sendBroadcast(formData);
+      const payload = {
+        ...formData,
+        sectionId: activeSectionId || undefined
+      };
+      const response = await api.sendBroadcast(payload);
       
       if (formData.scheduledAt) {
           const scheduledTime = new Date(formData.scheduledAt).toLocaleString();

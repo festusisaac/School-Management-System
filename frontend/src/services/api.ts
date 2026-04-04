@@ -74,7 +74,9 @@ class ApiService {
               localStorage.removeItem('access_token')
               localStorage.removeItem('refresh_token')
               localStorage.removeItem('user')
-              window.location.href = '/login'
+              if (!window.location.pathname.includes('/login')) {
+                window.location.href = '/login'
+              }
               return Promise.reject(new Error('No refresh token available'))
             }
 
@@ -193,7 +195,7 @@ class ApiService {
     return this.get<any>('/finance/payments', { params })
   }
 
-  async getDebtorsList(params: { classId?: string; search?: string; page?: number; limit?: number; minBalance?: number; riskLevel?: string } = {}) {
+  async getDebtorsList(params: { classId?: string; search?: string; page?: number; limit?: number; minBalance?: number; riskLevel?: string; sectionId?: string } = {}) {
     return this.get<any>('/finance/debtors', { params })
   }
 
@@ -731,12 +733,18 @@ class ApiService {
     return this.post<any>('/hr/attendance/bulk', data)
   }
 
-  async getDailyAttendance(date: string) {
-    return this.get<any[]>(`/hr/attendance/daily?date=${date}`)
+  async getDailyAttendance(date: string, sectionId?: string) {
+    const url = sectionId 
+      ? `/hr/attendance/daily?date=${date}&sectionId=${sectionId}`
+      : `/hr/attendance/daily?date=${date}`
+    return this.get<any[]>(url)
   }
 
-  async getAttendanceSummary(date: string) {
-    return this.get<any>(`/hr/attendance/summary?date=${date}`)
+  async getAttendanceSummary(date: string, sectionId?: string) {
+    const url = sectionId 
+      ? `/hr/attendance/summary?date=${date}&sectionId=${sectionId}`
+      : `/hr/attendance/summary?date=${date}`
+    return this.get<any>(url)
   }
 
   // Leave API methods (HR Controller)
@@ -786,7 +794,7 @@ class ApiService {
   }
 
   // Payroll API methods
-  async getPayrolls(params?: { month?: number; year?: number; staffId?: string }) {
+  async getPayrolls(params?: { month?: number; year?: number; staffId?: string; sectionId?: string }) {
     return this.get<any[]>('/hr/payroll', { params })
   }
 
@@ -798,11 +806,11 @@ class ApiService {
     return this.post<any>('/hr/payroll', data)
   }
 
-  async bulkCreatePayroll(data: { month: number; year: number }) {
+  async bulkCreatePayroll(data: { month: number; year: number; sectionId?: string }) {
     return this.post<any>('/hr/payroll/bulk', data)
   }
 
-  async getPayrollAnalytics(params: { month: number; year: number }) {
+  async getPayrollAnalytics(params: { month: number; year: number; sectionId?: string }) {
     return this.get<any>('/hr/payroll/analytics', { params })
   }
 
@@ -1022,12 +1030,12 @@ class ApiService {
   }
 
   // Noticeboard
-  async getNotices(params?: { audience?: string }) {
+  async getNotices(params?: { audience?: string, schoolSectionId?: string }) {
     return this.get<Notice[]>(`/communication/notices`, { params })
   }
 
-  async getNoticesForAdmin() {
-    return this.get<Notice[]>(`/communication/notices/admin`)
+  async getNoticesForAdmin(params?: { schoolSectionId?: string }) {
+    return this.get<Notice[]>(`/communication/notices/admin`, { params })
   }
 
   async getNoticeById(id: string) {
@@ -1082,6 +1090,7 @@ export interface SendBroadcastDto {
   channel: 'EMAIL' | 'SMS';
   target: BroadcastTarget;
   targetIds?: string[];
+  sectionId?: string;
   templateId?: string;
   subject?: string;
   body: string;
@@ -1117,6 +1126,7 @@ export interface Notice {
   type: NoticeType;
   targetAudience: NoticeAudience;
   priority: NoticePriority;
+  schoolSectionId?: string;
   isSticky: boolean;
   isActive: boolean;
   authorId: string;

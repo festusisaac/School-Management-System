@@ -87,7 +87,7 @@ export default function FeesHistoryPage() {
   const [method, setMethod] = useState('');
   const [type, setType] = useState('');
 
-  const { settings, getSchoolInfo } = useSystem();
+  const { settings, getSchoolInfo, activeSectionId } = useSystem();
 
   // Actions
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
@@ -105,6 +105,7 @@ export default function FeesHistoryPage() {
         endDate: endDate || undefined,
         method: method || undefined,
         type: type || undefined,
+        sectionId: activeSectionId || undefined,
         page,
         limit
       });
@@ -122,7 +123,7 @@ export default function FeesHistoryPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, limit, startDate, endDate, method, type, searchQuery, showError]);
+  }, [page, limit, startDate, endDate, method, type, searchQuery, showError, activeSectionId]);
 
   useEffect(() => {
     fetchHistory();

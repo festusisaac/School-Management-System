@@ -46,15 +46,23 @@ export class AttendanceService {
         return results;
     }
 
-    async getAttendanceByDate(date: string): Promise<StaffAttendance[]> {
+    async getAttendanceByDate(date: string, sectionId?: string): Promise<StaffAttendance[]> {
         const sessionId = await this.systemSettingsService.getActiveSessionId();
-        const where: any = { date: new Date(date) };
-        if (sessionId) where.sessionId = sessionId;
+        
+        const query = this.attendanceRepository.createQueryBuilder('attendance')
+            .leftJoinAndSelect('attendance.staff', 'staff')
+            .leftJoinAndSelect('staff.department', 'department')
+            .where('attendance.date = :date', { date: new Date(date) });
 
-        return this.attendanceRepository.find({
-            where,
-            relations: ['staff', 'staff.department']
-        });
+        if (sessionId) {
+            query.andWhere('attendance.sessionId = :sessionId', { sessionId });
+        }
+
+        if (sectionId) {
+            query.innerJoin('staff.sections', 'section', 'section.id = :sectionId', { sectionId });
+        }
+
+        return query.getMany();
     }
 
     async getStaffAttendanceRange(staffId: string, startDate: Date, endDate: Date): Promise<StaffAttendance[]> {
@@ -71,15 +79,23 @@ export class AttendanceService {
         });
     }
 
-    async getSummary(date: string) {
+    async getSummary(date: string, sectionId?: string) {
         const sessionId = await this.systemSettingsService.getActiveSessionId();
         const targetDate = new Date(date);
-        const where: any = { date: targetDate };
-        if (sessionId) where.sessionId = sessionId;
+        
+        const query = this.attendanceRepository.createQueryBuilder('attendance')
+            .innerJoin('attendance.staff', 'staff')
+            .where('attendance.date = :date', { date: targetDate });
 
-        const records = await this.attendanceRepository.find({
-            where
-        });
+        if (sessionId) {
+            query.andWhere('attendance.sessionId = :sessionId', { sessionId });
+        }
+
+        if (sectionId) {
+            query.innerJoin('staff.sections', 'section', 'section.id = :sectionId', { sectionId });
+        }
+
+        const records = await query.getMany();
 
         const stats = {
             present: 0,

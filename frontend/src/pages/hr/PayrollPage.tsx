@@ -23,6 +23,7 @@ import { formatCurrency, currencyToWords } from '../../utils/currency';
 import api from '../../services/api';
 import { format } from 'date-fns';
 import { useToast } from '../../context/ToastContext';
+import { useSystem } from '../../context/SystemContext';
 
 interface PayrollRecord {
     id: string;
@@ -62,8 +63,9 @@ const PayrollPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [showGenModal, setShowGenModal] = useState(false);
     const [showSlipModal, setShowSlipModal] = useState(false);
-    const [selectedPayroll, setSelectedPayroll] = useState<PayrollRecord | null>(null);
+    const [selectedPayroll, setSelectedPayroll] = (useState<PayrollRecord | null>(null));
     const toast = useToast();
+    const { activeSectionId } = useSystem();
 
     // Filters
     const [month, setMonth] = useState(new Date().getMonth() + 1);
@@ -94,12 +96,12 @@ const PayrollPage: React.FC = () => {
     useEffect(() => {
         fetchPayrolls();
         fetchStaff();
-    }, [month, year]);
+    }, [month, year, activeSectionId]);
 
     const fetchPayrolls = async () => {
         try {
             setLoading(true);
-            const data = await api.getPayrolls({ month, year });
+            const data = await api.getPayrolls({ month, year, sectionId: activeSectionId });
             setPayrolls(data);
         } catch (error) {
             console.error('Error fetching payrolls:', error);
@@ -110,7 +112,7 @@ const PayrollPage: React.FC = () => {
 
     const fetchStaff = async () => {
         try {
-            const data = await api.getStaff();
+            const data = await api.getStaff({ sectionId: activeSectionId });
             setStaffList(data);
         } catch (error) {
             console.error('Error fetching staff:', error);
@@ -136,7 +138,7 @@ const PayrollPage: React.FC = () => {
         if (!window.confirm(`Generate payroll for ALL active staff for ${months[month - 1]} ${year}?`)) return;
         try {
             setLoading(true);
-            const result = await api.bulkCreatePayroll({ month, year });
+            const result = await api.bulkCreatePayroll({ month, year, sectionId: activeSectionId });
             toast.showSuccess(`Generated: ${result.generated}, Skipped: ${result.skipped}`);
             fetchPayrolls();
         } catch (error: any) {

@@ -94,8 +94,10 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             
             // Try fetching sections using the base api call
             try {
-                const sectData = await api.getSchoolSections();
-                setAvailableSections(sectData || []);
+                if (localStorage.getItem('access_token')) {
+                    const sectData = await api.getSchoolSections();
+                    setAvailableSections(sectData || []);
+                }
             } catch (e) {
                 console.error('Failed to load sections', e);
             }

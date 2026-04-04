@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Calendar, Search, Save, CheckCircle2, XCircle, Clock, AlertCircle } from 'lucide-react';
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import { useSystem } from '../../context/SystemContext';
 
 interface Staff {
     id: string;
@@ -30,17 +31,19 @@ const StaffAttendancePage = () => {
     const [summary, setSummary] = useState({ present: 0, absent: 0, late: 0, halfDay: 0, onLeave: 0 });
     const toast = useToast();
 
+    const { activeSectionId } = useSystem();
+
     useEffect(() => {
         fetchInitialData();
-    }, [date]);
+    }, [date, activeSectionId]);
 
     const fetchInitialData = async () => {
         try {
             setLoading(true);
             const [staffData, attendanceData, summaryData] = await Promise.all([
-                api.getStaff(),
-                api.getDailyAttendance(date),
-                api.getAttendanceSummary(date)
+                api.getStaff({ sectionId: activeSectionId }),
+                api.getDailyAttendance(date, activeSectionId),
+                api.getAttendanceSummary(date, activeSectionId)
             ]);
 
             setStaffList(staffData);

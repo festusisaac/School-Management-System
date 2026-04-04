@@ -19,12 +19,14 @@ import { api, Notice, NoticeType, NoticePriority, NoticeAudience } from '../../s
 import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
 import { clsx } from 'clsx';
+import { useSystem } from '../../context/SystemContext';
 
 export default function ManageNoticesPage() {
   const [notices, setNotices] = useState<Notice[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingNotice, setEditingNotice] = useState<Partial<Notice> | null>(null);
+  const { activeSectionId, availableSections } = useSystem();
   
   // Form State
   const [formData, setFormData] = useState<Partial<Notice>>({
@@ -39,12 +41,14 @@ export default function ManageNoticesPage() {
 
   useEffect(() => {
     fetchNotices();
-  }, []);
+  }, [activeSectionId]);
 
   const fetchNotices = async () => {
     try {
       setLoading(true);
-      const data = await api.getNoticesForAdmin();
+      const data = await api.getNoticesForAdmin({
+        schoolSectionId: activeSectionId || undefined
+      });
       setNotices(data);
     } catch (error) {
       toast.error('Failed to fetch notices');
@@ -65,6 +69,7 @@ export default function ManageNoticesPage() {
         type: NoticeType.ANNOUNCEMENT,
         targetAudience: NoticeAudience.ALL,
         priority: NoticePriority.MEDIUM,
+        schoolSectionId: activeSectionId || undefined,
         isSticky: false,
         isActive: true,
       });
@@ -320,6 +325,18 @@ export default function ManageNoticesPage() {
                               className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm font-bold text-gray-700 dark:text-gray-300 transition-all focus:ring-2 focus:ring-primary-500 shadow-sm"
                             >
                               {Object.values(NoticePriority).map(v => <option key={v} value={v}>{v}</option>)}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Target Section</label>
+                            <select 
+                              value={formData.schoolSectionId || ''}
+                              onChange={e => setFormData({ ...formData, schoolSectionId: e.target.value || undefined })}
+                              className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm font-bold text-gray-700 dark:text-gray-300 transition-all focus:ring-2 focus:ring-primary-500 shadow-sm"
+                            >
+                              <option value="">Global (All Sections)</option>
+                              {availableSections.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
                             </select>
                           </div>
 

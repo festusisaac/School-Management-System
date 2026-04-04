@@ -311,13 +311,15 @@ const DashboardPage: React.FC = () => {
               <div className="flex flex-wrap justify-between text-sm mb-1 gap-1">
                 <span className="text-gray-700 dark:text-gray-300 truncate">{stats?.feesOverview?.unpaid || 0} UNPAID</span>
                 <span className="text-gray-900 dark:text-white font-bold ml-auto">
-                  {stats?.feesOverview ? ((stats.feesOverview.unpaid / (stats.feesOverview.unpaid + stats.feesOverview.partial + stats.feesOverview.paid)) * 100).toFixed(2) : 0}%
+                  {stats?.feesOverview && (stats.feesOverview.unpaid + stats.feesOverview.partial + stats.feesOverview.paid) > 0 
+                    ? ((stats.feesOverview.unpaid / (stats.feesOverview.unpaid + stats.feesOverview.partial + stats.feesOverview.paid)) * 100).toFixed(2) 
+                    : '0.00'}%
                 </span>
               </div>
               <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2">
                 <div
-                  className="bg-primary-600 h-2 rounded-full"
-                  style={{ width: `${stats?.feesOverview ? (stats.feesOverview.unpaid / (stats.feesOverview.unpaid + stats.feesOverview.partial + stats.feesOverview.paid)) * 100 : 0}%` }}
+                  className="bg-primary-600 h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${stats?.feesOverview && (stats.feesOverview.unpaid + stats.feesOverview.partial + stats.feesOverview.paid) > 0 ? (stats.feesOverview.unpaid / (stats.feesOverview.unpaid + stats.feesOverview.partial + stats.feesOverview.paid)) * 100 : 0}%` }}
                 ></div>
               </div>
             </div>
@@ -326,13 +328,15 @@ const DashboardPage: React.FC = () => {
               <div className="flex flex-wrap justify-between text-sm mb-1 gap-1">
                 <span className="text-gray-700 dark:text-gray-300 truncate">{stats?.feesOverview?.partial || 0} PARTIAL</span>
                 <span className="text-gray-900 dark:text-white font-bold ml-auto">
-                  {stats?.feesOverview ? ((stats.feesOverview.partial / (stats.feesOverview.unpaid + stats.feesOverview.partial + stats.feesOverview.paid)) * 100).toFixed(2) : 0}%
+                  {stats?.feesOverview && (stats.feesOverview.unpaid + stats.feesOverview.partial + stats.feesOverview.paid) > 0 
+                    ? ((stats.feesOverview.partial / (stats.feesOverview.unpaid + stats.feesOverview.partial + stats.feesOverview.paid)) * 100).toFixed(2) 
+                    : '0.00'}%
                 </span>
               </div>
               <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2">
                 <div
-                  className="bg-sky-400 h-2 rounded-full"
-                  style={{ width: `${stats?.feesOverview ? (stats.feesOverview.partial / (stats.feesOverview.unpaid + stats.feesOverview.partial + stats.feesOverview.paid)) * 100 : 0}%` }}
+                  className="bg-sky-400 h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${stats?.feesOverview && (stats.feesOverview.unpaid + stats.feesOverview.partial + stats.feesOverview.paid) > 0 ? (stats.feesOverview.partial / (stats.feesOverview.unpaid + stats.feesOverview.partial + stats.feesOverview.paid)) * 100 : 0}%` }}
                 ></div>
               </div>
             </div>
@@ -341,13 +345,15 @@ const DashboardPage: React.FC = () => {
               <div className="flex flex-wrap justify-between text-sm mb-1 gap-1">
                 <span className="text-gray-700 dark:text-gray-300 truncate">{stats?.feesOverview?.paid || 0} PAID</span>
                 <span className="text-gray-900 dark:text-white font-bold ml-auto">
-                  {stats?.feesOverview ? ((stats.feesOverview.paid / (stats.feesOverview.unpaid + stats.feesOverview.partial + stats.feesOverview.paid)) * 100).toFixed(2) : 0}%
+                  {stats?.feesOverview && (stats.feesOverview.unpaid + stats.feesOverview.partial + stats.feesOverview.paid) > 0 
+                    ? ((stats.feesOverview.paid / (stats.feesOverview.unpaid + stats.feesOverview.partial + stats.feesOverview.paid)) * 100).toFixed(2) 
+                    : '0.00'}%
                 </span>
               </div>
               <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2">
                 <div
-                  className="bg-sky-300 h-2 rounded-full"
-                  style={{ width: `${stats?.feesOverview ? (stats.feesOverview.paid / (stats.feesOverview.unpaid + stats.feesOverview.partial + stats.feesOverview.paid)) * 100 : 0}%` }}
+                  className="bg-sky-300 h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${stats?.feesOverview && (stats.feesOverview.unpaid + stats.feesOverview.partial + stats.feesOverview.paid) > 0 ? (stats.feesOverview.paid / (stats.feesOverview.unpaid + stats.feesOverview.partial + stats.feesOverview.paid)) * 100 : 0}%` }}
                 ></div>
               </div>
             </div>

@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, IsNull } from 'typeorm';
+import { Repository, In, IsNull, Brackets } from 'typeorm';
 import axios from 'axios';
 import * as crypto from 'crypto';
 import { SystemSettingsService } from '../../system/services/system-settings.service';
@@ -448,7 +448,13 @@ export class FeesService {
     }
 
     if (options.sectionId) {
-      q.andWhere('t.schoolSectionId = :sectionId', { sectionId: options.sectionId });
+      q.andWhere(new Brackets((qb: any) => {
+        qb.where('t.schoolSectionId = :sectionId', { sectionId: options.sectionId })
+          .orWhere(new Brackets((sqb: any) => {
+            sqb.where('t.schoolSectionId IS NULL')
+              .andWhere('class.schoolSectionId = :sectionId', { sectionId: options.sectionId });
+          }));
+      }));
     }
 
     if (options.studentId) {

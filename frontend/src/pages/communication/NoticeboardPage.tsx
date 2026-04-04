@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { 
   Bell, 
   Search, 
-  Tag, 
   AlertTriangle,
   Info,
   Megaphone,
@@ -12,6 +11,7 @@ import {
 } from 'lucide-react';
 import { api, Notice, NoticeType, NoticePriority, NoticeAudience } from '../../services/api';
 import { useAuthStore } from '../../stores/authStore';
+import { useSystem } from '../../context/SystemContext';
 import { format } from 'date-fns';
 import { clsx } from 'clsx';
 
@@ -21,18 +21,22 @@ export default function NoticeboardPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string>('All');
   const { user } = useAuthStore();
+  const { activeSectionId } = useSystem();
 
   const userRole = (user?.role || user?.roleObject?.name || 'student').toLowerCase();
   const audience = userRole === 'student' || userRole === 'parent' ? NoticeAudience.STUDENTS : NoticeAudience.STAFF;
 
   useEffect(() => {
     fetchNotices();
-  }, []);
+  }, [activeSectionId]);
 
   const fetchNotices = async () => {
     try {
       setLoading(true);
-      const data = await api.getNotices({ audience });
+      const data = await api.getNotices({ 
+        audience,
+        schoolSectionId: activeSectionId || undefined
+      });
       setNotices(data);
     } catch (error) {
       console.error('Failed to fetch notices:', error);

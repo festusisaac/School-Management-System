@@ -23,11 +23,13 @@ export class PayrollController {
         @Query('month') month?: number,
         @Query('year') year?: number,
         @Query('staffId') staffId?: string,
+        @Query('sectionId') sectionId?: string,
     ) {
         return this.payrollService.findAll({
             month: month ? Number(month) : undefined,
             year: year ? Number(year) : undefined,
             staffId,
+            sectionId,
         });
     }
 
@@ -48,8 +50,9 @@ export class PayrollController {
     getAnalytics(
         @Query('month') month: number,
         @Query('year') year: number,
+        @Query('sectionId') sectionId?: string,
     ) {
-        return this.payrollService.getAnalytics(Number(month), Number(year));
+        return this.payrollService.getAnalytics(Number(month), Number(year), sectionId);
     }
 
     @Delete(':id')

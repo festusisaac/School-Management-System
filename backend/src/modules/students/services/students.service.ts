@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, ILike, Between, In } from 'typeorm';
+import { Repository, Like, ILike, Between, In, Brackets } from 'typeorm';
 import { extname } from 'path';
 import { Student } from '../entities/student.entity';
 import { CreateStudentDto } from '../dtos/create-student.dto';
@@ -218,6 +218,9 @@ export class StudentsService {
         }
         if (query.parentId && query.parentId !== 'undefined' && query.parentId !== '') {
             baseWhere.parentId = query.parentId;
+        }
+        if (query.schoolSectionId && query.schoolSectionId !== 'undefined' && query.schoolSectionId !== '') {
+            baseWhere.class = { schoolSectionId: query.schoolSectionId };
         }
 
         if (query.keyword && query.keyword.trim() !== '') {
@@ -654,24 +657,36 @@ export class StudentsService {
 
     async getAttendanceLogs(startDate: string, endDate: string, tenantId: string, classId?: string, sectionId?: string, managedClassIds?: string[]): Promise<StudentAttendance[]> {
         const sessionId = await this.systemSettingsService.getActiveSessionId();
-        const where: any = {
-            date: Between(startDate, endDate) as any,
-            tenantId
-        };
-        if (sessionId) where.sessionId = sessionId;
-        if (classId) {
-            where.classId = classId;
-        } else if (managedClassIds && managedClassIds.length > 0) {
-            where.classId = In(managedClassIds);
-        }
         
-        if (sectionId) where.sectionId = sectionId;
+        const query = this.attendanceRepo.createQueryBuilder('attendance')
+            .leftJoinAndSelect('attendance.student', 'student')
+            .leftJoinAndSelect('attendance.class', 'class')
+            .leftJoinAndSelect('attendance.section', 'section')
+            .where('attendance.tenantId = :tenantId', { tenantId })
+            .andWhere('attendance.date BETWEEN :startDate AND :endDate', { startDate, endDate });
 
-        return this.attendanceRepo.find({
-            where,
-            relations: ['student', 'class', 'section'],
-            order: { date: 'DESC' }
-        });
+        if (sessionId) {
+            query.andWhere('attendance.sessionId = :sessionId', { sessionId });
+        }
+
+        if (classId) {
+            query.andWhere('attendance.classId = :classId', { classId });
+        } else if (managedClassIds && managedClassIds.length > 0) {
+            query.andWhere('attendance.classId IN (:...managedClassIds)', { managedClassIds });
+        }
+
+        if (sectionId) {
+            // First check if this is an academic section (exists in the record)
+            // or if we need to filter by school section
+            query.andWhere(new Brackets((qb: any) => {
+                qb.where('attendance.sectionId = :sectionId', { sectionId })
+                  .orWhere('class.schoolSectionId = :sectionId', { sectionId });
+            }));
+        }
+
+        query.orderBy('attendance.date', 'DESC');
+
+        return query.getMany();
     }
 
     // --- Bulk Import Helpers ---

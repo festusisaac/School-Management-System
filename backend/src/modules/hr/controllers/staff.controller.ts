@@ -44,8 +44,8 @@ export class StaffController {
     }
 
     @Get('statistics')
-    async getStatistics(@Request() req: any) {
-        return this.staffService.getStatistics(req.user.tenantId);
+    async getStatistics(@Query('sectionId') sectionId: string, @Request() req: any) {
+        return this.staffService.getStatistics(req.user.tenantId, sectionId);
     }
 
     @Get('profile/me')

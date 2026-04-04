@@ -18,4 +18,8 @@ export class StaffFilterDto {
     @IsEnum(EmploymentType)
     @IsOptional()
     employmentType?: EmploymentType;
+
+    @IsString()
+    @IsOptional()
+    sectionId?: string;
 }

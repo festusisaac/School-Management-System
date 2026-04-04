@@ -3,6 +3,7 @@ import { X, Search, Users, Layers, LayoutGrid, Tag, AlertCircle, CheckCircle2 } 
 import { clsx } from 'clsx';
 import api from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
+import { useSystem } from '../../../context/SystemContext';
 
 interface BulkFeeAssignmentModalProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ interface BulkFeeAssignmentModalProps {
 
 export default function BulkFeeAssignmentModal({ isOpen, onClose, feeGroupId, feeGroupName }: BulkFeeAssignmentModalProps) {
   const toast = useToast();
+  const { activeSectionId } = useSystem();
   const [loading, setLoading] = useState(false);
   const [isSimulating, setIsSimulating] = useState(false);
   
@@ -55,7 +57,7 @@ export default function BulkFeeAssignmentModal({ isOpen, onClose, feeGroupId, fe
     } else {
         setSimulationResult(null);
     }
-  }, [assignmentData.classIds, assignmentData.sectionIds, assignmentData.categoryIds, assignmentData.studentIds]);
+  }, [assignmentData.classIds, assignmentData.sectionIds, assignmentData.categoryIds, assignmentData.studentIds, activeSectionId]);
 
   const fetchFilters = async () => {
     try {
@@ -63,9 +65,12 @@ export default function BulkFeeAssignmentModal({ isOpen, onClose, feeGroupId, fe
         api.getClasses(),
         api.getSections(),
         api.getStudentCategories(),
-        api.getStudents()
+        api.getStudents({ schoolSectionId: activeSectionId || undefined })
       ]);
-      setClasses(classesRes || []);
+      const activeClasses = activeSectionId && Array.isArray(classesRes) 
+        ? classesRes.filter((c: any) => c.schoolSectionId === activeSectionId) 
+        : (classesRes || []);
+      setClasses(activeClasses);
       setSections(sectionsRes || []);
       setCategories(catsRes || []);
       setStudents(studentsRes || []);

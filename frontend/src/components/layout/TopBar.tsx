@@ -1,4 +1,4 @@
-import { Bell, Menu, Search, Sun, Moon, LogOut, User as UserIcon, Settings as SettingsIcon, ChevronDown, Calendar } from 'lucide-react';
+import { Bell, Menu, Search, Sun, Moon, LogOut, User as UserIcon, Settings as SettingsIcon, Calendar } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useSystem } from '../../context/SystemContext';
 import { useState, useRef, useEffect } from 'react';
@@ -85,12 +85,11 @@ export function TopBar({ onMenuClick }: TopBarProps) {
             <div className="flex items-center gap-3">
                 {/* Global Section Context Switcher */}
                 {availableSections && availableSections.length > 0 && (
-                    <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-                        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Scope:</span>
+                    <div className="hidden sm:flex items-center px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
                         <select 
                             value={activeSectionId}
                             onChange={(e) => setActiveSectionId(e.target.value)}
-                            className="bg-transparent border-none text-sm font-bold text-primary-700 dark:text-primary-400 focus:ring-0 cursor-pointer outline-none pl-1 pr-6 hover:text-primary-800 transition-colors"
+                            className="bg-transparent border-none text-xs font-bold text-primary-700 dark:text-primary-400 focus:ring-0 cursor-pointer outline-none pl-1 pr-5 hover:text-primary-800 transition-colors transition-all"
                         >
                             <option value="">All Sections</option>
                             {availableSections.map((sec) => (
@@ -122,24 +121,19 @@ export function TopBar({ onMenuClick }: TopBarProps) {
                 <div className="relative" ref={dropdownRef}>
                     <button
                         onClick={() => setIsProfileOpen(!isProfileOpen)}
-                        className="flex items-center gap-3 p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all border border-transparent hover:border-gray-100 dark:hover:border-gray-600"
+                        className="flex items-center p-0.5 rounded-full hover:ring-4 hover:ring-primary-50 dark:hover:ring-primary-900/20 transition-all duration-300 active:scale-95"
                     >
                         {user?.photo ? (
                             <img
                                 src={getFileUrl(user.photo)}
                                 alt={userName}
-                                className="w-8 h-8 rounded-full object-cover ring-2 ring-white dark:ring-gray-700 shadow-sm"
+                                className="w-9 h-9 rounded-full object-cover ring-2 ring-primary-500/20 dark:ring-primary-400/20 shadow-md"
                             />
                         ) : (
-                            <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-200 font-bold text-xs ring-2 ring-white dark:ring-gray-700 shadow-sm uppercase">
+                            <div className="w-9 h-9 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-200 font-bold text-sm ring-2 ring-primary-500/20 dark:ring-primary-400/20 shadow-md uppercase">
                                 {initials}
                             </div>
                         )}
-                        <div className="text-left hidden md:block">
-                            <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 leading-none">{userName}</p>
-                            <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">{userRole}</p>
-                        </div>
-                        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
                     </button>
 
                     {/* Dropdown Menu */}

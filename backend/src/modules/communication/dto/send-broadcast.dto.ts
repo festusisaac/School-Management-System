@@ -40,5 +40,11 @@ export class SendBroadcastDto {
 
   @IsOptional()
   @IsString()
+  @IsOptional()
+  @IsString()
   scheduledAt?: string; // ISO Date string
+
+  @IsOptional()
+  @IsString()
+  sectionId?: string;
 }

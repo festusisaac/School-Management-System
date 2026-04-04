@@ -19,13 +19,13 @@ export class AttendanceController {
     }
 
     @Get('daily')
-    getDailyAttendance(@Query('date') date: string) {
-        return this.attendanceService.getAttendanceByDate(date);
+    getDailyAttendance(@Query('date') date: string, @Query('sectionId') sectionId?: string) {
+        return this.attendanceService.getAttendanceByDate(date, sectionId);
     }
 
     @Get('summary')
-    getDailySummary(@Query('date') date: string) {
-        return this.attendanceService.getSummary(date);
+    getDailySummary(@Query('date') date: string, @Query('sectionId') sectionId?: string) {
+        return this.attendanceService.getSummary(date, sectionId);
     }
 
     @Get('staff/:id')

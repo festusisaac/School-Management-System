@@ -7,6 +7,7 @@ import api, { getFileUrl } from '../../services/api';
 import { TablePagination } from '../../components/ui/TablePagination';
 import { usePermissions } from '../../hooks/usePermissions';
 import { clsx } from 'clsx';
+import { useSystem } from '../../context/SystemContext';
 import BulkStudentImport from './BulkStudentImport';
 import { exportStudents } from '../../utils/excelExport';
 
@@ -33,6 +34,7 @@ export default function StudentDirectory() {
     const [students, setStudents] = useState<Student[]>([]);
     const [loading, setLoading] = useState(true);
     const { hasPermission, hasAnyPermission } = usePermissions();
+    const { activeSectionId } = useSystem();
     const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
     const [filters, setFilters] = useState({
@@ -56,7 +58,7 @@ export default function StudentDirectory() {
     useEffect(() => {
         fetchStudents();
         setCurrentPage(1); // Reset page on filter change
-    }, [filters.classId, filters.sectionId]); // Keyword handled by local filter or debounce in future
+    }, [filters.classId, filters.sectionId, activeSectionId]); // Keyword handled by local filter or debounce in future
 
     const fetchInitialData = async () => {
         try {
@@ -77,6 +79,7 @@ export default function StudentDirectory() {
             const data = await api.getStudents({
                 classId: filters.classId || undefined,
                 sectionId: filters.sectionId || undefined,
+                schoolSectionId: activeSectionId || undefined,
                 keyword: filters.keyword || undefined // Backend supports keyword (search)
             });
             setStudents(data);

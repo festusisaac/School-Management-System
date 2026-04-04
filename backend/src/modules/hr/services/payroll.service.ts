@@ -135,11 +135,18 @@ export class PayrollService {
         return stats;
     }
 
-    async getAnalytics(month: number, year: number) {
-        const currentPayrolls = await this.payrollRepository.find({
-            where: { month, year },
-            relations: ['staff', 'staff.department']
-        });
+    async getAnalytics(month: number, year: number, sectionId?: string) {
+        const query = this.payrollRepository.createQueryBuilder('payroll')
+            .leftJoinAndSelect('payroll.staff', 'staff')
+            .leftJoinAndSelect('staff.department', 'department')
+            .where('payroll.month = :month', { month })
+            .andWhere('payroll.year = :year', { year });
+
+        if (sectionId) {
+            query.innerJoin('staff.sections', 'section', 'section.id = :sectionId', { sectionId });
+        }
+
+        const currentPayrolls = await query.getMany();
 
         // 1. Department Spending
         const deptSpending: Record<string, number> = {};
@@ -177,8 +184,16 @@ export class PayrollService {
     }
 
     async bulkGenerate(dto: BulkCreatePayrollDto): Promise<{ generated: number; skipped: number }> {
-        const { month, year } = dto;
-        const activeStaff = await this.staffRepository.find({ where: { status: 'Active' as any } });
+        const { month, year, sectionId } = dto;
+        
+        const staffQuery = this.staffRepository.createQueryBuilder('staff')
+            .where('staff.status = :status', { status: 'Active' });
+
+        if (sectionId) {
+            staffQuery.innerJoin('staff.sections', 'section', 'section.id = :sectionId', { sectionId });
+        }
+
+        const activeStaff = await staffQuery.getMany();
 
         let generated = 0;
         let skipped = 0;
@@ -211,7 +226,7 @@ export class PayrollService {
         return { generated, skipped };
     }
 
-    async findAll(filters?: { month?: number; year?: number; staffId?: string }): Promise<Payroll[]> {
+    async findAll(filters?: { month?: number; year?: number; staffId?: string; sectionId?: string }): Promise<Payroll[]> {
         const query = this.payrollRepository.createQueryBuilder('payroll')
             .leftJoinAndSelect('payroll.staff', 'staff')
             .leftJoinAndSelect('staff.department', 'department');
@@ -224,6 +239,10 @@ export class PayrollService {
         }
         if (filters?.staffId) {
             query.andWhere('payroll.staffId = :staffId', { staffId: filters.staffId });
+        }
+
+        if (filters?.sectionId) {
+            query.innerJoin('staff.sections', 'section', 'section.id = :sectionId', { sectionId: filters.sectionId });
         }
 
         query.orderBy('payroll.createdAt', 'DESC');

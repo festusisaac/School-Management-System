@@ -62,6 +62,10 @@ export class Notice {
     attachments?: string[];
 
     @Index()
+    @Column({ type: 'uuid', nullable: true })
+    schoolSectionId?: string;
+
+    @Index()
     @Column()
     tenantId!: string;
 

@@ -458,15 +458,18 @@ export class StaffService {
         return results;
     }
 
-    async getStatistics(tenantId: string) {
-        const total = await this.staffRepository.count({
-            where: {
-                tenantId,
-                status: Not(StaffStatus.INACTIVE)
-            }
-        });
-        const active = await this.staffRepository.count({ where: { status: StaffStatus.ACTIVE, tenantId } });
-        const onLeave = await this.staffRepository.count({ where: { status: StaffStatus.ON_LEAVE, tenantId } });
+    async getStatistics(tenantId: string, sectionId?: string) {
+        const baseQuery = this.staffRepository.createQueryBuilder('staff')
+            .where('staff.tenantId = :tenantId', { tenantId });
+
+        if (sectionId) {
+            baseQuery.innerJoin('staff.sections', 'section', 'section.id = :sectionId', { sectionId });
+        }
+
+        const total = await baseQuery.clone().andWhere('staff.status != :inactive', { inactive: StaffStatus.INACTIVE }).getCount();
+        const active = await baseQuery.clone().andWhere('staff.status = :active', { active: StaffStatus.ACTIVE }).getCount();
+        const onLeave = await baseQuery.clone().andWhere('staff.status = :onLeave', { onLeave: StaffStatus.ON_LEAVE }).getCount();
+
         return {
             total,
             active,

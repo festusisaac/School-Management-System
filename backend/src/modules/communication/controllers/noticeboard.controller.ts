@@ -31,14 +31,21 @@ import {
   
     @Get()
     @Permissions('communication:view_notices')
-    async findAll(@Query('audience') audience: NoticeAudience, @Request() req: any) {
-      return await this.noticeboardService.findAll(req.user.tenantId, audience);
+    async findAll(
+      @Query('audience') audience: NoticeAudience,
+      @Query('schoolSectionId') schoolSectionId?: string,
+      @Request() req?: any
+    ) {
+      return await this.noticeboardService.findAll(req.user.tenantId, audience, schoolSectionId);
     }
   
     @Get('admin')
     @Permissions('communication:manage_notices')
-    async findAllForAdmin(@Request() req: any) {
-      return await this.noticeboardService.findAllForAdmin(req.user.tenantId);
+    async findAllForAdmin(
+      @Query('schoolSectionId') schoolSectionId?: string,
+      @Request() req?: any
+    ) {
+      return await this.noticeboardService.findAllForAdmin(req.user.tenantId, schoolSectionId);
     }
   
     @Get(':id')

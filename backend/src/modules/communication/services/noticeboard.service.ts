@@ -37,7 +37,7 @@ export class NoticeboardService {
     return await this.noticeRepository.save(notice);
   }
 
-  async findAll(tenantId: string, audience?: NoticeAudience): Promise<Notice[]> {
+  async findAll(tenantId: string, audience?: NoticeAudience, schoolSectionId?: string): Promise<Notice[]> {
     const query = this.noticeRepository.createQueryBuilder('notice')
       .leftJoinAndSelect('notice.author', 'author')
       .where('notice.tenantId = :tenantId', { tenantId })
@@ -58,6 +58,13 @@ export class NoticeboardService {
       }
     }
 
+    if (schoolSectionId) {
+      query.andWhere(new Brackets(qb => {
+        qb.where('notice.schoolSectionId = :schoolSectionId', { schoolSectionId })
+          .orWhere('notice.schoolSectionId IS NULL'); // Also show global notices missing a section
+      }));
+    }
+
     // Sort: Sticky first, then by date
     query.orderBy('notice.isSticky', 'DESC')
          .addOrderBy('notice.createdAt', 'DESC');
@@ -65,12 +72,22 @@ export class NoticeboardService {
     return await query.getMany();
   }
 
-  async findAllForAdmin(tenantId: string): Promise<Notice[]> {
-    return await this.noticeRepository.find({
-      where: { tenantId },
-      relations: ['author'],
-      order: { isSticky: 'DESC', createdAt: 'DESC' },
-    });
+  async findAllForAdmin(tenantId: string, schoolSectionId?: string): Promise<Notice[]> {
+    const query = this.noticeRepository.createQueryBuilder('notice')
+      .leftJoinAndSelect('notice.author', 'author')
+      .where('notice.tenantId = :tenantId', { tenantId });
+
+    if (schoolSectionId) {
+      query.andWhere(new Brackets(qb => {
+        qb.where('notice.schoolSectionId = :schoolSectionId', { schoolSectionId })
+          .orWhere('notice.schoolSectionId IS NULL');
+      }));
+    }
+
+    query.orderBy('notice.isSticky', 'DESC')
+         .addOrderBy('notice.createdAt', 'DESC');
+
+    return await query.getMany();
   }
 
   async findOne(id: string, tenantId: string): Promise<Notice> {

@@ -20,6 +20,7 @@ import {
 import { formatCurrency } from '../../utils/currency';
 import { clsx } from 'clsx';
 import { useToast } from '../../context/ToastContext';
+import { useSystem } from '../../context/SystemContext';
 
 interface FeeHead {
   id: string;
@@ -47,6 +48,7 @@ interface DiscountProfile {
 
 export default function DiscountsPage() {
   const toast = useToast();
+  const { activeSectionId } = useSystem();
   const [profiles, setProfiles] = useState<DiscountProfile[]>([]);
   const [feeHeads, setFeeHeads] = useState<FeeHead[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,7 +88,7 @@ export default function DiscountsPage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [activeSectionId]);
 
   useEffect(() => {
     if (isAssignModalOpen && assigningProfile) {
@@ -116,7 +118,7 @@ export default function DiscountsPage() {
         api.getClasses(),
         api.getSections(),
         api.getStudentCategories(),
-        api.getStudents()
+        api.getStudents({ schoolSectionId: activeSectionId || undefined })
       ]);
       setProfiles(profilesRes || []);
       setFeeHeads(headsRes || []);

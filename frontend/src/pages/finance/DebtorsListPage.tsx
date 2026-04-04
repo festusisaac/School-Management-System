@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Search,
   Filter,
@@ -12,7 +12,6 @@ import {
   Users,
   Banknote,
   PieChart,
-  MoreHorizontal,
   Bell,
   CheckCircle2,
   X,
@@ -25,6 +24,7 @@ import api, { getFileUrl } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { clsx } from 'clsx';
 import { useNavigate } from 'react-router-dom';
+import { useSystem } from '../../context/SystemContext';
 
 interface Debtor {
   id: string;
@@ -52,6 +52,7 @@ interface Stats {
 const DebtorsListPage = () => {
   const { showError, showSuccess, showInfo } = useToast();
   const navigate = useNavigate();
+  const { activeSectionId } = useSystem();
 
   // State
   const [debtors, setDebtors] = useState<Debtor[]>([]);
@@ -90,7 +91,7 @@ const DebtorsListPage = () => {
   // Main fetch effect
   useEffect(() => {
     fetchDebtors();
-  }, [debouncedSearch, selectedClass, riskFilter, page]);
+  }, [debouncedSearch, selectedClass, riskFilter, page, activeSectionId]);
 
   const fetchClasses = async () => {
     try {
@@ -107,6 +108,7 @@ const DebtorsListPage = () => {
       const response = await api.getDebtorsList({
         classId: selectedClass === 'all' ? undefined : selectedClass,
         search: debouncedSearch || undefined,
+        sectionId: activeSectionId || undefined,
         page,
         limit,
         riskLevel: riskFilter === 'all' ? undefined : riskFilter

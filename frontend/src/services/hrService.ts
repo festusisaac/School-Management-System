@@ -1,8 +1,8 @@
 import api from './api';
 
 export const staffService = {
-    getAllStaff: async () => {
-        return api.getStaff();
+    getAllStaff: async (params?: any) => {
+        return api.getStaff(params);
     },
 
     getDepartments: async () => {
