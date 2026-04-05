@@ -47,6 +47,11 @@ export class CreateUserDto {
   @IsString()
   @IsOptional()
   photo?: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsBoolean()
+  @IsOptional()
+  mustChangePassword?: boolean;
 }
 
 export class UpdateUserDto {
@@ -119,6 +124,9 @@ export class UserResponseDto {
 
   @ApiProperty()
   isActive!: boolean;
+
+  @ApiProperty()
+  mustChangePassword!: boolean;
 
   @ApiProperty()
   createdAt!: Date;

@@ -46,6 +46,11 @@ export interface SystemSetting {
     isInitialized?: boolean;
     sessionTimeoutMinutes?: number;
     maxFileUploadSizeMb?: number;
+    // Online Admission Settings
+    onlineAdmissionEnabled?: boolean;
+    admissionFee?: number;
+    admissionReferencePrefix?: string;
+    admissionInstructions?: string;
     createdAt?: string;
     updatedAt?: string;
 }

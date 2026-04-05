@@ -14,6 +14,7 @@ import { Role } from '../auth/entities/role.entity';
 import { FinanceModule } from '../finance/finance.module';
 import { SystemModule } from '../system/system.module';
 import { InternalCommunicationModule } from '../internal-communication/internal-communication.module';
+import { CommunicationModule } from '../communication/communication.module';
 import { BullModule } from '@nestjs/bull';
 import { StudentImportProcessor } from './processors/student-import.processor';
 
@@ -31,6 +32,7 @@ import { StudentImportProcessor } from './processors/student-import.processor';
       Role
     ]),
     forwardRef(() => FinanceModule),
+    forwardRef(() => CommunicationModule),
     SystemModule,
     InternalCommunicationModule,
     BullModule.registerQueue({

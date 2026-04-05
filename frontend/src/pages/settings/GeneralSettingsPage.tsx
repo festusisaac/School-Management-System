@@ -135,8 +135,15 @@ const CURRENCIES = [
 const GeneralSettingsPage = () => {
     const { showSuccess, showError } = useToast();
     const { refreshSettings } = useSystem();
-    const [activeTab, setActiveTab] = useState<'system' | 'logos'>('system');
+    const [activeTab, setActiveTab] = useState<'system' | 'logos' | 'admission'>('system');
     const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const tab = params.get('tab');
+        if (tab === 'admission') setActiveTab('admission');
+        else if (tab === 'logos') setActiveTab('logos');
+    }, [window.location.search]);
     const [saving, setSaving] = useState(false);
 
     // Data
@@ -279,6 +286,18 @@ const GeneralSettingsPage = () => {
                     >
                         <ImageIcon className="w-4 h-4 inline-block mr-2" />
                         Logos & Branding
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('admission')}
+                        className={twMerge(
+                            "whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors",
+                            activeTab === 'admission'
+                                ? "border-primary-500 text-primary-600 dark:text-primary-400"
+                                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                        )}
+                    >
+                        <IdCard className="w-4 h-4 inline-block mr-2" />
+                        Online Admission
                     </button>
                 </nav>
             </div>
@@ -621,6 +640,86 @@ const GeneralSettingsPage = () => {
                                         onChange={handleChange}
                                         className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                                     />
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                ) : activeTab === 'admission' ? (
+                    <form onSubmit={handleSaveSettings} className="p-6 md:p-8 space-y-8">
+                        <div>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-6 border-b border-gray-100 dark:border-gray-700 pb-3">
+                                <IdCard className="w-5 h-5 text-primary-500" />
+                                Online Admission Control
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between p-4 rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30">
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-900 dark:text-white">Enable Online Admissions</label>
+                                            <p className="text-xs text-gray-500 mt-0.5">Toggle public admission form availability</p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setSettings(prev => ({ ...prev, onlineAdmissionEnabled: !prev.onlineAdmissionEnabled }))}
+                                            className={twMerge(
+                                                "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2",
+                                                settings.onlineAdmissionEnabled ? "bg-primary-600" : "bg-gray-200 dark:bg-gray-700"
+                                            )}
+                                        >
+                                            <span
+                                                className={twMerge(
+                                                    "inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                                                    settings.onlineAdmissionEnabled ? "translate-x-5" : "translate-x-0"
+                                                )}
+                                            />
+                                        </button>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1">
+                                            Application Form Fee ({settings.currencySymbol || '₦'})
+                                        </label>
+                                        <input
+                                            type="number"
+                                            name="admissionFee"
+                                            step="0.01"
+                                            value={settings.admissionFee || 0}
+                                            onChange={handleChange}
+                                            className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                            placeholder="0.00"
+                                        />
+                                        <p className="mt-1 text-xs text-gray-500">Amount students pay before acquiring the online form.</p>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                            Admission Reference Prefix
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="admissionReferencePrefix"
+                                            value={settings.admissionReferencePrefix || 'ADM/'}
+                                            onChange={handleChange}
+                                            className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                            placeholder="e.g. ADM/"
+                                        />
+                                        <p className="mt-1 text-xs text-gray-500">Prefix used for auto-generated application reference numbers.</p>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        Admission Instructions & Requirements
+                                    </label>
+                                    <textarea
+                                        name="admissionInstructions"
+                                        rows={10}
+                                        value={settings.admissionInstructions || ''}
+                                        onChange={handleChange}
+                                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 font-sans"
+                                        placeholder="Enter instructions for prospective candidates... (e.g. required documents, next steps)"
+                                    />
+                                    <p className="mt-1 text-xs text-gray-500 italic">This will be shown on the public admission intro page.</p>
                                 </div>
                             </div>
                         </div>

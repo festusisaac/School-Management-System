@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import axios from 'axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, ILike, Between, In, Brackets } from 'typeorm';
 import { extname } from 'path';
@@ -24,6 +25,7 @@ import { SmsService } from '../../internal-communication/sms.service';
 import { StudentAttendance } from '../entities/student-attendance.entity';
 import { MarkAttendanceDto, BulkMarkAttendanceDto } from '../dtos/student-attendance.dto';
 import { SystemSettingsService } from '../../system/services/system-settings.service';
+import { MessageTemplatesService } from '../../communication/services/message-templates.service';
 
 @Injectable()
 export class StudentsService {
@@ -46,12 +48,62 @@ export class StudentsService {
         private roleRepository: Repository<Role>,
         @InjectRepository(StudentAttendance)
         private attendanceRepo: Repository<StudentAttendance>,
+        private smsService: SmsService,
+        private systemSettingsService: SystemSettingsService,
         private feesService: FeesService,
         private usersService: UsersService,
         private emailService: EmailService,
-        private smsService: SmsService,
-        private systemSettingsService: SystemSettingsService,
+        private messageTemplatesService: MessageTemplatesService,
     ) { }
+
+    // --- Online Admission Payment ---
+
+    async verifyAdmissionPayment(reference: string, email: string, tenantId: string): Promise<{ success: boolean; data?: any }> {
+        const secretKey = process.env.PAYSTACK_SECRET_KEY;
+        if (!secretKey) {
+            throw new Error('PAYSTACK_SECRET_KEY not configured on server');
+        }
+
+        try {
+            // 1. Verify with Paystack
+            const response = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
+                headers: {
+                    Authorization: `Bearer ${secretKey}`,
+                },
+            });
+
+            const data = response.data;
+            if (!data.status || data.data.status !== 'success') {
+                throw new BadRequestException('Payment verification failed or was unsuccessful');
+            }
+
+            // 2. Security Check: Email must match
+            if (data.data.customer.email.toLowerCase() !== email.toLowerCase()) {
+                throw new BadRequestException('Payment was made with a different email address');
+            }
+
+            // 3. Check if reference already used for a successful admission
+            const existing = await this.onlineAdmissionRepository.findOne({
+                where: { transactionReference: reference }
+            });
+            if (existing) {
+                throw new ConflictException('This payment reference has already been used for an application');
+            }
+
+            return { success: true, data: data.data };
+        } catch (error: any) {
+            console.error('Paystack Verification Error:', {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status
+            });
+
+            if (error.response) {
+                throw new BadRequestException(error.response.data?.message || 'Payment verification failed');
+            }
+            throw new BadRequestException(error.message || 'Internal payment verification error');
+        }
+    }
 
     // --- Students ---
 
@@ -94,7 +146,7 @@ export class StudentsService {
         }
 
         // 3. Create Student with Parent Link
-        let { feeGroupIds, session, documentTitles, feeExclusions, ...studentData } = createStudentDto;
+        let { feeGroupIds, session, documentTitles, feeExclusions, mustChangePassword, ...studentData } = createStudentDto;
 
         // Clean UUID fields (convert "" to null)
         const uuidFields = ['classId', 'sectionId', 'categoryId', 'houseId', 'deactivateReasonId', 'discountProfileId', 'parentId'];
@@ -158,7 +210,8 @@ export class StudentsService {
                 role: 'student',
                 roleId: studentRole?.id,
                 tenantId: tenantId,
-                photo: savedStudent.studentPhoto
+                photo: savedStudent.studentPhoto,
+                mustChangePassword: mustChangePassword // Pass the security flag
             });
             await this.studentsRepository.update(savedStudent.id, { userId: studentUser.id });
 
@@ -266,11 +319,11 @@ export class StudentsService {
 
         // Fetch Fee Assignments
         const assignments = await this.feesService.getAssignmentsByStudent(student.id, tenantId);
-        (student as any).feeGroupIds = assignments.map(a => a.feeGroupId);
+        (student as any).feeGroupIds = assignments.map((a: any) => a.feeGroupId);
 
-        // Returnexclusions as well
+        // Return exclusions as well
         const exclusions: Record<string, string[]> = {};
-        assignments.forEach(a => {
+        assignments.forEach((a: any) => {
             if (a.excludedHeadIds) {
                 exclusions[a.feeGroupId] = a.excludedHeadIds;
             }
@@ -458,21 +511,57 @@ export class StudentsService {
     }
 
     // --- Online Admission ---
+    private async generateAdmissionReference(tenantId: string): Promise<string> {
+        const settings = await this.systemSettingsService.getSettings();
+        const prefix = settings?.admissionReferencePrefix || 'ADM/';
+        const year = new Date().getFullYear().toString();
+        
+        // Count total admissions to get the next sequence
+        const count = await this.onlineAdmissionRepository.count({ where: { tenantId } });
+        const sequence = (count + 1).toString().padStart(4, '0');
+        
+        return `${prefix}${year}/${sequence}`;
+    }
 
     async createOnlineAdmission(dto: CreateOnlineAdmissionDto, tenantId: string): Promise<OnlineAdmission> {
-        const admission = this.onlineAdmissionRepository.create({ ...dto, tenantId });
+        console.log('Creating Online Admission with DTO:', dto);
+        const referenceNumber = await this.generateAdmissionReference(tenantId);
+        
+        const admission = this.onlineAdmissionRepository.create({ 
+            ...dto, 
+            referenceNumber,
+            tenantId,
+            preferredClassId: dto.preferredClassId,
+            paymentStatus: dto.transactionReference ? 'paid' : 'pending',
+            amountPaid: dto.transactionReference ? (await this.systemSettingsService.getSettings())?.admissionFee || 0 : 0
+        });
         return this.onlineAdmissionRepository.save(admission);
     }
 
     async findAllOnlineAdmissions(tenantId: string): Promise<OnlineAdmission[]> {
         return this.onlineAdmissionRepository.find({
             where: { tenantId },
+            relations: ['preferredClass'],
             order: { createdAt: 'DESC' },
         });
     }
 
+    async findOnlineAdmissionByReference(referenceNumber: string): Promise<OnlineAdmission> {
+        const admission = await this.onlineAdmissionRepository.findOne({
+            where: { referenceNumber: referenceNumber.toUpperCase() },
+            relations: ['preferredClass'],
+        });
+        if (!admission) {
+            throw new NotFoundException(`Application with reference ${referenceNumber} not found`);
+        }
+        return admission;
+    }
+
     async findOneOnlineAdmission(id: string, tenantId: string): Promise<OnlineAdmission> {
-        const admission = await this.onlineAdmissionRepository.findOne({ where: { id, tenantId } });
+        const admission = await this.onlineAdmissionRepository.findOne({ 
+            where: { id, tenantId },
+            relations: ['preferredClass']
+        });
         if (!admission) throw new NotFoundException(`Online admission with ID ${id} not found`);
         return admission;
     }
@@ -483,42 +572,169 @@ export class StudentsService {
         return this.onlineAdmissionRepository.save(admission);
     }
 
+    private async generateNextAdmissionNumber(tenantId: string): Promise<string> {
+        const settings = await this.systemSettingsService.getSettings();
+        const prefix = settings?.admissionNumberPrefix || 'SCH/';
+        const year = new Date().getFullYear().toString();
+        
+        // Count total students to get the next sequence
+        const count = await this.studentsRepository.count({ where: { tenantId } });
+        const sequence = (count + 1).toString().padStart(4, '0');
+        
+        return `${prefix}${year}/${sequence}`;
+    }
+
     async approveOnlineAdmission(id: string, tenantId: string): Promise<Student> {
         const admission = await this.findOneOnlineAdmission(id, tenantId);
         if (admission.status === 'approved') {
             throw new Error('Admission already approved');
         }
 
-        // Generate a temporary admission number if needed, or let the system handle it
-        // For now, we'll generate a placeholder
-        const admissionNo = `OA-${Date.now().toString().slice(-6)}`;
+        const settings = await this.systemSettingsService.getSettings();
+        const admissionNo = await this.generateNextAdmissionNumber(tenantId);
 
         // Map OnlineAdmission to CreateStudentDto
         const createStudentDto: CreateStudentDto = {
             firstName: admission.firstName,
+            middleName: admission.middleName,
             lastName: admission.lastName,
             gender: admission.gender,
-            dob: admission.dob, // Pass Date object directly
+            dob: admission.dob,
+            religion: admission.religion,
+            bloodGroup: admission.bloodGroup,
+            genotype: admission.genotype,
+            stateOfOrigin: admission.stateOfOrigin,
+            nationality: admission.nationality,
             guardianName: admission.guardianName,
             guardianPhone: admission.guardianPhone,
             guardianRelation: admission.guardianRelation,
+            guardianEmail: admission.email, // Use applicant email as guardian email if not specified
             currentAddress: admission.currentAddress,
-            // Defaults
+            previousSchoolName: admission.previousSchoolName,
+            lastClassPassed: admission.lastClassPassed,
+            medicalConditions: admission.medicalConditions,
+            // Core Identity
             admissionNo: admissionNo,
-            admissionDate: new Date(), // Pass Date object directly
+            admissionDate: new Date(),
             classId: admission.preferredClassId,
-            fatherName: admission.guardianRelation.toLowerCase() === 'father' ? admission.guardianName : undefined,
-            fatherPhone: admission.guardianRelation.toLowerCase() === 'father' ? admission.guardianPhone : undefined,
-            motherName: admission.guardianRelation.toLowerCase() === 'mother' ? admission.guardianName : undefined,
-            motherPhone: admission.guardianRelation.toLowerCase() === 'mother' ? admission.guardianPhone : undefined,
+            studentPhoto: admission.passportPhoto,
+            // Security: Force password change on first login
+            mustChangePassword: true,
+            // Parent/Guardian contextual mapping
+            fatherName: (admission.guardianRelation || '').toLowerCase() === 'father' ? admission.guardianName : undefined,
+            fatherPhone: (admission.guardianRelation || '').toLowerCase() === 'father' ? admission.guardianPhone : undefined,
+            motherName: (admission.guardianRelation || '').toLowerCase() === 'mother' ? admission.guardianName : undefined,
+            motherPhone: (admission.guardianRelation || '').toLowerCase() === 'mother' ? admission.guardianPhone : undefined,
         };
 
-        // Reuse existing create logic which handles parent creation/linking
+        // Reuse existing create logic which handles parent creation/linking, fee allocation, and user provisioning
         const student = await this.create(createStudentDto, tenantId);
 
-        // Update admission status
+        // Update admission status and link records
         admission.status = 'approved';
+        admission.finalAdmissionNo = admissionNo;
+        admission.admittedStudentId = student.id;
         await this.onlineAdmissionRepository.save(admission);
+
+        // --- Notifications ---
+        try {
+            const templates = await this.messageTemplatesService.findAll(tenantId);
+            const template = templates.find(t => t.name === 'Admission Template');
+
+            if (template) {
+                // Prepare Replacements for Template
+                const replacements = {
+                    '{first_name}': admission.firstName,
+                    '{admission_no}': admissionNo,
+                    '{reference_number}': admission.referenceNumber,
+                    '{class_name}': (admission as any).preferredClass?.name || 'N/A',
+                    '{school_name}': settings.schoolName || 'Our School'
+                };
+
+                let processedBody = template.body || '';
+                Object.entries(replacements).forEach(([key, value]) => {
+                    processedBody = processedBody.replace(new RegExp(key, 'g'), value);
+                });
+
+                // Send Premium Email to Guardian
+                if (admission.email) {
+                    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+                    const tempPassword = `Student@${admissionNo.split('/').pop()}`;
+
+                    await this.emailService.sendEmail({
+                        to: admission.email,
+                        subject: template.subject?.replace('{school_name}', settings.schoolName) || 'Admission Approved!',
+                        html: `
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 20px; overflow: hidden; border: 1px solid #f1f5f9; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+                                <!-- Branding Header -->
+                                <div style="background-color: #10b981; padding: 40px 20px; text-align: center;">
+                                    <div style="display: inline-block; background-color: rgba(255, 255, 255, 0.2); padding: 12px 24px; border-radius: 100px; color: #ffffff; font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 20px;">
+                                        Official Admission
+                                    </div>
+                                    <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: 900; letter-spacing: -0.02em;">Admission Approved!</h1>
+                                </div>
+
+                                <!-- Main Content -->
+                                <div style="padding: 40px 32px;">
+                                    <div style="font-size: 16px; line-height: 1.7; color: #334155;">
+                                        ${processedBody}
+                                    </div>
+
+                                    <!-- Credentials Board -->
+                                    <div style="margin-top: 40px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; text-align: center;">
+                                        <div style="margin-bottom: 24px;">
+                                            <span style="font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 4px;">Student ID / Admission No</span>
+                                            <div style="font-size: 24px; font-weight: 900; color: #10b981; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">${admissionNo}</div>
+                                        </div>
+
+                                        <div style="display: flex; gap: 12px; margin-top: 20px; border-top: 1px solid #e2e8f0; pt: 20px;">
+                                            <div style="flex: 1; padding: 15px 10px; text-align: center;">
+                                                <span style="font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; display: block; margin-bottom: 2px;">Username</span>
+                                                <span style="font-size: 14px; font-weight: 700; color: #1e293b; display: block; word-break: break-all;">${admission.email}</span>
+                                            </div>
+                                            <div style="flex: 1; padding: 15px 10px; text-align: center; border-left: 1px solid #e2e8f0;">
+                                                <span style="font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; display: block; margin-bottom: 2px;">Temp Password</span>
+                                                <span style="font-size: 14px; font-weight: 700; color: #1e293b; display: block;">${tempPassword}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Action Area -->
+                                    <div style="margin-top: 40px; text-align: center;">
+                                        <a href="${frontendUrl}/login" 
+                                           style="display: inline-block; background-color: #10b981; color: #ffffff; padding: 18px 40px; border-radius: 14px; font-size: 16px; font-weight: 800; text-decoration: none; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.2);">
+                                            Login to Student Portal
+                                        </a>
+                                        <div style="margin-top: 20px; font-size: 13px; color: #64748b; font-weight: 500; font-style: italic;">
+                                            * You will be required to change this password on your first login for security.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Footer -->
+                                <div style="background-color: #f8fafc; padding: 32px; border-top: 1px solid #f1f5f9; text-align: center;">
+                                    <p style="font-size: 14px; color: #64748b; margin: 0; font-weight: 600;">
+                                        ${settings.schoolName || 'Our School'}
+                                    </p>
+                                    <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
+                                        Powered by Antigravity™ Admission System
+                                    </div>
+                                </div>
+                            </div>
+                        `
+                    });
+                }
+
+                // Send SMS to Guardian (guardianPhone is required in the entity)
+                const smsMessage = `Congratulations! Your child ${admission.firstName}'s admission to ${settings.schoolName} has been approved. Admission No: ${admissionNo}. Check your email for details.`;
+                await this.smsService.sendSms({
+                    to: admission.guardianPhone,
+                    message: smsMessage
+                });
+            }
+        } catch (error) {
+            console.error('Failed to send admission approval notifications:', error);
+        }
 
         return student;
     }

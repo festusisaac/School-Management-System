@@ -2,14 +2,12 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSystem } from '../../context/SystemContext';
 import { 
-  ChevronRight, 
+  ChevronRight,
   Search, 
-  Filter, 
   ArrowRight, 
   Mail, 
   Calendar, 
   User, 
-  ArrowLeft,
   ChevronDown
 } from 'lucide-react';
 
@@ -101,33 +99,17 @@ const NewsPage = () => {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 transition-colors duration-500">
-      
-      {/* Header / Breadcrumbs */}
-      <header className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 text-slate-500 hover:text-primary-600 font-bold text-sm transition-all group">
-            <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> Back to Home
-          </Link>
-          
-          <div className="flex items-center gap-3">
-            {logoUrl ? (
-              <img src={logoUrl} alt="Logo" className="h-10 w-10 object-contain" />
-            ) : (
-              <div className="h-10 w-10 bg-primary-600 rounded-lg flex items-center justify-center text-white font-bold">
-                {schoolName.charAt(0)}
-              </div>
-            )}
-            <span className="font-heading font-black text-slate-900 dark:text-white tracking-tight hidden sm:block truncate max-w-[200px]">
-              {schoolName}
-            </span>
-          </div>
-        </div>
-      </header>
-
-      <main className="py-20">
+    <>
+      <main className="py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
+          {/* Breadcrumbs for News */}
+          <div className="mb-8">
+            <Link to="/" className="inline-flex items-center gap-2 text-slate-500 hover:text-primary-600 font-bold text-sm transition-all group">
+              <ArrowRight size={18} className="rotate-180 group-hover:-translate-x-1 transition-transform" /> Back to Home
+            </Link>
+          </div>
+
           {/* Page Heading */}
           <div className="text-center mb-16 space-y-6">
             <div className="inline-flex items-center gap-3 px-4 py-2 bg-primary-50 dark:bg-primary-900/20 rounded-xl border border-primary-100 dark:border-primary-800/20">
@@ -178,44 +160,44 @@ const NewsPage = () => {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
               {filteredNews.map((news) => (
                 <Link 
-                  key={news.id} 
-                  to={`/news/${news.slug}`}
-                  className="group bg-white dark:bg-slate-900 rounded-[2.5rem] p-5 shadow-sm hover:shadow-2xl transition-all duration-700 border border-slate-100 dark:border-slate-800 flex flex-col h-full"
+                   key={news.id} 
+                   to={`/news/${news.slug}`}
+                   className="group bg-white dark:bg-slate-900 rounded-[2.5rem] p-5 shadow-sm hover:shadow-2xl transition-all duration-700 border border-slate-100 dark:border-slate-800 flex flex-col h-full"
                 >
-                  <div className="relative h-64 mb-8 overflow-hidden rounded-[1.5rem]">
-                    <img 
-                      src={news.img} 
-                      alt={news.title} 
-                      className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" 
-                    />
-                    <div className="absolute top-4 left-4">
-                      <span className="bg-primary-600/90 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest text-white shadow-sm">{news.tag}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex flex-col flex-grow px-4 space-y-4">
-                    <div className="flex items-center gap-4 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-                      <div className="flex items-center gap-1.5"><Calendar size={14} /> {news.date}</div>
-                    </div>
-                    <h4 className="text-xl font-heading font-black text-slate-900 dark:text-white leading-tight group-hover:text-primary-600 transition-colors">
-                      {news.title}
-                    </h4>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed line-clamp-3 mb-6">
-                      {news.snippet}
-                    </p>
-                    
-                    <div className="mt-auto pt-6 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-400">
-                          <User size={12} />
-                        </div>
-                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{news.author}</span>
-                      </div>
-                      <span className="text-xs font-bold text-primary-600 flex items-center gap-1 group-hover:gap-2 transition-all">
-                        Read Story <ChevronRight size={14} />
-                      </span>
-                    </div>
-                  </div>
+                   <div className="relative h-64 mb-8 overflow-hidden rounded-[1.5rem]">
+                     <img 
+                       src={news.img} 
+                       alt={news.title} 
+                       className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" 
+                     />
+                     <div className="absolute top-4 left-4">
+                       <span className="bg-primary-600/90 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest text-white shadow-sm">{news.tag}</span>
+                     </div>
+                   </div>
+                   
+                   <div className="flex flex-col flex-grow px-4 space-y-4">
+                     <div className="flex items-center gap-4 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                       <div className="flex items-center gap-1.5"><Calendar size={14} /> {news.date}</div>
+                     </div>
+                     <h4 className="text-xl font-heading font-black text-slate-900 dark:text-white leading-tight group-hover:text-primary-600 transition-colors">
+                       {news.title}
+                     </h4>
+                     <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed line-clamp-3 mb-6">
+                       {news.snippet}
+                     </p>
+                     
+                     <div className="mt-auto pt-6 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between">
+                       <div className="flex items-center gap-2">
+                         <div className="w-6 h-6 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-400">
+                           <User size={12} />
+                         </div>
+                         <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{news.author}</span>
+                       </div>
+                       <span className="text-xs font-bold text-primary-600 flex items-center gap-1 group-hover:gap-2 transition-all">
+                         Read Story <ChevronRight size={14} />
+                       </span>
+                     </div>
+                   </div>
                 </Link>
               ))}
             </div>
@@ -229,9 +211,8 @@ const NewsPage = () => {
             </div>
           )}
 
-          {/* Newsletter Signup (Requested by User) */}
+          {/* Newsletter Signup */}
           <section className="mt-40 bg-primary-600 rounded-[3.5rem] p-8 md:p-20 text-center relative overflow-hidden shadow-2xl shadow-primary-500/20">
-            {/* Blurry Orbs */}
             <div className="absolute top-0 right-0 w-80 h-80 bg-blue-400 rounded-full blur-[100px] opacity-20 -translate-y-1/2 translate-x-1/2"></div>
             <div className="absolute bottom-0 left-0 w-80 h-80 bg-indigo-400 rounded-full blur-[100px] opacity-20 translate-y-1/2 -translate-x-1/2"></div>
             
@@ -258,21 +239,11 @@ const NewsPage = () => {
                   Subscribe <ArrowRight size={20} />
                 </button>
               </div>
-              <p className="text-[10px] uppercase font-bold tracking-widest text-primary-200">
-                We respect your privacy. Unsubscribe anytime.
-              </p>
             </div>
           </section>
         </div>
       </main>
-
-      {/* Basic Footer for Public Pages */}
-      <footer className="py-20 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 transition-colors duration-500">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-slate-500 dark:text-slate-400 text-sm font-medium">
-          © {new Date().getFullYear()} {schoolName}. All rights reserved.
-        </div>
-      </footer>
-    </div>
+    </>
   );
 };
 

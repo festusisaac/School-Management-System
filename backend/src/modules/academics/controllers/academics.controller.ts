@@ -13,10 +13,12 @@ import {
 import { AcademicsService } from '../services/academics.service';
 import { JwtAuthGuard, RolesGuard } from '@guards/jwt-auth.guard';
 import { Roles } from '@decorators/roles.decorator';
+import { Public } from '@decorators/public.decorator';
 import { UserRole } from '@common/dtos/auth.dto';
 import { CreateClassDto, UpdateClassDto } from '../dtos/class.dto';
 import { CreateSectionDto, UpdateSectionDto } from '../dtos/section.dto';
 import { StaffService } from '@modules/hr/services/staff.service';
+import { EntityManager } from 'typeorm';
 
 @Controller('academics')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -24,6 +26,7 @@ export class AcademicsController {
     constructor(
         private readonly academicsService: AcademicsService,
         private readonly staffService: StaffService,
+        private readonly entityManager: EntityManager,
     ) { }
 
     // --- Classes ---
@@ -44,6 +47,28 @@ export class AcademicsController {
             teacherId = await this.staffService.resolveStaffIdByEmail(req.user.email, req.user.tenantId);
         }
         return this.academicsService.getAllClasses(req.user.tenantId, teacherId);
+    }
+
+    @Public()
+    @Get('public/classes')
+    async getPublicClasses() {
+        // Resolve tenantId from the first super admin, then fallback to any user, then any class
+        let result = await this.entityManager.query('SELECT "tenantId" FROM "users" WHERE "role" ILIKE \'%Super Administrator%\' LIMIT 1');
+        
+        let tenantId = result[0]?.tenantId;
+        
+        if (!tenantId) {
+            result = await this.entityManager.query('SELECT "tenantId" FROM "users" LIMIT 1');
+            tenantId = result[0]?.tenantId;
+        }
+
+        if (!tenantId) {
+            result = await this.entityManager.query('SELECT "tenantId" FROM "classes" LIMIT 1');
+            tenantId = result[0]?.tenantId;
+        }
+
+        if (!tenantId) return [];
+        return this.academicsService.getAllClasses(tenantId);
     }
 
     @Get('classes/:id')

@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseInterceptors, UploadedFiles, UseGuards, Request, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseInterceptors, UploadedFiles, UseGuards, Request, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { Public } from '@decorators/public.decorator';
 import { JwtAuthGuard } from '@guards/jwt-auth.guard';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -211,9 +212,63 @@ export class StudentsController {
         return this.studentsService.removeDeactivateReason(id, req.user.tenantId);
     }
 
+    @Public()
     @Post('online-admissions')
-    createOnlineAdmission(@Body() dto: CreateOnlineAdmissionDto, @Request() req: any) {
-        return this.studentsService.createOnlineAdmission(dto, req.user.tenantId);
+    @UseInterceptors(FileFieldsInterceptor([
+        { name: 'passportPhoto', maxCount: 1 },
+        { name: 'birthCertificate', maxCount: 1 },
+    ], {
+        storage: diskStorage({
+            destination: './uploads/admissions',
+            filename: (req, file, cb) => {
+                const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('');
+                cb(null, `${randomName}${extname(file.originalname)}`);
+            },
+        }),
+    }))
+    async createOnlineAdmission(
+        @Body() dto: CreateOnlineAdmissionDto, 
+        @UploadedFiles() files: { passportPhoto?: Express.Multer.File[], birthCertificate?: Express.Multer.File[] },
+        @Request() req: any
+    ) {
+        let tenantId = req.user?.tenantId;
+        
+        if (!tenantId) {
+            // Resolve tenantId from the first super admin for public requests
+            const result = await this.entityManager.query('SELECT "tenantId" FROM "users" WHERE "role" ILIKE \'%Super Administrator%\' LIMIT 1');
+            tenantId = result[0]?.tenantId;
+        }
+
+        if (!tenantId) throw new ForbiddenException('Tenant context missing');
+        
+        if (files?.passportPhoto && files.passportPhoto[0]) {
+            (dto as any).passportPhoto = files.passportPhoto[0].path;
+        }
+        if (files?.birthCertificate && files.birthCertificate[0]) {
+            (dto as any).birthCertificate = files.birthCertificate[0].path;
+        }
+
+        return this.studentsService.createOnlineAdmission(dto, tenantId);
+    }
+
+    @Public()
+    @Get('online-admission/verify-payment/:reference')
+    async verifyAdmissionPayment(@Param('reference') reference: string, @Query('email') email: string) {
+        if (!email) throw new BadRequestException('Email is required for verification');
+        
+        // Resolve tenantId from the first super admin since this is a public request
+        const result = await this.entityManager.query('SELECT "tenantId" FROM "users" WHERE "role" ILIKE \'%Super Administrator%\' LIMIT 1');
+        const tenantId = result[0]?.tenantId;
+        
+        if (!tenantId) throw new ForbiddenException('Tenant context missing');
+        
+        return this.studentsService.verifyAdmissionPayment(reference, email, tenantId);
+    }
+
+    @Public()
+    @Get('online-admissions/status/:referenceNumber')
+    async getOnlineAdmissionStatus(@Param('referenceNumber') referenceNumber: string) {
+        return this.studentsService.findOnlineAdmissionByReference(referenceNumber);
     }
 
     @Get('online-admissions')

@@ -15,6 +15,10 @@ export class CreateStudentDto {
 
     @IsString()
     @IsOptional()
+    middleName?: string;
+
+    @IsString()
+    @IsOptional()
     lastName?: string;
 
     @IsString()
@@ -167,7 +171,27 @@ export class CreateStudentDto {
 
     @IsString()
     @IsOptional()
-    previousSchool?: string;
+    previousSchoolName?: string;
+
+    @IsString()
+    @IsOptional()
+    lastClassPassed?: string;
+
+    @IsString()
+    @IsOptional()
+    medicalConditions?: string;
+
+    @IsString()
+    @IsOptional()
+    nationality?: string;
+
+    @IsString()
+    @IsOptional()
+    stateOfOrigin?: string;
+
+    @IsString()
+    @IsOptional()
+    genotype?: string;
 
     @IsString()
     @IsOptional()
@@ -189,4 +213,7 @@ export class CreateStudentDto {
 
     @IsOptional()
     feeExclusions?: Record<string, string[]>; // Map<FeeGroupId, ExcludedHeadIds[]>
+
+    @IsOptional()
+    mustChangePassword?: boolean;
 }

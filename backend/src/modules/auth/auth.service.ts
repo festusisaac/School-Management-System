@@ -87,7 +87,10 @@ export class AuthService {
     return {
       access_token,
       refresh_token,
-      user: userWithoutPassword,
+      user: {
+        ...userWithoutPassword,
+        mustChangePassword: user.mustChangePassword
+      },
     };
   }
 
@@ -137,7 +140,10 @@ export class AuthService {
     }
 
     const { password, ...userWithoutPassword } = user;
-    return userWithoutPassword;
+    return {
+      ...userWithoutPassword,
+      mustChangePassword: user.mustChangePassword
+    };
   }
 
   private async generateTokens(user: User) {

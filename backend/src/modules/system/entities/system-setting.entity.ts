@@ -126,11 +126,24 @@ export class SystemSetting {
     @Column({ type: 'int', default: 60 }) // in minutes
     sessionTimeoutMinutes!: number;
 
-    @Column({ type: 'int', default: 2 }) // in MB
+    @Column({ type: 'int', default: 3 }) // in MB
     maxFileUploadSizeMb!: number;
 
     @Column({ type: 'boolean', default: false })
     isInitialized!: boolean;
+
+    // Online Admission Settings
+    @Column({ type: 'boolean', default: false })
+    onlineAdmissionEnabled!: boolean;
+
+    @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
+    admissionFee!: number;
+
+    @Column({ type: 'varchar', default: 'ADM/' })
+    admissionReferencePrefix!: string;
+
+    @Column({ type: 'text', nullable: true })
+    admissionInstructions!: string;
 
     @CreateDateColumn()
     createdAt!: Date;

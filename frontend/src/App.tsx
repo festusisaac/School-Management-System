@@ -1,13 +1,19 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
 import LoginPage from '@pages/auth/LoginPage'
+import ChangePasswordPage from '@pages/auth/ChangePasswordPage'
 import DashboardPage from '@pages/dashboard/DashboardPage'
 import MaintenancePage from '@pages/MaintenancePage'
 import LandingPage from './pages/public/LandingPage'
 import NewsPage from './pages/public/NewsPage'
 import NewsDetailPage from './pages/public/NewsDetailPage'
+import AdmissionIntroPage from './pages/public/AdmissionIntroPage'
+import AdmissionFormPage from './pages/public/AdmissionFormPage'
+import AdmissionSuccessPage from './pages/public/AdmissionSuccessPage'
+import AdmissionStatusPage from './pages/public/AdmissionStatusPage'
 import SetupWizard from './pages/SetupWizard'
 import { MainLayout } from './components/layout/MainLayout'
+import PublicLayout from './components/layout/PublicLayout'
 import { ThemeProvider } from './context/ThemeContext'
 import { ToastProvider } from './context/ToastContext'
 import { SystemProvider, useSystem } from './context/SystemContext'
@@ -108,6 +114,7 @@ function AppRoutes() {
       <Routes>
         <Route path="/setup" element={<SetupWizard />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/change-password" element={<ChangePasswordPage />} />
         <Route path="/maintenance" element={<MaintenancePage />} />
 
         {/* Protected Routes */}
@@ -255,9 +262,16 @@ function AppRoutes() {
           </Route>
         )}
 
-        <Route path="/news" element={<NewsPage />} />
-        <Route path="/news/:slug" element={<NewsDetailPage />} />
-        <Route path="/" element={<LandingPage />} />
+        {/* Public Routes Wrapped in PublicLayout */}
+        <Route path="/" element={<PublicLayout><LandingPage /></PublicLayout>} />
+        <Route path="/news" element={<PublicLayout><NewsPage /></PublicLayout>} />
+        <Route path="/news/:slug" element={<PublicLayout><NewsDetailPage /></PublicLayout>} />
+        
+        {/* Public Admission Routes */}
+        <Route path="/admission" element={<PublicLayout><AdmissionIntroPage /></PublicLayout>} />
+        <Route path="/admission/apply" element={<PublicLayout><AdmissionFormPage /></PublicLayout>} />
+        <Route path="/admission/success" element={<PublicLayout><AdmissionSuccessPage /></PublicLayout>} />
+        <Route path="/admission/status" element={<PublicLayout><AdmissionStatusPage /></PublicLayout>} />
       </Routes>
     </Router>
   );

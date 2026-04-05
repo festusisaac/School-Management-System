@@ -50,6 +50,9 @@ export class User {
   @Column({ type: 'boolean', default: true })
   isActive!: boolean;
 
+  @Column({ type: 'boolean', default: false })
+  mustChangePassword!: boolean;
+
   @CreateDateColumn()
   createdAt!: Date;
 

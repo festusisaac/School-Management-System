@@ -2,20 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useSystem } from '../../context/SystemContext';
 import { 
-  ChevronRight, 
-  Users, 
-  Award, 
-  Globe, 
-  Menu, 
-  X,
-  Phone,
-  Mail,
+  MapPin,
+  Clock,
   ArrowRight,
+  Award,
+  Users,
+  Globe,
   Heart,
   Star,
   Quote,
-  MapPin,
-  Clock,
+  ChevronRight,
+  Phone,
+  Mail,
   Facebook,
   Twitter,
   Instagram,
@@ -94,12 +92,6 @@ const ScrollReveal = ({ children, delay = 0 }: { children: React.ReactNode, dela
 };
 
 const LandingPage = () => {
-  const { settings, getFullUrl } = useSystem();
-  const schoolName = settings?.schoolName || 'YOUR SCHOOL';
-  const logoUrl = settings?.primaryLogo ? getFullUrl(settings.primaryLogo) : null;
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
   const heroImages = [image16, image17, image18, image20, image24, image43];
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activeGalleryTab, setActiveGalleryTab] = useState('campus');
@@ -158,105 +150,11 @@ const LandingPage = () => {
     return () => clearInterval(timer);
   }, [testimonials.length]);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  const navLinks = [
-    { name: 'About', href: '#about' },
-    { name: 'Academics', href: '#academics' },
-    { name: 'Admissions', href: '#admissions' },
-    { name: 'Student Life', href: '#student-life' },
-    { name: 'Portal', href: '/login' },
-  ];
+  const { settings } = useSystem();
+  const schoolName = settings?.schoolName || 'YOUR SCHOOL';
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-blue-100 selection:text-blue-900">
-      
-      {/* Navigation */}
-      <nav className={`fixed w-full z-50 transition-all duration-500 ${
-        isScrolled ? 'glass-nav py-3' : 'bg-transparent py-6'
-      }`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center">
-            <Link to="/" className="flex items-center gap-3 group max-w-[40%]">
-              <div className="relative shrink-0">
-                <div className="absolute -inset-1 bg-gradient-to-tr from-primary-600 to-primary-400 rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-                {logoUrl ? (
-                  <img src={logoUrl} alt="Logo" className="relative h-10 w-10 object-contain" />
-                ) : (
-                  <div className="relative h-10 w-10 bg-primary-600 rounded-lg flex items-center justify-center text-white font-bold">
-                    {schoolName.charAt(0)}
-                  </div>
-                )}
-              </div>
-              <span className={`font-heading text-sm md:text-base font-bold tracking-tight transition-colors duration-300 line-clamp-2 leading-tight ${
-                isScrolled ? 'text-slate-900' : 'text-white'
-              }`}>
-                {schoolName}
-              </span>
-            </Link>
-
-            {/* Desktop Nav */}
-            <div className="hidden md:flex items-center gap-8">
-              {navLinks.map((link) => (
-                <a
-                  key={link.name}
-                  href={link.href}
-                  className={`text-sm font-medium hover:text-primary-600 transition-colors ${
-                    isScrolled ? 'text-slate-600' : 'text-slate-200'
-                  }`}
-                >
-                  {link.name}
-                </a>
-              ))}
-              <Link
-                to="/login"
-                className="bg-primary-600 hover:bg-primary-700 text-white px-5 py-2 rounded-full text-sm font-semibold transition-all shadow-lg hover:shadow-primary-500/25 flex items-center gap-2"
-              >
-                Access Portal <ChevronRight size={16} />
-              </Link>
-            </div>
-
-            {/* Mobile Toggle */}
-            <button 
-              className={`md:hidden p-2 rounded-lg ${isScrolled ? 'text-slate-900' : 'text-white'}`}
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            >
-              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Menu */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 w-full bg-white border-b border-slate-100 shadow-xl animate-fade-in">
-            <div className="px-4 py-6 space-y-4">
-              {navLinks.map((link) => (
-                <a
-                  key={link.name}
-                  href={link.href}
-                  className="block text-base font-medium text-slate-600 hover:text-primary-600"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  {link.name}
-                </a>
-              ))}
-              <Link
-                to="/login"
-                className="block w-full bg-primary-600 text-white text-center py-3 rounded-xl font-semibold"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Login to Portal
-              </Link>
-            </div>
-          </div>
-        )}
-      </nav>
+    <>
 
       <section className="relative h-screen w-full overflow-hidden flex items-center">
         {/* Carousel Background */}
@@ -855,64 +753,7 @@ const LandingPage = () => {
         </section>
       </ScrollReveal>
 
-      {/* Footer */}
-      <footer className="bg-white pt-24 pb-12 border-t border-slate-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-4 gap-12 mb-16">
-            <div className="col-span-2 space-y-6">
-              <Link to="/" className="flex items-center gap-3">
-                {logoUrl ? (
-                  <img src={logoUrl} alt="Logo" className="h-10 w-10 object-contain" />
-                ) : (
-                  <div className="h-10 w-10 bg-primary-600 rounded-lg flex items-center justify-center text-white font-bold">
-                    {schoolName.charAt(0)}
-                  </div>
-                )}
-                <span className="font-heading text-xl font-bold tracking-tight text-slate-900">
-                  {schoolName}
-                </span>
-              </Link>
-              <p className="text-slate-500 max-w-sm leading-relaxed">
-                Dedicated to academic excellence and moral formation, preparing the next generation of leaders with honesty, service, and honor.
-              </p>
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-600 hover:bg-primary-600 hover:text-white transition-all cursor-pointer">
-                  <Phone size={18} />
-                </div>
-                <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-600 hover:bg-primary-600 hover:text-white transition-all cursor-pointer">
-                  <Mail size={18} />
-                </div>
-              </div>
-            </div>
-            
-            <div className="space-y-6">
-              <h5 className="font-heading font-bold text-lg">Quick Links</h5>
-              <ul className="space-y-4 text-slate-500 font-medium">
-                <li><a href="#about" className="hover:text-primary-600 transition-colors">About Us</a></li>
-                <li><a href="#academics" className="hover:text-primary-600 transition-colors">Academics</a></li>
-                <li><a href="#admissions" className="hover:text-primary-600 transition-colors">Admissions</a></li>
-                <li><a href="#student-life" className="hover:text-primary-600 transition-colors">Student Life</a></li>
-              </ul>
-            </div>
-
-            <div className="space-y-6">
-              <h5 className="font-heading font-bold text-lg">Support</h5>
-              <ul className="space-y-4 text-slate-500 font-medium">
-                <li><Link to="/login" className="hover:text-primary-600 transition-colors">Portal Login</Link></li>
-                <li><Link to="/help" className="hover:text-primary-600 transition-colors">Help Center</Link></li>
-                <li><Link to="/privacy" className="hover:text-primary-600 transition-colors">Privacy Policy</Link></li>
-                <li><Link to="/terms" className="hover:text-primary-600 transition-colors">Terms of Service</Link></li>
-              </ul>
-            </div>
-          </div>
-          
-          <div className="pt-8 border-t border-slate-50 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-400 text-sm font-medium">
-            <p>© {new Date().getFullYear()} {schoolName}. All rights reserved.</p>
-            <p>Designed for excellence.</p>
-          </div>
-        </div>
-      </footer>
-    </div>
+    </>
   );
 };
 

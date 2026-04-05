@@ -94,35 +94,13 @@ const NewsDetailPage = () => {
   const relatedNews = allNews.filter(n => n.id !== news.id).slice(0, 3);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-950 font-sans text-slate-900 transition-colors duration-500 pb-20">
-      
+    <>
       {/* Dynamic Progress Bar */}
-      <div className="fixed top-0 left-0 w-full h-1 z-50 bg-slate-100 dark:bg-slate-800">
+      <div className="fixed top-20 left-0 w-full h-1 z-50 bg-slate-100 dark:bg-slate-800">
         <div className="h-full bg-primary-600 transition-all duration-300" style={{ width: '0%' }}></div>
       </div>
 
-      <header className="fixed w-full z-40 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 transition-colors duration-500">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          <Link to="/news" className="flex items-center gap-2 text-slate-500 hover:text-primary-600 font-bold text-sm transition-all group">
-            <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> Back to News
-          </Link>
-          
-          <div className="flex items-center gap-3">
-            {logoUrl ? (
-              <img src={logoUrl} alt="Logo" className="h-10 w-10 object-contain" />
-            ) : (
-              <div className="h-10 w-10 bg-primary-600 rounded-lg flex items-center justify-center text-white font-bold">
-                {schoolName.charAt(0)}
-              </div>
-            )}
-            <span className="font-heading font-black text-slate-900 dark:text-white tracking-tight hidden sm:block truncate max-w-[200px]">
-              {schoolName}
-            </span>
-          </div>
-        </div>
-      </header>
-
-      <main className="pt-32">
+      <main className="pt-10">
         <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           
           {/* Metadata */}
@@ -212,13 +190,7 @@ const NewsDetailPage = () => {
 
         </article>
       </main>
-
-      <footer className="mt-40 py-20 bg-slate-50 dark:bg-slate-900/50 text-center transition-colors duration-500">
-        <div className="text-slate-500 dark:text-slate-400 text-sm font-medium">
-          © {new Date().getFullYear()} {schoolName}. All rights reserved.
-        </div>
-      </footer>
-    </div>
+    </>
   );
 };
 

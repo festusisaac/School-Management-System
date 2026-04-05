@@ -7,6 +7,10 @@ export class CreateOnlineAdmissionDto {
 
     @IsString()
     @IsOptional()
+    middleName?: string;
+
+    @IsString()
+    @IsOptional()
     lastName?: string;
 
     @IsString()
@@ -16,6 +20,26 @@ export class CreateOnlineAdmissionDto {
     @IsDateString()
     @IsNotEmpty()
     dob!: string;
+
+    @IsString()
+    @IsOptional()
+    religion?: string;
+
+    @IsString()
+    @IsOptional()
+    bloodGroup?: string;
+
+    @IsString()
+    @IsOptional()
+    genotype?: string;
+
+    @IsString()
+    @IsOptional()
+    stateOfOrigin?: string;
+
+    @IsString()
+    @IsOptional()
+    nationality?: string;
 
     @IsString()
     @IsOptional()
@@ -43,5 +67,21 @@ export class CreateOnlineAdmissionDto {
 
     @IsString()
     @IsOptional()
+    previousSchoolName?: string;
+
+    @IsString()
+    @IsOptional()
+    lastClassPassed?: string;
+
+    @IsString()
+    @IsOptional()
+    medicalConditions?: string;
+
+    @IsString()
+    @IsOptional()
     preferredClassId?: string;
+
+    @IsString()
+    @IsOptional()
+    transactionReference?: string;
 }

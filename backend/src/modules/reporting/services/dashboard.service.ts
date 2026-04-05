@@ -313,9 +313,10 @@ export class DashboardService {
             const currentMonth = today.getMonth() + 1;
             const currentYear = today.getFullYear();
             const payrollSummary = await this.payrollRepository.createQueryBuilder('p')
+                .innerJoin('p.staff', 'staff')
                 .select('SUM(p.net_salary::numeric)', 'total')
                 .addSelect('p.status', 'status')
-                .where('(p.tenantId = :tenantId OR p.tenantId IS NULL)', { tenantId })
+                .where('(staff.tenantId = :tenantId OR staff.tenantId IS NULL)', { tenantId })
                 .andWhere('p.month = :currentMonth AND p.year = :currentYear', { currentMonth, currentYear })
                 .groupBy('p.status')
                 .getRawMany();

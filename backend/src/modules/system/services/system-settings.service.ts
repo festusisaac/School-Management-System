@@ -13,6 +13,26 @@ export class SystemSettingsService {
         private readonly systemSettingRepository: Repository<SystemSetting>,
     ) { }
 
+    /**
+     * Optimized for public/landing page use. Returns only non-sensitive settings.
+     */
+    async getPublicSettings() {
+        const settings = await this.getSettings();
+        return {
+            schoolName: settings.schoolName,
+            schoolLogo: settings.primaryLogo,
+            schoolEmail: settings.schoolEmail,
+            schoolPhone: settings.schoolPhone,
+            admissionFee: settings.admissionFee,
+            admissionInstructions: settings.admissionInstructions,
+            onlineAdmissionEnabled: settings.onlineAdmissionEnabled,
+            currencySymbol: settings.currencySymbol,
+            currencyCode: settings.currencyCode,
+            paystackPublicKey: process.env.PAYSTACK_PUBLIC_KEY,
+            flutterwavePublicKey: process.env.FLUTTERWAVE_PUBLIC_KEY,
+        };
+    }
+
     // Get the global settings (assuming ID '1' or single record)
     async getSettings(): Promise<SystemSetting> {
         const settings = await this.systemSettingRepository.find({

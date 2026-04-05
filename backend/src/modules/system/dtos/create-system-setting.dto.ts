@@ -169,4 +169,22 @@ export class CreateSystemSettingDto {
 
     @IsOptional()
     updatedAt?: string | Date;
+
+    // Online Admission Settings
+    @IsBoolean()
+    @IsOptional()
+    onlineAdmissionEnabled?: boolean;
+
+    @Type(() => Number)
+    @IsNumber()
+    @IsOptional()
+    admissionFee?: number;
+
+    @IsString()
+    @IsOptional()
+    admissionReferencePrefix?: string;
+
+    @IsString()
+    @IsOptional()
+    admissionInstructions?: string;
 }

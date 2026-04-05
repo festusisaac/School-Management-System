@@ -1,0 +1,119 @@
+import React, { forwardRef } from 'react';
+import { useSystem } from '../../context/SystemContext';
+import { getFileUrl } from '../../services/api';
+
+interface AdmissionLetterProps {
+    application: any;
+}
+
+const AdmissionLetterTemplate = forwardRef<HTMLDivElement, AdmissionLetterProps>(({ application }, ref) => {
+    const { settings } = useSystem();
+    const today = new Date().toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+    });
+
+    return (
+        <div className="fixed -left-[2000px] top-0">
+            <div 
+                ref={ref}
+                className="w-[210mm] min-h-[297mm] bg-white p-[20mm] text-gray-900 font-serif leading-relaxed relative"
+                style={{ fontSize: '12pt' }}
+            >
+                {/* Letterhead */}
+                <div className="flex flex-col items-center text-center border-b-2 border-primary-600 pb-6 mb-8">
+                    {settings?.primaryLogo && (
+                        <img 
+                            src={getFileUrl(settings.primaryLogo)} 
+                            alt="School Logo" 
+                            className="h-20 w-auto mb-4"
+                        />
+                    )}
+                    <h1 className="text-3xl font-black uppercase text-primary-700 tracking-tight">{settings?.schoolName || 'SCHOOL NAME'}</h1>
+                    <p className="text-sm font-bold italic text-gray-600 mt-1">{settings?.schoolMotto || 'Excellence in Education'}</p>
+                    <div className="mt-3 text-xs text-gray-500 space-y-0.5">
+                        <p>{settings?.schoolAddress}</p>
+                        <p>Tel: {settings?.schoolPhone} | Email: {settings?.schoolEmail}</p>
+                        <p>{settings?.officialWebsite}</p>
+                    </div>
+                </div>
+
+                {/* Meta Info */}
+                <div className="flex justify-between items-start mb-10">
+                    <div className="space-y-1">
+                        <p><span className="font-bold">Our Ref:</span> {application.referenceNumber}</p>
+                        <p><span className="font-bold">Date:</span> {today}</p>
+                    </div>
+                    <div className="text-right">
+                        <div className="bg-gray-100 p-3 rounded-lg border border-gray-200">
+                            <p className="text-[10px] font-bold uppercase text-gray-400 mb-1">Admission Status</p>
+                            <p className="text-xl font-black text-emerald-600 uppercase">OFFER OF PROVISIONAL ADMISSION</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Candidate Info */}
+                <div className="mb-0">
+                    <p className="font-bold">{application.firstName} {application.middleName} {application.lastName}</p>
+                    <p>{application.currentAddress}</p>
+                    <p>{application.guardianPhone}</p>
+                </div>
+
+                {/* Salutation */}
+                <div className="mt-8">
+                    <p>Dear <span className="font-bold">{application.firstName}</span>,</p>
+                </div>
+
+                {/* Body */}
+                <div className="mt-6 space-y-4 text-justify">
+                    <p>
+                        Following your recent application and successful performance in the admission screening exercise, 
+                        we are pleased to offer you provisional admission into <span className="font-black">{settings?.schoolName}</span> for the 
+                        <span className="font-bold"> {settings?.activeSessionName || '2024/2025'} </span> academic session.
+                    </p>
+                    <p>
+                        You have been admitted into <span className="font-black">{application.preferredClassName || application.preferredClassId || 'your target class'}</span>.
+                    </p>
+                    <p>
+                        This offer is subject to the following conditions:
+                    </p>
+                    <ul className="list-disc ml-8 space-y-2">
+                        <li>Verification of all original documents provided during the online application.</li>
+                        <li>Full payment of the mandatory acceptance fee and tuition as per the school's current fee schedule.</li>
+                        <li>Compliance with the school's rules, regulations, and code of conduct.</li>
+                    </ul>
+                    <p>
+                        Please note that the deadline for the payment of the acceptance fee is <span className="font-bold">two weeks from the date of this letter</span>. 
+                        Failure to comply with this timeline may result in the forfeiture of this admission offer.
+                    </p>
+                    <p>
+                        We congratulate you on this milestone and look forward to welcoming you to our vibrant academic community.
+                    </p>
+                </div>
+
+                {/* Closing */}
+                <div className="mt-16">
+                    <p>Yours Faithfully,</p>
+                    <div className="mt-10">
+                        <div className="h-0.5 w-48 bg-gray-900 mb-2"></div>
+                        <p className="font-bold uppercase">{settings?.schoolName} Admissions Board</p>
+                        <p className="text-sm italic">Registrar's Office</p>
+                    </div>
+                </div>
+
+                {/* Footer Disclaimer */}
+                <div className="absolute bottom-[20mm] left-[20mm] right-[20mm] border-t pt-4 text-center">
+                    <p className="text-[10px] text-gray-400">
+                        This is an electronically generated document. No signature is required. 
+                        Verification code: {application.id.split('-')[0].toUpperCase()}
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
+});
+
+AdmissionLetterTemplate.displayName = 'AdmissionLetterTemplate';
+
+export default AdmissionLetterTemplate;

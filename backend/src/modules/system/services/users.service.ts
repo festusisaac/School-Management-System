@@ -109,6 +109,9 @@ export class UsersService implements OnModuleInit {
       const plainPassword = updateUserDto.password; // Keep plain for email
       updateUserDto.password = await bcrypt.hash(plainPassword, 10);
       
+      // Clear force change flag if password is updated
+      user.mustChangePassword = false;
+
       // Notify user via email
       await this.emailService.sendPasswordChangedNotification(
         user.email,
@@ -163,6 +166,7 @@ export class UsersService implements OnModuleInit {
       role: details.role,
       tenantId: details.tenantId,
       photo: details.photo,
-    } as any);
+      mustChangePassword: details.mustChangePassword || false,
+    });
   }
 }

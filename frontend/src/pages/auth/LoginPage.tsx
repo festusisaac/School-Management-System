@@ -63,8 +63,12 @@ export default function LoginPage() {
       setRefreshToken(response.refresh_token)
       setUser(response.user)
 
-      // Redirect to dashboard
-      navigate('/dashboard')
+      // Redirect to change password if required, otherwise dashboard
+      if (response.user.mustChangePassword) {
+        navigate('/change-password', { state: { email: formData.email } })
+      } else {
+        navigate('/dashboard')
+      }
     } catch (err: any) {
       console.error('Full error object:', err)
       console.error('Error response:', err.response)

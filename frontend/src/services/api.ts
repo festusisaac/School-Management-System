@@ -166,6 +166,11 @@ class ApiService {
     return response.data
   }
 
+  // System Settings
+  async getPublicSettings() {
+    return this.get<any>('/system/settings/public')
+  }
+
   // Finance API methods
   async getStudentStatement(studentId: string) {
     return this.get<any>(`/finance/statement/${studentId}`)
@@ -326,6 +331,11 @@ class ApiService {
   // Classes
   async getClasses() {
     const response = await this.axiosInstance.get('/academics/classes')
+    return response.data
+  }
+
+  async getPublicClasses() {
+    const response = await this.axiosInstance.get('/academics/public/classes')
     return response.data
   }
 
@@ -915,7 +925,22 @@ class ApiService {
   }
 
   async createOnlineAdmission(data: any) {
+    if (data instanceof FormData) {
+      return this.post<any>('/students/online-admissions', data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+    }
     return this.post<any>('/students/online-admissions', data)
+  }
+
+  async getOnlineAdmissionStatus(referenceNumber: string) {
+    return this.get<any>(`/students/online-admissions/status/${encodeURIComponent(referenceNumber)}`)
+  }
+
+  async verifyAdmissionPayment(reference: string, email: string) {
+    return this.get<any>(`/students/online-admission/verify-payment/${encodeURIComponent(reference)}`, {
+      params: { email }
+    })
   }
 
   async createStudentHouse(data: any) {

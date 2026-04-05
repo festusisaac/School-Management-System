@@ -4,6 +4,7 @@ import { UpdateSystemSettingDto } from '../dtos/update-system-setting.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
+import { Public } from '@decorators/public.decorator';
 
 export enum LogoType {
     PRIMARY = 'primaryLogo',
@@ -16,6 +17,12 @@ export enum LogoType {
 @Controller('system/settings')
 export class SystemSettingsController {
     constructor(private readonly settingsService: SystemSettingsService) { }
+
+    @Public()
+    @Get('public')
+    getPublicSettings() {
+        return this.settingsService.getPublicSettings();
+    }
 
     @Get()
     getSettings() {
