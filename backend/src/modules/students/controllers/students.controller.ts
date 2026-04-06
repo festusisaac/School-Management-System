@@ -151,7 +151,7 @@ export class StudentsController {
         if (!hasFullAccess) {
             // Resolve studentId from userId
             const resolvedStudentId = await this.studentsService.resolveStudentId(req.user.id, req.user.tenantId);
-            if (resolvedStudentId !== id) {
+            if (resolvedStudentId !== id && req.user.id !== id) {
                 throw new ForbiddenException('You only have permission to view your own profile.');
             }
         }
@@ -296,10 +296,10 @@ export class StudentsController {
     @Permissions('students:create')
     approveOnlineAdmission(
         @Param('id') id: string, 
-        @Body() body: { feeGroupIds?: string[] },
+        @Body() body: { feeGroupIds?: string[], feeExclusions?: Record<string, string[]> },
         @Request() req: any
     ) {
-        return this.studentsService.approveOnlineAdmission(id, req.user.tenantId, body.feeGroupIds);
+        return this.studentsService.approveOnlineAdmission(id, req.user.tenantId, body.feeGroupIds, body.feeExclusions);
     }
 
     // --- Students (Generic Routes) ---
@@ -400,7 +400,7 @@ export class StudentsController {
         // Security scoping for students: Only allow viewing their own attendance
         if (req.user.role === 'student') {
             const resolvedStudentId = await this.studentsService.resolveStudentId(req.user.id, req.user.tenantId);
-            if (resolvedStudentId !== studentId) {
+            if (resolvedStudentId !== studentId && req.user.id !== studentId) {
                 throw new ForbiddenException('You can only view your own attendance records.');
             }
         }

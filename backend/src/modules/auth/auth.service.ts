@@ -35,7 +35,7 @@ export class AuthService {
     const user = this.usersRepository.create({
       ...createUserDto,
       password: hashedPassword,
-      tenantId: uuidv4(),
+      tenantId: createUserDto.tenantId || uuidv4(),
     });
 
     await this.usersRepository.save(user);
@@ -63,10 +63,12 @@ export class AuthService {
     const user = await this.usersRepository.createQueryBuilder('u')
       .leftJoinAndSelect('u.roleObject', 'roleObject')
       .leftJoinAndSelect('roleObject.permissions', 'permissions')
-      .leftJoin('students', 'student', 'student."userId"::text = u.id::text')
+      .leftJoinAndSelect('u.student', 'student')
+      .leftJoinAndSelect('u.parent', 'parent')
+      .leftJoin('students', 'st_login', 'st_login."userId"::text = u.id::text')
       .leftJoin('staff', 'staff_member', 'staff_member.email = u.email')
       .where('u.email = :id', { id: loginDto.email })
-      .orWhere('student."admissionNo" = :id', { id: loginDto.email })
+      .orWhere('st_login."admissionNo" = :id', { id: loginDto.email })
       .orWhere('staff_member.employee_id = :id', { id: loginDto.email })
       .getOne();
 
@@ -116,7 +118,7 @@ export class AuthService {
 
       const user = await this.usersRepository.findOne({
         where: { id: payload.sub },
-        relations: ['roleObject', 'roleObject.permissions'],
+        relations: ['roleObject', 'roleObject.permissions', 'student', 'parent'],
       });
 
       if (!user) {
@@ -160,6 +162,8 @@ export class AuthService {
       role: user.roleObject?.name?.toLowerCase() || user.role,
       permissions,
       tenantId: user.tenantId,
+      studentId: user.student?.id,
+      parentId: user.parent?.id,
     };
 
     const access_token = this.jwtService.sign(payload, {

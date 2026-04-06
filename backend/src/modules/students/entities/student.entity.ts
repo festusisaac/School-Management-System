@@ -123,7 +123,7 @@ export class Student {
   @Column({ nullable: true })
   userId?: string;
 
-  @OneToOne(() => User)
+  @OneToOne(() => User, (user) => user.student)
   @JoinColumn({ name: 'userId' })
   user?: User;
 

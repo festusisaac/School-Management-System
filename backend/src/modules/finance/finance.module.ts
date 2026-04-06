@@ -12,6 +12,7 @@ import { FeeHead } from './entities/fee-head.entity';
 import { FeeGroup } from './entities/fee-group.entity';
 import { DiscountProfile } from './entities/discount-profile.entity';
 import { DiscountRule } from './entities/discount-rule.entity';
+import { StudentsModule } from '../students/students.module';
 
 import { FeeAssignment } from './entities/fee-assignment.entity';
 
@@ -22,6 +23,7 @@ import { SystemModule } from '../system/system.module';
   imports: [
     InternalCommunicationModule,
     SystemModule,
+    forwardRef(() => StudentsModule),
     TypeOrmModule.forFeature([
       Transaction,
       FeeStructure,

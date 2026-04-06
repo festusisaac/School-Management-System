@@ -49,7 +49,7 @@ export class Parent {
     @Column({ type: 'uuid', nullable: true })
     userId?: string;
 
-    @OneToOne(() => User)
+    @OneToOne(() => User, (user) => user.parent)
     @JoinColumn({ name: 'userId' })
     user?: User;
 

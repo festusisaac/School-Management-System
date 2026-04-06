@@ -979,8 +979,8 @@ class ApiService {
     return this.patch<any>(`/students/online-admissions/${id}/status`, { status })
   }
 
-  async approveOnlineAdmission(id: string, feeGroupIds?: string[]) {
-    return this.post<any>(`/students/online-admissions/${id}/approve`, { feeGroupIds })
+  async approveOnlineAdmission(id: string, feeGroupIds?: string[], feeExclusions?: Record<string, string[]>) {
+    return this.post<any>(`/students/online-admissions/${id}/approve`, { feeGroupIds, feeExclusions })
   }
 
   // Student Attendance methods

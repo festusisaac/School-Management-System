@@ -9,6 +9,7 @@ import { StaffService } from '@modules/hr/services/staff.service';
 import { UserRole } from '@common/dtos/auth.dto';
 import { EntityManager } from 'typeorm';
 import { Student } from '../../students/entities/student.entity';
+import { StudentsService } from '../../students/services/students.service';
 
 @ApiTags('Online Classes')
 @ApiBearerAuth()
@@ -18,6 +19,7 @@ export class OnlineClassesController {
     constructor(
         private readonly onlineClassesService: OnlineClassesService,
         private readonly staffService: StaffService,
+        private readonly studentsService: StudentsService,
         private readonly entityManager: EntityManager,
     ) {}
 
@@ -41,9 +43,11 @@ export class OnlineClassesController {
 
         // Data scoping for Students: Force their own classId
         if (req.user.role === UserRole.STUDENT) {
-            const studentId = req.user.studentId || req.user.id;
+            const resolvedStudentId = await this.studentsService.resolveStudentId(req.user.id, req.user.tenantId);
+            if (!resolvedStudentId) return [];
+            
             const student = await this.entityManager.getRepository(Student).findOne({
-                where: { id: studentId, tenantId: req.user.tenantId }
+                where: { id: resolvedStudentId!, tenantId: req.user.tenantId }
             });
             if (student) {
                 resolvedClassId = student.classId;
@@ -67,9 +71,11 @@ export class OnlineClassesController {
 
         // Data scoping for Students: Force their own classId
         if (req.user.role === UserRole.STUDENT) {
-            const studentId = req.user.studentId || req.user.id;
+            const resolvedStudentId = await this.studentsService.resolveStudentId(req.user.id, req.user.tenantId);
+            if (!resolvedStudentId) return [];
+            
             const student = await this.entityManager.getRepository(Student).findOne({
-                where: { id: studentId, tenantId: req.user.tenantId }
+                where: { id: resolvedStudentId!, tenantId: req.user.tenantId }
             });
             if (student) {
                 resolvedClassId = student.classId;

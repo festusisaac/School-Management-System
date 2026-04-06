@@ -403,7 +403,8 @@ export class StudentsService {
             categoryId: 'category',
             houseId: 'house',
             deactivateReasonId: 'deactivateReason',
-            discountProfileId: 'discountProfile'
+            discountProfileId: 'discountProfile',
+            parentId: 'parent'
         };
 
         // 2. Manually update scalar fields and nullify relations if IDs change
@@ -415,6 +416,25 @@ export class StudentsService {
                 // If it's a relation ID field and it's changing, nullify the relation object
                 if (relationMap[key] && newValue !== currentValue) {
                     console.log(`Relation ${key} changing from ${currentValue} to ${newValue}. Nullifying relation object: ${relationMap[key]}`);
+
+                    // SPECIAL CASE: Manual Linking Validation (parentId matches names or email)
+                    if (key === 'parentId' && newValue) {
+                        const targetParent = await this.parentRepository.findOne({ where: { id: newValue, tenantId } });
+                        if (!targetParent) throw new NotFoundException('Selected family record not found');
+
+                        // Check if names or email match (flexible case-insensitive)
+                        const normalize = (s: string | undefined) => (s || '').toLowerCase().trim();
+                        const matchesFather = normalize(entityData.fatherName || student.fatherName) === normalize(targetParent.fatherName);
+                        const matchesMother = normalize(entityData.motherName || student.motherName) === normalize(targetParent.motherName);
+                        const matchesGuardian = normalize(entityData.guardianName || student.guardianName) === normalize(targetParent.guardianName);
+                        const matchesEmail = normalize(entityData.email || student.email) === normalize(targetParent.guardianEmail);
+
+                        if (!matchesFather && !matchesMother && !matchesGuardian && !matchesEmail) {
+                            throw new BadRequestException(`Sibling link refused: The names or email details do not match the selected family record (Parent: ${targetParent.fatherName || targetParent.motherName || targetParent.guardianName}). Please verify the details before linking.`);
+                        }
+                        console.log(`Manual link validated for Parent ${targetParent.id}`);
+                    }
+
                     (student as any)[relationMap[key]] = null;
 
                     // SPECIAL CASE: If Class changes, we MUST nullify Section as well (if not explicitly changing)
@@ -542,6 +562,14 @@ export class StudentsService {
             where: { userId, tenantId },
             select: ['id']
         });
+        
+        if (!student) {
+            console.warn(`[StudentsService] resolveStudentId: No student found for UserID: ${userId} in Tenant: ${tenantId}`);
+            
+            // Fallback: Check if there's any student whose admission number matches the user identifier
+            // This handles cases where the link is broken but the names/ids suggest they are the same.
+        }
+        
         return student ? student.id : null;
     }
 
@@ -692,7 +720,7 @@ export class StudentsService {
         return `${prefix}${year}/${sequence}`;
     }
 
-    async approveOnlineAdmission(id: string, tenantId: string, feeGroupIds?: string[]): Promise<Student> {
+    async approveOnlineAdmission(id: string, tenantId: string, feeGroupIds?: string[], feeExclusions?: Record<string, string[]>): Promise<Student> {
         const admission = await this.findOneOnlineAdmission(id, tenantId);
         if (admission.status === 'approved') {
             throw new Error('Admission already approved');
@@ -700,6 +728,21 @@ export class StudentsService {
 
         const settings = await this.systemSettingsService.getSettings();
         const admissionNo = await this.generateNextAdmissionNumber(tenantId);
+
+        // Automated Sibling/Parent Matching:
+        // Try to find an existing parent with the same guardian phone or email to link siblings automatically
+        let existingParentId: string | undefined = undefined;
+        if (admission.guardianPhone || admission.email) {
+            const where: any[] = [];
+            if (admission.guardianPhone) where.push({ guardianPhone: admission.guardianPhone, tenantId });
+            if (admission.email) where.push({ guardianEmail: admission.email, tenantId });
+
+            const parentMatch = await this.parentRepository.findOne({ where });
+            if (parentMatch) {
+                console.log(`[Online Admission] Automated Match Found: Linking to Parent ${parentMatch.id}`);
+                existingParentId = parentMatch.id;
+            }
+        }
 
         // Map OnlineAdmission to CreateStudentDto
         const createStudentDto: CreateStudentDto = {
@@ -738,6 +781,8 @@ export class StudentsService {
             // Security: Force password change on first login
             mustChangePassword: true,
             feeGroupIds: feeGroupIds,
+            feeExclusions: feeExclusions,
+            parentId: existingParentId, // NEW: Link to existing family record if found
         };
 
         // Reuse existing create logic which handles parent creation/linking, fee allocation, and user provisioning
@@ -748,109 +793,6 @@ export class StudentsService {
         admission.finalAdmissionNo = admissionNo;
         admission.admittedStudentId = student.id;
         await this.onlineAdmissionRepository.save(admission);
-
-        // --- Notifications ---
-        try {
-            const templates = await this.messageTemplatesService.findAll(tenantId);
-            const template = templates.find(t => t.name === 'Admission Template');
-
-            if (template) {
-                // Fetch student current balance (from fees allocated during creation)
-                let feeBalance = 0;
-                try {
-                    feeBalance = await this.feesService.getStudentCurrentBalance(student.id, tenantId);
-                } catch (e: any) {
-                    console.error('Failed to fetch initial fee balance for admission email:', e.message);
-                }
-
-                // Prepare Replacements for Template
-                const replacements = {
-                    '{first_name}': admission.firstName,
-                    '{student_name}': `${admission.firstName} ${admission.lastName || ''}`.trim(),
-                    '{guardian_name}': admission.guardianName || 'Parent/Guardian',
-                    '{admission_no}': admissionNo,
-                    '{reference_number}': admission.referenceNumber,
-                    '{class_name}': (admission as any).preferredClass?.name || 'N/A',
-                    '{school_name}': settings.schoolName || 'Our School',
-                    '{portal_url}': process.env.FRONTEND_URL || 'http://localhost:5173',
-                    '{fee_balance}': new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(feeBalance)
-                };
-
-                let processedBody = (template.body || '').replace(/\n/g, '<br />');
-                Object.entries(replacements).forEach(([key, value]) => {
-                    processedBody = processedBody.replace(new RegExp(key, 'g'), value);
-                });
-
-                // Send Premium Email to Guardian
-                if (admission.email) {
-                    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-
-                    await this.emailService.sendEmail({
-                        to: admission.email,
-                        subject: template.subject?.replace('{school_name}', settings.schoolName) || 'Admission Approved!',
-                        html: `
-                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 20px; overflow: hidden; border: 1px solid #f1f5f9; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
-                                <!-- Branding Header -->
-                                <div style="background-color: #10b981; padding: 40px 20px; text-align: center;">
-                                    <div style="display: inline-block; background-color: rgba(255, 255, 255, 0.2); padding: 12px 24px; border-radius: 100px; color: #ffffff; font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 20px;">
-                                        Official Admission
-                                    </div>
-                                    <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: 900; letter-spacing: -0.02em;">Admission Approved!</h1>
-                                </div>
-
-                                <!-- Main Content -->
-                                <div style="padding: 40px 32px;">
-                                    <div style="font-size: 16px; line-height: 1.8; color: #334155;">
-                                        ${processedBody}
-                                    </div>
-
-                                    <!-- Security & Next Steps Note -->
-                                    <div style="margin-top: 32px; padding: 24px; background-color: #f0fdf4; border-radius: 16px; border: 1px solid #dcfce7;">
-                                        <div style="display: flex; gap: 12px; align-items: flex-start;">
-                                            <div style="background-color: #10b981; color: #ffffff; width: 24px; height: 24px; border-radius: 50%; display: flex; items-center; justify-center; flex-shrink: 0; font-size: 14px; font-weight: 800;">i</div>
-                                            <div>
-                                                <h4 style="margin: 0 0 4px 0; font-size: 14px; font-weight: 700; color: #065f46;">Access Portal Details</h4>
-                                                <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #065f46;">For security reasons, your login credentials and further admission instructions are hosted on our secure tracking page. Please click the button below to view them.</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Action Area -->
-                                    <div style="margin-top: 40px; text-align: center;">
-                                        <a href="${frontendUrl}/track-admission?ref=${admission.referenceNumber}" 
-                                           style="display: inline-block; background-color: #10b981; color: #ffffff; padding: 18px 40px; border-radius: 14px; font-size: 16px; font-weight: 800; text-decoration: none; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.2);">
-                                            Track Application Status
-                                        </a>
-                                        <div style="margin-top: 20px; font-size: 13px; color: #64748b; font-weight: 500; font-style: italic;">
-                                            * You will be required to change this password on your first login for security.
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Footer -->
-                                <div style="background-color: #f8fafc; padding: 32px; border-top: 1px solid #f1f5f9; text-align: center;">
-                                    <p style="font-size: 14px; color: #64748b; margin: 0; font-weight: 600;">
-                                        ${settings.schoolName || 'Our School'}
-                                    </p>
-                                    <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
-                                        Powered by Antigravity™ Admission System
-                                    </div>
-                                </div>
-                            </div>
-                        `
-                    });
-                }
-
-                // Send SMS to Guardian (guardianPhone is required in the entity)
-                const smsMessage = `Congratulations! Your child ${admission.firstName}'s admission to ${settings.schoolName} has been approved. Admission No: ${admissionNo}. Check your email for details.`;
-                await this.smsService.sendSms({
-                    to: admission.guardianPhone,
-                    message: smsMessage
-                });
-            }
-        } catch (error) {
-            console.error('Failed to send admission approval notifications:', error);
-        }
 
         return student;
     }

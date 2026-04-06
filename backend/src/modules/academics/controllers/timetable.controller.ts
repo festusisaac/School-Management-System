@@ -19,12 +19,14 @@ import { UserRole } from '@common/dtos/auth.dto';
 import { Staff } from '@modules/hr/entities/staff.entity';
 import { EntityManager } from 'typeorm';
 import { Student } from '../../students/entities/student.entity';
+import { StudentsService } from '../../students/services/students.service';
 
 @Controller('academics/timetable')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class TimetableController {
     constructor(
         private readonly timetableService: TimetableService,
+        private readonly studentsService: StudentsService,
         @InjectRepository(Staff)
         private readonly staffRepository: Repository<Staff>,
         private readonly entityManager: EntityManager,
@@ -62,14 +64,7 @@ export class TimetableController {
         return this.timetableService.updatePeriod(id, body);
     }
 
-    @Delete('periods/:id')
-    @Roles(UserRole.ADMIN)
-    async deletePeriod(@Param('id') id: string) {
-        await this.timetableService.deletePeriod(id);
-        return { message: 'Period deleted successfully' };
-    }
-
-    @Post('periods/reorder')
+    @Get('periods/reorder')
     @Roles(UserRole.ADMIN)
     reorderPeriods(@Body() body: { periodIds: string[] }, @Request() req: any) {
         return this.timetableService.reorderPeriods(req.user.tenantId, body.periodIds);
@@ -95,10 +90,12 @@ export class TimetableController {
         let resolvedSectionId = sectionId;
 
         // Data scoping for Students: Force their own class & section
-        if (req.user.role === 'student' || req.user.role === UserRole.STUDENT) {
-            const studentId = req.user.studentId || req.user.id;
+        if (req.user.role === UserRole.STUDENT) {
+            const resolvedStudentId = await this.studentsService.resolveStudentId(req.user.id, req.user.tenantId);
+            if (!resolvedStudentId) return [];
+            
             const student = await this.entityManager.getRepository(Student).findOne({
-                where: { id: studentId, tenantId: req.user.tenantId }
+                where: { id: resolvedStudentId!, tenantId: req.user.tenantId }
             });
             if (student) {
                 resolvedClassId = student.classId!;
@@ -137,7 +134,6 @@ export class TimetableController {
 
     @Get('slots/teacher/today')
     async getMyTodayTimetable(@Request() req: any) {
-        // Resolve current user to their staff record via email
         const staff = await this.staffRepository.findOne({
             where: { email: req.user.email, tenantId: req.user.tenantId },
         });
@@ -149,15 +145,14 @@ export class TimetableController {
 
     @Get('slots/teacher/:teacherId')
     async getTeacherTimetable(@Param('teacherId') teacherId: string, @Request() req: any) {
-        // Security Check: Teachers can only view their own timetable
-        if (req.user.role === 'teacher') {
+        if (req.user.role === UserRole.TEACHER) {
             const staff = await this.staffRepository.findOne({
                 where: { email: req.user.email, tenantId: req.user.tenantId },
                 select: ['id']
             });
             
             if (!staff || staff.id !== teacherId) {
-                return []; // Or throw ForbiddenException if you prefer
+                return [];
             }
         }
         
@@ -231,4 +226,3 @@ export class TimetableController {
         );
     }
 }
-

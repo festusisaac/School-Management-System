@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Query, Param, Delete, Patch, Headers, UseGuards, Request, ForbiddenException } from '@nestjs/common';
+import { Controller, Post, Body, Get, Query, Param, Delete, Patch, Headers, UseGuards, Request, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Public } from '../../../decorators/public.decorator';
 import { FeesService } from '../services/fees.service';
 import { CreatePaymentDto } from '../dtos/create-payment.dto';
@@ -11,16 +11,18 @@ import { CreateFeeGroupDto } from '../dtos/create-fee-group.dto';
 import { CreateDiscountProfileDto } from '../dtos/create-discount-profile.dto';
 import { EntityManager } from 'typeorm';
 import { Student } from '../../students/entities/student.entity';
+import { StudentsService } from '../../students/services/students.service';
 
 import { BulkReminderDto } from '../dtos/bulk-reminder.dto';
-
-import { JwtAuthGuard } from '../../../guards/jwt-auth.guard';
+import { UserRole } from '@common/dtos/auth.dto';
+import { RolesGuard, JwtAuthGuard } from '@guards/jwt-auth.guard';
 
 @Controller('finance')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class FeesController {
   constructor(
     private readonly feesService: FeesService,
+    private readonly studentsService: StudentsService,
     private readonly entityManager: EntityManager,
   ) { }
 
@@ -67,19 +69,13 @@ export class FeesController {
     @Query('limit') limit?: number,
     @Request() req?: any
   ) {
-    let resolvedStudentId = studentId;
+    let resolvedStudentId: string | undefined = studentId;
 
     // Security scoping for students
-    if (req.user.role === 'student') {
-        const student = await this.entityManager.getRepository(Student).findOne({
-            where: [{ id: req.user.studentId || undefined, tenantId: req.user.tenantId }, { userId: req.user.id, tenantId: req.user.tenantId }],
-            select: ['id']
-        });
-        if (student) {
-            resolvedStudentId = student.id;
-        } else {
-            return [];
-        }
+    if (req.user.role === 'student' || req.user.role === 'Student') {
+        const studentIdFromService = await this.studentsService.resolveStudentId(req.user.id, req.user.tenantId);
+        if (!studentIdFromService) return [];
+        resolvedStudentId = studentIdFromService;
     }
 
     return this.feesService.paymentHistory({ studentId: resolvedStudentId, startDate, endDate, method, type, sectionId, page, limit }, req.user.tenantId);
@@ -88,14 +84,22 @@ export class FeesController {
   @Get('statement/:studentId')
   async getStatement(@Param('studentId') studentId: string, @Request() req: any) {
     // Security scoping for students
-    if (req.user.role === 'student') {
+    if (req.user.role === UserRole.STUDENT) {
+        const resolvedStudentId = await this.studentsService.resolveStudentId(req.user.id, req.user.tenantId);
+        if (!resolvedStudentId) throw new ForbiddenException('Student record linkage not found. Please contact administrator.');
+        
         const student = await this.entityManager.getRepository(Student).findOne({
-            where: [{ id: req.user.studentId || undefined, tenantId: req.user.tenantId }, { userId: req.user.id, tenantId: req.user.tenantId }],
-            select: ['id']
+            where: { id: resolvedStudentId, tenantId: req.user.tenantId }
         });
-        if (!student || student.id !== studentId) {
-            throw new ForbiddenException('You can only view your own fee statement.');
+
+        // Allow if student matches either the primary ID or the userId
+        const isSelf = student && (student.id === studentId || student.userId === studentId);
+        if (!isSelf) {
+            throw new ForbiddenException('Security Block: You can only view your own fee statement.');
         }
+        
+        // Always use the internal student.id for the service call
+        return this.feesService.getStudentStatement(student.id, req.user.tenantId);
     }
     return this.feesService.getStudentStatement(studentId, req.user.tenantId);
   }
@@ -123,14 +127,22 @@ export class FeesController {
   @Get('family/:studentId')
   async getFamilyFinancials(@Param('studentId') studentId: string, @Request() req: any) {
     // Security scoping for students
-    if (req.user.role === 'student') {
+    if (req.user.role === UserRole.STUDENT) {
+        const resolvedStudentId = await this.studentsService.resolveStudentId(req.user.id, req.user.tenantId);
+        if (!resolvedStudentId) throw new ForbiddenException('Student record linkage not found. Please contact administrator.');
+        
         const student = await this.entityManager.getRepository(Student).findOne({
-            where: [{ id: req.user.studentId || undefined, tenantId: req.user.tenantId }, { userId: req.user.id, tenantId: req.user.tenantId }],
-            select: ['id']
+            where: { id: resolvedStudentId, tenantId: req.user.tenantId }
         });
-        if (!student || student.id !== studentId) {
-            throw new ForbiddenException('You can only view your own family financials.');
+
+        // Allow if student matches either the primary ID or the userId
+        const isSelf = student && (student.id === studentId || student.userId === studentId);
+        if (!isSelf) {
+            throw new ForbiddenException('Security Block: You can only view your own family financials.');
         }
+
+        // Always use internal student.id
+        return this.feesService.getFamilyFinancials(student.id, req.user.tenantId);
     }
     return this.feesService.getFamilyFinancials(studentId, req.user.tenantId);
   }
@@ -194,7 +206,7 @@ export class FeesController {
   }
 
   @Post('groups/:id/simulate')
-  simulateGroupBulk(@Param('id') id: string, @Body() dto: { classIds?: string[], sectionIds?: string[], categoryIds?: string[], studentIds?: string[] }, @Request() req: any) {
+  assignFeeGroupSimulation(@Param('id') id: string, @Body() dto: { classIds?: string[], sectionIds?: string[], categoryIds?: string[], studentIds?: string[] }, @Request() req: any) {
     return this.feesService.simulateBulkFeeAssignment(id, dto, req.user.tenantId);
   }
 

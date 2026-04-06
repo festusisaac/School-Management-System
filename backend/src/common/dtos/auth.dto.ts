@@ -32,6 +32,10 @@ export class CreateUserDto {
   @ApiProperty({ enum: UserRole, example: UserRole.STUDENT, description: 'User role' })
   @IsEnum(UserRole)
   role!: UserRole;
+
+  @ApiProperty({ example: 'uuid-v4', description: 'Tenant identifier (optional)', required: false })
+  @IsString()
+  tenantId?: string;
 }
 
 export class LoginDto {

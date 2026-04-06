@@ -64,6 +64,7 @@ export default function OnlineAdmission() {
     const letterRef = React.useRef<HTMLDivElement>(null);
     const [feeGroups, setFeeGroups] = useState<any[]>([]);
     const [selectedFeeGroupIds, setSelectedFeeGroupIds] = useState<string[]>([]);
+    const [feeExclusions, setFeeExclusions] = useState<Record<string, string[]>>({});
     const [showFeeSelection, setShowFeeSelection] = useState(false);
 
     const fetchAdmissions = async () => {
@@ -95,6 +96,7 @@ export default function OnlineAdmission() {
     const handleView = (app: OnlineApplication) => {
         setSelectedApplication(app);
         setSelectedFeeGroupIds([]);
+        setFeeExclusions({});
         setShowFeeSelection(false);
         setIsModalOpen(true);
     };
@@ -109,7 +111,7 @@ export default function OnlineAdmission() {
 
         setActionLoading(true);
         try {
-            await api.approveOnlineAdmission(id, selectedFeeGroupIds);
+            await api.approveOnlineAdmission(id, selectedFeeGroupIds, feeExclusions);
             toast.showSuccess('Application approved successfully! Student record created.');
             fetchAdmissions();
             setIsModalOpen(false);
@@ -120,6 +122,38 @@ export default function OnlineAdmission() {
         } finally {
             setActionLoading(false);
         }
+    };
+
+    const handleToggleFeeGroup = (groupId: string) => {
+        setSelectedFeeGroupIds(prev => {
+            const isSelected = prev.includes(groupId);
+            if (isSelected) {
+                // If unselecting group, clear its exclusions
+                const newExclusions = { ...feeExclusions };
+                delete newExclusions[groupId];
+                setFeeExclusions(newExclusions);
+                return prev.filter(id => id !== groupId);
+            } else {
+                return [...prev, groupId];
+            }
+        });
+    };
+
+    const handleToggleFeeHead = (groupId: string, headId: string) => {
+        setFeeExclusions(prev => {
+            const groupExclusions = prev[groupId] || [];
+            if (groupExclusions.includes(headId)) {
+                return {
+                    ...prev,
+                    [groupId]: groupExclusions.filter(id => id !== headId)
+                };
+            } else {
+                return {
+                    ...prev,
+                    [groupId]: [...groupExclusions, headId]
+                };
+            }
+        });
     };
 
     const handleReject = async (id: string) => {
@@ -441,36 +475,86 @@ export default function OnlineAdmission() {
                                         </div>
                                         
                                         {feeGroups.length > 0 ? (
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-                                                {feeGroups.map((group) => (
-                                                    <label 
-                                                        key={group.id}
-                                                        className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                                                            selectedFeeGroupIds.includes(group.id)
-                                                            ? 'bg-white dark:bg-gray-800 border-primary-500 shadow-sm'
-                                                            : 'bg-gray-50/50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700 opacity-70 grayscale-[0.5]'
-                                                        }`}
-                                                    >
-                                                        <div className="relative flex items-center mt-0.5">
-                                                            <input 
-                                                                type="checkbox"
-                                                                className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                                                                checked={selectedFeeGroupIds.includes(group.id)}
-                                                                onChange={() => {
-                                                                    setSelectedFeeGroupIds(prev => 
-                                                                        prev.includes(group.id) 
-                                                                        ? prev.filter(id => id !== group.id) 
-                                                                        : [...prev, group.id]
-                                                                    );
-                                                                }}
-                                                            />
+                                            <div className="grid grid-cols-1 gap-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                                {feeGroups.map((group) => {
+                                                    const isGroupSelected = selectedFeeGroupIds.includes(group.id);
+                                                    const groupExclusions = feeExclusions[group.id] || [];
+
+                                                    return (
+                                                        <div 
+                                                            key={group.id}
+                                                            className={`flex flex-col rounded-2xl border transition-all overflow-hidden ${
+                                                                isGroupSelected
+                                                                ? 'bg-white dark:bg-gray-800 border-primary-500 shadow-sm'
+                                                                : 'bg-gray-50/50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700 opacity-70 grayscale-[0.5]'
+                                                            }`}
+                                                        >
+                                                            <label className={`flex items-start gap-4 p-4 cursor-pointer transition-colors ${isGroupSelected ? 'bg-primary-50/20 dark:bg-primary-900/10' : 'hover:bg-gray-100/50 dark:hover:bg-gray-800/50'}`}>
+                                                                <div className="relative flex items-center mt-1">
+                                                                    <input 
+                                                                        type="checkbox"
+                                                                        className="w-5 h-5 rounded-lg border-gray-300 text-primary-600 focus:ring-primary-500"
+                                                                        checked={isGroupSelected}
+                                                                        onChange={() => handleToggleFeeGroup(group.id)}
+                                                                    />
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="flex items-center justify-between mb-1">
+                                                                        <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{group.name}</p>
+                                                                        <span className="text-[10px] font-mono bg-white dark:bg-gray-900 px-2 py-0.5 rounded text-gray-500 border border-gray-100 dark:border-gray-700">
+                                                                            {group.heads?.length || 0} Heads
+                                                                        </span>
+                                                                    </div>
+                                                                    <p className="text-[10px] text-gray-500 line-clamp-1">{group.description || 'No description provided'}</p>
+                                                                </div>
+                                                            </label>
+
+                                                            {isGroupSelected && group.heads && group.heads.length > 0 && (
+                                                                <div className="px-4 pb-4 space-y-2 border-t border-primary-100 dark:border-primary-900/30 pt-3 bg-primary-50/10 dark:bg-primary-900/5">
+                                                                    <p className="text-[9px] font-bold text-primary-600 uppercase tracking-widest mb-2">Optional Fee Heads</p>
+                                                                    <div className="grid grid-cols-1 gap-1.5">
+                                                                        {group.heads.map((head: any) => {
+                                                                            const isExcluded = groupExclusions.includes(head.id);
+                                                                            const isMandatory = !head.isOptional;
+
+                                                                            return (
+                                                                                <label
+                                                                                    key={head.id}
+                                                                                    className={`flex items-center justify-between p-2 rounded-lg border transition-all ${
+                                                                                        isExcluded
+                                                                                        ? 'bg-gray-50/50 dark:bg-gray-900/30 border-gray-100 dark:border-gray-800 opacity-60'
+                                                                                        : 'bg-white dark:bg-gray-900 border-primary-100/50 dark:border-primary-900/20'
+                                                                                    }`}
+                                                                                >
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <input
+                                                                                            type="checkbox"
+                                                                                            className="w-3.5 h-3.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500 disabled:opacity-50"
+                                                                                            checked={!isExcluded}
+                                                                                            disabled={isMandatory}
+                                                                                            onChange={() => handleToggleFeeHead(group.id, head.id)}
+                                                                                        />
+                                                                                        <div className="flex flex-col">
+                                                                                            <span className={`text-[11px] font-medium ${isExcluded ? 'text-gray-400 line-through' : 'text-gray-700 dark:text-gray-200'}`}>
+                                                                                                {head.name}
+                                                                                            </span>
+                                                                                            {isMandatory && (
+                                                                                                <span className="text-[7px] text-primary-500 font-bold uppercase tracking-tighter">Mandatory</span>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <span className="text-[10px] font-bold text-gray-500">
+                                                                                        {new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(head.defaultAmount || 0)}
+                                                                                    </span>
+                                                                                </label>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{group.name}</p>
-                                                            <p className="text-[10px] text-gray-500 truncate">{group.heads?.length || 0} Fee Heads</p>
-                                                        </div>
-                                                    </label>
-                                                ))}
+                                                    );
+                                                })}
                                             </div>
                                         ) : (
                                             <div className="text-center py-6 bg-gray-50/50 dark:bg-gray-900/50 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">

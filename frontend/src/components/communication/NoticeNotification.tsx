@@ -16,12 +16,12 @@ export default function NoticeNotification() {
 
     useEffect(() => {
         const userRole = (user?.role || user?.roleObject?.name || '').toLowerCase();
-        if (!user || userRole === 'super administrator') return;
+        if (!user?.id || userRole === 'super administrator') return;
 
         const checkNewNotices = async () => {
             try {
-                const userRole = (user?.role || user?.roleObject?.name || 'student').toLowerCase();
-                const audience = userRole === 'student' || userRole === 'parent' 
+                const role = (user?.role || user?.roleObject?.name || 'student').toLowerCase();
+                const audience = role === 'student' || role === 'parent' 
                     ? NoticeAudience.STUDENTS 
                     : NoticeAudience.STAFF;
 
@@ -30,11 +30,15 @@ export default function NoticeNotification() {
                 
                 if (notices && notices.length > 0) {
                     const latestNotice = notices[0];
-                    const storageKey = `session_notified_notice_${user?.id || 'unknown'}`;
-                    const lastNotifiedId = sessionStorage.getItem(storageKey);
+                    // Use localStorage with a key that includes both user ID and notice ID
+                    // so that a notice is only shown ONCE per user, even across sessions
+                    const storageKey = `notice_seen_${user.id}_${latestNotice.id}`;
+                    const alreadySeen = localStorage.getItem(storageKey);
 
-                    // Only notify if it's a new notice we haven't shown a toast for in THIS session
-                    if (latestNotice.id !== lastNotifiedId) {
+                    if (!alreadySeen) {
+                        // Mark as seen immediately to prevent duplicate toasts
+                        localStorage.setItem(storageKey, new Date().toISOString());
+
                         toast.custom((t) => (
                             <div
                                 className={`${
@@ -61,7 +65,6 @@ export default function NoticeNotification() {
                                 <div className="flex items-stretch border-l border-gray-100 dark:border-gray-700">
                                     <button
                                         onClick={() => {
-                                            sessionStorage.setItem(storageKey, latestNotice.id);
                                             toast.dismiss(t.id);
                                             navigate('/communication/noticeboard');
                                         }}
@@ -71,7 +74,6 @@ export default function NoticeNotification() {
                                     </button>
                                     <button
                                         onClick={() => {
-                                            sessionStorage.setItem(storageKey, latestNotice.id);
                                             toast.dismiss(t.id);
                                         }}
                                         className="px-4 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border-l border-gray-100 dark:border-gray-700 transition-colors"
@@ -88,12 +90,12 @@ export default function NoticeNotification() {
                 }
             } catch (error) {
                 // Silently avoid logging permission errors (staff without permission will just skip)
-                console.debug('Notice check skipped: Unauthorized or error fetching notices');
+                console.debug('Notice check skipped:', error);
             }
         };
 
         // Small delay to let the dashboard render first
-        const timer = setTimeout(checkNewNotices, 1500);
+        const timer = setTimeout(checkNewNotices, 2000);
         return () => clearTimeout(timer);
     }, [user, navigate]);
 

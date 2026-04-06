@@ -9,6 +9,7 @@ import { Timetable } from './entities/timetable.entity';
 import { SubjectTeacher } from './entities/subject-teacher.entity';
 import { ClassSubject } from './entities/class-subject.entity';
 import { SchoolSection } from './entities/school-section.entity';
+import { StudentsModule } from '../students/students.module';
 
 import { AcademicsController } from './controllers/academics.controller';
 import { TimetableController } from './controllers/timetable.controller';
@@ -32,6 +33,7 @@ import { SystemModule } from '../system/system.module';
     forwardRef(() => AuthModule), // Import AuthModule to get access to JwtService for JwtAuthGuard
     forwardRef(() => HrModule), // Import HrModule to access Staff entity for class teacher assignment
     forwardRef(() => SystemModule),
+    forwardRef(() => StudentsModule),
   ],
   controllers: [AcademicsController, TimetableController, SubjectTeacherController, ClassSubjectController, SchoolSectionController],
   providers: [AcademicsService, TimetableService, SubjectTeacherService, ClassSubjectService, SchoolSectionService],
