@@ -224,7 +224,7 @@ export class StudentsService {
                 const parentUser = await this.usersService.findOrCreateUser(parentEmail, {
                     firstName: parent.guardianName || parent.fatherName || 'Parent',
                     lastName: '',
-                    password: parentEmail === studentEmail ? undefined : `Parent@${parent.guardianPhone?.slice(-4) || '1234'}`,
+                    password: parentEmail === studentIdentifier ? undefined : `Parent@${parent.guardianPhone?.slice(-4) || '1234'}`,
                     role: 'parent',
                     roleId: parentRole?.id,
                     tenantId: tenantId

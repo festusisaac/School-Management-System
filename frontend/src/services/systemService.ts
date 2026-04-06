@@ -212,22 +212,22 @@ export const systemService = {
 
     // User Management
     getUsers: async () => {
-        const response = await api.get<any[]>('/system/users');
+        const response = await api.get<any[]>('/users');
         return response;
     },
 
     createUser: async (data: any) => {
-        const response = await api.post<any>('/system/users', data);
+        const response = await api.post<any>('/users', data);
         return response;
     },
 
     updateUser: async (id: string, data: any) => {
-        const response = await api.put<any>(`/system/users/${id}`, data);
+        const response = await api.put<any>(`/users/${id}`, data);
         return response;
     },
 
     deleteUser: async (id: string) => {
-        const response = await api.delete(`/system/users/${id}`);
+        const response = await api.delete(`/users/${id}`);
         return response;
     },
 

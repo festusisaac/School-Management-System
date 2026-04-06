@@ -57,15 +57,21 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto) {
-    this.logger.debug(`Login attempt for email: ${loginDto.email}`);
+    this.logger.debug(`Login attempt for identifier: ${loginDto.email}`);
 
-    const user = await this.usersRepository.findOne({
-      where: { email: loginDto.email },
-      relations: ['roleObject', 'roleObject.permissions'],
-    });
+    // Flexible lookup: check by email OR student admission number OR staff employee ID
+    const user = await this.usersRepository.createQueryBuilder('u')
+      .leftJoinAndSelect('u.roleObject', 'roleObject')
+      .leftJoinAndSelect('roleObject.permissions', 'permissions')
+      .leftJoin('students', 'student', 'student."userId"::text = u.id::text')
+      .leftJoin('staff', 'staff_member', 'staff_member.email = u.email')
+      .where('u.email = :id', { id: loginDto.email })
+      .orWhere('student."admissionNo" = :id', { id: loginDto.email })
+      .orWhere('staff_member.employee_id = :id', { id: loginDto.email })
+      .getOne();
 
     if (!user) {
-      this.logger.warn(`User not found: ${loginDto.email}`);
+      this.logger.warn(`User not found with identifier: ${loginDto.email}`);
       throw new UnauthorizedException('Invalid credentials');
     }
 

@@ -12,8 +12,8 @@ export enum UserRole {
 }
 
 export class CreateUserDto {
-  @ApiProperty({ example: 'user@sms.local', description: 'User email address' })
-  @IsEmail()
+  @ApiProperty({ example: 'user@sms.local or STAFF/001', description: 'User login identifier' })
+  @IsString()
   email!: string;
 
   @ApiProperty({ example: 'password123', description: 'Password (minimum 6 characters)' })
@@ -35,8 +35,8 @@ export class CreateUserDto {
 }
 
 export class LoginDto {
-  @ApiProperty({ example: 'user@sms.local', description: 'User email address' })
-  @IsEmail()
+  @ApiProperty({ example: 'user@sms.local or STAFF/001', description: 'User login identifier' })
+  @IsString()
   email!: string;
 
   @ApiProperty({ example: 'password123', description: 'User password' })
