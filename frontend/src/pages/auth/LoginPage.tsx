@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSystem } from '../../context/SystemContext';
 import api from '../../services/api';
-import { School } from 'lucide-react';
+import { School, Eye, EyeOff } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 
 
@@ -17,14 +17,13 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({})
+  const [showPassword, setShowPassword] = useState(false)
 
   const validateForm = () => {
     const errors: { [key: string]: string } = {}
 
     if (!formData.email) {
-      errors.email = 'Email is required'
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = 'Invalid email format'
+      errors.email = 'Username or Email is required'
     }
 
     if (!formData.password) {
@@ -111,17 +110,17 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label htmlFor="email" className="block text-gray-700 text-sm font-bold mb-2">
-              Email
+              Username / Email
             </label>
             <input
-              type="email"
+              type="text"
               id="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring ${validationErrors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-primary-500'
                 }`}
-              placeholder="Enter your email"
+              placeholder="Enter your email or ID"
             />
             {validationErrors.email && (
               <p className="text-red-500 text-sm mt-1">{validationErrors.email}</p>
@@ -132,16 +131,25 @@ export default function LoginPage() {
             <label htmlFor="password" className="block text-gray-700 text-sm font-bold mb-2">
               Password
             </label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring ${validationErrors.password ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-primary-500'
-                }`}
-              placeholder="Enter your password"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring pr-10 ${validationErrors.password ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-primary-500'
+                  }`}
+                placeholder="Enter your password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
             {validationErrors.password && (
               <p className="text-red-500 text-sm mt-1">{validationErrors.password}</p>
             )}

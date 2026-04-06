@@ -191,7 +191,7 @@ export class StaffService {
         // Handle user account creation if role/enableLogin is provided
         const staffDto = data as any;
         if (staffDto.enableLogin || staffDto.roleId || staffDto.role) {
-            await this.usersService.findOrCreateUser(savedStaff.email, {
+            await this.usersService.findOrCreateUser(savedStaff.employeeId, {
                 firstName: savedStaff.firstName,
                 lastName: savedStaff.lastName,
                 roleId: staffDto.roleId,
@@ -287,7 +287,7 @@ export class StaffService {
         // Handle user account updates if role/enableLogin is provided
         const staffDto = data as any;
         if (staffDto.enableLogin || staffDto.roleId || staffDto.role) {
-            await this.usersService.findOrCreateUser(savedStaff.email, {
+            await this.usersService.findOrCreateUser(savedStaff.employeeId, {
                 firstName: savedStaff.firstName,
                 lastName: savedStaff.lastName,
                 roleId: staffDto.roleId,

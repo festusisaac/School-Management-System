@@ -134,7 +134,7 @@ const AdmissionStatusPage = () => {
                                             <div className="space-y-1">
                                                 <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest block">Username</span>
                                                 <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate block px-2">
-                                                    {application.email}
+                                                    {application.finalAdmissionNo}
                                                 </span>
                                             </div>
                                             <div className="space-y-1 border-l border-emerald-100 dark:border-emerald-800/20">

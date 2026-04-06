@@ -201,11 +201,11 @@ export class StudentsService {
             const studentRole = await this.roleRepository.findOne({ where: { name: 'Student' } });
             const parentRole = await this.roleRepository.findOne({ where: { name: 'Parent' } });
 
-            // Create Student User (Prioritize email, fallback to admission no)
-            const studentEmail = savedStudent.email || `${savedStudent.admissionNo.toLowerCase()}@student.sms`;
+            // Create Student User (Use admissionNo as the login identifier)
+            const studentIdentifier = savedStudent.admissionNo;
             const studentTempPassword = `Student@${savedStudent.admissionNo.split('/').pop()}`;
             
-            const studentUser = await this.usersService.findOrCreateUser(studentEmail, {
+            const studentUser = await this.usersService.findOrCreateUser(studentIdentifier, {
                 firstName: savedStudent.firstName,
                 lastName: savedStudent.lastName || '',
                 password: studentTempPassword,
@@ -224,7 +224,7 @@ export class StudentsService {
                 const parentUser = await this.usersService.findOrCreateUser(parentEmail, {
                     firstName: parent.guardianName || parent.fatherName || 'Parent',
                     lastName: '',
-                    password: `Parent@${parent.guardianPhone?.slice(-4) || '1234'}`,
+                    password: parentEmail === studentEmail ? undefined : `Parent@${parent.guardianPhone?.slice(-4) || '1234'}`,
                     role: 'parent',
                     roleId: parentRole?.id,
                     tenantId: tenantId
@@ -590,7 +590,7 @@ export class StudentsService {
         });
     }
 
-    async findOnlineAdmissionByReference(referenceNumber: string): Promise<OnlineAdmission> {
+    async findOnlineAdmissionByReference(referenceNumber: string): Promise<any> {
         const admission = await this.onlineAdmissionRepository.findOne({
             where: { referenceNumber: referenceNumber.toUpperCase() },
             relations: ['preferredClass'],
@@ -598,6 +598,20 @@ export class StudentsService {
         if (!admission) {
             throw new NotFoundException(`Application with reference ${referenceNumber} not found`);
         }
+
+        // Fetch fee breakdown if approved
+        if (admission.status === 'approved' && admission.admittedStudentId) {
+            try {
+                const statement = await this.feesService.getStudentStatement(admission.admittedStudentId, admission.tenantId);
+                return {
+                    ...admission,
+                    assignedFees: statement.assignedHeads || [],
+                };
+            } catch (e: any) {
+                console.warn('Failed to fetch fee breakdown for admission letter:', e.message);
+            }
+        }
+
         return admission;
     }
 
@@ -628,7 +642,7 @@ export class StudentsService {
         return `${prefix}${year}/${sequence}`;
     }
 
-    async approveOnlineAdmission(id: string, tenantId: string): Promise<Student> {
+    async approveOnlineAdmission(id: string, tenantId: string, feeGroupIds?: string[]): Promise<Student> {
         const admission = await this.findOneOnlineAdmission(id, tenantId);
         if (admission.status === 'approved') {
             throw new Error('Admission already approved');
@@ -662,6 +676,7 @@ export class StudentsService {
             admissionDate: new Date(),
             classId: admission.preferredClassId,
             studentPhoto: admission.passportPhoto,
+            email: admission.email,
             // Security: Force password change on first login
             mustChangePassword: true,
             // Parent/Guardian contextual mapping
@@ -669,6 +684,7 @@ export class StudentsService {
             fatherPhone: (admission.guardianRelation || '').toLowerCase() === 'father' ? admission.guardianPhone : undefined,
             motherName: (admission.guardianRelation || '').toLowerCase() === 'mother' ? admission.guardianName : undefined,
             motherPhone: (admission.guardianRelation || '').toLowerCase() === 'mother' ? admission.guardianPhone : undefined,
+            feeGroupIds: feeGroupIds,
         };
 
         // Reuse existing create logic which handles parent creation/linking, fee allocation, and user provisioning

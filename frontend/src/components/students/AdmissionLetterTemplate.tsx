@@ -73,16 +73,55 @@ const AdmissionLetterTemplate = forwardRef<HTMLDivElement, AdmissionLetterProps>
                         <span className="font-bold"> {settings?.activeSessionName || '2024/2025'} </span> academic session.
                     </p>
                     <p>
-                        You have been admitted into <span className="font-black">{application.preferredClassName || application.preferredClassId || 'your target class'}</span>.
+                        You have been admitted into <span className="font-black">{(application.preferredClass?.name || application.preferredClassName || application.preferredClassId || 'your target class').toUpperCase()}</span>.
                     </p>
                     <p>
                         This offer is subject to the following conditions:
                     </p>
                     <ul className="list-disc ml-8 space-y-2">
                         <li>Verification of all original documents provided during the online application.</li>
-                        <li>Full payment of the mandatory acceptance fee and tuition as per the school's current fee schedule.</li>
+                        <li>Full payment of the mandatory fees as detailed in the Fee Schedule below.</li>
                         <li>Compliance with the school's rules, regulations, and code of conduct.</li>
                     </ul>
+
+                    {/* Fee Schedule Table */}
+                    {application.assignedFees && application.assignedFees.length > 0 && (
+                        <div className="mt-8 border-2 border-gray-100 rounded-2xl overflow-hidden shadow-sm">
+                            <div className="bg-gray-50 px-6 py-3 border-b-2 border-gray-100 flex items-center justify-between">
+                                <h4 className="text-sm font-black uppercase tracking-widest text-gray-700">Fee Schedule ({settings?.activeSessionName || 'Current Session'})</h4>
+                                <span className="text-[10px] font-bold text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full">Provisional</span>
+                            </div>
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="text-left border-b border-gray-100">
+                                        <th className="px-6 py-3 font-black text-gray-500 uppercase text-[10px] tracking-wider">Fee Description</th>
+                                        <th className="px-6 py-3 font-black text-gray-500 uppercase text-[10px] tracking-wider text-right">Amount ({settings?.currencySymbol || '₦'})</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50">
+                                    {application.assignedFees.map((fee: any, idx: number) => (
+                                        <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
+                                            <td className="px-6 py-3 font-medium text-gray-700">{fee.name}</td>
+                                            <td className="px-6 py-3 text-right font-bold text-gray-900">
+                                                {parseFloat(fee.defaultAmount || fee.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    <tr className="bg-primary-50/30">
+                                        <td className="px-6 py-4 font-black text-primary-900 uppercase text-xs tracking-tight">Total Payable Amount</td>
+                                        <td className="px-6 py-4 text-right font-black text-primary-700 text-lg tracking-tighter">
+                                            {settings?.currencySymbol || '₦'}
+                                            {application.assignedFees.reduce((acc: number, curr: any) => acc + parseFloat(curr.defaultAmount || curr.amount), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div className="px-6 py-2 bg-gray-50 border-t border-gray-100 italic text-[10px] text-gray-500">
+                                * Detailed payment instructions and deadlines will be provided upon your first login to the Student Portal.
+                            </div>
+                        </div>
+                    )}
+
                     <p>
                         Please note that the deadline for the payment of the acceptance fee is <span className="font-bold">two weeks from the date of this letter</span>. 
                         Failure to comply with this timeline may result in the forfeiture of this admission offer.

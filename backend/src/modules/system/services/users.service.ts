@@ -143,14 +143,24 @@ export class UsersService implements OnModuleInit {
     const user = await this.findByEmail(email);
     
     if (user) {
-      // Update existing user role if provided
-      if (details.roleId || details.role || details.tenantId || details.photo) {
-        Object.assign(user, {
-          roleId: details.roleId || user.roleId,
-          role: details.role || user.role,
-          tenantId: details.tenantId || user.tenantId,
-          photo: details.photo || user.photo,
-        });
+      // Update existing user properties if provided
+      const updates: any = {};
+      
+      if (details.roleId) updates.roleId = details.roleId;
+      if (details.role) updates.role = details.role;
+      if (details.tenantId) updates.tenantId = details.tenantId;
+      if (details.photo) updates.photo = details.photo;
+      if (details.firstName) updates.firstName = details.firstName;
+      if (details.lastName) updates.lastName = details.lastName;
+      if (details.mustChangePassword !== undefined) updates.mustChangePassword = details.mustChangePassword;
+
+      // Handle password update for re-provisioning (e.g. newly admitted student)
+      if (details.password) {
+        updates.password = await bcrypt.hash(details.password, 10);
+      }
+
+      if (Object.keys(updates).length > 0) {
+        Object.assign(user, updates);
         return this.usersRepository.save(user);
       }
       return user;

@@ -291,8 +291,12 @@ export class StudentsController {
 
     @Post('online-admissions/:id/approve')
     @Permissions('students:create')
-    approveOnlineAdmission(@Param('id') id: string, @Request() req: any) {
-        return this.studentsService.approveOnlineAdmission(id, req.user.tenantId);
+    approveOnlineAdmission(
+        @Param('id') id: string, 
+        @Body() body: { feeGroupIds?: string[] },
+        @Request() req: any
+    ) {
+        return this.studentsService.approveOnlineAdmission(id, req.user.tenantId, body.feeGroupIds);
     }
 
     // --- Students (Generic Routes) ---

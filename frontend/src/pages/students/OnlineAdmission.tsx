@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DataTable } from '../../components/ui/data-table';
 import { ColumnDef } from '@tanstack/react-table';
-import { CheckCircle, XCircle, Eye, RefreshCw, Users, GraduationCap, FileText, Download, Settings } from 'lucide-react';
+import { CheckCircle, XCircle, Eye, RefreshCw, Users, GraduationCap, FileText, Download, Settings, Wallet } from 'lucide-react';
 import api, { getFileUrl } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { Modal } from '../../components/ui/modal';
@@ -52,6 +52,9 @@ export default function OnlineAdmission() {
     const [actionLoading, setActionLoading] = useState(false);
     const [downloading, setDownloading] = useState(false);
     const letterRef = React.useRef<HTMLDivElement>(null);
+    const [feeGroups, setFeeGroups] = useState<any[]>([]);
+    const [selectedFeeGroupIds, setSelectedFeeGroupIds] = useState<string[]>([]);
+    const [showFeeSelection, setShowFeeSelection] = useState(false);
 
     const fetchAdmissions = async () => {
         setLoading(true);
@@ -67,22 +70,40 @@ export default function OnlineAdmission() {
 
     useEffect(() => {
         fetchAdmissions();
+        fetchFeeGroups();
     }, []);
+
+    const fetchFeeGroups = async () => {
+        try {
+            const groups = await api.getFeeGroups();
+            setFeeGroups(groups || []);
+        } catch (error) {
+            console.error("Failed to fetch fee groups", error);
+        }
+    };
 
     const handleView = (app: OnlineApplication) => {
         setSelectedApplication(app);
+        setSelectedFeeGroupIds([]);
+        setShowFeeSelection(false);
         setIsModalOpen(true);
     };
 
     const handleApprove = async (id: string) => {
-        if (!confirm('Are you sure you want to approve this application? This will create a new student record.')) return;
+        if (!showFeeSelection) {
+            setShowFeeSelection(true);
+            return;
+        }
+
+        if (!confirm('Are you sure you want to approve this application? This will create a new student record and assign selected fees.')) return;
 
         setActionLoading(true);
         try {
-            await api.approveOnlineAdmission(id);
+            await api.approveOnlineAdmission(id, selectedFeeGroupIds);
             toast.showSuccess('Application approved successfully! Student record created.');
             fetchAdmissions();
             setIsModalOpen(false);
+            setShowFeeSelection(false);
         } catch (error: any) {
             console.error("Failed to approve application", error);
             toast.showError('Failed to approve application: ' + (error.response?.data?.message || error.message));
@@ -331,21 +352,95 @@ export default function OnlineAdmission() {
                         </div>
 
                         {selectedApplication.status === 'pending' && hasPermission('students:create') && (
-                            <div className="flex gap-3 pt-6 border-t border-primary-100 dark:border-gray-700">
-                                <button
-                                    onClick={() => handleApprove(selectedApplication.id)}
-                                    disabled={actionLoading}
-                                    className="flex-1 bg-primary-600 text-white font-bold py-3 rounded-2xl hover:bg-primary-700 disabled:opacity-50 shadow-lg shadow-primary-600/20 transition-all active:scale-95"
-                                >
-                                    Approve Candidate
-                                </button>
-                                <button
-                                    onClick={() => handleReject(selectedApplication.id)}
-                                    disabled={actionLoading}
-                                    className="flex-1 bg-rose-50 text-rose-600 font-bold py-3 rounded-2xl hover:bg-rose-100 disabled:opacity-50 transition-all"
-                                >
-                                    Reject
-                                </button>
+                            <div className="pt-6 border-t border-primary-100 dark:border-gray-700 space-y-6">
+                                {/* Fee Selection Section */}
+                                {showFeeSelection && (
+                                    <div className="bg-primary-50/50 dark:bg-primary-900/10 border border-primary-100 dark:border-primary-900/30 rounded-2xl p-6 animate-in fade-in slide-in-from-top-4 duration-300">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h4 className="text-sm font-bold text-primary-900 dark:text-primary-100 flex items-center gap-2">
+                                                <Wallet className="w-4 h-4" /> 
+                                                Step 2: Assign Fee Groups
+                                            </h4>
+                                            <button 
+                                                onClick={() => setShowFeeSelection(false)}
+                                                className="text-[10px] font-bold text-primary-600 uppercase hover:underline"
+                                            >
+                                                Back to Details
+                                            </button>
+                                        </div>
+                                        
+                                        {feeGroups.length > 0 ? (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                                                {feeGroups.map((group) => (
+                                                    <label 
+                                                        key={group.id}
+                                                        className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                                                            selectedFeeGroupIds.includes(group.id)
+                                                            ? 'bg-white dark:bg-gray-800 border-primary-500 shadow-sm'
+                                                            : 'bg-gray-50/50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700 opacity-70 grayscale-[0.5]'
+                                                        }`}
+                                                    >
+                                                        <div className="relative flex items-center mt-0.5">
+                                                            <input 
+                                                                type="checkbox"
+                                                                className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                                                checked={selectedFeeGroupIds.includes(group.id)}
+                                                                onChange={() => {
+                                                                    setSelectedFeeGroupIds(prev => 
+                                                                        prev.includes(group.id) 
+                                                                        ? prev.filter(id => id !== group.id) 
+                                                                        : [...prev, group.id]
+                                                                    );
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{group.name}</p>
+                                                            <p className="text-[10px] text-gray-500 truncate">{group.heads?.length || 0} Fee Heads</p>
+                                                        </div>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-6 bg-gray-50/50 dark:bg-gray-900/50 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
+                                                <p className="text-xs text-gray-500 italic">No fee groups configured. Please configure them in Finance Settings.</p>
+                                            </div>
+                                        )}
+                                        
+                                        <p className="text-[10px] text-primary-600 font-medium mt-4 bg-primary-100/50 dark:bg-primary-900/20 p-2 rounded-lg">
+                                            Tip: Selected fee groups will be automatically allocated to the student once approved.
+                                        </p>
+                                    </div>
+                                )}
+
+                                <div className="flex gap-3">
+                                    {!showFeeSelection ? (
+                                        <>
+                                            <button
+                                                onClick={() => handleApprove(selectedApplication.id)}
+                                                disabled={actionLoading}
+                                                className="flex-1 bg-emerald-600 text-white font-bold py-4 rounded-2xl hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+                                            >
+                                                <CheckCircle className="w-5 h-5" /> Proceed to Approval
+                                            </button>
+                                            <button
+                                                onClick={() => handleReject(selectedApplication.id)}
+                                                disabled={actionLoading}
+                                                className="flex-1 bg-rose-50 text-rose-600 font-bold py-4 rounded-2xl hover:bg-rose-100 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                                            >
+                                                <XCircle className="w-5 h-5" /> Reject
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <button
+                                            onClick={() => handleApprove(selectedApplication.id)}
+                                            disabled={actionLoading}
+                                            className="w-full bg-primary-600 text-white font-bold py-4 rounded-2xl hover:bg-primary-700 shadow-xl shadow-primary-600/30 transition-all active:scale-95 flex items-center justify-center gap-2"
+                                        >
+                                            <CheckCircle className="w-5 h-5" /> Finalize & Create Student Record
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>
