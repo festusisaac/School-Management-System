@@ -36,12 +36,32 @@ const CommunicationTemplates = () => {
   });
 
   const placeholders = [
-    { label: 'Student Name', value: '{student_name}' },
+    // Student
+    { label: 'Full Name', value: '{student_name}' },
+    { label: 'First Name', value: '{first_name}' },
     { label: 'Admission No', value: '{admission_no}' },
+    { label: 'Roll Number', value: '{roll_no}' },
+    { label: 'Class Name', value: '{class_name}' },
+    { label: 'Section Name', value: '{section_name}' },
+    // Guardian
     { label: 'Guardian Name', value: '{guardian_name}' },
-    { label: 'Class', value: '{class_name}' },
+    { label: 'Guardian Phone', value: '{guardian_phone}' },
+    { label: 'Father Name', value: '{father_name}' },
+    { label: 'Mother Name', value: '{mother_name}' },
+    // Finance
     { label: 'Fee Balance', value: '{fee_balance}' },
+    // Staff
+    { label: 'Employee ID', value: '{employee_id}' },
+    { label: 'Department', value: '{department_name}' },
+    // System
     { label: 'School Name', value: '{school_name}' },
+    { label: 'School Phone', value: '{school_phone}' },
+    { label: 'School Email', value: '{school_email}' },
+    { label: 'School Address', value: '{school_address}' },
+    { label: 'Portal URL', value: '{portal_url}' },
+    { label: 'Active Term', value: '{active_term}' },
+    { label: 'Active Session', value: '{active_session}' },
+    { label: 'Today\'s Date', value: '{current_date}' },
   ];
 
   useEffect(() => {
@@ -125,11 +145,14 @@ const CommunicationTemplates = () => {
     }
   };
 
+  const [lastFocusedField, setLastFocusedField] = useState<'subject' | 'body'>('body');
+
   const insertPlaceholder = (value: string) => {
     setFormData(prev => ({
       ...prev,
-      body: prev.body + value
+      [lastFocusedField]: (prev[lastFocusedField] || '') + value
     }));
+    toast.showSuccess(`Inserted ${value} into ${lastFocusedField}`);
   };
 
   const filteredTemplates = templates
@@ -339,6 +362,7 @@ const CommunicationTemplates = () => {
                           type="text"
                           required
                           value={formData.subject}
+                          onFocus={() => setLastFocusedField('subject')}
                           onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                           placeholder="Enter email subject"
                           className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
@@ -358,6 +382,7 @@ const CommunicationTemplates = () => {
                       <textarea
                         required
                         value={formData.body}
+                        onFocus={() => setLastFocusedField('body')}
                         onChange={(e) => setFormData({ ...formData, body: e.target.value })}
                         rows={8}
                         placeholder={formData.type === MessageTemplateType.EMAIL ? "Dear {student_name}, ..." : "Hi {student_name}, ..."}
@@ -375,16 +400,16 @@ const CommunicationTemplates = () => {
                     <p className="text-[11px] text-gray-500 mb-4 leading-relaxed">
                       Click a tag to insert it into the message body at the current cursor position.
                     </p>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
                       {placeholders.map((ph) => (
                         <button
                           key={ph.value}
                           type="button"
                           onClick={() => insertPlaceholder(ph.value)}
-                          className="w-full flex items-center justify-between px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-xs hover:border-primary-500 hover:text-primary-600 dark:hover:text-primary-400 transition-all text-gray-700 dark:text-gray-300 shadow-sm"
+                          className="w-full flex items-center justify-between px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-[11px] hover:border-primary-500 hover:text-primary-600 dark:hover:text-primary-400 transition-all text-gray-700 dark:text-gray-300 shadow-sm group"
                         >
-                          <span className="font-medium">{ph.label}</span>
-                          <span className="text-[10px] font-mono text-gray-400">{ph.value}</span>
+                          <span className="font-semibold text-left truncate">{ph.label}</span>
+                          <span className="text-[9px] font-mono text-gray-400 group-hover:text-primary-500 flex-shrink-0 ml-2">{ph.value}</span>
                         </button>
                       ))}
                     </div>

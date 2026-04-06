@@ -1,9 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { DataTable } from '../../components/ui/data-table';
 import { ColumnDef } from '@tanstack/react-table';
-import { Eye, Edit, Trash2, LayoutGrid, List as ListIcon, Search, MoreVertical, Phone, Upload, Download, Plus } from 'lucide-react';
+import { Eye, Edit, Trash2, LayoutGrid, List as ListIcon, Search, MoreVertical, Phone, Upload, Download, Plus, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api, { getFileUrl } from '../../services/api';
+import { Modal } from '../../components/ui/modal';
+import { useToast } from '../../context/ToastContext';
 import { TablePagination } from '../../components/ui/TablePagination';
 import { usePermissions } from '../../hooks/usePermissions';
 import { clsx } from 'clsx';
@@ -43,6 +45,12 @@ export default function StudentDirectory() {
         keyword: ''
     });
     const [showImportModal, setShowImportModal] = useState(false);
+    const toast = useToast();
+    const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
+    const [studentToDeactivate, setStudentToDeactivate] = useState<Student | null>(null);
+    const [deactivateReasons, setDeactivateReasons] = useState<any[]>([]);
+    const [selectedReasonId, setSelectedReasonId] = useState('');
+    const [deactivating, setDeactivating] = useState(false);
 
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
@@ -62,12 +70,14 @@ export default function StudentDirectory() {
 
     const fetchInitialData = async () => {
         try {
-            const [classesRes, sectionsRes] = await Promise.all([
+            const [classesRes, sectionsRes, reasonsRes] = await Promise.all([
                 api.getClasses(),
-                api.getSections()
+                api.getSections(),
+                api.getDeactivateReasons()
             ]);
             setClasses(classesRes || []);
             setSections(sectionsRes || []);
+            setDeactivateReasons(reasonsRes || []);
         } catch (error) {
             console.error("Failed to fetch metadata", error);
         }
@@ -187,7 +197,14 @@ export default function StudentDirectory() {
                             </Link>
                         )}
                         {hasPermission('students:delete') && (
-                            <button className="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-red-600 dark:hover:text-red-400 transition-colors" title="Delete" onClick={() => { if (window.confirm('Delete student?')) api.deleteStudent(row.original.id).then(fetchStudents) }}>
+                            <button 
+                                className="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-red-600 dark:hover:text-red-400 transition-colors" 
+                                title="Deactivate" 
+                                onClick={() => {
+                                    setStudentToDeactivate(row.original);
+                                    setIsDeactivateModalOpen(true);
+                                }}
+                            >
                                 <Trash2 className="w-4 h-4" />
                             </button>
                         )}
@@ -391,14 +408,13 @@ export default function StudentDirectory() {
                                                     <button
                                                         onClick={() => {
                                                             setOpenMenuId(null);
-                                                            if (window.confirm('Delete student?')) {
-                                                                api.deleteStudent(student.id).then(fetchStudents);
-                                                            }
+                                                            setStudentToDeactivate(student);
+                                                            setIsDeactivateModalOpen(true);
                                                         }}
-                                                        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors text-left"
+                                                        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors text-left font-medium"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
-                                                        Delete Student
+                                                        Deactivate Student
                                                     </button>
                                                 )}
                                             </div>
@@ -477,6 +493,76 @@ export default function StudentDirectory() {
                     }} 
                 />
             )}
+
+            {/* Deactivation Modal */}
+            <Modal
+                isOpen={isDeactivateModalOpen}
+                onClose={() => {
+                    setIsDeactivateModalOpen(false);
+                    setStudentToDeactivate(null);
+                    setSelectedReasonId('');
+                }}
+                title={`Deactivate Student: ${studentToDeactivate?.firstName} ${studentToDeactivate?.lastName || ''}`}
+            >
+                <div className="space-y-4">
+                    <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl flex items-start gap-3">
+                        <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+                        <div className="text-sm text-amber-800 dark:text-amber-200">
+                            <p className="font-bold mb-1">Warning</p>
+                            <p>Deactivating this student will revoke their portal access. All academic and financial records will remain intact for historical purposes.</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Select Deactivation Reason</label>
+                        <select
+                            value={selectedReasonId}
+                            onChange={(e) => setSelectedReasonId(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800 outline-none focus:ring-2 focus:ring-primary-500"
+                        >
+                            <option value="">Select a reason...</option>
+                            {deactivateReasons.map(r => (
+                                <option key={r.id} value={r.id}>{r.reason}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+                        <button
+                            onClick={() => {
+                                setIsDeactivateModalOpen(false);
+                                setStudentToDeactivate(null);
+                                setSelectedReasonId('');
+                            }}
+                            className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={async () => {
+                                if (!studentToDeactivate) return;
+                                setDeactivating(true);
+                                try {
+                                    await api.deactivateStudent(studentToDeactivate.id, selectedReasonId || undefined);
+                                    toast.showSuccess(`${studentToDeactivate.firstName} deactivated successfully`);
+                                    setIsDeactivateModalOpen(false);
+                                    setStudentToDeactivate(null);
+                                    setSelectedReasonId('');
+                                    fetchStudents();
+                                } catch (error: any) {
+                                    toast.showError('Failed to deactivate: ' + (error.response?.data?.message || error.message));
+                                } finally {
+                                    setDeactivating(false);
+                                }
+                            }}
+                            disabled={deactivating}
+                            className="px-6 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-all shadow-md shadow-red-600/20 disabled:opacity-50"
+                        >
+                            {deactivating ? 'Deactivating...' : 'Confirm Deactivation'}
+                        </button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 }

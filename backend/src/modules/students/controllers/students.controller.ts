@@ -337,7 +337,26 @@ export class StudentsController {
     @Permissions('students:delete')
     async remove(@Param('id') id: string, @Request() req: any) {
         await this.validateStudentAccess(id, req.user.tenantId, req.user);
-        return this.studentsService.remove(id, req.user.tenantId);
+        // We now perform a deactivation instead of a hard removal to preserve historical records.
+        return this.studentsService.deactivate(id, req.user.tenantId);
+    }
+
+    @Patch(':id/deactivate')
+    @Permissions('students:delete')
+    async deactivate(
+        @Param('id') id: string,
+        @Body('reasonId') reasonId: string,
+        @Request() req: any
+    ) {
+        await this.validateStudentAccess(id, req.user.tenantId, req.user);
+        return this.studentsService.deactivate(id, req.user.tenantId, reasonId);
+    }
+
+    @Patch(':id/activate')
+    @Permissions('students:delete')
+    async activate(@Param('id') id: string, @Request() req: any) {
+        await this.validateStudentAccess(id, req.user.tenantId, req.user);
+        return this.studentsService.activate(id, req.user.tenantId);
     }
 
     @Delete('documents/:id')

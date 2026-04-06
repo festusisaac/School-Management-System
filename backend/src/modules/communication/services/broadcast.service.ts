@@ -233,6 +233,7 @@ export class BroadcastService {
     let result = text;
     const data = recipient.data;
     const settings = await this.systemSettingsService.getSettings();
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 
     // Determine the name to use in 'Dear {name}'
     const displayName = data.firstName 
@@ -240,20 +241,49 @@ export class BroadcastService {
       : (recipient.name && recipient.name !== 'Guardian' ? recipient.name : 'Recipient');
 
     const placeholders: Record<string, string> = {
+      // General Identity
       '{name}': displayName,
-      '{student_name}': data.firstName ? `${data.firstName} ${data.lastName || ''}`.trim() : (recipient.name || 'Recipient'),
       '{first_name}': data.firstName || (recipient.name?.split(' ')[0]) || 'Recipient',
       '{last_name}': data.lastName || '',
       '{full_name}': data.firstName ? `${data.firstName} ${data.lastName || ''}`.trim() : (recipient.name || 'Recipient'),
+      '{gender}': (data.gender || '').toUpperCase(),
+      '{email}': recipient.email || '',
+      '{phone}': recipient.phone || '',
+      '{mobile_number}': recipient.phone || '',
+
+      // Student Specific
+      '{student_name}': data.firstName ? `${data.firstName} ${data.lastName || ''}`.trim() : (recipient.name || 'Recipient'),
       '{admission_no}': data.admissionNo || '',
       '{admission_number}': data.admissionNo || '',
+      '{roll_no}': data.rollNo || '',
       '{class_name}': data.class?.name || '',
-      '{guardian_name}': data.parent?.guardianName || 'Guardian',
+      '{section_name}': data.section?.name || '',
+      '{admission_date}': data.admissionDate ? new Date(data.admissionDate).toLocaleDateString() : '',
+      
+      // Guardian Specific
+      '{guardian_name}': data.parent?.guardianName || data.guardianName || 'Guardian',
+      '{guardian_phone}': data.parent?.guardianPhone || data.guardianPhone || '',
+      '{guardian_email}': data.parent?.guardianEmail || data.guardianEmail || '',
+      '{father_name}': data.parent?.fatherName || data.fatherName || '',
+      '{mother_name}': data.parent?.motherName || data.motherName || '',
+
+      // Staff Specific
+      '{employee_id}': data.employeeId || '',
+      '{department_name}': data.department?.name || '',
+      '{date_of_joining}': data.dateOfJoining ? new Date(data.dateOfJoining).toLocaleDateString() : '',
+
+      // System & School
       '{school_name}': settings.schoolName || 'Our School',
+      '{school_phone}': settings.schoolPhone || '',
+      '{school_email}': settings.schoolEmail || '',
+      '{school_address}': settings.schoolAddress || '',
+      '{portal_url}': frontendUrl,
+      '{current_date}': new Date().toLocaleDateString(),
+      '{current_year}': new Date().getFullYear().toString(),
     };
 
-    // Dynamic Balance resolution if placeholder exists
-    if (text.includes('{fee_balance}') && data.id) {
+    // Dynamic Balance resolution for students
+    if (text.includes('{fee_balance}') && data.id && data.admissionNo) {
       try {
         const balance = await this.feesService.getStudentCurrentBalance(data.id, tenantId);
         const symbol = settings.currencySymbol || '₦';
@@ -263,9 +293,28 @@ export class BroadcastService {
       }
     }
 
-    // Replace placeholders
+    // Dynamic Academic Context (Session/Term)
+    if (text.includes('{active_session}') && settings.currentSessionId) {
+        try {
+            const session = await this.studentRepository.manager.query(
+                'SELECT name FROM academic_sessions WHERE id = $1', [settings.currentSessionId]
+            );
+            placeholders['{active_session}'] = session[0]?.name || '';
+        } catch (e) {}
+    }
+    if (text.includes('{active_term}') && settings.currentTermId) {
+        try {
+            const term = await this.studentRepository.manager.query(
+                'SELECT name FROM academic_terms WHERE id = $1', [settings.currentTermId]
+            );
+            placeholders['{active_term}'] = term[0]?.name || '';
+        } catch (e) {}
+    }
+
+    // Replace placeholders using a global case-insensitive regex
     for (const [key, value] of Object.entries(placeholders)) {
-      result = result.replace(new RegExp(key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), value);
+      const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      result = result.replace(new RegExp(escapedKey, 'gi'), value);
     }
 
     return result;

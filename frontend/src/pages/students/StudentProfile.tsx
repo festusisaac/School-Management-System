@@ -366,6 +366,11 @@ export default function StudentProfile() {
                             <span className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-semibold rounded-full border border-gray-200 dark:border-gray-600">
                                 {student.gender}
                             </span>
+                            {!student.isActive && (
+                                <span className="px-3 py-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-bold rounded-full border border-red-100 dark:border-red-800/30">
+                                    Deactivated
+                                </span>
+                            )}
                         </div>
 
                         <div className="w-full space-y-4 pt-6 border-t border-gray-100 dark:border-gray-700">

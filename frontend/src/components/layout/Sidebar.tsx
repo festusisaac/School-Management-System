@@ -209,7 +209,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             path: '/communication',
             children: [
                 { label: 'Noticeboard', path: '/communication/noticeboard', permission: 'communication:view_notices' },
-                { label: 'Send Message', path: '/communication/broadcast', permission: 'communication:send_broadcast' },
+                { label: 'Send Message', path: '/communication/send-broadcast', permission: 'communication:send_broadcast' },
                 { label: 'Message Templates', path: '/communication/templates', permission: 'communication:manage_templates' },
                 { label: 'Communication History', path: '/communication/logs', permission: 'communication:view_logs' },
                 { label: 'Manage Notices', path: '/communication/manage-notices', permission: 'communication:manage_notices' },

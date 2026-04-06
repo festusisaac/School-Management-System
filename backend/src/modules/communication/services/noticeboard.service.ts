@@ -4,6 +4,7 @@ import { Repository, IsNull, MoreThan, Brackets } from 'typeorm';
 import { Notice, NoticeAudience } from '../entities/notice.entity';
 import { Staff } from '../../hr/entities/staff.entity';
 import { CreateNoticeDto, UpdateNoticeDto } from '../dto/notice.dto';
+import { SystemSettingsService } from '../../system/services/system-settings.service';
 
 @Injectable()
 export class NoticeboardService {
@@ -12,6 +13,7 @@ export class NoticeboardService {
     private readonly noticeRepository: Repository<Notice>,
     @InjectRepository(Staff)
     private readonly staffRepository: Repository<Staff>,
+    private readonly systemSettingsService: SystemSettingsService,
   ) {}
 
   async create(dto: CreateNoticeDto, userId: string, tenantId: string, email?: string): Promise<Notice> {
@@ -69,7 +71,16 @@ export class NoticeboardService {
     query.orderBy('notice.isSticky', 'DESC')
          .addOrderBy('notice.createdAt', 'DESC');
 
-    return await query.getMany();
+    const notices = await query.getMany();
+    
+    // Resolve Placeholders
+    const settings = await this.systemSettingsService.getSettings();
+    for (const notice of notices) {
+      notice.title = await this.resolvePlaceholders(notice.title, settings);
+      notice.content = await this.resolvePlaceholders(notice.content, settings);
+    }
+
+    return notices;
   }
 
   async findAllForAdmin(tenantId: string, schoolSectionId?: string): Promise<Notice[]> {
@@ -87,7 +98,16 @@ export class NoticeboardService {
     query.orderBy('notice.isSticky', 'DESC')
          .addOrderBy('notice.createdAt', 'DESC');
 
-    return await query.getMany();
+    const notices = await query.getMany();
+    
+    // Resolve Placeholders
+    const settings = await this.systemSettingsService.getSettings();
+    for (const notice of notices) {
+      notice.title = await this.resolvePlaceholders(notice.title, settings);
+      notice.content = await this.resolvePlaceholders(notice.content, settings);
+    }
+
+    return notices;
   }
 
   async findOne(id: string, tenantId: string): Promise<Notice> {
@@ -100,7 +120,52 @@ export class NoticeboardService {
       throw new NotFoundException(`Notice with ID ${id} not found`);
     }
 
+    const settings = await this.systemSettingsService.getSettings();
+    notice.title = await this.resolvePlaceholders(notice.title, settings);
+    notice.content = await this.resolvePlaceholders(notice.content, settings);
+
     return notice;
+  }
+
+  private async resolvePlaceholders(text: string, settings: any): Promise<string> {
+    if (!text) return text;
+    let result = text;
+    
+    const placeholders: Record<string, string> = {
+      '{school_name}': settings.schoolName || 'Our School',
+      '{school_phone}': settings.schoolPhone || '',
+      '{school_email}': settings.schoolEmail || '',
+      '{school_address}': settings.schoolAddress || '',
+      '{portal_url}': process.env.FRONTEND_URL || 'http://localhost:3000',
+      '{current_date}': new Date().toLocaleDateString(),
+      '{current_year}': new Date().getFullYear().toString(),
+    };
+
+    // Dynamic Academic Context
+    if (text.includes('{active_session}') && settings.currentSessionId) {
+        try {
+            const session = await this.noticeRepository.manager.query(
+                'SELECT name FROM academic_sessions WHERE id = $1', [settings.currentSessionId]
+            );
+            placeholders['{active_session}'] = session[0]?.name || '';
+        } catch (e) {}
+    }
+    if (text.includes('{active_term}') && settings.currentTermId) {
+        try {
+            const term = await this.noticeRepository.manager.query(
+                'SELECT name FROM academic_terms WHERE id = $1', [settings.currentTermId]
+            );
+            placeholders['{active_term}'] = term[0]?.name || '';
+        } catch (e) {}
+    }
+
+    // Replace
+    for (const [key, value] of Object.entries(placeholders)) {
+      const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      result = result.replace(new RegExp(escapedKey, 'gi'), value);
+    }
+
+    return result;
   }
 
   async update(id: string, dto: UpdateNoticeDto, tenantId: string): Promise<Notice> {

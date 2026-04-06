@@ -40,6 +40,19 @@ export default function DeactivatedStudents() {
         fetchDeactivatedStudents();
     }, []);
 
+    const handleEnable = async (id: string, name: string) => {
+        if (!confirm(`Are you sure you want to re-activate ${name}?`)) return;
+
+        try {
+            await api.activateStudent(id);
+            toast.showSuccess(`Student ${name} has been re-activated.`);
+            fetchDeactivatedStudents();
+        } catch (error: any) {
+            console.error("Failed to re-activate student", error);
+            toast.showError("Failed to re-activate student: " + (error.response?.data?.message || 'Error occurred'));
+        }
+    };
+
     const columns: ColumnDef<DeactivatedStudent>[] = [
         { accessorKey: 'admissionNo', header: 'Admission No' },
         { accessorKey: 'firstName', header: 'Name', cell: ({ row }) => `${row.original.firstName} ${row.original.lastName || ''}` },
@@ -61,12 +74,12 @@ export default function DeactivatedStudents() {
         },
         {
             id: 'actions',
-            cell: () => hasPermission('students:delete') ? (
+            cell: ({ row }) => hasPermission('students:delete') ? (
                 <button
-                    onClick={() => toast.showInfo('Enable functionality to be implemented')}
-                    className="text-primary-600 hover:underline flex items-center gap-1"
+                    onClick={() => handleEnable(row.original.id, `${row.original.firstName} ${row.original.lastName || ''}`)}
+                    className="text-primary-600 hover:underline flex items-center gap-1 font-medium"
                 >
-                    <RefreshCw className="w-3 h-3" /> Enable
+                    <RefreshCw className="w-3.5 h-3.5" /> Enable
                 </button>
             ) : null
         }

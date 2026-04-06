@@ -203,10 +203,12 @@ export class StudentsService {
 
             // Create Student User (Prioritize email, fallback to admission no)
             const studentEmail = savedStudent.email || `${savedStudent.admissionNo.toLowerCase()}@student.sms`;
+            const studentTempPassword = `Student@${savedStudent.admissionNo.split('/').pop()}`;
+            
             const studentUser = await this.usersService.findOrCreateUser(studentEmail, {
                 firstName: savedStudent.firstName,
                 lastName: savedStudent.lastName || '',
-                password: `Student@${savedStudent.admissionNo}`,
+                password: studentTempPassword,
                 role: 'student',
                 roleId: studentRole?.id,
                 tenantId: tenantId,
@@ -244,7 +246,7 @@ export class StudentsService {
                 studentUser.email,
                 studentUser.firstName,
                 studentUser.email,
-                `Student@${savedStudent.admissionNo}`,
+                studentTempPassword,
                 'Student'
             );
         } catch (error) {
@@ -436,6 +438,48 @@ export class StudentsService {
     async remove(id: string, tenantId: string): Promise<void> {
         const student = await this.findOne(id, tenantId);
         await this.studentsRepository.remove(student);
+    }
+
+    async deactivate(id: string, tenantId: string, reasonId?: string): Promise<Student> {
+        const student = await this.findOne(id, tenantId);
+        student.isActive = false;
+        student.deactivatedAt = new Date();
+        if (reasonId) {
+            student.deactivateReasonId = reasonId;
+        }
+        
+        await this.studentsRepository.save(student);
+
+        // Deactivate User account if exists
+        if (student.userId) {
+            try {
+                await this.usersService.update(student.userId, { isActive: false });
+            } catch (error: any) {
+                console.warn(`Failed to deactivate associated user ${student.userId} for student ${id}:`, error.message);
+            }
+        }
+
+        return student;
+    }
+
+    async activate(id: string, tenantId: string): Promise<Student> {
+        const student = await this.findOne(id, tenantId);
+        student.isActive = true;
+        student.deactivatedAt = undefined;
+        student.deactivateReasonId = undefined;
+        
+        await this.studentsRepository.save(student);
+
+        // Reactivate User account if exists
+        if (student.userId) {
+            try {
+                await this.usersService.update(student.userId, { isActive: true });
+            } catch (error: any) {
+                console.warn(`Failed to reactivate associated user ${student.userId} for student ${id}:`, error.message);
+            }
+        }
+
+        return student;
     }
 
     async removeDocument(id: string, tenantId: string): Promise<void> {
@@ -642,16 +686,28 @@ export class StudentsService {
             const template = templates.find(t => t.name === 'Admission Template');
 
             if (template) {
+                // Fetch student current balance (from fees allocated during creation)
+                let feeBalance = 0;
+                try {
+                    feeBalance = await this.feesService.getStudentCurrentBalance(student.id, tenantId);
+                } catch (e: any) {
+                    console.error('Failed to fetch initial fee balance for admission email:', e.message);
+                }
+
                 // Prepare Replacements for Template
                 const replacements = {
                     '{first_name}': admission.firstName,
+                    '{student_name}': `${admission.firstName} ${admission.lastName || ''}`.trim(),
+                    '{guardian_name}': admission.guardianName || 'Parent/Guardian',
                     '{admission_no}': admissionNo,
                     '{reference_number}': admission.referenceNumber,
                     '{class_name}': (admission as any).preferredClass?.name || 'N/A',
-                    '{school_name}': settings.schoolName || 'Our School'
+                    '{school_name}': settings.schoolName || 'Our School',
+                    '{portal_url}': process.env.FRONTEND_URL || 'http://localhost:5173',
+                    '{fee_balance}': new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(feeBalance)
                 };
 
-                let processedBody = template.body || '';
+                let processedBody = (template.body || '').replace(/\n/g, '<br />');
                 Object.entries(replacements).forEach(([key, value]) => {
                     processedBody = processedBody.replace(new RegExp(key, 'g'), value);
                 });
@@ -659,7 +715,6 @@ export class StudentsService {
                 // Send Premium Email to Guardian
                 if (admission.email) {
                     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-                    const tempPassword = `Student@${admissionNo.split('/').pop()}`;
 
                     await this.emailService.sendEmail({
                         to: admission.email,
@@ -676,34 +731,26 @@ export class StudentsService {
 
                                 <!-- Main Content -->
                                 <div style="padding: 40px 32px;">
-                                    <div style="font-size: 16px; line-height: 1.7; color: #334155;">
+                                    <div style="font-size: 16px; line-height: 1.8; color: #334155;">
                                         ${processedBody}
                                     </div>
 
-                                    <!-- Credentials Board -->
-                                    <div style="margin-top: 40px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; text-align: center;">
-                                        <div style="margin-bottom: 24px;">
-                                            <span style="font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 4px;">Student ID / Admission No</span>
-                                            <div style="font-size: 24px; font-weight: 900; color: #10b981; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">${admissionNo}</div>
-                                        </div>
-
-                                        <div style="display: flex; gap: 12px; margin-top: 20px; border-top: 1px solid #e2e8f0; pt: 20px;">
-                                            <div style="flex: 1; padding: 15px 10px; text-align: center;">
-                                                <span style="font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; display: block; margin-bottom: 2px;">Username</span>
-                                                <span style="font-size: 14px; font-weight: 700; color: #1e293b; display: block; word-break: break-all;">${admission.email}</span>
-                                            </div>
-                                            <div style="flex: 1; padding: 15px 10px; text-align: center; border-left: 1px solid #e2e8f0;">
-                                                <span style="font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; display: block; margin-bottom: 2px;">Temp Password</span>
-                                                <span style="font-size: 14px; font-weight: 700; color: #1e293b; display: block;">${tempPassword}</span>
+                                    <!-- Security & Next Steps Note -->
+                                    <div style="margin-top: 32px; padding: 24px; background-color: #f0fdf4; border-radius: 16px; border: 1px solid #dcfce7;">
+                                        <div style="display: flex; gap: 12px; align-items: flex-start;">
+                                            <div style="background-color: #10b981; color: #ffffff; width: 24px; height: 24px; border-radius: 50%; display: flex; items-center; justify-center; flex-shrink: 0; font-size: 14px; font-weight: 800;">i</div>
+                                            <div>
+                                                <h4 style="margin: 0 0 4px 0; font-size: 14px; font-weight: 700; color: #065f46;">Access Portal Details</h4>
+                                                <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #065f46;">For security reasons, your login credentials and further admission instructions are hosted on our secure tracking page. Please click the button below to view them.</p>
                                             </div>
                                         </div>
                                     </div>
 
                                     <!-- Action Area -->
                                     <div style="margin-top: 40px; text-align: center;">
-                                        <a href="${frontendUrl}/login" 
+                                        <a href="${frontendUrl}/track-admission?ref=${admission.referenceNumber}" 
                                            style="display: inline-block; background-color: #10b981; color: #ffffff; padding: 18px 40px; border-radius: 14px; font-size: 16px; font-weight: 800; text-decoration: none; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.2);">
-                                            Login to Student Portal
+                                            Track Application Status
                                         </a>
                                         <div style="margin-top: 20px; font-size: 13px; color: #64748b; font-weight: 500; font-style: italic;">
                                             * You will be required to change this password on your first login for security.

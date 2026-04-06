@@ -920,6 +920,14 @@ class ApiService {
     return this.delete<any>(`/students/${id}`)
   }
 
+  async deactivateStudent(id: string, reasonId?: string) {
+    return this.patch<any>(`/students/${id}/deactivate`, { reasonId })
+  }
+
+  async activateStudent(id: string) {
+    return this.patch<any>(`/students/${id}/activate`, {})
+  }
+
   async deleteStudentDocument(id: string) {
     return this.delete<any>(`/students/documents/${id}`)
   }

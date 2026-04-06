@@ -32,7 +32,8 @@ const SendBroadcast = () => {
   const [templates, setTemplates] = useState<MessageTemplate[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
   const toast = useToast();
-  const { activeSectionId } = useSystem();
+  const { activeSectionId, getSchoolInfo } = useSystem();
+  const schoolInfo = getSchoolInfo();
 
   // Form State
   const [formData, setFormData] = useState<SendBroadcastDto>({
@@ -167,18 +168,115 @@ const SendBroadcast = () => {
   const previewBody = useMemo(() => {
     let text = formData.body || 'Your message will appear here...';
     const sampleData: Record<string, string> = {
+      // Identity
+      '{name}': 'John',
+      '{first_name}': 'John',
+      '{last_name}': 'Doe',
+      '{full_name}': 'John Doe',
+      
+      // Student
       '{student_name}': 'John Doe',
       '{admission_no}': 'PHJC/2024/001',
+      '{admission_number}': 'PHJC/2024/001',
+      '{roll_no}': '12',
       '{class_name}': 'JSS 1',
+      '{section_name}': 'A',
+      '{admission_date}': new Date().toLocaleDateString(),
+
+      // Guardian
       '{guardian_name}': 'Mr. Smith',
-      '{school_name}': 'PHJC School',
+      '{guardian_phone}': '08012345678',
+      '{guardian_email}': 'guardian@example.com',
+      '{father_name}': 'Mr. Smith Senior',
+      '{mother_name}': 'Mrs. Smith',
+
+      // Staff
+      '{employee_id}': 'STF/2024/045',
+      '{department_name}': 'Academic',
+      '{date_of_joining}': '01/09/2022',
+
+      // Finance
+      '{fee_balance}': '₦50,000.00',
+
+      // System
+      '{school_name}': schoolInfo.name || 'Our School',
+      '{school_phone}': schoolInfo.phone || '+1 234 567 890',
+      '{school_email}': schoolInfo.email || 'info@school.edu',
+      '{school_address}': schoolInfo.address || '123 Education Lane',
+      '{portal_url}': window.location.origin,
+      '{current_date}': new Date().toLocaleDateString(),
+      '{current_year}': new Date().getFullYear().toString(),
+      '{active_session}': '2025/2026',
+      '{active_term}': 'First Term',
     };
 
     for (const [key, value] of Object.entries(sampleData)) {
-      text = text.replace(new RegExp(key, 'g'), `<span class="bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300 px-1 rounded font-bold">${value}</span>`);
+      const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      text = text.replace(new RegExp(escapedKey, 'gi'), `<span class="bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300 px-1 rounded font-bold">${value}</span>`);
     }
     return text;
   }, [formData.body]);
+
+  const insertTag = (tag: string) => {
+    setFormData(prev => ({
+       ...prev,
+       body: prev.body + tag
+    }));
+    toast.showSuccess(`Inserted ${tag}`);
+  };
+
+  const tagCategories = [
+    {
+       name: 'Student Info',
+       icon: Users,
+       tags: [
+         { label: 'Full Name', value: '{student_name}' },
+         { label: 'First Name', value: '{first_name}' },
+         { label: 'Admission No', value: '{admission_no}' },
+         { label: 'Roll Number', value: '{roll_no}' },
+         { label: 'Class Name', value: '{class_name}' },
+         { label: 'Section Name', value: '{section_name}' },
+       ]
+    },
+    {
+       name: 'Parent / Guardian',
+       icon: ShieldCheck,
+       tags: [
+         { label: 'Guardian Name', value: '{guardian_name}' },
+         { label: 'Guardian Phone', value: '{guardian_phone}' },
+         { label: 'Father Name', value: '{father_name}' },
+         { label: 'Mother Name', value: '{mother_name}' },
+       ]
+    },
+    {
+       name: 'Staff Info',
+       icon: Layout,
+       tags: [
+         { label: 'Full Name', value: '{full_name}' },
+         { label: 'Employee ID', value: '{employee_id}' },
+         { label: 'Department', value: '{department_name}' },
+       ]
+    },
+    {
+       name: 'Financials',
+       icon: Wallet,
+       tags: [
+         { label: 'Outst. Balance', value: '{fee_balance}' },
+       ]
+    },
+    {
+       name: 'School & System',
+       icon: Info,
+       tags: [
+         { label: 'School Name', value: '{school_name}' },
+         { label: 'School Phone', value: '{school_phone}' },
+         { label: 'Portal URL', value: '{portal_url}' },
+         { label: 'Active Term', value: '{active_term}' },
+         { label: 'Active Session', value: '{active_session}' },
+         { label: 'Today\'s Date', value: '{current_date}' },
+       ]
+    }
+  ];
 
   return (
     <div className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
@@ -410,7 +508,44 @@ const SendBroadcast = () => {
                  </div>
                </div>
             </div>
-            
+
+            {/* Placeholder Library */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+               <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                 <h2 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                   <Layout size={16} />
+                   Placeholder Library
+                 </h2>
+                 <span className="px-2 py-0.5 bg-primary-100 text-primary-700 rounded-lg text-[10px] font-bold">Dynamic Tags</span>
+               </div>
+               <div className="p-6">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-6 italic">Click any tag below to insert it at the end of your message.</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                     {tagCategories.map(cat => (
+                       <div key={cat.name} className="space-y-3">
+                          <div className="flex items-center gap-2 text-gray-900 dark:text-white font-bold text-xs uppercase tracking-wider">
+                             <cat.icon size={14} className="text-primary-500" />
+                             {cat.name}
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                             {cat.tags.map(tag => (
+                               <button
+                                 key={tag.value}
+                                 type="button"
+                                 onClick={() => insertTag(tag.value)}
+                                 className="px-2 py-1.5 bg-gray-50 dark:bg-gray-700 hover:bg-primary-50 dark:hover:bg-primary-900/30 border border-gray-200 dark:border-gray-600 hover:border-primary-300 text-[10px] font-mono font-bold rounded transition-colors flex items-center gap-1 group"
+                               >
+                                 <span className="text-gray-400 group-hover:text-primary-500">{tag.value}</span>
+                                 <span className="text-gray-500 dark:text-gray-400 italic font-normal text-[9px]">• {tag.label}</span>
+                               </button>
+                             ))}
+                          </div>
+                       </div>
+                     ))}
+                  </div>
+               </div>
+            </div>
+
             <div className="flex justify-end pt-4">
                <button
                  type="submit"

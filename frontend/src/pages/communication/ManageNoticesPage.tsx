@@ -39,6 +39,27 @@ export default function ManageNoticesPage() {
     isActive: true,
   });
 
+  const [lastFocusedField, setLastFocusedField] = useState<'title' | 'content'>('content');
+
+  const placeholders = [
+    { label: 'School Name', value: '{school_name}' },
+    { label: 'School Phone', value: '{school_phone}' },
+    { label: 'School Email', value: '{school_email}' },
+    { label: 'School Address', value: '{school_address}' },
+    { label: 'Portal URL', value: '{portal_url}' },
+    { label: 'Active Term', value: '{active_term}' },
+    { label: 'Active Session', value: '{active_session}' },
+    { label: 'Today\'s Date', value: '{current_date}' },
+  ];
+
+  const insertTag = (tag: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [lastFocusedField]: (prev[lastFocusedField] || '') + tag
+    }));
+    toast.success(`Inserted ${tag}`);
+  };
+
   useEffect(() => {
     fetchNotices();
   }, [activeSectionId]);
@@ -269,6 +290,7 @@ export default function ManageNoticesPage() {
                         type="text"
                         required
                         value={formData.title}
+                        onFocus={() => setLastFocusedField('title')}
                         onChange={e => setFormData({ ...formData, title: e.target.value })}
                         className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-white font-bold transition-all"
                         placeholder="E.g. Mid-Term Break Notice"
@@ -283,6 +305,7 @@ export default function ManageNoticesPage() {
                         required
                         rows={10}
                         value={formData.content}
+                        onFocus={() => setLastFocusedField('content')}
                         onChange={e => setFormData({ ...formData, content: e.target.value })}
                         className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-700 dark:text-gray-300 font-medium transition-all text-sm leading-relaxed"
                         placeholder="Enter the full message here..."
@@ -374,7 +397,23 @@ export default function ManageNoticesPage() {
                       </div>
 
                       <div className="pt-6 mt-4 border-t border-gray-100 dark:border-gray-700">
-                          <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-[10px] text-blue-700 dark:text-blue-300 leading-relaxed font-semibold">
+                          <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1 mb-3 flex items-center gap-2">
+                             <Tag size={12} /> Available Tags
+                          </label>
+                          <div className="grid grid-cols-1 gap-1.5 max-h-[300px] overflow-y-auto pr-1">
+                             {placeholders.map(p => (
+                               <button
+                                 key={p.value}
+                                 type="button"
+                                 onClick={() => insertTag(p.value)}
+                                 className="flex items-center justify-between px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-[10px] hover:border-primary-500 hover:text-primary-600 transition-all group"
+                               >
+                                 <span className="font-semibold">{p.label}</span>
+                                 <span className="font-mono text-gray-400 group-hover:text-primary-500">{p.value}</span>
+                               </button>
+                             ))}
+                          </div>
+                          <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-[10px] text-blue-700 dark:text-blue-300 leading-relaxed font-semibold mt-4">
                             <Info size={14} className="flex-shrink-0 mt-0.5" />
                             Pinned notices stay at the very top of the board for all users.
                           </div>

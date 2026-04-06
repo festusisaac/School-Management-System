@@ -243,7 +243,8 @@ function AppRoutes() {
               {/* Communication Routes */}
               <Route path="communication">
                 <Route path="templates" element={<Communication.CommunicationTemplates />} />
-                <Route path="broadcast" element={<Communication.SendBroadcast />} />
+                <Route path="broadcast" element={<Navigate to="send-broadcast" replace />} />
+                <Route path="send-broadcast" element={<Communication.SendBroadcast />} />
                 <Route path="logs" element={<Communication.CommunicationLogs />} />
                 <Route path="noticeboard" element={<Communication.Noticeboard />} />
                 <Route path="manage-notices" element={<Communication.ManageNotices />} />
