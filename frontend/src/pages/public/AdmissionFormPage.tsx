@@ -57,6 +57,14 @@ const AdmissionFormPage = () => {
         lastClassPassed: '',
         medicalConditions: '',
         preferredClassId: '',
+        fatherName: '',
+        fatherPhone: '',
+        fatherOccupation: '',
+        motherName: '',
+        motherPhone: '',
+        motherOccupation: '',
+        emergencyContact: '',
+        permanentAddress: '',
     });
 
     // File State
@@ -266,7 +274,26 @@ const AdmissionFormPage = () => {
                                 <FormSelect label="Relation" name="guardianRelation" value={formData.guardianRelation} onChange={handleChange} options={['Father', 'Mother', 'Uncle', 'Aunt', 'Other']} required />
                                 <FormInput label="Email Address" name="email" type="email" value={formData.email || ''} onChange={handleChange} />
                                 <div className="md:col-span-2">
-                                    <FormTextarea label="Resident Address" name="currentAddress" value={formData.currentAddress || ''} onChange={handleChange} rows={2} />
+                                    <FormTextarea label="Current Resident Address" name="currentAddress" value={formData.currentAddress || ''} onChange={handleChange} rows={2} />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <FormTextarea label="Permanent Address" name="permanentAddress" value={formData.permanentAddress || ''} onChange={handleChange} rows={2} />
+                                </div>
+
+                                <div className="md:col-span-2 mt-4 grid grid-cols-2 gap-4">
+                                    <div className="md:col-span-2">
+                                        <div className="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 border-b border-gray-100 pb-2">
+                                            Parental Information (Optional)
+                                        </div>
+                                    </div>
+                                    <FormInput label="Father's Name" name="fatherName" value={formData.fatherName} onChange={handleChange} />
+                                    <FormInput label="Father's Phone" name="fatherPhone" value={formData.fatherPhone} onChange={handleChange} />
+                                    <FormInput label="Mother's Name" name="motherName" value={formData.motherName} onChange={handleChange} />
+                                    <FormInput label="Mother's Phone" name="motherPhone" value={formData.motherPhone} onChange={handleChange} />
+                                </div>
+
+                                <div className="md:col-span-2">
+                                    <FormInput label="Emergency Contact Person & Phone" name="emergencyContact" value={formData.emergencyContact} onChange={handleChange} placeholder="e.g. John Doe - 08012345678" />
                                 </div>
                                 <div className="md:col-span-2 mt-4 space-y-4">
                                     <div className="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">

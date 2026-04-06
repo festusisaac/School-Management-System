@@ -23,10 +23,20 @@ type OnlineApplication = {
     genotype?: string;
     stateOfOrigin?: string;
     nationality?: string;
+    mobileNumber?: string;
+    email?: string;
     guardianName: string;
     guardianPhone: string;
     guardianRelation: string;
+    fatherName?: string;
+    fatherPhone?: string;
+    fatherOccupation?: string;
+    motherName?: string;
+    motherPhone?: string;
+    motherOccupation?: string;
+    emergencyContact?: string;
     currentAddress: string;
+    permanentAddress?: string;
     previousSchoolName?: string;
     lastClassPassed?: string;
     medicalConditions?: string;
@@ -287,18 +297,22 @@ export default function OnlineAdmission() {
                                 <h4 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                     <Users className="w-4 h-4 text-purple-500" /> Guardian Information
                                 </h4>
-                                <div className="space-y-2 text-sm">
-                                    <div className="flex justify-between border-b dark:border-gray-700 pb-1">
-                                        <span className="text-gray-500">Name</span>
+                                <div className="space-y-2 text-sm text-gray-800 dark:text-gray-200">
+                                    <div className="flex justify-between border-b dark:border-gray-800 pb-1.5">
+                                        <span className="text-gray-500 dark:text-gray-400 font-medium">Primary Guardian</span>
                                         <span className="font-bold">{selectedApplication.guardianName} ({selectedApplication.guardianRelation})</span>
                                     </div>
-                                    <div className="flex justify-between border-b dark:border-gray-700 pb-1">
-                                        <span className="text-gray-500">Phone</span>
-                                        <span className="font-bold">{selectedApplication.guardianPhone}</span>
+                                    <div className="flex justify-between border-b dark:border-gray-800 pb-1.5">
+                                        <span className="text-gray-500 dark:text-gray-400 font-medium">Contact Phone</span>
+                                        <span className="font-bold text-primary-600 dark:text-primary-400">{selectedApplication.guardianPhone}</span>
                                     </div>
-                                    <div className="flex flex-col">
-                                        <span className="text-gray-500">Address</span>
-                                        <span className="font-semibold">{selectedApplication.currentAddress || 'N/A'}</span>
+                                    <div className="flex justify-between border-b dark:border-gray-800 pb-1.5">
+                                        <span className="text-gray-500 dark:text-gray-400 font-medium">Email Address</span>
+                                        <span className="font-bold">{selectedApplication.email || 'N/A'}</span>
+                                    </div>
+                                    <div className="flex justify-between border-b dark:border-gray-800 pb-1.5">
+                                        <span className="text-gray-500 dark:text-gray-400 font-medium">Emergency Contact</span>
+                                        <span className="font-bold text-rose-600 dark:text-rose-400">{selectedApplication.emergencyContact || 'N/A'}</span>
                                     </div>
                                 </div>
                             </div>
@@ -306,19 +320,76 @@ export default function OnlineAdmission() {
                                 <h4 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                     <GraduationCap className="w-4 h-4 text-amber-500" /> Academic & Medical
                                 </h4>
-                                <div className="space-y-2 text-sm">
-                                    <div className="flex justify-between border-b dark:border-gray-700 pb-1">
-                                        <span className="text-gray-500">Prev School</span>
+                                <div className="space-y-2 text-sm text-gray-800 dark:text-gray-200">
+                                    <div className="flex justify-between border-b dark:border-gray-800 pb-1.5">
+                                        <span className="text-gray-500 dark:text-gray-400 font-medium">Previous School</span>
                                         <span className="font-bold">{selectedApplication.previousSchoolName || 'N/A'}</span>
                                     </div>
-                                    <div className="flex justify-between border-b dark:border-gray-700 pb-1">
-                                        <span className="text-gray-500">Last Class</span>
+                                    <div className="flex justify-between border-b dark:border-gray-800 pb-1.5">
+                                        <span className="text-gray-500 dark:text-gray-400 font-medium">Last Class Passed</span>
                                         <span className="font-bold">{selectedApplication.lastClassPassed || 'N/A'}</span>
                                     </div>
-                                    <div className="flex flex-col">
-                                        <span className="text-gray-500">Medical Conditions</span>
-                                        <span className="font-semibold text-rose-600">{selectedApplication.medicalConditions || 'NONE'}</span>
+                                    <div className="flex flex-col pt-1">
+                                        <span className="text-gray-500 dark:text-gray-400 font-medium text-[10px] uppercase tracking-wider mb-1">Medical Conditions / Allergies</span>
+                                        <span className="font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20 px-3 py-2 rounded-xl border border-rose-100 dark:border-rose-900/30">
+                                            {selectedApplication.medicalConditions || 'NONE RECORDED'}
+                                        </span>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Parental Details Section */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 dark:bg-slate-900/50 p-6 rounded-3xl border border-slate-100 dark:border-slate-800">
+                            <div className="space-y-3">
+                                <h4 className="text-[11px] font-bold text-blue-500 uppercase tracking-[0.2em] mb-4">Father's Details</h4>
+                                <div className="space-y-2 text-sm">
+                                    <div className="flex flex-col">
+                                        <span className="text-gray-400 text-[10px] font-bold uppercase">Full Name</span>
+                                        <span className="font-bold text-gray-900 dark:text-white">{selectedApplication.fatherName || 'N/A'}</span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-gray-400 text-[10px] font-bold uppercase">Phone</span>
+                                        <span className="font-bold text-gray-900 dark:text-white">{selectedApplication.fatherPhone || 'N/A'}</span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-gray-400 text-[10px] font-bold uppercase">Occupation</span>
+                                        <span className="font-bold text-gray-900 dark:text-white">{selectedApplication.fatherOccupation || 'N/A'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="space-y-3">
+                                <h4 className="text-[11px] font-bold text-purple-500 uppercase tracking-[0.2em] mb-4">Mother's Details</h4>
+                                <div className="space-y-2 text-sm">
+                                    <div className="flex flex-col">
+                                        <span className="text-gray-400 text-[10px] font-bold uppercase">Full Name</span>
+                                        <span className="font-bold text-gray-900 dark:text-white">{selectedApplication.motherName || 'N/A'}</span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-gray-400 text-[10px] font-bold uppercase">Phone</span>
+                                        <span className="font-bold text-gray-900 dark:text-white">{selectedApplication.motherPhone || 'N/A'}</span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-gray-400 text-[10px] font-bold uppercase">Occupation</span>
+                                        <span className="font-bold text-gray-900 dark:text-white">{selectedApplication.motherOccupation || 'N/A'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Addresses Section */}
+                        <div className="space-y-4">
+                            <h4 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <XCircle className="w-4 h-4 text-indigo-500 rotate-45" /> Address Information
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                <div className="p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl">
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">Current Residence</span>
+                                    <p className="font-semibold text-gray-800 dark:text-gray-200">{selectedApplication.currentAddress || 'N/A'}</p>
+                                </div>
+                                <div className="p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl">
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">Permanent Home Address</span>
+                                    <p className="font-semibold text-gray-800 dark:text-gray-200">{selectedApplication.permanentAddress || 'N/A'}</p>
                                 </div>
                             </div>
                         </div>

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseInterceptors, UploadedFiles, UseGuards, Request, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseInterceptors, UploadedFiles, UseGuards, Request, ForbiddenException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { Public } from '@decorators/public.decorator';
 import { JwtAuthGuard } from '@guards/jwt-auth.guard';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
@@ -132,9 +132,11 @@ export class StudentsController {
 
     @Get('profile/me')
     @UseGuards(JwtAuthGuard)
-    getProfile(@Request() req: any) {
+    async getProfile(@Request() req: any) {
         if (!req.user?.tenantId) throw new ForbiddenException('Tenant context missing');
-        return this.studentsService.findOne(req.user.id, req.user.tenantId!);
+        const studentId = await this.studentsService.resolveStudentId(req.user.id, req.user.tenantId);
+        if (!studentId) throw new NotFoundException('Student record not found for this user');
+        return this.studentsService.findOne(studentId, req.user.tenantId!);
     }
 
     @Get('profile/:id')
@@ -143,12 +145,13 @@ export class StudentsController {
         if (!req.user?.tenantId) throw new ForbiddenException('Tenant context missing');
 
         const userRole = (req.user.role || '').toLowerCase();
-        const isSuperAdmin = userRole === 'super administrator';
+        const isSuperAdmin = userRole === 'super administrator' || userRole === 'admin';
         const hasFullAccess = isSuperAdmin || (req.user.permissions || []).includes('students:view_profile');
 
-        if (!hasFullAccess && req.user.id !== id) {
-            const student = await this.studentsService.findByUserId(req.user.id);
-            if (!student || student.id !== id) {
+        if (!hasFullAccess) {
+            // Resolve studentId from userId
+            const resolvedStudentId = await this.studentsService.resolveStudentId(req.user.id, req.user.tenantId);
+            if (resolvedStudentId !== id) {
                 throw new ForbiddenException('You only have permission to view your own profile.');
             }
         }
@@ -388,12 +391,19 @@ export class StudentsController {
     }
 
     @Get('attendance/student/:studentId')
-    getStudentAttendance(
+    async getStudentAttendance(
         @Param('studentId') studentId: string,
         @Query('startDate') startDate: string,
         @Query('endDate') endDate: string,
         @Request() req: any
     ) {
+        // Security scoping for students: Only allow viewing their own attendance
+        if (req.user.role === 'student') {
+            const resolvedStudentId = await this.studentsService.resolveStudentId(req.user.id, req.user.tenantId);
+            if (resolvedStudentId !== studentId) {
+                throw new ForbiddenException('You can only view your own attendance records.');
+            }
+        }
         return this.studentsService.getStudentAttendance(studentId, startDate, endDate, req.user.tenantId);
     }
 

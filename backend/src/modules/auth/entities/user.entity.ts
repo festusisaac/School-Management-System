@@ -7,8 +7,11 @@ import {
   Index,
   ManyToOne,
   JoinColumn,
+  OneToOne,
 } from 'typeorm';
 import { Role } from './role.entity';
+import { Student } from '../../students/entities/student.entity';
+import { Parent } from '../../students/entities/parent.entity';
 
 @Entity('users')
 export class User {
@@ -52,6 +55,12 @@ export class User {
 
   @Column({ type: 'boolean', default: false })
   mustChangePassword!: boolean;
+
+  @OneToOne(() => Student, (student) => student.user)
+  student?: Student;
+
+  @OneToOne(() => Parent, (parent) => parent.user)
+  parent?: Parent;
 
   @CreateDateColumn()
   createdAt!: Date;

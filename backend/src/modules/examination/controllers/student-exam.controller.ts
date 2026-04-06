@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, NotFoundException, BadRequestException, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, NotFoundException, BadRequestException, UseGuards, Request, ForbiddenException } from '@nestjs/common';
 import { ExamSetupService } from '../services/exam-setup.service';
 import { ResultControlService } from '../services/result-control.service';
 import { ResultProcessingService } from '../services/result-processing.service';
@@ -32,7 +32,23 @@ export class StudentExamController {
     async getDashboard(@Param('id') id: string, @Request() req: any) {
         const tenantId = req.user.tenantId;
 
-        // Resolve student (id could be userId)
+        // Security scoping for students
+        if (req.user.role === 'student') {
+            const actualStudent = await this.studentRepo.findOne({
+                where: [{ id: req.user.studentId || undefined, tenantId }, { userId: req.user.id, tenantId }],
+                select: ['id']
+            });
+            const targetStudent = await this.studentRepo.findOne({
+                where: [{ id, tenantId }, { userId: id, tenantId }],
+                select: ['id']
+            });
+
+            if (!actualStudent || !targetStudent || actualStudent.id !== targetStudent.id) {
+                throw new ForbiddenException('You can only view your own exam dashboard.');
+            }
+        }
+
+        // Resolve student
         const student = await this.studentRepo.findOne({
             where: [{ id, tenantId }, { userId: id, tenantId }],
             relations: ['class'],
@@ -122,7 +138,22 @@ export class StudentExamController {
             resolvedTermId: academicTermId,
         });
 
-        // 2. Resolve Student FIRST (id may be userId, not student entity id)
+        // 2. Security scoping for students & Resolve Student
+        if (req.user.role === 'student') {
+            const actualStudent = await this.studentRepo.findOne({
+                where: [{ id: req.user.studentId || undefined, tenantId }, { userId: req.user.id, tenantId }],
+                select: ['id']
+            });
+            const targetStudent = await this.studentRepo.findOne({
+                where: [{ id, tenantId }, { userId: id, tenantId }],
+                select: ['id']
+            });
+
+            if (!actualStudent || !targetStudent || actualStudent.id !== targetStudent.id) {
+                throw new ForbiddenException('You can only access your own results.');
+            }
+        }
+
         const student = await this.studentRepo.findOne({
             where: [{ id, tenantId }, { userId: id, tenantId }],
             relations: ['class']

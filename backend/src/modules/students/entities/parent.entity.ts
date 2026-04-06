@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, Index } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, Index, OneToOne, JoinColumn } from 'typeorm';
 import { Student } from './student.entity';
+import { User } from '../../auth/entities/user.entity';
 
 @Entity('parents')
 export class Parent {
@@ -39,11 +40,18 @@ export class Parent {
     @Column({ nullable: true, type: 'text' })
     guardianAddress?: string;
 
+    @Column({ nullable: true, type: 'text' })
+    permanentAddress?: string;
+
     @Column({ nullable: true })
     emergencyContact?: string;
 
     @Column({ type: 'uuid', nullable: true })
     userId?: string;
+
+    @OneToOne(() => User)
+    @JoinColumn({ name: 'userId' })
+    user?: User;
 
     @OneToMany(() => Student, (student) => student.parent)
     students?: Student[];

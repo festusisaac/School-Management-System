@@ -72,6 +72,82 @@ export class EmailService {
     return this.sendEmail({ to: email, subject: `Login Details - ${schoolName}`, html });
   }
 
+  async sendConsolidatedAdmissionEmail(options: {
+    email: string;
+    guardianName: string;
+    studentName: string;
+    admissionNo: string;
+    parentUsername: string;
+    parentPassword: string;
+    schoolName?: string;
+    portalUrl?: string;
+    admissionLetterHtml?: string;
+  }): Promise<boolean> {
+    const { 
+      email, 
+      guardianName, 
+      studentName, 
+      admissionNo, 
+      parentUsername, 
+      parentPassword, 
+      schoolName = 'Our School', 
+      portalUrl = process.env.FRONTEND_URL || 'http://localhost:3000',
+      admissionLetterHtml
+    } = options;
+
+    const mainContent = admissionLetterHtml || `
+      <p style="font-size: 16px; line-height: 1.6;">Dear <strong>${guardianName}</strong>,</p>
+      <p style="font-size: 16px; line-height: 1.6;">We are pleased to inform you that the admission for <strong>${studentName}</strong> (Admission No: ${admissionNo}) has been successfully processed and approved.</p>
+    `;
+
+    const html = `
+      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; color: #1e293b;">
+        <div style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); padding: 32px; text-align: center;">
+          <h1 style="color: white; margin: 0; font-size: 24px; letter-spacing: -0.5px;">Student Admission Approved</h1>
+          <p style="color: #bfdbfe; margin: 8px 0 0 0; font-size: 16px;">Welcome to ${schoolName}</p>
+        </div>
+        
+        <div style="padding: 32px; background: white;">
+          ${mainContent}
+          
+          <div style="margin: 32px 0; padding: 24px; background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 12px;">
+            <h3 style="margin-top: 0; color: #2563eb; font-size: 18px;">Parent Portal Access</h3>
+            <p style="font-size: 14px; color: #64748b; margin-bottom: 20px;">Use the credentials below to access your personal parent portal to track academic progress and manage fees.</p>
+            
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 8px 0; color: #64748b; width: 100px;">Portal URL:</td>
+                <td style="padding: 8px 0;"><a href="${portalUrl}" style="color: #2563eb; text-decoration: none; font-weight: bold;">${portalUrl}</a></td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #64748b;">Username:</td>
+                <td style="padding: 8px 0; font-family: monospace; font-weight: bold; background: #fff; padding: 4px 8px; border-radius: 4px; border: 1px solid #e2e8f0;">${parentUsername}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #64748b;">Password:</td>
+                <td style="padding: 8px 0; font-family: monospace; font-weight: bold; background: #fff; padding: 4px 8px; border-radius: 4px; border: 1px solid #e2e8f0;">${parentPassword}</td>
+              </tr>
+            </table>
+          </div>
+
+          <p style="font-size: 14px; color: #94a3b8; font-style: italic;">Note: For security reasons, please change your password upon your first login.</p>
+          
+          <div style="margin-top: 32px; border-top: 1px solid #f1f5f9; padding-top: 24px;">
+            <p style="font-size: 16px; margin-bottom: 4px;">Best Regards,</p>
+            <p style="font-size: 16px; font-weight: bold; margin-top: 0;">The Admissions Team</p>
+            <p style="font-size: 14px; color: #64748b;">${schoolName}</p>
+          </div>
+        </div>
+        
+        <div style="background: #f8fafc; padding: 16px; text-align: center; border-top: 1px solid #f1f5f9;">
+          <p style="font-size: 12px; color: #94a3b8; margin: 0;">This is an automated message. Please do not reply directly to this email.</p>
+        </div>
+      </div>
+    `;
+
+    return this.sendEmail({ to: email, subject: `Admission Approved - ${studentName} (${schoolName})`, html });
+  }
+
   async sendPaymentReceiptEmail(email: string, studentName: string, amount: string, reference: string, date: string, method: string, allocations: any[] = [], schoolName = 'School Management System'): Promise<boolean> {
     const html = `<p>Payment of ${amount} received for ${studentName}. Ref: ${reference}</p>`;
     return this.sendEmail({ to: email, subject: `Payment Receipt - ${schoolName}`, html });

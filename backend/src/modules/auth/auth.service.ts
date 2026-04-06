@@ -138,7 +138,7 @@ export class AuthService {
   async getMe(userId: string) {
     const user = await this.usersRepository.findOne({
       where: { id: userId },
-      relations: ['roleObject', 'roleObject.permissions'],
+      relations: ['roleObject', 'roleObject.permissions', 'student', 'parent'],
     });
 
     if (!user) {

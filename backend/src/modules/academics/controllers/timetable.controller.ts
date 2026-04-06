@@ -17,6 +17,8 @@ import { JwtAuthGuard, RolesGuard } from '@guards/jwt-auth.guard';
 import { Roles } from '@decorators/roles.decorator';
 import { UserRole } from '@common/dtos/auth.dto';
 import { Staff } from '@modules/hr/entities/staff.entity';
+import { EntityManager } from 'typeorm';
+import { Student } from '../../students/entities/student.entity';
 
 @Controller('academics/timetable')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -25,6 +27,7 @@ export class TimetableController {
         private readonly timetableService: TimetableService,
         @InjectRepository(Staff)
         private readonly staffRepository: Repository<Staff>,
+        private readonly entityManager: EntityManager,
     ) { }
 
     // --- Period Management ---
@@ -88,8 +91,25 @@ export class TimetableController {
         @Query('sectionId') sectionId: string,
         @Request() req: any
     ) {
+        let resolvedClassId = classId;
+        let resolvedSectionId = sectionId;
+
+        // Data scoping for Students: Force their own class & section
+        if (req.user.role === 'student' || req.user.role === UserRole.STUDENT) {
+            const studentId = req.user.studentId || req.user.id;
+            const student = await this.entityManager.getRepository(Student).findOne({
+                where: { id: studentId, tenantId: req.user.tenantId }
+            });
+            if (student) {
+                resolvedClassId = student.classId!;
+                resolvedSectionId = student.sectionId!;
+            } else {
+                return [];
+            }
+        }
+
         // Data scoping for Teachers: Can only view timetables for assigned classes
-        if (req.user.role === 'teacher') {
+        if (req.user.role === 'teacher' || req.user.role === UserRole.TEACHER) {
             const staffResult = await this.staffRepository.findOne({
                 where: { email: req.user.email, tenantId: req.user.tenantId },
                 select: ['id']
@@ -104,7 +124,7 @@ export class TimetableController {
                 `SELECT 1 FROM "classes" WHERE "id" = $1 AND "classTeacherId" = $2 AND "tenantId" = $3
                  UNION
                  SELECT 1 FROM "subject_teachers" WHERE "classId" = $1 AND "teacherId" = $2 AND "tenantId" = $3`,
-                [classId, staffId, req.user.tenantId]
+                [resolvedClassId, staffId, req.user.tenantId]
             );
 
             if (!classCheck || classCheck.length === 0) {
@@ -112,7 +132,7 @@ export class TimetableController {
             }
         }
 
-        return this.timetableService.getTimetable(classId, sectionId, req.user.tenantId);
+        return this.timetableService.getTimetable(resolvedClassId, resolvedSectionId, req.user.tenantId);
     }
 
     @Get('slots/teacher/today')

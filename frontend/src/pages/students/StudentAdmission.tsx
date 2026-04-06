@@ -33,11 +33,16 @@ export default function StudentAdmission() {
         admissionNo: '',
         rollNo: '',
         firstName: '',
+        middleName: '',
         lastName: '',
         gender: 'Male',
         dob: '',
         religion: '',
         caste: '',
+        nationality: 'Nigerian',
+        stateOfOrigin: '',
+        genotype: '',
+        medicalConditions: '',
         mobileNumber: '',
         email: '',
         admissionDate: new Date().toISOString().split('T')[0],
@@ -79,7 +84,8 @@ export default function StudentAdmission() {
         height: '',
         weight: '',
         asOnDate: '',
-        previousSchool: '',
+        previousSchoolName: '',
+        lastClassPassed: '',
         note: '',
         discountProfileId: '',
         feeGroupIds: [] as string[],
@@ -583,6 +589,10 @@ export default function StudentAdmission() {
                                         <input name="firstName" value={formData.firstName} onChange={handleChange} type="text" className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800" />
                                     </div>
                                     <div className="space-y-1.5">
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Middle Name</label>
+                                        <input name="middleName" value={formData.middleName} onChange={handleChange} type="text" className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800" />
+                                    </div>
+                                    <div className="space-y-1.5">
                                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Last Name</label>
                                         <input name="lastName" value={formData.lastName} onChange={handleChange} type="text" className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800" />
                                     </div>
@@ -619,6 +629,21 @@ export default function StudentAdmission() {
                                         <input name="admissionDate" value={formData.admissionDate} onChange={handleChange} type="date" className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800" />
                                     </div>
                                     <div className="space-y-1.5">
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Nationality</label>
+                                        <input name="nationality" value={formData.nationality} onChange={handleChange} type="text" className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800" />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">State of Origin</label>
+                                        <input name="stateOfOrigin" value={formData.stateOfOrigin} onChange={handleChange} type="text" className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800" />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Genotype</label>
+                                        <select name="genotype" value={formData.genotype} onChange={handleChange} className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800">
+                                            <option value="">Select</option>
+                                            {['AA', 'AS', 'SS', 'AC'].map(g => <option key={g} value={g}>{g}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="space-y-1.5">
                                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Blood Group</label>
                                         <select name="bloodGroup" value={formData.bloodGroup} onChange={handleChange} className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800">
                                             <option value="">Select</option>
@@ -636,6 +661,10 @@ export default function StudentAdmission() {
                                     <div className="space-y-1.5">
                                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Measurement Date</label>
                                         <input name="asOnDate" value={formData.asOnDate} onChange={handleChange} type="date" className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800" />
+                                    </div>
+                                    <div className="col-span-full">
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Medical Conditions / Allergies</label>
+                                        <textarea name="medicalConditions" value={formData.medicalConditions} onChange={handleChange} className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800" rows={2} placeholder="List any medical issues or N/A" />
                                     </div>
                                     <div className="col-span-full">
                                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Note</label>
@@ -1029,9 +1058,13 @@ export default function StudentAdmission() {
                                         </select>
                                         <p className="text-[10px] text-gray-500 mt-1 uppercase tracking-tighter">Applied automated reductions will show in student ledger.</p>
                                     </div>
-                                    <div className="space-y-1.5 col-span-full">
-                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Previous School Details</label>
-                                        <input name="previousSchool" value={formData.previousSchool} onChange={handleChange} type="text" className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800" />
+                                    <div className="space-y-1.5 md:col-span-2">
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Previous School Name</label>
+                                        <input name="previousSchoolName" value={formData.previousSchoolName} onChange={handleChange} type="text" className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800" />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Last Class Passed</label>
+                                        <input name="lastClassPassed" value={formData.lastClassPassed} onChange={handleChange} type="text" className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800" />
                                     </div>
                                 </div>
                             </div>

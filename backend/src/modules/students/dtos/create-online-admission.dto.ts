@@ -63,7 +63,39 @@ export class CreateOnlineAdmissionDto {
 
     @IsString()
     @IsOptional()
+    fatherName?: string;
+
+    @IsString()
+    @IsOptional()
+    fatherPhone?: string;
+
+    @IsString()
+    @IsOptional()
+    fatherOccupation?: string;
+
+    @IsString()
+    @IsOptional()
+    motherName?: string;
+
+    @IsString()
+    @IsOptional()
+    motherPhone?: string;
+
+    @IsString()
+    @IsOptional()
+    motherOccupation?: string;
+
+    @IsString()
+    @IsOptional()
+    emergencyContact?: string;
+
+    @IsString()
+    @IsOptional()
     currentAddress?: string;
+
+    @IsString()
+    @IsOptional()
+    permanentAddress?: string;
 
     @IsString()
     @IsOptional()

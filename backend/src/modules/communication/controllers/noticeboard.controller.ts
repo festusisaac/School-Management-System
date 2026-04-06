@@ -36,7 +36,11 @@ import {
       @Query('schoolSectionId') schoolSectionId?: string,
       @Request() req?: any
     ) {
-      return await this.noticeboardService.findAll(req.user.tenantId, audience, schoolSectionId);
+      let resolvedAudience = audience;
+      if (req.user.role === 'student') {
+          resolvedAudience = NoticeAudience.STUDENTS;
+      }
+      return await this.noticeboardService.findAll(req.user.tenantId, resolvedAudience, schoolSectionId);
     }
   
     @Get('admin')

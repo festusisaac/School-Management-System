@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Query, Param, Delete, Patch, Headers, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, Get, Query, Param, Delete, Patch, Headers, UseGuards, Request, ForbiddenException } from '@nestjs/common';
 import { Public } from '../../../decorators/public.decorator';
 import { FeesService } from '../services/fees.service';
 import { CreatePaymentDto } from '../dtos/create-payment.dto';
@@ -9,6 +9,8 @@ import { CarryForwardDto } from '../dtos/carry-forward.dto';
 import { CreateFeeHeadDto } from '../dtos/create-fee-head.dto';
 import { CreateFeeGroupDto } from '../dtos/create-fee-group.dto';
 import { CreateDiscountProfileDto } from '../dtos/create-discount-profile.dto';
+import { EntityManager } from 'typeorm';
+import { Student } from '../../students/entities/student.entity';
 
 import { BulkReminderDto } from '../dtos/bulk-reminder.dto';
 
@@ -17,7 +19,10 @@ import { JwtAuthGuard } from '../../../guards/jwt-auth.guard';
 @Controller('finance')
 @UseGuards(JwtAuthGuard)
 export class FeesController {
-  constructor(private readonly feesService: FeesService) { }
+  constructor(
+    private readonly feesService: FeesService,
+    private readonly entityManager: EntityManager,
+  ) { }
 
   // --- Offline Fees Collection ---
   @Post('record-payment')
@@ -51,7 +56,7 @@ export class FeesController {
 
   // --- Fees History ---
   @Get('payments')
-  payments(
+  async payments(
     @Query('studentId') studentId?: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
@@ -62,11 +67,36 @@ export class FeesController {
     @Query('limit') limit?: number,
     @Request() req?: any
   ) {
-    return this.feesService.paymentHistory({ studentId, startDate, endDate, method, type, sectionId, page, limit }, req.user.tenantId);
+    let resolvedStudentId = studentId;
+
+    // Security scoping for students
+    if (req.user.role === 'student') {
+        const student = await this.entityManager.getRepository(Student).findOne({
+            where: [{ id: req.user.studentId || undefined, tenantId: req.user.tenantId }, { userId: req.user.id, tenantId: req.user.tenantId }],
+            select: ['id']
+        });
+        if (student) {
+            resolvedStudentId = student.id;
+        } else {
+            return [];
+        }
+    }
+
+    return this.feesService.paymentHistory({ studentId: resolvedStudentId, startDate, endDate, method, type, sectionId, page, limit }, req.user.tenantId);
   }
 
   @Get('statement/:studentId')
-  getStatement(@Param('studentId') studentId: string, @Request() req: any) {
+  async getStatement(@Param('studentId') studentId: string, @Request() req: any) {
+    // Security scoping for students
+    if (req.user.role === 'student') {
+        const student = await this.entityManager.getRepository(Student).findOne({
+            where: [{ id: req.user.studentId || undefined, tenantId: req.user.tenantId }, { userId: req.user.id, tenantId: req.user.tenantId }],
+            select: ['id']
+        });
+        if (!student || student.id !== studentId) {
+            throw new ForbiddenException('You can only view your own fee statement.');
+        }
+    }
     return this.feesService.getStudentStatement(studentId, req.user.tenantId);
   }
 
@@ -91,7 +121,17 @@ export class FeesController {
   }
 
   @Get('family/:studentId')
-  getFamilyFinancials(@Param('studentId') studentId: string, @Request() req: any) {
+  async getFamilyFinancials(@Param('studentId') studentId: string, @Request() req: any) {
+    // Security scoping for students
+    if (req.user.role === 'student') {
+        const student = await this.entityManager.getRepository(Student).findOne({
+            where: [{ id: req.user.studentId || undefined, tenantId: req.user.tenantId }, { userId: req.user.id, tenantId: req.user.tenantId }],
+            select: ['id']
+        });
+        if (!student || student.id !== studentId) {
+            throw new ForbiddenException('You can only view your own family financials.');
+        }
+    }
     return this.feesService.getFamilyFinancials(studentId, req.user.tenantId);
   }
 

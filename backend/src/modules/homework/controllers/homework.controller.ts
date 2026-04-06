@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseInterceptors, UploadedFile, UploadedFiles, UseGuards, Request, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseInterceptors, UploadedFile, UploadedFiles, UseGuards, Request, Logger, ForbiddenException } from '@nestjs/common';
 import { JwtAuthGuard } from '@guards/jwt-auth.guard';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -10,6 +10,8 @@ import { CreateHomeworkDto } from '../dto/create-homework.dto';
 import { UpdateHomeworkDto } from '../dto/update-homework.dto';
 import { SubmitHomeworkDto, GradeSubmissionDto } from '../dto/submit-homework.dto';
 import { EntityManager } from 'typeorm';
+import { Student } from '../../students/entities/student.entity';
+import { UserRole } from '@common/dtos/auth.dto';
 
 @Controller('homework')
 @UseGuards(JwtAuthGuard)
@@ -73,17 +75,34 @@ export class HomeworkController {
     }
 
     @Get('submissions/:id')
-    findOneSubmission(@Param('id') id: string, @Request() req: any) {
-        return this.submissionService.findOne(id, req.user.tenantId);
+    async findOneSubmission(@Param('id') id: string, @Request() req: any) {
+        const submission = await this.submissionService.findOne(id, req.user.tenantId);
+        
+        // Security scoping for students
+        if (req.user.role === 'student' || req.user.role === UserRole.STUDENT) {
+            const studentId = await this.submissionService.resolveStudentId(req.user.studentId || req.user.id, req.user.tenantId);
+            if (submission.studentId !== studentId) {
+                throw new ForbiddenException('You can only view your own submission.');
+            }
+        }
+        return submission;
     }
 
     @Get(':homeworkId/submissions')
-    findByHomework(@Param('homeworkId') homeworkId: string, @Request() req: any) {
+    async findByHomework(@Param('homeworkId') homeworkId: string, @Request() req: any) {
+        // Only teachers and admins can view all submissions for a homework
+        if (req.user.role === 'student' || req.user.role === UserRole.STUDENT) {
+            throw new ForbiddenException('You do not have permission to view all submissions.');
+        }
         return this.submissionService.findByHomework(homeworkId, req.user.tenantId);
     }
 
     @Patch('submissions/:id/grade')
-    grade(@Param('id') id: string, @Body() dto: GradeSubmissionDto, @Request() req: any) {
+    async grade(@Param('id') id: string, @Body() dto: GradeSubmissionDto, @Request() req: any) {
+        // Only teachers and admins can grade submissions
+        if (req.user.role === 'student' || req.user.role === UserRole.STUDENT) {
+            throw new ForbiddenException('You do not have permission to grade submissions.');
+        }
         return this.submissionService.grade(id, dto, req.user.tenantId);
     }
 
@@ -121,6 +140,19 @@ export class HomeworkController {
         if (req.user.role === 'student') {
             const rawId = req.user.studentId || req.user.id;
             studentId = await this.submissionService.resolveStudentId(rawId, req.user.tenantId);
+
+            // Fetch student to get their classId
+            const student = await this.entityManager.getRepository(Student).findOne({
+                where: { id: studentId, tenantId: req.user.tenantId }
+            });
+
+            if (student && student.classId) {
+                // FORCE filtering by student's class
+                query.classId = student.classId;
+            } else {
+                // If no student record or class found, return empty set for security
+                return [];
+            }
         }
 
         // Data scoping for Teachers: See homework for assigned classes

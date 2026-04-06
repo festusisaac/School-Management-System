@@ -56,6 +56,30 @@ export class OnlineAdmission {
     guardianRelation!: string;
 
     @Column({ nullable: true })
+    fatherName?: string;
+
+    @Column({ nullable: true })
+    fatherPhone?: string;
+
+    @Column({ nullable: true })
+    fatherOccupation?: string;
+
+    @Column({ nullable: true })
+    motherName?: string;
+
+    @Column({ nullable: true })
+    motherPhone?: string;
+
+    @Column({ nullable: true })
+    motherOccupation?: string;
+
+    @Column({ nullable: true })
+    emergencyContact?: string;
+
+    @Column({ type: 'text', nullable: true })
+    permanentAddress?: string;
+
+    @Column({ nullable: true })
     currentAddress?: string;
 
     @Column({ nullable: true })

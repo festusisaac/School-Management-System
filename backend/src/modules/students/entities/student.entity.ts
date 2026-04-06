@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany, Index } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany, Index, OneToOne } from 'typeorm';
 import { Class } from '../../academics/entities/class.entity';
 import { Section } from '../../academics/entities/section.entity';
 import { StudentCategory } from './student-category.entity';
@@ -6,6 +6,7 @@ import { StudentHouse } from './student-house.entity';
 import { DeactivateReason } from './deactivate-reason.entity';
 import { Parent } from './parent.entity';
 import { StudentDocument } from './student-document.entity';
+import { User } from '../../auth/entities/user.entity';
 
 @Entity('students')
 export class Student {
@@ -40,6 +41,9 @@ export class Student {
   @Column({ nullable: true })
   lastName?: string;
 
+  @Column({ nullable: true })
+  middleName?: string;
+
   @Column()
   gender!: string;
 
@@ -66,6 +70,15 @@ export class Student {
 
   @Column({ nullable: true })
   bloodGroup?: string;
+
+  @Column({ nullable: true })
+  genotype?: string;
+
+  @Column({ nullable: true })
+  stateOfOrigin?: string;
+
+  @Column({ nullable: true })
+  nationality?: string;
 
   @Column({ nullable: true })
   height?: string;
@@ -109,6 +122,10 @@ export class Student {
 
   @Column({ nullable: true })
   userId?: string;
+
+  @OneToOne(() => User)
+  @JoinColumn({ name: 'userId' })
+  user?: User;
 
   // Parent/Guardian Details
   @Column({ nullable: true })
@@ -170,6 +187,15 @@ export class Student {
 
   @Column({ nullable: true })
   roomNumber?: string;
+
+  @Column({ type: 'text', nullable: true })
+  medicalConditions?: string;
+
+  @Column({ nullable: true })
+  previousSchoolName?: string;
+
+  @Column({ nullable: true })
+  lastClassPassed?: string;
 
   // Status
   @Column({ default: true })

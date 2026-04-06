@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import axios from 'axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, ILike, Between, In, Brackets } from 'typeorm';
@@ -140,6 +140,7 @@ export class StudentsService {
                 guardianEmail: createStudentDto.guardianEmail,
                 guardianAddress: createStudentDto.guardianAddress,
                 emergencyContact: createStudentDto.emergencyContact,
+                permanentAddress: createStudentDto.permanentAddress,
                 tenantId: tenantId,
             });
             parent = await this.parentRepository.save(parentData);
@@ -231,17 +232,58 @@ export class StudentsService {
                 });
                 await this.parentRepository.update(parent.id, { userId: parentUser.id });
                 
-                // Send Parent Welcome Email
-                await this.emailService.sendAdmissionWelcomeEmail(
-                    parentUser.email,
-                    parentUser.firstName,
-                    parentUser.email,
-                    `Parent@${parent.guardianPhone?.slice(-4) || '1234'}`,
-                    'Parent'
-                );
+                // Fetch settings for school/portal info
+                const settings = await this.systemSettingsService.getSettings();
+
+                // --- Consolidated Parent Admission & Login Email ---
+                let admissionLetterHtml: string | undefined = undefined;
+                try {
+                    const templates = await this.messageTemplatesService.findAll(tenantId);
+                    const template = templates.find(t => t.name === 'Admission Template');
+
+                    if (template) {
+                        // Fetch student current balance (from fees allocated during creation)
+                        let feeBalance = 0;
+                        try {
+                            feeBalance = await this.feesService.getStudentCurrentBalance(savedStudent.id, tenantId);
+                        } catch (e: any) {
+                            console.error('Failed to fetch initial fee balance for admission email:', e.message);
+                        }
+
+                        // Prepare Replacements for Template
+                        const replacements = {
+                            '{first_name}': savedStudent.firstName,
+                            '{student_name}': `${savedStudent.firstName} ${savedStudent.lastName || ''}`.trim(),
+                            '{guardian_name}': parent.guardianName || parent.fatherName || 'Parent',
+                            '{admission_no}': savedStudent.admissionNo,
+                            '{school_name}': settings?.schoolName || 'Our School',
+                            '{portal_url}': settings?.officialWebsite || process.env.FRONTEND_URL || 'http://localhost:3000',
+                            '{fee_balance}': new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(feeBalance)
+                        };
+
+                        admissionLetterHtml = (template.body || '').replace(/\n/g, '<br />');
+                        Object.entries(replacements).forEach(([key, value]) => {
+                            admissionLetterHtml = admissionLetterHtml?.replace(new RegExp(key, 'g'), String(value));
+                        });
+                    }
+                } catch (e) {
+                    console.error('Failed to fetch admission template', e);
+                }
+
+                await this.emailService.sendConsolidatedAdmissionEmail({
+                    email: parentUser.email,
+                    guardianName: parentUser.firstName,
+                    studentName: `${savedStudent.firstName} ${savedStudent.lastName || ''}`,
+                    admissionNo: savedStudent.admissionNo,
+                    parentUsername: parentUser.email,
+                    parentPassword: `Parent@${parent.guardianPhone?.slice(-4) || '1234'}`,
+                    schoolName: settings?.schoolName,
+                    portalUrl: settings?.officialWebsite,
+                    admissionLetterHtml: admissionLetterHtml
+                });
             }
 
-            // Send Student Welcome Email
+            // --- Student Welcome Email (Unchanged) ---
             await this.emailService.sendAdmissionWelcomeEmail(
                 studentUser.email,
                 studentUser.firstName,
@@ -495,6 +537,14 @@ export class StudentsService {
         });
     }
 
+    async resolveStudentId(userId: string, tenantId: string): Promise<string | null> {
+        const student = await this.studentsRepository.findOne({
+            where: { userId, tenantId },
+            select: ['id']
+        });
+        return student ? student.id : null;
+    }
+
     // --- Categories ---
 
     async createCategory(dto: CreateStudentCategoryDto, tenantId: string): Promise<StudentCategory> {
@@ -666,11 +716,19 @@ export class StudentsService {
             guardianName: admission.guardianName,
             guardianPhone: admission.guardianPhone,
             guardianRelation: admission.guardianRelation,
-            guardianEmail: admission.email, // Use applicant email as guardian email if not specified
+            guardianEmail: admission.email,
+            permanentAddress: admission.permanentAddress,
+            medicalConditions: admission.medicalConditions,
+            fatherName: admission.fatherName || ((admission.guardianRelation || '').toLowerCase() === 'father' ? admission.guardianName : undefined),
+            fatherPhone: admission.fatherPhone || ((admission.guardianRelation || '').toLowerCase() === 'father' ? admission.guardianPhone : undefined),
+            fatherOccupation: admission.fatherOccupation,
+            motherName: admission.motherName || ((admission.guardianRelation || '').toLowerCase() === 'mother' ? admission.guardianName : undefined),
+            motherPhone: admission.motherPhone || ((admission.guardianRelation || '').toLowerCase() === 'mother' ? admission.guardianPhone : undefined),
+            motherOccupation: admission.motherOccupation,
+            emergencyContact: admission.emergencyContact,
             currentAddress: admission.currentAddress,
             previousSchoolName: admission.previousSchoolName,
             lastClassPassed: admission.lastClassPassed,
-            medicalConditions: admission.medicalConditions,
             // Core Identity
             admissionNo: admissionNo,
             admissionDate: new Date(),
@@ -679,11 +737,6 @@ export class StudentsService {
             email: admission.email,
             // Security: Force password change on first login
             mustChangePassword: true,
-            // Parent/Guardian contextual mapping
-            fatherName: (admission.guardianRelation || '').toLowerCase() === 'father' ? admission.guardianName : undefined,
-            fatherPhone: (admission.guardianRelation || '').toLowerCase() === 'father' ? admission.guardianPhone : undefined,
-            motherName: (admission.guardianRelation || '').toLowerCase() === 'mother' ? admission.guardianName : undefined,
-            motherPhone: (admission.guardianRelation || '').toLowerCase() === 'mother' ? admission.guardianPhone : undefined,
             feeGroupIds: feeGroupIds,
         };
 

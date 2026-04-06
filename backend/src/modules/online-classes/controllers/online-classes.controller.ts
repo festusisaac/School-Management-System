@@ -7,6 +7,8 @@ import { JwtAuthGuard, RolesGuard } from '@guards/jwt-auth.guard';
 import { OnlineClassStatus } from '../entities/online-class.entity';
 import { StaffService } from '@modules/hr/services/staff.service';
 import { UserRole } from '@common/dtos/auth.dto';
+import { EntityManager } from 'typeorm';
+import { Student } from '../../students/entities/student.entity';
 
 @ApiTags('Online Classes')
 @ApiBearerAuth()
@@ -16,6 +18,7 @@ export class OnlineClassesController {
     constructor(
         private readonly onlineClassesService: OnlineClassesService,
         private readonly staffService: StaffService,
+        private readonly entityManager: EntityManager,
     ) {}
 
     @Post()
@@ -34,22 +37,52 @@ export class OnlineClassesController {
         @Query('status') status?: OnlineClassStatus,
     ) {
         let resolvedTeacherId = teacherId;
+        let resolvedClassId = classId;
+
+        // Data scoping for Students: Force their own classId
+        if (req.user.role === UserRole.STUDENT) {
+            const studentId = req.user.studentId || req.user.id;
+            const student = await this.entityManager.getRepository(Student).findOne({
+                where: { id: studentId, tenantId: req.user.tenantId }
+            });
+            if (student) {
+                resolvedClassId = student.classId;
+            } else {
+                return [];
+            }
+        }
+
         // If user is a teacher, force filter by their staffId
         if (req.user.role === UserRole.TEACHER) {
             resolvedTeacherId = await this.staffService.resolveStaffIdByEmail(req.user.email, req.user.tenantId);
         }
-        return this.onlineClassesService.findAll(req.user.tenantId, { classId, subjectId, teacherId: resolvedTeacherId, status });
+        return this.onlineClassesService.findAll(req.user.tenantId, { classId: resolvedClassId, subjectId, teacherId: resolvedTeacherId, status });
     }
 
     @Get('upcoming')
     @ApiOperation({ summary: 'Get upcoming online classes' })
     async findUpcoming(@Request() req: any, @Query('classId') classId?: string) {
         let resolvedTeacherId: string | undefined;
+        let resolvedClassId = classId;
+
+        // Data scoping for Students: Force their own classId
+        if (req.user.role === UserRole.STUDENT) {
+            const studentId = req.user.studentId || req.user.id;
+            const student = await this.entityManager.getRepository(Student).findOne({
+                where: { id: studentId, tenantId: req.user.tenantId }
+            });
+            if (student) {
+                resolvedClassId = student.classId;
+            } else {
+                return [];
+            }
+        }
+
         // If user is a teacher, force filter by their staffId
         if (req.user.role === UserRole.TEACHER) {
             resolvedTeacherId = await this.staffService.resolveStaffIdByEmail(req.user.email, req.user.tenantId);
         }
-        return this.onlineClassesService.findUpcoming(req.user.tenantId, classId, resolvedTeacherId);
+        return this.onlineClassesService.findUpcoming(req.user.tenantId, resolvedClassId, resolvedTeacherId);
     }
 
     @Get(':id')

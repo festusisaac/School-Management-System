@@ -147,7 +147,13 @@ export function TopBar({ onMenuClick }: TopBarProps) {
                             <button 
                                 onClick={() => {
                                     setIsProfileOpen(false);
-                                    navigate('/hr/staff/profile');
+                                    if (user?.role === 'student' || user?.roleObject?.name?.toLowerCase() === 'student') {
+                                        navigate(`/students/profile/${user.student?.id || user.id}`);
+                                    } else if (user?.role === 'parent' || user?.roleObject?.name?.toLowerCase() === 'parent') {
+                                        navigate('/parents/dashboard');
+                                    } else {
+                                        navigate('/hr/staff/profile');
+                                    }
                                 }}
                                 className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                             >
