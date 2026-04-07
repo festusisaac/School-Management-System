@@ -38,6 +38,9 @@ export function TopBar({ onMenuClick }: TopBarProps) {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    const role = (user?.role || user?.roleObject?.name || '').toLowerCase();
+    const isSuperAdmin = role === 'super administrator';
+
     return (
         <header className="h-16 px-6 bg-white/80 dark:bg-gray-900/80 border-b border-gray-100 dark:border-gray-800 backdrop-blur-xl flex items-center justify-between sticky top-0 z-30 shadow-sm lg:shadow-none transition-colors duration-200 print:hidden">
         <div className="flex items-center gap-3">
@@ -83,8 +86,8 @@ export function TopBar({ onMenuClick }: TopBarProps) {
 
 
             <div className="flex items-center gap-3">
-                {/* Global Section Context Switcher */}
-                {availableSections && availableSections.length > 0 && (
+                {/* Global Section Context Switcher - Only visible to Super Administrators */}
+                {isSuperAdmin && availableSections && availableSections.length > 0 && (
                     <div className="hidden sm:flex items-center px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
                         <select 
                             value={activeSectionId}

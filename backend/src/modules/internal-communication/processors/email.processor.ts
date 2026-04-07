@@ -4,6 +4,7 @@ import { Logger, Inject, forwardRef } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import axios from 'axios';
 import { EmailOptions } from '@modules/internal-communication/email.service';
+import { filterValidEmails } from '../../../common/utils/email-validator.util';
 import { SystemSettingsService } from '../../system/services/system-settings.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -131,6 +132,13 @@ export class EmailProcessor {
       if (!fromEmail.includes('@')) {
         fromEmail = `noreply@${fromEmail}`;
       }
+
+      // Final recipients validation: Filter out invalid emails (like admission numbers)
+      const validRecipients = filterValidEmails(options.to);
+      if (validRecipients.length === 0) {
+        this.logger.warn(`Skipping email delivery: No valid email addresses found in 'to' field: ${options.to}`);
+        return true; // Mark as done to avoid retries
+      }
       
       // Get current branding settings
       const settings = await this.systemSettingsService.getSettings();
@@ -148,7 +156,7 @@ export class EmailProcessor {
           'https://api.resend.com/emails',
           {
             from: fromEmail,
-            to: Array.isArray(options.to) ? options.to : [options.to],
+            to: validRecipients,
             subject: options.subject,
             html: formattedHtml,
             text: options.text || options.html, // Fallback text to html if missing
@@ -171,7 +179,7 @@ export class EmailProcessor {
         // Fallback to Legacy SMTP (SES)
         const mailOptions = {
           from: fromEmail,
-          to: options.to,
+          to: validRecipients,
           subject: options.subject,
           html: formattedHtml,
           text: options.text || options.html,

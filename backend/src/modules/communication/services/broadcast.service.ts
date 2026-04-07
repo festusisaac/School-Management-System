@@ -10,6 +10,7 @@ import { SmsService } from '../../internal-communication/sms.service';
 import { FeesService } from '../../finance/services/fees.service';
 import { SystemSettingsService } from '../../system/services/system-settings.service';
 import { SendBroadcastDto, BroadcastTarget } from '../dto/send-broadcast.dto';
+import { isValidEmail } from '../../../common/utils/email-validator.util';
 
 @Injectable()
 export class BroadcastService {
@@ -206,27 +207,29 @@ export class BroadcastService {
   }
 
   private extractStudentTarget(student: Student, includeParents?: boolean): any[] {
-    const targets = [];
-    // Student themselves
-    targets.push({
-      name: `${student.firstName} ${student.lastName || ''}`,
-      email: student.email,
-      phone: student.mobileNumber,
-      data: student
-    });
+    const parent = student.parent;
 
-    // Parents/Guardians if requested
-    if (includeParents && student.parent) {
-      if (student.parent.guardianEmail || student.parent.guardianPhone) {
-        targets.push({
-          name: student.parent.guardianName || 'Guardian',
-          email: student.parent.guardianEmail,
-          phone: student.parent.guardianPhone,
-          data: student // We still keep student data for placeholders
-        });
-      }
+    // 1. Resolve Best Email (Hierarchy: Student -> Guardian)
+    let resolvedEmail = student.email && isValidEmail(student.email) ? student.email : undefined;
+    if (!resolvedEmail && parent?.guardianEmail) {
+      resolvedEmail = parent.guardianEmail;
     }
-    return targets;
+
+    // 2. Resolve Best Phone (Hierarchy: Student -> Guardian -> Father -> Mother)
+    let resolvedPhone = student.mobileNumber;
+    if (!resolvedPhone && parent) {
+      resolvedPhone = parent.guardianPhone || parent.fatherPhone || parent.motherPhone;
+    }
+
+    // 3. Return exactly one "Primary Family Contact" for this student.
+    // We keep the student's name for 'Dear {name}' personalization while using the resolved parent contact.
+    // The user explicitly requested that only one person per student receives the communication.
+    return [{
+      name: `${student.firstName} ${student.lastName || ''}`,
+      email: resolvedEmail,
+      phone: resolvedPhone,
+      data: student
+    }];
   }
 
   private async replacePlaceholders(text: string, recipient: any, tenantId: string): Promise<string> {
