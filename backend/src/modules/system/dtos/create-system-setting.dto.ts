@@ -218,6 +218,54 @@ export class CreateSystemSettingDto {
     @IsOptional()
     flutterwaveSecretKey?: string;
 
+    @IsString()
+    @IsOptional()
+    activePaymentGateway?: string;
+
+    @IsString()
+    @IsOptional()
+    squadPublicKey?: string;
+
+    @IsString()
+    @IsOptional()
+    squadSecretKey?: string;
+
+    @IsString()
+    @IsOptional()
+    monnifyApiKey?: string;
+
+    @IsString()
+    @IsOptional()
+    monnifySecretKey?: string;
+
+    @IsString()
+    @IsOptional()
+    monnifyContractCode?: string;
+
+    @IsString()
+    @IsOptional()
+    remitaMerchantId?: string;
+
+    @IsString()
+    @IsOptional()
+    remitaServiceTypeId?: string;
+
+    @IsString()
+    @IsOptional()
+    remitaApiKey?: string;
+
+    @IsString()
+    @IsOptional()
+    interswitchMerchantCode?: string;
+
+    @IsString()
+    @IsOptional()
+    interswitchPayItemId?: string;
+
+    @IsString()
+    @IsOptional()
+    interswitchSecretKey?: string;
+
     // SEO Settings
     @IsString()
     @IsOptional()

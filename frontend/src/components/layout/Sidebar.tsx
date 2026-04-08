@@ -278,6 +278,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 { label: 'Academic Terms', path: '/settings/terms', permission: 'settings:academic_setup' },
                 { label: 'Roles & Permissions', path: '/settings/roles-permissions', permission: 'settings:roles_permissions' },
                 { label: 'User Management', path: '/settings/users', permission: 'settings:manage_users' },
+                { label: 'Payment Settings', path: '/settings/payments', permission: 'settings:general' },
             ]
         },
     ];

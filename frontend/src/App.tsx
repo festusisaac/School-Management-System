@@ -259,6 +259,7 @@ function AppRoutes() {
                 <Route path="terms" element={<Settings.TermsPage />} />
                 <Route path="roles-permissions" element={<Settings.RolesPermissionsPage />} />
                 <Route path="users" element={<Settings.UsersPage />} />
+                <Route path="payments" element={<Settings.PaymentSettingsPage />} />
               </Route>
 
               {/* Front CMS Routes */}

@@ -168,6 +168,46 @@ export class SystemSetting {
     @Column({ type: 'varchar', nullable: true })
     flutterwaveSecretKey!: string;
 
+    @Column({ type: 'varchar', nullable: true, default: 'none' })
+    activePaymentGateway!: string;
+
+    // Squad (GTCO)
+    @Column({ type: 'varchar', nullable: true })
+    squadPublicKey!: string;
+
+    @Column({ type: 'varchar', nullable: true })
+    squadSecretKey!: string;
+
+    // Monnify
+    @Column({ type: 'varchar', nullable: true })
+    monnifyApiKey!: string;
+
+    @Column({ type: 'varchar', nullable: true })
+    monnifySecretKey!: string;
+
+    @Column({ type: 'varchar', nullable: true })
+    monnifyContractCode!: string;
+
+    // Remita
+    @Column({ type: 'varchar', nullable: true })
+    remitaMerchantId!: string;
+
+    @Column({ type: 'varchar', nullable: true })
+    remitaServiceTypeId!: string;
+
+    @Column({ type: 'varchar', nullable: true })
+    remitaApiKey!: string;
+
+    // Interswitch
+    @Column({ type: 'varchar', nullable: true })
+    interswitchMerchantCode!: string;
+
+    @Column({ type: 'varchar', nullable: true })
+    interswitchPayItemId!: string;
+
+    @Column({ type: 'varchar', nullable: true })
+    interswitchSecretKey!: string;
+
     // SEO Settings
     @Column({ type: 'varchar', nullable: true })
     seoTitle!: string;

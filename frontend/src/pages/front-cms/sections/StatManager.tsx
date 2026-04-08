@@ -66,18 +66,14 @@ const StatManager: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 dark:border-gray-800 pb-6">
-        <div>
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white">Landing Page Statistics</h3>
-          <p className="text-sm text-gray-500">Manage the counters shown below the hero section.</p>
-        </div>
+      <div className="flex items-center justify-between gap-4 mb-6">
+        <div />
       </div>
-
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat) => (
-          <div key={stat.id} className="bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-200 dark:border-gray-800/50 space-y-4 hover:shadow-md transition-all group">
+          <div key={stat.id} className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-100 dark:border-gray-700 space-y-4 hover:shadow-sm transition-all group">
             <div className="flex justify-between items-start">
-              <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center text-primary-600">
+              <div className="w-10 h-10 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600">
                 <BarChart3 size={20} />
               </div>
               <button 
@@ -95,7 +91,7 @@ const StatManager: React.FC = () => {
                   type="text"
                   value={stat.value}
                   onChange={(e) => handleUpdate(stat.id, { value: e.target.value })}
-                  className="w-full bg-gray-50 dark:bg-gray-800 border-none rounded-xl px-3 py-1.5 text-lg font-bold text-primary-600 focus:ring-2 focus:ring-primary-500 transition-all outline-none"
+                  className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-lg font-bold text-primary-600 focus:ring-2 focus:ring-primary-500 transition-all outline-none"
                 />
               </div>
               <div className="space-y-1">
@@ -104,7 +100,7 @@ const StatManager: React.FC = () => {
                   type="text"
                   value={stat.label}
                   onChange={(e) => handleUpdate(stat.id, { label: e.target.value })}
-                  className="w-full bg-gray-50 dark:bg-gray-800 border-none rounded-xl px-3 py-1.5 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest focus:ring-2 focus:ring-primary-500 transition-all outline-none"
+                  className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest focus:ring-2 focus:ring-primary-500 transition-all outline-none"
                 />
               </div>
             </div>
@@ -112,27 +108,27 @@ const StatManager: React.FC = () => {
         ))}
 
         {/* Add New Stat Card */}
-        <form onSubmit={handleCreate} className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 space-y-4 flex flex-col justify-center">
+        <form onSubmit={handleCreate} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-4 flex flex-col justify-center shadow-sm">
           <div className="space-y-3">
             <input
               type="text"
               placeholder="Ex: 500+"
               value={newStat.value}
               onChange={(e) => setNewStat({ ...newStat, value: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all font-bold"
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all font-bold"
             />
             <input
               type="text"
               placeholder="Ex: Global Alumnae"
               value={newStat.label}
               onChange={(e) => setNewStat({ ...newStat, label: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs focus:ring-2 focus:ring-primary-500 outline-none transition-all font-bold"
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs focus:ring-2 focus:ring-primary-500 outline-none transition-all font-bold"
             />
           </div>
           <button
             type="submit"
             disabled={saving || !newStat.label || !newStat.value}
-            className="w-full bg-primary-600 hover:bg-primary-700 text-white py-2.5 rounded-xl font-bold transition-all shadow-md shadow-primary-200 dark:shadow-none flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+            className="w-full bg-primary-600 hover:bg-primary-700 text-white py-2.5 rounded-lg font-bold transition-all shadow-sm flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
           >
             {saving ? <Loader2 className="animate-spin w-4 h-4" /> : <Plus size={18} />}
             Add Stat

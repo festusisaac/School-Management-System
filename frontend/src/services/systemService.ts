@@ -57,6 +57,20 @@ export interface SystemSetting {
     paystackSecretKey?: string;
     flutterwavePublicKey?: string;
     flutterwaveSecretKey?: string;
+    activePaymentGateway?: string;
+    // Add new Nigerian provider fields
+    squadPublicKey?: string;
+    squadSecretKey?: string;
+    monnifyApiKey?: string;
+    monnifySecretKey?: string;
+    monnifyContractCode?: string;
+    remitaMerchantId?: string;
+    remitaServiceTypeId?: string;
+    remitaApiKey?: string;
+    interswitchMerchantCode?: string;
+    interswitchPayItemId?: string;
+    interswitchSecretKey?: string;
+    
     isNoticeActive?: boolean;
     noticeText?: string;
     noticeLink?: string;

@@ -87,9 +87,12 @@ const cmsService = {
   // Admin Hero
   getHero: () => api.get<CmsHero>('/front-cms/hero'),
   updateHero: (data: Partial<CmsHero>) => api.put<CmsHero>('/front-cms/hero', data),
-  addCarouselImage: (file: File) => {
+  addCarouselImage: (image: File | string) => {
+    if (typeof image === 'string') {
+      return api.post<CmsCarouselImage>('/front-cms/hero/carousel', { imageUrl: image });
+    }
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('file', image);
     return api.post<CmsCarouselImage>('/front-cms/hero/carousel', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
@@ -125,10 +128,14 @@ const cmsService = {
 
   // Admin Programs
   getPrograms: () => api.get<CmsProgram[]>('/front-cms/programs'),
-  createProgram: (data: Partial<CmsProgram>, file: File) => {
+  createProgram: (data: Partial<CmsProgram>, image: File | string) => {
     const formData = new FormData();
     Object.keys(data).forEach(key => formData.append(key, String(data[key as keyof CmsProgram])));
-    formData.append('file', file);
+    if (typeof image === 'string') {
+      formData.append('imageUrl', image);
+    } else {
+      formData.append('file', image);
+    }
     return api.post<CmsProgram>('/front-cms/programs', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
@@ -145,11 +152,15 @@ const cmsService = {
 
   // Admin Gallery
   getGallery: () => api.get<CmsGalleryItem[]>('/front-cms/gallery'),
-  createGalleryItem: (data: { title: string; category: string }, file: File) => {
+  createGalleryItem: (data: { title: string; category: string }, image: File | string) => {
     const formData = new FormData();
     formData.append('title', data.title);
     formData.append('category', data.category);
-    formData.append('file', file);
+    if (typeof image === 'string') {
+      formData.append('imageUrl', image);
+    } else {
+      formData.append('file', image);
+    }
     return api.post<CmsGalleryItem>('/front-cms/gallery', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
@@ -186,6 +197,13 @@ const cmsService = {
   // Media Library
   getMediaLibrary: () => api.get<CmsMedia[]>('/front-cms/media'),
   deleteMediaFile: (filename: string) => api.delete(`/front-cms/media/${filename}`),
+  uploadMedia: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post<{ url: string; name: string }>('/front-cms/media/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
 };
 
 export interface CmsMedia {

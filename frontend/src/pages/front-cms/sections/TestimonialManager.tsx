@@ -74,15 +74,12 @@ const TestimonialManager: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 dark:border-gray-800 pb-6">
-        <div>
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white">Parent Testimonials</h3>
-          <p className="text-sm text-gray-500">Manage feedback from the school community.</p>
-        </div>
+      <div className="flex items-center justify-between gap-4 mb-6">
+        <div />
         {!isAdding && (
           <button
             onClick={() => setIsAdding(true)}
-            className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-xl font-bold transition-all shadow-md shadow-primary-200 dark:shadow-none"
+            className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all shadow-sm"
           >
             <Plus size={18} /> Add Testimonial
           </button>
@@ -90,7 +87,7 @@ const TestimonialManager: React.FC = () => {
       </div>
 
       {isAdding && (
-        <form onSubmit={handleCreate} className="bg-white dark:bg-gray-950 p-6 md:p-8 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-xl space-y-6 animate-in slide-in-from-top-4 duration-300">
+        <form onSubmit={handleCreate} className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm space-y-6 animate-in slide-in-from-top-4 duration-300">
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold uppercase text-gray-400 tracking-wider">Author Name</label>
@@ -99,7 +96,7 @@ const TestimonialManager: React.FC = () => {
                 value={newTestimonial.author}
                 onChange={(e) => setNewTestimonial({ ...newTestimonial, author: e.target.value })}
                 placeholder="Ex: Mrs. Florence Adebayor"
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all shadow-sm"
               />
             </div>
             <div className="space-y-1.5">
@@ -109,7 +106,7 @@ const TestimonialManager: React.FC = () => {
                 value={newTestimonial.role}
                 onChange={(e) => setNewTestimonial({ ...newTestimonial, role: e.target.value })}
                 placeholder="Ex: Parent of Nursery 2 Student"
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all shadow-sm"
               />
             </div>
           </div>
@@ -120,32 +117,32 @@ const TestimonialManager: React.FC = () => {
               onChange={(e) => setNewTestimonial({ ...newTestimonial, quote: e.target.value })}
               rows={4}
               placeholder="What did the parent say?..."
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all resize-none"
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all shadow-sm resize-none"
             ></textarea>
           </div>
           <div className="flex items-center gap-6">
             <div className="space-y-1.5">
-              <label className="text-xs font-black uppercase text-slate-400">Star Rating</label>
+              <label className="text-xs font-bold uppercase text-gray-400">Star Rating</label>
               <div className="flex items-center gap-2">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     key={star}
                     type="button"
                     onClick={() => setNewTestimonial({ ...newTestimonial, rating: star })}
-                    className={`p-1 transition-all ${newTestimonial.rating && newTestimonial.rating >= star ? 'text-secondary-500' : 'text-slate-200 dark:text-slate-700'}`}
+                    className={`p-1 transition-all ${newTestimonial.rating && newTestimonial.rating >= star ? 'text-amber-500' : 'text-gray-200 dark:text-gray-700'}`}
                   >
-                    <Star size={24} fill={newTestimonial.rating && newTestimonial.rating >= star ? 'currentColor' : 'none'} />
+                    <Star size={22} fill={newTestimonial.rating && newTestimonial.rating >= star ? 'currentColor' : 'none'} />
                   </button>
                 ))}
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+          <div className="flex items-center gap-3 pt-4 border-t border-gray-100 dark:border-gray-700">
             <button
               type="submit"
               disabled={saving}
-              className="bg-primary-600 hover:bg-primary-700 text-white px-8 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-md shadow-primary-200 dark:shadow-none transition-all active:scale-95 disabled:opacity-50"
+              className="bg-primary-600 hover:bg-primary-700 text-white px-8 py-2.5 rounded-lg font-bold flex items-center gap-2 shadow-sm transition-all active:scale-95 disabled:opacity-50"
             >
               {saving ? <Loader2 className="animate-spin w-4 h-4" /> : <Save size={18} />}
               Save Testimonial
@@ -153,7 +150,7 @@ const TestimonialManager: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsAdding(false)}
-              className="bg-white dark:bg-gray-800 text-gray-600 px-8 py-2.5 rounded-xl font-bold border border-gray-200 dark:border-gray-700 hover:bg-gray-50 transition-all shadow-sm"
+              className="bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-8 py-2.5 rounded-lg font-bold border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-all shadow-sm"
             >
               Cancel
             </button>
@@ -163,8 +160,8 @@ const TestimonialManager: React.FC = () => {
 
       <div className="grid md:grid-cols-2 gap-8">
         {testimonials.map((t) => (
-          <div key={t.id} className="relative bg-white dark:bg-gray-900 p-6 md:p-8 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800/50 hover:shadow-xl transition-all group overflow-hidden">
-            <Quote className="text-gray-100 dark:text-gray-800 absolute top-8 right-8 w-16 h-16 opacity-50" />
+          <div key={t.id} className="relative bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all group overflow-hidden">
+            <Quote className="text-gray-50 dark:text-gray-900 absolute top-4 right-4 w-12 h-12 opacity-50" />
             <div className="relative space-y-6">
               <div className="flex justify-between items-start">
                 <div className="flex gap-1 text-amber-500">

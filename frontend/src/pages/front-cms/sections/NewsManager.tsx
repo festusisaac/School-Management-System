@@ -3,6 +3,7 @@ import { Plus, Trash2, Save, Loader2, Upload, Calendar, User, Tag, Image as Imag
 import cmsService, { CmsNews } from '@services/cms.service';
 import { useSystem } from '@/context/SystemContext';
 import { useToast } from '@/context/ToastContext';
+import MediaSelectorModal from '../components/MediaSelectorModal';
 
 const NewsManager: React.FC = () => {
   const [newsList, setNewsList] = useState<CmsNews[]>([]);
@@ -18,6 +19,7 @@ const NewsManager: React.FC = () => {
     content: '',
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
   const { getFullUrl } = useSystem();
 
   const tags = ['Academic', 'Sports', 'Events', 'Notices', 'Achievement'];
@@ -73,15 +75,11 @@ const NewsManager: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 dark:border-gray-800 pb-6">
-        <div>
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white">News & Announcements</h3>
-          <p className="text-sm text-gray-500">Publish articles and updates to the school blog.</p>
-        </div>
+      <div className="flex items-center justify-between gap-4 mb-6">
         {!isAdding && (
           <button
             onClick={() => setIsAdding(true)}
-            className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-xl font-bold transition-all shadow-md shadow-primary-200 dark:shadow-none"
+            className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all shadow-sm"
           >
             <Plus size={18} /> Create Article
           </button>
@@ -89,16 +87,15 @@ const NewsManager: React.FC = () => {
       </div>
 
       {isAdding && (
-        <form onSubmit={handleCreate} className="bg-white dark:bg-gray-950 p-6 md:p-8 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-xl space-y-6 animate-in slide-in-from-top-4 duration-300">
+        <form onSubmit={handleCreate} className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm space-y-6 animate-in slide-in-from-top-4 duration-300">
           <div className="grid lg:grid-cols-2 gap-8">
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold uppercase text-gray-400 tracking-wider">Category Tag</label>
                   <select
                     value={newNews.tag}
                     onChange={(e) => setNewNews({ ...newNews, tag: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
                   >
                     {tags.map((t) => (
                       <option key={t} value={t}>{t}</option>
@@ -111,7 +108,7 @@ const NewsManager: React.FC = () => {
                     type="text"
                     value={newNews.author}
                     onChange={(e) => setNewNews({ ...newNews, author: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
                   />
                 </div>
               </div>
@@ -122,7 +119,7 @@ const NewsManager: React.FC = () => {
                   value={newNews.title}
                   onChange={(e) => setNewNews({ ...newNews, title: e.target.value })}
                   placeholder="Ex: Highlights from Inter-House Sports 2026"
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
                 />
               </div>
               <div className="space-y-1.5">
@@ -132,7 +129,7 @@ const NewsManager: React.FC = () => {
                   onChange={(e) => setNewNews({ ...newNews, snippet: e.target.value })}
                   rows={3}
                   placeholder="Short summary for the listing page..."
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all resize-none"
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all resize-none"
                 ></textarea>
               </div>
             </div>
@@ -140,36 +137,55 @@ const NewsManager: React.FC = () => {
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold uppercase text-gray-400 tracking-wider">Featured Image</label>
-                <div className="relative aspect-video rounded-2xl overflow-hidden bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 group shadow-inner">
+                <div className="relative aspect-video rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 group">
                   {selectedFile ? (
                     <img src={URL.createObjectURL(selectedFile)} alt="Preview" className="w-full h-full object-cover" />
+                  ) : newNews.imageUrl ? (
+                    <img src={getFullUrl(newNews.imageUrl)} alt="Preview" className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 space-y-3">
-                      <Upload size={32} className="opacity-20" />
-                      <span className="text-[10px] font-bold uppercase tracking-widest">Click to upload banner</span>
+                      <ImageIcon size={32} className="opacity-20" />
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-center px-4">Banner Image</span>
                     </div>
                   )}
-                  <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 backdrop-blur-[2px]">
+                    <label className="bg-white text-gray-900 px-4 py-2 rounded-lg text-xs font-bold shadow-sm cursor-pointer flex items-center gap-2 hover:bg-gray-50 transition-colors">
+                      <Upload size={14} className="text-primary-600" />
+                      Upload New
+                      <input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                        setSelectedFile(e.target.files?.[0] || null);
+                        setNewNews({ ...newNews, imageUrl: undefined });
+                      }} />
+                    </label>
+                    <button 
+                      type="button"
+                      onClick={() => setIsMediaModalOpen(true)}
+                      className="bg-white text-gray-900 px-4 py-2 rounded-lg text-xs font-bold shadow-sm flex items-center gap-2 hover:bg-gray-50 transition-colors"
+                    >
+                      <ImageIcon size={14} className="text-primary-600" />
+                      From Library
+                    </button>
+                  </div>
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold uppercase text-gray-400 tracking-wider">Full Content (Markdown Supported)</label>
+                <label className="text-xs font-semibold uppercase text-gray-400 tracking-wider">Full Content</label>
                 <textarea
                   value={newNews.content}
                   onChange={(e) => setNewNews({ ...newNews, content: e.target.value })}
                   rows={4}
                   placeholder="The full story goes here..."
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all resize-none"
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all resize-none"
                 ></textarea>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+          <div className="flex items-center gap-3 pt-4 border-t border-gray-100 dark:border-gray-700">
             <button
               type="submit"
               disabled={saving}
-              className="bg-primary-600 hover:bg-primary-700 text-white px-8 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-md shadow-primary-200 dark:shadow-none transition-all active:scale-95 disabled:opacity-50"
+              className="bg-primary-600 hover:bg-primary-700 text-white px-8 py-2.5 rounded-lg font-bold flex items-center gap-2 shadow-sm transition-all active:scale-95 disabled:opacity-50"
             >
               {saving ? <Loader2 className="animate-spin w-4 h-4" /> : <Save size={18} />}
               Publish Article
@@ -177,7 +193,7 @@ const NewsManager: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsAdding(false)}
-              className="bg-white dark:bg-gray-800 text-gray-600 px-8 py-2.5 rounded-xl font-bold border border-gray-200 dark:border-gray-700 hover:bg-gray-50 transition-all shadow-sm"
+              className="bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-8 py-2.5 rounded-lg font-bold border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-all"
             >
               Cancel
             </button>
@@ -187,8 +203,8 @@ const NewsManager: React.FC = () => {
 
       <div className="space-y-4">
         {newsList.map((news) => (
-          <div key={news.id} className="group bg-white dark:bg-gray-900 px-6 py-5 rounded-2xl border border-gray-200 dark:border-gray-800/50 hover:shadow-lg transition-all duration-300 flex flex-col md:flex-row items-center gap-6">
-            <div className="w-full md:w-32 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
+          <div key={news.id} className="group bg-white dark:bg-gray-800 px-6 py-5 rounded-xl border border-gray-100 dark:border-gray-700 hover:shadow-sm transition-all flex flex-col md:flex-row items-center gap-6">
+            <div className="w-full md:w-32 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gray-50 dark:bg-gray-700 border border-gray-100 dark:border-gray-700">
               {news.imageUrl ? (
                 <img src={getFullUrl(news.imageUrl)} alt={news.title} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
               ) : (
@@ -221,13 +237,22 @@ const NewsManager: React.FC = () => {
           </div>
         ))}
         {newsList.length === 0 && (
-          <div className="text-center py-20 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700">
+          <div className="text-center py-20 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-700">
             <Newspaper size={48} className="mx-auto text-gray-300 mb-4" />
             <h4 className="text-lg font-bold text-gray-900 dark:text-white">No articles published yet</h4>
             <p className="text-gray-500 text-sm">Your school's news and updates will appear here.</p>
           </div>
         )}
       </div>
+
+      <MediaSelectorModal 
+        isOpen={isMediaModalOpen}
+        onClose={() => setIsMediaModalOpen(false)}
+        onSelect={(media) => {
+          setNewNews({ ...newNews, imageUrl: media.url });
+          setSelectedFile(null);
+        }}
+      />
     </div>
   );
 };

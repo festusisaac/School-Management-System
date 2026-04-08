@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Save, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Save, Loader2, Upload, Image as ImageIcon } from 'lucide-react';
 import cmsService, { CmsHero } from '@services/cms.service';
 import { useSystem } from '@/context/SystemContext';
 import { useToast } from '@/context/ToastContext';
+import MediaSelectorModal from '../components/MediaSelectorModal';
 
 const HeroManager: React.FC = () => {
   const [hero, setHero] = useState<CmsHero | null>(null);
@@ -10,6 +11,7 @@ const HeroManager: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const { getFullUrl } = useSystem();
   const toast = useToast();
+  const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
 
   const fetchHeroData = async () => {
     try {
@@ -74,8 +76,8 @@ const HeroManager: React.FC = () => {
     <div className="space-y-10">
       <div className="grid lg:grid-cols-2 gap-10">
         {/* Text Content Form */}
-        <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-200 dark:border-gray-800/50 shadow-sm space-y-6">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-800 pb-4">Hero Content</h3>
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm space-y-6">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-700 pb-4">Hero Content</h3>
           <form onSubmit={handleUpdateHero} className="space-y-4">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold uppercase text-gray-400 tracking-wider pl-1">Tagline / Welcome Text</label>
@@ -84,7 +86,7 @@ const HeroManager: React.FC = () => {
                 value={hero?.welcomeText || ''}
                 onChange={(e) => setHero(prev => prev ? { ...prev, welcomeText: e.target.value } : null)}
                 placeholder="Excellence in Education"
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all resize-none"
               />
             </div>
             <div className="space-y-1.5">
@@ -94,7 +96,7 @@ const HeroManager: React.FC = () => {
                 value={hero?.title || ''}
                 onChange={(e) => setHero(prev => prev ? { ...prev, title: e.target.value } : null)}
                 placeholder="Nurturing Leaders of Tomorrow"
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all resize-none"
               />
             </div>
             <div className="space-y-1.5">
@@ -104,13 +106,13 @@ const HeroManager: React.FC = () => {
                 onChange={(e) => setHero(prev => prev ? { ...prev, subtitle: e.target.value } : null)}
                 rows={3}
                 placeholder="Welcome to our school, where we combine academic rigor..."
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all resize-none"
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all resize-none"
               ></textarea>
             </div>
             <button
               type="submit"
               disabled={saving}
-              className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-6 py-2.5 rounded-xl font-bold transition-all shadow-md shadow-primary-200 dark:shadow-none active:scale-95 disabled:opacity-50"
+              className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-6 py-2.5 rounded-lg font-bold transition-all shadow-sm active:scale-95 disabled:opacity-50"
             >
               {saving ? <Loader2 className="animate-spin w-4 h-4" /> : <Save size={18} />}
               Save Changes
@@ -119,19 +121,28 @@ const HeroManager: React.FC = () => {
         </div>
 
         {/* Carousel Manager */}
-        <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-200 dark:border-gray-800/50 shadow-sm space-y-6">
-          <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-4">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm space-y-6">
+          <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-4">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white">Carousel Images</h3>
-            <label className="cursor-pointer flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-4 py-2 rounded-xl text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all shadow-sm">
-              <Plus size={18} className="text-primary-600" />
-              Add Image
-              <input type="file" className="hidden" accept="image/*" onChange={handleUploadImage} />
-            </label>
+            <div className="flex items-center gap-2">
+              <label className="cursor-pointer flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-3 py-2 rounded-lg text-xs font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all shadow-sm">
+                <Upload size={14} className="text-primary-600" />
+                Upload
+                <input type="file" className="hidden" accept="image/*" onChange={handleUploadImage} />
+              </label>
+              <button 
+                onClick={() => setIsMediaModalOpen(true)}
+                className="flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-3 py-2 rounded-lg text-xs font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all shadow-sm"
+              >
+                <ImageIcon size={14} className="text-primary-600" />
+                Library
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             {hero?.carouselImages?.map((img) => (
-              <div key={img.id} className="relative group rounded-xl overflow-hidden aspect-video bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
+              <div key={img.id} className="relative group rounded-lg overflow-hidden aspect-video bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
                 <img src={getFullUrl(img.imageUrl)} alt="Slide" className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <button
@@ -144,13 +155,29 @@ const HeroManager: React.FC = () => {
               </div>
             ))}
             {(!hero?.carouselImages || hero.carouselImages.length === 0) && (
-              <div className="col-span-2 py-12 text-center text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700">
+              <div className="col-span-2 py-12 text-center text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700">
                 No images in carousel.
               </div>
             )}
           </div>
         </div>
       </div>
+      <MediaSelectorModal 
+        isOpen={isMediaModalOpen}
+        onClose={() => setIsMediaModalOpen(false)}
+        onSelect={async (media) => {
+          try {
+            setSaving(true);
+            await cmsService.addCarouselImage(media.url);
+            toast.showSuccess('Image added from library');
+            fetchHeroData();
+          } catch (error) {
+            toast.showError('Failed to add image');
+          } finally {
+            setSaving(false);
+          }
+        }}
+      />
     </div>
   );
 };

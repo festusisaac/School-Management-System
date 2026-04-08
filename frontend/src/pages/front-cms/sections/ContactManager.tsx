@@ -75,37 +75,33 @@ const ContactManager = () => {
 
     return (
         <div className="flex flex-col h-[650px] animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                <div>
-                    <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                        <MessageSquare className="text-primary-600" size={24} />
-                        Contact Inquiries
-                        {unreadCount > 0 && (
-                            <span className="bg-primary-100 text-primary-600 text-[10px] px-2 py-0.5 rounded-full font-black animate-pulse">
-                                {unreadCount} NEW
-                            </span>
-                        )}
-                    </h2>
-                    <p className="text-sm text-slate-500 mt-1">
-                        View and manage messages sent from the landing page contact form.
-                    </p>
-                </div>
-            </div>
+      {/* Header (Optional, since dashboard has one, but keeping a simple one) */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            Contact Inquiries
+            {unreadCount > 0 && (
+              <span className="bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 text-[10px] px-2 py-0.5 rounded-full font-bold">
+                {unreadCount} NEW
+              </span>
+            )}
+          </h2>
+        </div>
+      </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full min-h-0">
                 {/* List Column */}
-                <div className="lg:col-span-5 flex flex-col bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                <div className="lg:col-span-4 flex flex-col bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
                     {/* Search & Filter */}
-                    <div className="p-4 border-b border-slate-50 space-y-3 bg-slate-50/50">
+                    <div className="p-4 border-b border-gray-100 dark:border-gray-700 space-y-3 bg-gray-50 dark:bg-gray-900/50">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                             <input 
                                 type="text"
-                                placeholder="Search by name, email..."
+                                placeholder="Search..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                                className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
                             />
                         </div>
                         <div className="flex gap-2">
@@ -124,16 +120,9 @@ const ContactManager = () => {
                             ))}
                         </div>
                     </div>
-
-                    {/* Infinite-ish List */}
-                    <div className="flex-1 overflow-y-auto custom-scrollbar">
-                        {loading ? (
-                            <div className="flex flex-col items-center justify-center h-full space-y-3 opacity-50">
-                                <div className="w-8 h-8 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
-                                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Loading Inquiries...</p>
-                            </div>
-                        ) : filteredContacts.length > 0 ? (
-                            <div className="divide-y divide-slate-50">
+                    <div className="flex-1 overflow-y-auto">
+                        {filteredContacts.length > 0 ? (
+                            <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
                                 {filteredContacts.map((contact) => (
                                     <button
                                         key={contact.id}
@@ -141,47 +130,51 @@ const ContactManager = () => {
                                             setSelectedContact(contact);
                                             if (!contact.isRead) handleMarkAsRead(contact.id);
                                         }}
-                                        className={`w-full text-left p-4 transition-all hover:bg-slate-50 flex items-start gap-3 group ${
-                                            selectedContact?.id === contact.id ? 'bg-primary-50/50 border-l-4 border-l-primary-600' : 'border-l-4 border-l-transparent'
-                                        } ${!contact.isRead ? 'bg-blue-50/20' : ''}`}
+                                        className={`w-full text-left p-4 transition-all hover:bg-gray-50 dark:hover:bg-gray-700/30 flex gap-4 items-start ${
+                                            selectedContact?.id === contact.id ? 'bg-primary-50/50 dark:bg-primary-900/10' : ''
+                                        }`}
                                     >
-                                        <div className={`p-2 rounded-xl shrink-0 ${!contact.isRead ? 'bg-primary-100 text-primary-600' : 'bg-slate-100 text-slate-400'}`}>
-                                            <User size={18} />
+                                        <div className={`p-2 rounded-lg transition-colors ${
+                                            selectedContact?.id === contact.id 
+                                                ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-600' 
+                                                : contact.isRead 
+                                                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-400' 
+                                                    : 'bg-primary-600 text-white shadow-sm'
+                                        }`}>
+                                            <Mail size={16} />
                                         </div>
-                                        <div className="min-w-0 flex-1">
+                                        <div className="flex-1 min-w-0">
                                             <div className="flex justify-between items-start mb-1">
-                                                <h4 className={`text-sm truncate pr-2 ${!contact.isRead ? 'font-bold text-slate-900' : 'font-medium text-slate-600'}`}>
+                                                <h4 className={`text-sm font-bold truncate ${contact.isRead ? 'text-gray-600 dark:text-gray-400' : 'text-gray-900 dark:text-white'}`}>
                                                     {contact.fullName}
                                                 </h4>
-                                                <span className="text-[10px] text-slate-400 whitespace-nowrap pt-0.5">
-                                                    {new Date(contact.createdAt).toLocaleDateString()}
-                                                </span>
+                                                {!contact.isRead && (
+                                                    <div className="w-2 h-2 bg-primary-600 rounded-full mt-1.5" />
+                                                )}
                                             </div>
-                                            <p className="text-xs text-slate-500 truncate font-medium">
-                                                {contact.subject || 'No Subject'}
+                                            <p className="text-xs text-gray-500 truncate mb-1">{contact.subject || 'General Inquiry'}</p>
+                                            <p className="text-[10px] text-gray-400 uppercase font-black tracking-tighter">
+                                                {new Date(contact.createdAt).toLocaleDateString()}
                                             </p>
                                         </div>
-                                        {!contact.isRead && (
-                                            <div className="w-2 h-2 bg-primary-600 rounded-full mt-2 ring-4 ring-primary-100" />
-                                        )}
                                     </button>
                                 ))}
                             </div>
                         ) : (
                             <div className="flex flex-col items-center justify-center h-full opacity-30 p-8 text-center">
-                                <Inbox size={48} className="mb-4" />
-                                <p className="text-sm font-bold uppercase tracking-widest">No Inquiries Found</p>
+                                <Inbox size={48} className="mb-4 text-gray-300" />
+                                <p className="text-xs font-bold uppercase tracking-widest text-gray-400">No Inquiries Found</p>
                             </div>
                         )}
                     </div>
                 </div>
 
                 {/* Content Column */}
-                <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
+                <div className="lg:col-span-8 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col">
                     {selectedContact ? (
                         <div className="flex flex-col h-full animate-in fade-in slide-in-from-right-4 duration-300">
                             {/* Action Bar */}
-                            <div className="p-4 border-b border-slate-50 flex items-center justify-between bg-slate-50/30">
+                            <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-900/30">
                                 <div className="flex gap-4">
                                     <button 
                                         onClick={() => handleDelete(selectedContact.id)}
@@ -200,43 +193,43 @@ const ContactManager = () => {
                             <div className="p-8 pb-4">
                                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                                     <div className="flex items-center gap-4">
-                                        <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-primary-100">
-                                            <User size={28} />
+                                        <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/30 rounded-xl flex items-center justify-center text-primary-600">
+                                            <User size={24} />
                                         </div>
                                         <div>
-                                            <h3 className="text-2xl font-black text-slate-900 leading-none mb-1">
+                                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">
                                                 {selectedContact.fullName}
                                             </h3>
-                                            <p className="text-sm font-bold text-primary-600 uppercase tracking-widest">
-                                                Prospective Parent / Visitor
+                                            <p className="text-xs font-medium text-gray-500">
+                                                Public Inquiry
                                             </p>
                                         </div>
                                     </div>
                                     <div className="flex flex-col items-end gap-2">
-                                        <div className={`px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase ${selectedContact.isRead ? 'bg-slate-100 text-slate-500' : 'bg-primary-100 text-primary-600'}`}>
-                                            {selectedContact.isRead ? 'Already Read' : 'New Message'}
+                                        <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${selectedContact.isRead ? 'bg-gray-100 text-gray-500' : 'bg-primary-100 text-primary-600'}`}>
+                                            {selectedContact.isRead ? 'Read' : 'New'}
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="grid md:grid-cols-2 gap-4">
-                                    <a href={`mailto:${selectedContact.email}`} className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-primary-300 transition-colors group">
-                                        <div className="p-2 bg-white rounded-lg text-primary-600 shadow-sm group-hover:scale-110 transition-transform">
+                                    <a href={`mailto:${selectedContact.email}`} className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-primary-500 transition-colors group">
+                                        <div className="p-2 bg-white dark:bg-gray-800 rounded-lg text-primary-600 border border-gray-100 dark:border-gray-700">
                                             <Mail size={18} />
                                         </div>
                                         <div className="min-w-0">
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Email Address</p>
-                                            <p className="text-sm font-bold text-slate-700 truncate">{selectedContact.email}</p>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase">Email</p>
+                                            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 truncate">{selectedContact.email}</p>
                                         </div>
                                     </a>
                                     {selectedContact.phone && (
-                                        <a href={`tel:${selectedContact.phone}`} className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-primary-300 transition-colors group">
-                                            <div className="p-2 bg-white rounded-lg text-primary-600 shadow-sm group-hover:scale-110 transition-transform">
+                                        <a href={`tel:${selectedContact.phone}`} className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-primary-500 transition-colors group">
+                                            <div className="p-2 bg-white dark:bg-gray-800 rounded-lg text-primary-600 border border-gray-100 dark:border-gray-700">
                                                 <Phone size={18} />
                                             </div>
                                             <div className="min-w-0">
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Phone Number</p>
-                                                <p className="text-sm font-bold text-slate-700 truncate">{selectedContact.phone}</p>
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase">Phone</p>
+                                                <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 truncate">{selectedContact.phone}</p>
                                             </div>
                                         </a>
                                     )}
@@ -245,29 +238,24 @@ const ContactManager = () => {
 
                             {/* Message Body */}
                             <div className="flex-1 p-8 pt-4 overflow-y-auto">
-                                <div className="bg-slate-50 p-8 rounded-[2rem] border border-slate-100 relative">
-                                    <div className="absolute top-8 left-4 text-slate-200">
-                                        <Quote size={40} />
-                                    </div>
-                                    <div className="relative z-10">
-                                        <h4 className="text-lg font-black text-slate-900 mb-4 pl-8">
-                                            {selectedContact.subject || 'General Inquiry'}
-                                        </h4>
-                                        <p className="text-slate-600 leading-relaxed font-medium whitespace-pre-wrap pl-8">
-                                            {selectedContact.message}
-                                        </p>
-                                    </div>
+                                <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-xl border border-gray-100 dark:border-gray-700">
+                                    <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+                                        {selectedContact.subject || 'General Inquiry'}
+                                    </h4>
+                                    <p className="text-gray-600 dark:text-gray-400 leading-relaxed font-medium whitespace-pre-wrap">
+                                        {selectedContact.message}
+                                    </p>
                                 </div>
                             </div>
                         </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center h-full opacity-30 p-12 text-center space-y-4">
-                            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center border-2 border-dashed border-slate-200">
-                                <Mail size={40} className="text-slate-300" />
+                            <div className="w-16 h-16 bg-gray-50 dark:bg-gray-900 rounded-full flex items-center justify-center border-2 border-dashed border-gray-200 dark:border-gray-700">
+                                <Mail size={32} className="text-gray-300" />
                             </div>
                             <div>
-                                <p className="text-lg font-black text-slate-400 uppercase tracking-widest">Select an inquiry</p>
-                                <p className="text-sm font-medium text-slate-400">Choose a message from the list to read carefully.</p>
+                                <p className="text-lg font-bold text-gray-400">Select an inquiry</p>
+                                <p className="text-sm text-gray-400">Choose a message from the list to view.</p>
                             </div>
                         </div>
                     )}

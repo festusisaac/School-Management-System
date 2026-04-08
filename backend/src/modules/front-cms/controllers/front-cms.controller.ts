@@ -57,6 +57,23 @@ export class FrontCmsController {
     return this.cmsService.deleteMediaFile(filename);
   }
 
+  @Post('media/upload')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: join(__dirname, '..', '..', '..', '..', 'uploads', 'front-cms'),
+        filename: (req, file, cb) => {
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          cb(null, `media-${uniqueSuffix}${extname(file.originalname)}`);
+        },
+      }),
+    }),
+  )
+  async uploadMedia(@UploadedFile() file: Express.Multer.File) {
+    const relativePath = `uploads/front-cms/${file.filename}`;
+    return { url: relativePath, name: file.filename };
+  }
+
   // Public Endpoints
   @Public()
   @Get('public/init')
@@ -93,9 +110,13 @@ export class FrontCmsController {
       }),
     }),
   )
-  async addCarouselImage(@UploadedFile() file: Express.Multer.File) {
-    const relativePath = `uploads/front-cms/${file.filename}`;
-    return this.cmsService.addCarouselImage(relativePath);
+  async addCarouselImage(
+    @Body('imageUrl') imageUrl?: string,
+    @UploadedFile() file?: Express.Multer.File
+  ) {
+    const finalUrl = file ? `uploads/front-cms/${file.filename}` : imageUrl;
+    if (!finalUrl) throw new Error('Image URL or File is required');
+    return this.cmsService.addCarouselImage(finalUrl);
   }
 
   @Delete('hero/carousel/:id')
@@ -241,9 +262,11 @@ export class FrontCmsController {
       }),
     }),
   )
-  async createGalleryItem(@Body() data: any, @UploadedFile() file: Express.Multer.File) {
-    const relativePath = `uploads/front-cms/${file.filename}`;
-    data.imageUrl = relativePath;
+  async createGalleryItem(@Body() data: any, @UploadedFile() file?: Express.Multer.File) {
+    if (file) {
+      data.imageUrl = `uploads/front-cms/${file.filename}`;
+    }
+    if (!data.imageUrl) throw new Error('Image URL or File is required');
     return this.cmsService.createGalleryItem(data);
   }
 
@@ -270,9 +293,11 @@ export class FrontCmsController {
       }),
     }),
   )
-  async createProgram(@Body() data: any, @UploadedFile() file: Express.Multer.File) {
-    const relativePath = `uploads/front-cms/${file.filename}`;
-    data.imageUrl = relativePath;
+  async createProgram(@Body() data: any, @UploadedFile() file?: Express.Multer.File) {
+    if (file) {
+      data.imageUrl = `uploads/front-cms/${file.filename}`;
+    }
+    if (!data.imageUrl) throw new Error('Image URL or File is required');
     return this.cmsService.createProgram(data);
   }
 
