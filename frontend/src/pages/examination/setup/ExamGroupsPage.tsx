@@ -64,7 +64,7 @@ const ExamGroupsPage = () => {
                 const sessionTerms = await systemService.getTermsBySession(settings.currentSessionId);
                 setTerms(sessionTerms || []);
             } catch (e) {
-                console.error('Failed to fetch session terms', error);
+                console.error('Failed to fetch session terms', e);
             }
         };
         fetchSessionTerms();

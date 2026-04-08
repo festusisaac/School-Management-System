@@ -1,18 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   MessageSquare, 
   Mail, 
   Phone, 
-  Calendar, 
   Trash2, 
-  CheckCircle2, 
-  Clock, 
   User,
   Search,
-  Filter,
-  MoreVertical,
-  ChevronRight,
-  Inbox
+  Inbox,
+  Quote
 } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import cmsService, { CmsContact } from '../../../services/cms.service';
@@ -33,7 +28,7 @@ const ContactManager = () => {
         setLoading(true);
         try {
             const response = await cmsService.getContacts();
-            setContacts(response.data);
+            setContacts(response);
         } catch (error) {
             console.error('Failed to fetch contacts:', error);
             showToast('Failed to load inquiries', 'error');

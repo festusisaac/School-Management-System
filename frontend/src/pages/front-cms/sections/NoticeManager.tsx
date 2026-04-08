@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Megaphone, 
   Save, 
-  Trash2, 
   Link as LinkIcon,
   ToggleLeft,
   ToggleRight,
@@ -115,7 +114,9 @@ const NoticeManager = () => {
                         <div className="space-y-2">
                             <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
                                 Announcement Text
-                                <HelpCircle size={14} className="text-slate-400" title="Keep it short and impactful" />
+                                <span title="Keep it short and impactful">
+                                    <HelpCircle size={14} className="text-slate-400" />
+                                </span>
                             </label>
                             <textarea
                                 value={formData.noticeText}

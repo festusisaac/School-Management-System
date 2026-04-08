@@ -1,5 +1,7 @@
 import { create } from 'zustand'
 import axios from 'axios'
+import { API_BASE_URL } from '../services/apiConfig'
+import { authSession } from '../services/session'
 
 interface AuthStore {
   user: any | null
@@ -12,43 +14,36 @@ interface AuthStore {
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
-  user: localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!) : null,
-  token: localStorage.getItem('access_token'),
+  user: authSession.getUser(),
+  token: authSession.getAccessToken(),
   setUser: (user) => {
-    localStorage.setItem('user', JSON.stringify(user))
+    authSession.setUser(user)
     set({ user })
   },
   setToken: (token) => {
-    localStorage.setItem('access_token', token)
+    authSession.setAccessToken(token)
     set({ token })
   },
   setRefreshToken: (token) => {
-    if (token) {
-      localStorage.setItem('refresh_token', token)
-    } else {
-      localStorage.removeItem('refresh_token')
-    }
+    authSession.setRefreshToken(token)
   },
   refreshUser: async () => {
     try {
-      const response = await axios.get(`${(import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'}/auth/me`, {
+      const response = await axios.get(`${API_BASE_URL}/auth/me`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('access_token')}`
+          Authorization: `Bearer ${authSession.getAccessToken()}`
         }
       });
       
       const userData = response.data.data || response.data;
-      localStorage.setItem('user', JSON.stringify(userData));
+      authSession.setUser(userData);
       set({ user: userData });
     } catch (error) {
       console.error('Failed to refresh user:', error);
     }
   },
   logout: () => {
-    localStorage.removeItem('user')
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
-    sessionStorage.clear()
+    authSession.clear()
     set({ user: null, token: null })
   },
 }))

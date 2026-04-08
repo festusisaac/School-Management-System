@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Globe, 
   Save, 
@@ -6,9 +6,7 @@ import {
   Share2, 
   Image as ImageIcon,
   AlertCircle,
-  HelpCircle,
-  Layout,
-  ExternalLink
+  HelpCircle
 } from 'lucide-react';
 import { useSystem } from '../../../context/SystemContext';
 import { useToast } from '../../../context/ToastContext';
@@ -59,8 +57,8 @@ const SeoManager = () => {
         uploadFormData.append('file', file);
         
         try {
-            const response = await systemService.updateSettingsFile(uploadFormData);
-            setFormData(prev => ({ ...prev, ogImage: response.ogImage }));
+            const response = await systemService.updateSettingsFile('ogImage', uploadFormData);
+            setFormData(prev => ({ ...prev, ogImage: response.ogImage ?? '' }));
             showToast('Social sharing image uploaded', 'success');
         } catch (error) {
             showToast('Image upload failed', 'error');
@@ -106,7 +104,9 @@ const SeoManager = () => {
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-slate-700 flex items-center gap-2 ml-1">
                                 Meta Title
-                                <HelpCircle size={14} className="text-slate-300" title="Visible in browser tab and Google results." />
+                                <span title="Visible in browser tab and Google results.">
+                                    <HelpCircle size={14} className="text-slate-300" />
+                                </span>
                             </label>
                             <input
                                 type="text"

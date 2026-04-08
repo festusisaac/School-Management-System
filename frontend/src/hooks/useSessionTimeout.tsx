@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useSystem } from '../context/SystemContext';
 import { Clock, AlertTriangle } from 'lucide-react';
+import { authSession, navigationSession } from '../services/session';
 
 const ACTIVITY_EVENTS = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
 const WARNING_BEFORE_SECONDS = 60; // Show warning 60s before logout
@@ -15,9 +16,8 @@ export function useSessionTimeout() {
     const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const logout = useCallback(() => {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        window.location.href = '/login?reason=timeout';
+        authSession.clear();
+        navigationSession.redirectToLogin('timeout');
     }, []);
 
     const clearAllTimers = useCallback(() => {
@@ -74,7 +74,7 @@ export function useSessionTimeout() {
         if (!timeoutMinutes || timeoutMinutes <= 0) return;
 
         // Only run when logged in
-        const token = localStorage.getItem('access_token');
+        const token = authSession.getAccessToken();
         if (!token) return;
 
         resetTimer();

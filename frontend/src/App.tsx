@@ -253,6 +253,11 @@ function AppRoutes() {
 
               {/* Settings Routes */}
               <Route path="settings">
+                <Route index element={<Navigate to="general" replace />} />
+                <Route path="general" element={<Settings.GeneralSettingsPage />} />
+                <Route path="sessions" element={<Settings.SessionsPage />} />
+                <Route path="terms" element={<Settings.TermsPage />} />
+                <Route path="roles-permissions" element={<Settings.RolesPermissionsPage />} />
                 <Route path="users" element={<Settings.UsersPage />} />
               </Route>
 
@@ -260,6 +265,10 @@ function AppRoutes() {
               <Route path="front-cms">
                 <Route index element={<FrontCmsDashboard />} />
                 <Route path="hero" element={<FrontCmsDashboard />} />
+                <Route path="notice" element={<FrontCmsDashboard />} />
+                <Route path="contacts" element={<FrontCmsDashboard />} />
+                <Route path="seo" element={<FrontCmsDashboard />} />
+                <Route path="media" element={<FrontCmsDashboard />} />
                 <Route path="sections" element={<FrontCmsDashboard />} />
                 <Route path="stats" element={<FrontCmsDashboard />} />
                 <Route path="programs" element={<FrontCmsDashboard />} />

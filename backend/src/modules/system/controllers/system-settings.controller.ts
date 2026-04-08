@@ -12,6 +12,7 @@ export enum LogoType {
     PRINT = 'printLogo',
     INVOICE = 'invoiceLogo',
     DOCUMENT = 'documentLogo',
+    OG_IMAGE = 'ogImage',
 }
 
 @Controller('system/settings')

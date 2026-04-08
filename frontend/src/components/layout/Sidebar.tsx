@@ -253,6 +253,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             permission: 'front_cms:manage',
             children: [
                 { label: 'Hero Section', path: '/front-cms/hero', permission: 'front_cms:manage' },
+                { label: 'Announcement Bar', path: '/front-cms/notice', permission: 'front_cms:manage' },
+                { label: 'Inquiries', path: '/front-cms/contacts', permission: 'front_cms:manage' },
+                { label: 'SEO & Social', path: '/front-cms/seo', permission: 'front_cms:manage' },
+                { label: 'Media Library', path: '/front-cms/media', permission: 'front_cms:manage' },
                 { label: 'About & Heritage', path: '/front-cms/sections', permission: 'front_cms:manage' },
                 { label: 'Statistics', path: '/front-cms/stats', permission: 'front_cms:manage' },
                 { label: 'Programs', path: '/front-cms/programs', permission: 'front_cms:manage' },
@@ -272,7 +276,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 { label: 'School Sections', path: '/academics/school-sections', permission: 'settings:academic_setup' },
                 { label: 'Academic Sessions', path: '/settings/sessions', permission: 'settings:academic_setup' },
                 { label: 'Academic Terms', path: '/settings/terms', permission: 'settings:academic_setup' },
-                { label: 'Roles & Permissions', path: '/settings/roles', permission: 'settings:roles_permissions' },
+                { label: 'Roles & Permissions', path: '/settings/roles-permissions', permission: 'settings:roles_permissions' },
                 { label: 'User Management', path: '/settings/users', permission: 'settings:manage_users' },
             ]
         },

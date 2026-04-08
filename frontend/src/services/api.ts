@@ -1,7 +1,6 @@
-import axios, { AxiosInstance, AxiosRequestConfig } from 'axios'
-
-const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'
-export const FILE_BASE_URL = (import.meta as any).env.VITE_UPLOAD_URL || 'http://localhost:3000'
+import { AxiosInstance, AxiosRequestConfig } from 'axios'
+import { createApiHttpClient } from './httpClient'
+import { API_BASE_URL, FILE_BASE_URL } from './apiConfig'
 
 export const getFileUrl = (path: string) => {
   if (!path) return '';
@@ -11,134 +10,9 @@ export const getFileUrl = (path: string) => {
 
 class ApiService {
   private axiosInstance: AxiosInstance
-  private isRefreshing = false
-  private failedQueue: Array<{
-    onSuccess: (token: string) => void
-    onFailed: (error: any) => void
-  }> = []
 
   constructor() {
-    this.axiosInstance = axios.create({
-      baseURL: API_BASE_URL,
-      timeout: 30000,
-    })
-
-    // Request interceptor
-    this.axiosInstance.interceptors.request.use(
-      (config) => {
-        const token = localStorage.getItem('access_token')
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`
-        }
-        return config
-      },
-      (error) => Promise.reject(error),
-    )
-
-    // Response interceptor
-    this.axiosInstance.interceptors.response.use(
-      (response) => {
-        // Automatically unwrap the data envelope if it exists
-        if (response.data && typeof response.data === 'object' && 'data' in response.data) {
-          response.data = response.data.data;
-        }
-        return response;
-      },
-      async (error) => {
-        const originalRequest = error.config
-        const isLoginRequest = originalRequest.url?.includes('/auth/login')
-        const isRefreshRequest = originalRequest.url?.includes('/auth/refresh')
-
-        if (error.response?.status === 401 && !originalRequest._retry && !isLoginRequest && !isRefreshRequest) {
-          if (this.isRefreshing) {
-            return new Promise((resolve, reject) => {
-              this.failedQueue.push({
-                onSuccess: (token: string) => {
-                  originalRequest.headers.Authorization = `Bearer ${token}`
-                  resolve(this.axiosInstance(originalRequest))
-                },
-                onFailed: (err: any) => {
-                  reject(err)
-                },
-              })
-            })
-          }
-
-          originalRequest._retry = true
-          this.isRefreshing = true
-
-          try {
-            const refresh_token = localStorage.getItem('refresh_token')
-            if (!refresh_token) {
-              // No refresh token, clear everything and redirect
-              localStorage.removeItem('access_token')
-              localStorage.removeItem('refresh_token')
-              localStorage.removeItem('user')
-              if (!window.location.pathname.includes('/login')) {
-                window.location.href = '/login'
-              }
-              return Promise.reject(new Error('No refresh token available'))
-            }
-
-            const response = await this.axiosInstance.post<{
-              access_token: string
-              refresh_token: string
-            }>('/auth/refresh', { refresh_token })
-
-            const { access_token, refresh_token: newRefreshToken } = response.data
-
-            localStorage.setItem('access_token', access_token)
-            localStorage.setItem('refresh_token', newRefreshToken)
-
-            this.axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
-            originalRequest.headers.Authorization = `Bearer ${access_token}`
-
-            this.failedQueue.forEach((prom) => prom.onSuccess(access_token))
-            this.failedQueue = []
-
-            return this.axiosInstance(originalRequest)
-          } catch (err: any) {
-            // Refresh failed - clear tokens and redirect to login
-            this.failedQueue.forEach((prom) => prom.onFailed(err))
-            this.failedQueue = []
-
-            localStorage.removeItem('access_token')
-            localStorage.removeItem('refresh_token')
-            localStorage.removeItem('user')
-
-            // Only redirect if not already on login page
-            if (!window.location.pathname.includes('/login')) {
-              window.location.href = '/login'
-            }
-
-            return Promise.reject(err)
-          } finally {
-            this.isRefreshing = false
-          }
-        }
-
-        // Handle 401 errors that don't trigger refresh (e.g., refresh endpoint itself)
-        if (error.response?.status === 401) {
-          localStorage.removeItem('access_token')
-          localStorage.removeItem('refresh_token')
-          localStorage.removeItem('user')
-
-          // Only redirect if not already on login page
-          if (!window.location.pathname.includes('/login')) {
-            window.location.href = '/login'
-          }
-        }
-
-        // Handle System Not Initialized (403 with specific message)
-        if (error.response?.status === 403 && error.response?.data?.error === 'SystemNotInitialized') {
-          if (!window.location.pathname.includes('/setup')) {
-            window.location.href = '/setup'
-          }
-        }
-
-        return Promise.reject(error)
-      },
-    )
+    this.axiosInstance = createApiHttpClient(API_BASE_URL)
   }
 
   async get<T>(url: string, config?: AxiosRequestConfig) {
@@ -609,7 +483,7 @@ class ApiService {
     return this.get<any[]>('/academics/subject-teachers', { params: { classId, sectionId: sectionId || undefined } })
   }
 
-  async assignSubjectTeachers(data: { classId: string; sectionId?: string; assignments: Array<{ subjectId: string; teacherId: string }> }) {
+  async assignSubjectTeachers(data: { classId: string; sectionId?: string; assignments: Array<{ subjectId: string; teacherId: string | null }> }) {
     return this.post<any>('/academics/subject-teachers', data)
   }
 

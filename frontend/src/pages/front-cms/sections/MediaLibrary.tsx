@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Folder, 
   Search, 
-  Trash2, 
+  Trash2,
   ExternalLink, 
-  Copy, 
+  Copy,
   Clock, 
   HardDrive,
   Grid,
@@ -36,7 +36,7 @@ const MediaLibrary = () => {
         setLoading(true);
         try {
             const response = await cmsService.getMediaLibrary();
-            setMedia(response.data);
+            setMedia(response);
         } catch (error) {
             console.error('Failed to fetch media:', error);
             showToast('Failed to load media library', 'error');

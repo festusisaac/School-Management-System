@@ -73,7 +73,6 @@ const CarryForwardHistoryPage = () => {
                 // To support search efficiently I would need backend changes, but for now filtering by year is key.
             });
             setRecords(response.items || []);
-            setTotal(response.total || 0);
         } catch (error) {
             showError('Failed to load history');
         } finally {

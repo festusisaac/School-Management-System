@@ -3,7 +3,6 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-package-lock.json
 pnpm-lock.yaml
 
 # TypeScript
@@ -50,4 +49,5 @@ yarn-debug.log*
 
 # Ignore uploads directory if used
 frontend/uploads/
+backend/uploads/
 backend/logs/

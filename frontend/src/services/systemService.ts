@@ -27,6 +27,7 @@ export interface SystemSetting {
     printLogo?: string;
     invoiceLogo?: string;
     documentLogo?: string;
+    schoolStamp?: string;
     // Financial Settings
     currencySymbol?: string;
     currencyCode?: string;
@@ -121,6 +122,19 @@ export const systemService = {
     uploadLogo: async (type: string, file: File) => {
         const formData = new FormData();
         formData.append('file', file);
+        const response = await api.put<SystemSetting>(`/system/settings/logo/${type}`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response;
+    },
+
+    updateSettingsFile: async (type: string, file: File | FormData) => {
+        const formData = file instanceof FormData ? file : new FormData();
+        if (!(file instanceof FormData)) {
+            formData.append('file', file);
+        }
         const response = await api.put<SystemSetting>(`/system/settings/logo/${type}`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
@@ -259,3 +273,5 @@ export const systemService = {
         return response;
     },
 };
+
+export default systemService;

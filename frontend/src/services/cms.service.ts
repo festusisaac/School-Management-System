@@ -180,7 +180,7 @@ const cmsService = {
   submitContact: (data: { fullName: string; email: string; phone?: string; subject?: string; message: string }) => 
     api.post('/front-cms/contact', data),
   getContacts: () => api.get<CmsContact[]>('/front-cms/contacts'),
-  markContactAsRead: (id: string) => api.put(`/front-cms/contacts/${id}/read`),
+  markContactAsRead: (id: string) => api.put(`/front-cms/contacts/${id}/read`, {}),
   deleteContact: (id: string) => api.delete(`/front-cms/contacts/${id}`),
 
   // Media Library
