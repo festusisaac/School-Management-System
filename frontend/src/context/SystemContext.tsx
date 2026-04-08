@@ -132,10 +132,31 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             // Generate full URL internally to avoid depending on getFullUrl which needs to be in useCallback scope
             const buildUrl = (url?: string) => getFileUrl(url || '');
 
-            // Update Tab Title
-            if (data?.schoolName) {
-                document.title = data.schoolName;
-            }
+            // Update Tab Title & SEO Meta Tags
+            const pageTitle = data?.seoTitle || data?.schoolName || 'School Management System';
+            document.title = pageTitle;
+
+            const updateMetaTag = (name: string, content?: string, isProperty = false) => {
+                if (!content) return;
+                const selector = isProperty ? `meta[property="${name}"]` : `meta[name="${name}"]`;
+                let element = document.querySelector(selector);
+                if (!element) {
+                    element = document.createElement('meta');
+                    if (isProperty) element.setAttribute('property', name);
+                    else element.setAttribute('name', name);
+                    document.head.appendChild(element);
+                }
+                element.setAttribute('content', content);
+            };
+
+            if (data?.seoDescription) updateMetaTag('description', data.seoDescription);
+            if (data?.seoKeywords) updateMetaTag('keywords', data.seoKeywords);
+            
+            // Social Media (OpenGraph)
+            updateMetaTag('og:title', pageTitle, true);
+            if (data?.seoDescription) updateMetaTag('og:description', data.seoDescription, true);
+            if (data?.ogImage) updateMetaTag('og:image', buildUrl(data.ogImage), true);
+            updateMetaTag('og:type', 'website', true);
 
             // Update Favicon Tab Logo
             const faviconUrl = data?.favicon;

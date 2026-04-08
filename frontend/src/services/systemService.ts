@@ -51,6 +51,18 @@ export interface SystemSetting {
     admissionFee?: number;
     admissionReferencePrefix?: string;
     admissionInstructions?: string;
+    // Payment Gateway Keys
+    paystackPublicKey?: string;
+    paystackSecretKey?: string;
+    flutterwavePublicKey?: string;
+    flutterwaveSecretKey?: string;
+    isNoticeActive?: boolean;
+    noticeText?: string;
+    noticeLink?: string;
+    seoTitle?: string;
+    seoDescription?: string;
+    seoKeywords?: string;
+    ogImage?: string;
     createdAt?: string;
     updatedAt?: string;
 }

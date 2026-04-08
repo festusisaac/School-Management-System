@@ -26,6 +26,7 @@ import { HrModule } from '@modules/hr/hr.module';
 import { ExaminationModule } from '@modules/examination/examination.module';
 import { OnlineClassesModule } from '@modules/online-classes/online-classes.module';
 import { HomeworkModule } from '@modules/homework/homework.module';
+import { FrontCmsModule } from '@modules/front-cms/front-cms.module';
 
 @Module({
   imports: [
@@ -84,6 +85,7 @@ import { HomeworkModule } from '@modules/homework/homework.module';
     forwardRef(() => ExaminationModule),
     forwardRef(() => OnlineClassesModule),
     forwardRef(() => HomeworkModule),
+    forwardRef(() => FrontCmsModule),
   ],
   controllers: [AppController],
   providers: [

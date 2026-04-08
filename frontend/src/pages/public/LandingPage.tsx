@@ -13,7 +13,6 @@ import {
   Quote,
   ChevronRight,
   Phone,
-  Mail,
   Facebook,
   Twitter,
   Instagram,
@@ -32,10 +31,11 @@ import nurseryImg from '@assets/phjcschool/image4.jpeg';
 import primaryImg from '@assets/phjcschool/image11.jpeg';
 import secondaryImg from '@assets/phjcschool/image27.jpeg';
 
-// Gallery Assets - Campus
-import campus1 from '@assets/phjcschool/image95.jpeg';
-import campus2 from '@assets/phjcschool/image6.jpeg';
+import campus1 from '@assets/phjcschool/image1.jpeg';
+import campus2 from '@assets/phjcschool/image10.jpeg';
 import campus3 from '@assets/phjcschool/image29.jpeg';
+import cmsService, { CmsPublicInit, CmsNews } from '../../services/cms.service';
+import { useToast } from '../../context/ToastContext';
 
 // Gallery Assets - Spirituality
 import faith1 from '@assets/phjcschool/image58.jpeg';
@@ -92,49 +92,95 @@ const ScrollReveal = ({ children, delay = 0 }: { children: React.ReactNode, dela
 };
 
 const LandingPage = () => {
-  const heroImages = [image16, image17, image18, image20, image24, image43];
+  const { settings, getFullUrl } = useSystem();
+  const { showToast } = useToast();
+  const [cmsData, setCmsData] = useState<CmsPublicInit | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Contact Form State
+  const [submittingContact, setSubmittingContact] = useState(false);
+  const [contactForm, setContactForm] = useState({
+    fullName: '',
+    email: '',
+    subject: '',
+    message: ''
+  });
+
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmittingContact(true);
+    try {
+      await cmsService.submitContact(contactForm);
+      showToast('Thank you! Your message has been sent successfully.', 'success');
+      setContactForm({
+        fullName: '',
+        email: '',
+        subject: '',
+        message: ''
+      });
+    } catch (error) {
+      console.error('Contact submission failed:', error);
+      showToast('Failed to send message. Please try again later.', 'error');
+    } finally {
+      setSubmittingContact(false);
+    }
+  };
+
+  const localHeroImages = [image16, image17, image18, image20, image24, image43];
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activeGalleryTab, setActiveGalleryTab] = useState('campus');
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
 
-  const testimonials = [
-    {
-      quote: "The transformation in my son's discipline and academic performance since joining PHJC is remarkable. The teachers truly care about every child's individual growth.",
-      author: "Mrs. Florence Adebayor",
-      role: "Parent of Nursery 2 Student",
-      rating: 5
-    },
-    {
-      quote: "As a parent, I value the spiritual foundation PHJC provides. It's not just about academic excellence; it's about building strong moral character in our children.",
-      author: "Chief Emeka Okoro",
-      role: "Parent of Primary 5 Student",
-      rating: 5
-    },
-    {
-      quote: "The facility is top-notch, especially the science and computer labs. My daughter is already showing great interest in STEM thanks to the school's hands-on approach.",
-      author: "Mrs. Sarah Williams",
-      role: "Parent of S.S. 2 Student",
-      rating: 5
-    }
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const data = await cmsService.getPublicInit();
+        setCmsData(data);
+      } catch (error) {
+        console.error('Failed to fetch CMS data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
-  const galleryData = {
-    campus: [
-      { img: campus1, title: 'Modern Classrooms', category: 'The Campus' },
-      { img: campus2, title: 'Computer Laboratory', category: 'The Campus' },
-      { img: campus3, title: 'School Library', category: 'The Campus' },
-    ],
-    spirituality: [
-      { img: faith1, title: 'Morning Prayer', category: 'Spirituality' },
-      { img: faith2, title: 'Catholic Heritage', category: 'Spirituality' },
-      { img: faith3, title: 'Community Service', category: 'Spirituality' },
-    ],
-    activities: [
-      { img: activity1, title: 'JET Club Projects', category: 'Activities' },
-      { img: activity2, title: 'Inter-House Sports', category: 'Activities' },
-      { img: activity3, title: 'Cultural Day Celebrations', category: 'Activities' },
-    ]
-  };
+  const hero = cmsData?.hero;
+  const heroImages = hero?.carouselImages?.length 
+    ? hero.carouselImages.map(img => getFullUrl(img.imageUrl)) 
+    : localHeroImages;
+
+  const stats = cmsData?.stats?.length 
+    ? cmsData.stats 
+    : [
+        { label: 'Global Alumnae', value: '500+' },
+        { label: 'Student Enrolled', value: '300+' },
+        { label: 'Academic Programs', value: '30+' },
+        { label: 'University Placement', value: '100%' }
+      ];
+
+  const testimonials = cmsData?.testimonials?.length 
+    ? cmsData.testimonials 
+    : [
+        {
+          quote: "The transformation in my son's discipline and academic performance since joining PHJC is remarkable. The teachers truly care about every child's individual growth.",
+          author: "Mrs. Florence Adebayor",
+          role: "Parent of Nursery 2 Student",
+          rating: 5
+        },
+        {
+          quote: "As a parent, I value the spiritual foundation PHJC provides. It's not just about academic excellence; it's about building strong moral character in our children.",
+          author: "Chief Emeka Okoro",
+          role: "Parent of Primary 5 Student",
+          rating: 5
+        },
+        {
+          quote: "The facility is top-notch, especially the science and computer labs. My daughter is already showing great interest in STEM thanks to the school's hands-on approach.",
+          author: "Mrs. Sarah Williams",
+          role: "Parent of S.S. 2 Student",
+          rating: 5
+        }
+      ];
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -150,7 +196,72 @@ const LandingPage = () => {
     return () => clearInterval(timer);
   }, [testimonials.length]);
 
-  const { settings } = useSystem();
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-950">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-primary-600/20 border-t-primary-600 rounded-full animate-spin"></div>
+          <p className="text-slate-500 font-medium animate-pulse">Initializing Portal...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const galleryData = {
+    campus: cmsData?.gallery?.filter(i => i.category?.toLowerCase() === 'campus') || [
+      { imageUrl: campus1, title: 'Modern Classrooms', category: 'The Campus' },
+      { imageUrl: campus2, title: 'Computer Laboratory', category: 'The Campus' },
+      { imageUrl: campus3, title: 'School Library', category: 'The Campus' },
+    ],
+    spirituality: cmsData?.gallery?.filter(i => i.category?.toLowerCase() === 'spirituality') || [
+      { imageUrl: faith1, title: 'Morning Prayer', category: 'Spirituality' },
+      { imageUrl: faith2, title: 'Catholic Heritage', category: 'Spirituality' },
+      { imageUrl: faith3, title: 'Community Service', category: 'Spirituality' },
+    ],
+    activities: cmsData?.gallery?.filter(i => i.category?.toLowerCase() === 'activities') || [
+      { imageUrl: activity1, title: 'JET Club Projects', category: 'Activities' },
+      { imageUrl: activity2, title: 'Inter-House Sports', category: 'Activities' },
+      { imageUrl: activity3, title: 'Cultural Day Celebrations', category: 'Activities' },
+    ]
+  };
+
+  const programs = cmsData?.programs?.length 
+    ? cmsData.programs 
+    : [
+        { title: 'Early Foundation', description: 'Our play-based curriculum focuses on cognitive development, early literacy, and social coordination through creative exploration.', imageUrl: nurseryImg, level: 'Nursery' },
+        { title: 'Formative Excellence', description: 'Building a strong academic core and ethical leadership through a structured curriculum focused on English, Mathematics, and Moral guidance.', imageUrl: primaryImg, level: 'Primary' },
+        { title: 'Future Leaders', description: 'Preparing students for national WAEC/NECO examinations with a rigorous academic program that encourages critical thinking and career readiness.', imageUrl: secondaryImg, level: 'Secondary' }
+      ];
+
+  const newsList = cmsData?.news?.length 
+    ? cmsData.news.slice(0, 3) 
+    : [
+        {
+          imageUrl: news1,
+          tag: 'Sports',
+          date: 'March 24, 2026',
+          title: 'Annual Inter-House Sports Highlights',
+          slug: 'annual-inter-house-sports-2026',
+          snippet: 'Relive the excitement of our students\' sportsmanship and team spirit during this year\'s athletic competition.'
+        },
+        {
+          imageUrl: news2,
+          tag: 'Academic',
+          date: 'March 15, 2026',
+          title: '100% Success Rate in WAEC 2025',
+          slug: 'waec-results-success-2025',
+          snippet: 'Celebrating our senior students\' remarkable academic achievement and a flawless pass rate in national exams.'
+        },
+        {
+          imageUrl: news3,
+          tag: 'Notice',
+          date: 'April 02, 2026',
+          title: '2nd Term Resumption Notice',
+          slug: 'second-term-resumption-notice',
+          snippet: 'Important dates and preparations for the upcoming academic session. We look forward to welcoming our students.'
+        }
+      ];
+
   const schoolName = settings?.schoolName || 'YOUR SCHOOL';
 
   return (
@@ -184,15 +295,15 @@ const LandingPage = () => {
           <div className="max-w-3xl space-y-6 animate-fade-in">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary-600/30 backdrop-blur-md rounded-full border border-white/20">
               <Award size={14} className="text-primary-300" />
-              <span className="text-[10px] font-bold text-white uppercase tracking-widest shadow-sm">Excellence in Education</span>
+              <span className="text-[10px] font-bold text-white uppercase tracking-widest shadow-sm">{hero?.welcomeText || 'Excellence in Education'}</span>
             </div>
             
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-heading font-black text-white leading-[1.1] drop-shadow-xl">
-              Nurturing <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-secondary-300">Leaders</span> <br /> of Tomorrow
-            </h1>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-heading font-black text-white leading-[1.1] drop-shadow-xl" 
+                dangerouslySetInnerHTML={{ __html: hero?.title || 'Nurturing <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-secondary-300">Leaders</span> <br /> of Tomorrow' }} 
+            />
             
             <p className="text-base md:text-lg text-white/90 leading-relaxed max-w-xl drop-shadow-md font-medium">
-              Welcome to {schoolName}, where we combine academic rigor with moral guidance to inspire students toward a life of service and honor.
+              {hero?.subtitle || `Welcome to ${schoolName}, where we combine academic rigor with moral guidance to inspire students toward a life of service and honor.`}
             </p>
             
             <div className="flex flex-wrap gap-4 pt-4">
@@ -217,32 +328,21 @@ const LandingPage = () => {
       <ScrollReveal>
         <section className="relative z-20 -mt-12 md:-mt-16 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
-            <div className="bg-white rounded-2xl p-6 md:p-8 shadow-xl border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-8 md:gap-4">
-              <div className="text-center md:text-left space-y-0.5">
-                <div className="text-2xl lg:text-3xl font-black font-heading text-primary-600 tracking-tight">500+</div>
-                <div className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Global Alumnae</div>
-              </div>
-              <div className="hidden md:block h-10 w-px bg-slate-100"></div>
-              <div className="text-center md:text-left space-y-0.5">
-                <div className="text-2xl lg:text-3xl font-black font-heading text-primary-600 tracking-tight">300+</div>
-                <div className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Student Enrolled</div>
-              </div>
-              <div className="hidden md:block h-10 w-px bg-slate-100"></div>
-              <div className="text-center md:text-left space-y-0.5">
-                <div className="text-2xl lg:text-3xl font-black font-heading text-primary-600 tracking-tight">30+</div>
-                <div className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Academic Programs</div>
-              </div>
-              <div className="hidden md:block h-10 w-px bg-slate-100"></div>
-              <div className="text-center md:text-left space-y-0.5">
-                <div className="text-2xl lg:text-3xl font-black font-heading text-primary-600 tracking-tight">100%</div>
-                <div className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">University Placement</div>
-              </div>
+            <div className="bg-white rounded-2xl p-6 md:p-8 shadow-xl border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-8 md:gap-4 overflow-x-auto">
+              {stats.map((stat, idx) => (
+                <React.Fragment key={idx}>
+                  <div className="text-center md:text-left space-y-0.5 min-w-[120px]">
+                    <div className="text-2xl lg:text-3xl font-black font-heading text-primary-600 tracking-tight">{stat.value}</div>
+                    <div className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">{stat.label}</div>
+                  </div>
+                  {idx < stats.length - 1 && <div className="hidden md:block h-10 w-px bg-slate-100"></div>}
+                </React.Fragment>
+              ))}
             </div>
           </div>
         </section>
       </ScrollReveal>
 
-      {/* About Us Section - Minimalist Redesign */}
       <ScrollReveal>
         <section id="about" className="py-24 md:py-32 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -252,20 +352,22 @@ const LandingPage = () => {
                 <div className="space-y-4">
                   <h2 className="text-primary-600 font-bold text-xs uppercase tracking-widest">Our Story & Mission</h2>
                   <h3 className="text-3xl md:text-4xl lg:text-5xl font-heading font-black text-slate-900 leading-tight">
-                    Providing Accessible & <br /> Meaningful Education
+                    {cmsData?.sections?.about?.title || 'Providing Accessible & Meaningful Education'}
                   </h3>
                 </div>
                 
-                <div className="space-y-8 text-lg text-slate-600 leading-relaxed font-normal">
-                  <p>
-                    PHJC Nursery, Primary, and Secondary School Azhin Kasa was established to provide accessible, high-quality education to children in rural communities. Managed by the <span className="text-primary-600 font-bold border-b-2 border-primary-100 uppercase tracking-tighter text-sm">Poor Handmaids of Jesus Christ</span>, we are committed to ensuring that no child is left behind due to financial or social barriers.
-                  </p>
-                  
-                  <p>
-                    Our institution goes beyond academics to emphasize character development, discipline, and spiritual growth. We view education as a powerful tool for transformation, guiding students in values of integrity, respect, and service to build a better future for themselves and their community.
-                  </p>
+                <div className="space-y-8 text-lg text-slate-600 leading-relaxed font-normal whitespace-pre-wrap">
+                  {cmsData?.sections?.about?.content || (
+                    <>
+                      <p>
+                        PHJC Nursery, Primary, and Secondary School Azhin Kasa was established to provide accessible, high-quality education to children in rural communities. Managed by the <span className="text-primary-600 font-bold border-b-2 border-primary-100 uppercase tracking-tighter text-sm">Poor Handmaids of Jesus Christ</span>, we are committed to ensuring that no child is left behind due to financial or social barriers.
+                      </p>
+                      <p>
+                        Our institution goes beyond academics to emphasize character development, discipline, and spiritual growth. We view education as a powerful tool for transformation, guiding students in values of integrity, respect, and service to build a better future for themselves and their community.
+                      </p>
+                    </>
+                  )}
                 </div>
-
               </div>
 
               {/* Picture Content - Right Hand */}
@@ -273,7 +375,7 @@ const LandingPage = () => {
                 <div className="relative group">
                   <div className="absolute -inset-2 bg-slate-100 rounded-[2rem] group-hover:bg-primary-50 transition-colors duration-500"></div>
                   <img 
-                    src={aboutImg} 
+                    src={cmsData?.sections?.about?.imageUrl ? getFullUrl(cmsData.sections.about.imageUrl) : aboutImg} 
                     alt="PHJC School Campus" 
                     className="relative rounded-[1.5rem] w-full aspect-[4/5] object-cover shadow-sm grayscale hover:grayscale-0 transition-all duration-1000" 
                   />
@@ -295,7 +397,7 @@ const LandingPage = () => {
                   <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-secondary-100 dark:bg-secondary-900/20 rounded-[2rem] -z-10 animate-pulse-slow"></div>
                   
                   <img 
-                    src={catherineImg} 
+                    src={cmsData?.sections?.heritage?.imageUrl ? getFullUrl(cmsData.sections.heritage.imageUrl) : catherineImg} 
                     alt="Saint Katharina Kasper" 
                     className="relative rounded-[2rem] w-full aspect-[3/4] object-cover shadow-2xl z-10 grayscale hover:grayscale-0 transition-all duration-1000 border-4 border-white dark:border-slate-800" 
                   />
@@ -307,22 +409,32 @@ const LandingPage = () => {
                 <div className="space-y-4 text-center lg:text-left">
                   <h2 className="text-primary-600 font-bold text-xs uppercase tracking-widest">The PHJC Heritage</h2>
                   <h3 className="text-3xl md:text-4xl lg:text-5xl font-heading font-black text-slate-900 dark:text-white leading-tight">
-                    The Vision of <br /> Saint Katharina Kasper
+                    {cmsData?.sections?.heritage?.title || 'The Vision of Saint Katharina Kasper'}
                   </h3>
                 </div>
                 
-                <div className="space-y-8 text-lg text-slate-600 dark:text-slate-400 leading-relaxed font-normal">
-                  <p>
-                    Our school's journey is deeply rooted in the vision of <span className="text-primary-600 font-bold italic">Saint Katharina Kasper</span>. Unlike secular institutions, our foundation is built on a spiritual mission to serve.
-                  </p>
-                  
-                  <p>
-                    The Poor Handmaids of Jesus Christ (PHJC) started this school in Azhin Kasa with a clear purpose: to bring high-quality, value-based education to a rural community that was previously underserved. This was not just a project—it was a call to serve the children who would otherwise have been left behind.
-                  </p>
-
-                  <p className="italic text-slate-500 font-medium text-center lg:text-left">
-                    "We have more to do with the people than with the walls, of this be always mindful." — St. Katharina Kasper
-                  </p>
+                <div className="space-y-8 text-lg text-slate-600 dark:text-slate-400 leading-relaxed font-normal whitespace-pre-wrap">
+                  {cmsData?.sections?.heritage?.content || (
+                    <>
+                      <p>
+                        Our school's journey is deeply rooted in the vision of <span className="text-primary-600 font-bold italic">Saint Katharina Kasper</span>. Unlike secular institutions, our foundation is built on a spiritual mission to serve.
+                      </p>
+                      <p>
+                        The Poor Handmaids of Jesus Christ (PHJC) started this school in Azhin Kasa with a clear purpose: to bring high-quality, value-based education to a rural community that was previously underserved. This was not just a project—it was a call to serve the children who would otherwise have been left behind.
+                      </p>
+                    </>
+                  )}
+                  {cmsData?.sections?.heritage?.metadata?.quote && (
+                    <p className="italic text-slate-500 font-medium text-center lg:text-left">
+                      "{cmsData.sections.heritage.metadata.quote}"
+                      {cmsData.sections.heritage.metadata.author && ` — ${cmsData.sections.heritage.metadata.author}`}
+                    </p>
+                  )}
+                  {!cmsData?.sections.heritage?.metadata?.quote && (
+                    <p className="italic text-slate-500 font-medium text-center lg:text-left">
+                      "We have more to do with the people than with the walls, of this be always mindful." — St. Katharina Kasper
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -347,53 +459,24 @@ const LandingPage = () => {
         </ScrollReveal>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-3 gap-8 md:gap-12 pb-12">
-          {/* Nursery Stage */}
-          <ScrollReveal delay={200}>
-            <div className="group bg-white dark:bg-slate-900/50 rounded-[2rem] p-6 shadow-sm border border-slate-100 dark:border-slate-800 hover-lift h-full">
-              <div className="relative h-48 mb-8 overflow-hidden rounded-2xl">
-                <img src={nurseryImg} alt="Nursery Program" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                <div className="absolute top-4 left-4">
-                  <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest">Nursery</div>
+          {programs.map((prog, idx) => (
+            <ScrollReveal key={idx} delay={idx * 200}>
+              <div className="group bg-white dark:bg-slate-900/50 rounded-[2rem] p-6 shadow-sm border border-slate-100 dark:border-slate-800 hover-lift h-full flex flex-col">
+                <div className="relative h-48 mb-8 overflow-hidden rounded-2xl">
+                  <img src={prog.imageUrl?.startsWith('blob:') ? prog.imageUrl : getFullUrl(prog.imageUrl)} alt={prog.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                  <div className="absolute top-4 left-4">
+                    <div className={`px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest ${prog.level === 'Nursery' ? 'bg-white/90 dark:bg-slate-900/90' : prog.level === 'Primary' ? 'bg-primary-600 text-white' : 'bg-secondary-600 text-white'}`}>
+                      {prog.level}
+                    </div>
+                  </div>
                 </div>
+                <h4 className="text-xl font-heading font-bold mb-4 text-slate-900 dark:text-white">{prog.title}</h4>
+                <p className="text-slate-500 dark:text-slate-400 leading-relaxed text-sm mb-6 flex-grow">
+                  {prog.description}
+                </p>
               </div>
-              <h4 className="text-xl font-heading font-bold mb-4 text-slate-900 dark:text-white">Early Foundation</h4>
-              <p className="text-slate-500 dark:text-slate-400 leading-relaxed text-sm mb-6">
-                Our play-based curriculum focuses on cognitive development, early literacy, and social coordination through creative exploration.
-              </p>
-            </div>
-          </ScrollReveal>
-
-          {/* Primary Stage */}
-          <ScrollReveal delay={400}>
-            <div className="group bg-white dark:bg-slate-900/50 rounded-[2rem] p-6 shadow-sm border border-slate-100 dark:border-slate-800 hover-lift h-full">
-              <div className="relative h-48 mb-8 overflow-hidden rounded-2xl">
-                <img src={primaryImg} alt="Primary Program" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                <div className="absolute top-4 left-4">
-                  <div className="bg-primary-600 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest text-white">Primary</div>
-                </div>
-              </div>
-              <h4 className="text-xl font-heading font-bold mb-4 text-slate-900 dark:text-white">Formative Excellence</h4>
-              <p className="text-slate-500 dark:text-slate-400 leading-relaxed text-sm mb-6">
-                Building a strong academic core and ethical leadership through a structured curriculum focused on English, Mathematics, and Moral guidance.
-              </p>
-            </div>
-          </ScrollReveal>
-
-          {/* Secondary Stage */}
-          <ScrollReveal delay={600}>
-            <div className="group bg-white dark:bg-slate-900/50 rounded-[2rem] p-6 shadow-sm border border-slate-100 dark:border-slate-800 hover-lift h-full">
-              <div className="relative h-48 mb-8 overflow-hidden rounded-2xl">
-                <img src={secondaryImg} alt="Secondary Program" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                <div className="absolute top-4 left-4">
-                  <div className="bg-secondary-600 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest text-white">Secondary</div>
-                </div>
-              </div>
-              <h4 className="text-xl font-heading font-bold mb-4 text-slate-900 dark:text-white">Future Leaders</h4>
-              <p className="text-slate-500 dark:text-slate-400 leading-relaxed text-sm mb-6">
-                Preparing students for national WAEC/NECO examinations with a rigorous academic program that encourages critical thinking and career readiness.
-              </p>
-            </div>
-          </ScrollReveal>
+            </ScrollReveal>
+          ))}
         </div>
       </section>
 
@@ -438,7 +521,7 @@ const LandingPage = () => {
                   className="group relative h-96 rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-700 animate-fade-in"
                 >
                   <img 
-                    src={item.img} 
+                    src={item.imageUrl?.startsWith('blob:') || item.imageUrl?.startsWith('data:') ? item.imageUrl : item.imageUrl ? getFullUrl(item.imageUrl) : ''} 
                     alt={item.title} 
                     className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                   />
@@ -480,36 +563,11 @@ const LandingPage = () => {
             </div>
 
             <div className="grid md:grid-cols-3 gap-8 md:gap-12 mb-16">
-              {[
-                {
-                  img: news1,
-                  tag: 'Sports',
-                  date: 'March 24, 2026',
-                  title: 'Annual Inter-House Sports Highlights',
-                  slug: 'annual-inter-house-sports-2026',
-                  snippet: 'Relive the excitement of our students\' sportsmanship and team spirit during this year\'s athletic competition.'
-                },
-                {
-                  img: news2,
-                  tag: 'Academic',
-                  date: 'March 15, 2026',
-                  title: '100% Success Rate in WAEC 2025',
-                  slug: 'waec-results-success-2025',
-                  snippet: 'Celebrating our senior students\' remarkable academic achievement and a flawless pass rate in national exams.'
-                },
-                {
-                  img: news3,
-                  tag: 'Notice',
-                  date: 'April 02, 2026',
-                  title: '2nd Term Resumption Notice',
-                  slug: 'second-term-resumption-notice',
-                  snippet: 'Important dates and preparations for the upcoming academic session. We look forward to welcoming our students.'
-                }
-              ].map((news, index) => (
+              {newsList.map((news, index) => (
                 <div key={index} className="group bg-white dark:bg-slate-800 rounded-[2rem] p-5 shadow-sm hover:shadow-xl transition-all duration-500 border border-slate-100 dark:border-slate-700/50 flex flex-col h-full">
                   <div className="relative h-56 mb-6 overflow-hidden rounded-2xl">
                     <img 
-                      src={news.img} 
+                      src={news.imageUrl?.startsWith('blob:') || news.imageUrl?.startsWith('data:') ? news.imageUrl : news.imageUrl ? getFullUrl(news.imageUrl) : ''} 
                       alt={news.title} 
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
                     />
@@ -518,7 +576,7 @@ const LandingPage = () => {
                     </div>
                   </div>
                   <div className="space-y-4 px-2 flex flex-col flex-grow">
-                    <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{news.date}</div>
+                    <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{new Date(news.date || Date.now()).toLocaleDateString()}</div>
                     <h4 className="text-xl font-heading font-bold text-slate-900 dark:text-white leading-tight group-hover:text-primary-600 transition-colors">{news.title}</h4>
                     <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed line-clamp-3 flex-grow">{news.snippet}</p>
                     <Link to={`/news/${news.slug}`} className="pt-4 text-xs font-bold text-primary-600 uppercase tracking-widest flex items-center gap-2 hover:gap-3 transition-all">
@@ -574,7 +632,7 @@ const LandingPage = () => {
                     
                     <div className="pt-4 space-y-3">
                       <div className="flex justify-center gap-1 text-secondary-500">
-                        {[...Array(t.rating)].map((_, i) => (
+                        {[...Array(t.rating || 5)].map((_, i) => (
                           <Star key={i} size={18} fill="currentColor" />
                         ))}
                       </div>
@@ -624,25 +682,64 @@ const LandingPage = () => {
                   </p>
                 </div>
 
-                <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-700 space-y-6">
+                <form onSubmit={handleContactSubmit} className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-700 space-y-6">
                   <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter ml-2">Full Name</label>
-                      <input type="text" placeholder="John Doe" className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-900 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 transition-all font-medium" />
+                      <input 
+                        type="text" 
+                        required
+                        value={contactForm.fullName}
+                        onChange={(e) => setContactForm(prev => ({ ...prev, fullName: e.target.value }))}
+                        placeholder="John Doe" 
+                        className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-900 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 transition-all font-medium text-slate-900 dark:text-white" 
+                      />
                     </div>
                     <div className="space-y-2">
                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter ml-2">Email Address</label>
-                      <input type="email" placeholder="john@example.com" className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-900 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 transition-all font-medium" />
+                      <input 
+                        type="email" 
+                        required
+                        value={contactForm.email}
+                        onChange={(e) => setContactForm(prev => ({ ...prev, email: e.target.value }))}
+                        placeholder="john@example.com" 
+                        className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-900 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 transition-all font-medium text-slate-900 dark:text-white" 
+                      />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter ml-2">Message</label>
-                    <textarea placeholder="How can we help you?" rows={4} className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-900 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 transition-all font-medium resize-none"></textarea>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter ml-2">Subject (Optional)</label>
+                    <input 
+                      type="text" 
+                      value={contactForm.subject}
+                      onChange={(e) => setContactForm(prev => ({ ...prev, subject: e.target.value }))}
+                      placeholder="Admission Inquiry" 
+                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-900 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 transition-all font-medium text-slate-900 dark:text-white" 
+                    />
                   </div>
-                  <button className="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-4 rounded-2xl shadow-xl shadow-primary-500/20 transition-all active:scale-95 flex items-center justify-center gap-3">
-                    Send Message <ArrowRight size={18} />
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter ml-2">Message</label>
+                    <textarea 
+                      required
+                      value={contactForm.message}
+                      onChange={(e) => setContactForm(prev => ({ ...prev, message: e.target.value }))}
+                      placeholder="How can we help you?" 
+                      rows={4} 
+                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-900 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 transition-all font-medium resize-none text-slate-900 dark:text-white"
+                    ></textarea>
+                  </div>
+                  <button 
+                    type="submit"
+                    disabled={submittingContact}
+                    className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white font-bold py-4 rounded-2xl shadow-xl shadow-primary-500/20 transition-all active:scale-95 flex items-center justify-center gap-3"
+                  >
+                    {submittingContact ? (
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <>Send Message <ArrowRight size={18} /></>
+                    )}
                   </button>
-                </div>
+                </form>
               </div>
 
               {/* Right Column: Contact Cards */}

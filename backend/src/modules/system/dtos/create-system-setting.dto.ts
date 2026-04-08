@@ -187,4 +187,51 @@ export class CreateSystemSettingDto {
     @IsString()
     @IsOptional()
     admissionInstructions?: string;
+
+    // Notice Bar Settings
+    @IsBoolean()
+    @IsOptional()
+    isNoticeActive?: boolean;
+
+    @IsString()
+    @IsOptional()
+    noticeText?: string;
+
+    @IsString()
+    @IsOptional()
+    noticeLink?: string;
+
+    // Payment Gateway Settings
+    @IsString()
+    @IsOptional()
+    paystackPublicKey?: string;
+
+    @IsString()
+    @IsOptional()
+    paystackSecretKey?: string;
+
+    @IsString()
+    @IsOptional()
+    flutterwavePublicKey?: string;
+
+    @IsString()
+    @IsOptional()
+    flutterwaveSecretKey?: string;
+
+    // SEO Settings
+    @IsString()
+    @IsOptional()
+    seoTitle?: string;
+
+    @IsString()
+    @IsOptional()
+    seoDescription?: string;
+
+    @IsString()
+    @IsOptional()
+    seoKeywords?: string;
+
+    @IsString()
+    @IsOptional()
+    ogImage?: string;
 }

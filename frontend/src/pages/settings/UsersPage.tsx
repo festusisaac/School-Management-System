@@ -10,7 +10,8 @@ import {
     CheckCircle2, 
     XCircle,
     ArrowUpDown,
-    Lock
+    Lock,
+    Eye
 } from 'lucide-react';
 import { systemService, Role } from '../../services/systemService';
 import { useToast } from '../../context/ToastContext';

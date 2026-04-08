@@ -28,8 +28,15 @@ export class SystemSettingsService {
             onlineAdmissionEnabled: settings.onlineAdmissionEnabled,
             currencySymbol: settings.currencySymbol,
             currencyCode: settings.currencyCode,
-            paystackPublicKey: process.env.PAYSTACK_PUBLIC_KEY,
-            flutterwavePublicKey: process.env.FLUTTERWAVE_PUBLIC_KEY,
+            paystackPublicKey: settings.paystackPublicKey || process.env.PAYSTACK_PUBLIC_KEY,
+            flutterwavePublicKey: settings.flutterwavePublicKey || process.env.FLUTTERWAVE_PUBLIC_KEY,
+            isNoticeActive: settings.isNoticeActive,
+            noticeText: settings.noticeText,
+            noticeLink: settings.noticeLink,
+            seoTitle: settings.seoTitle,
+            seoDescription: settings.seoDescription,
+            seoKeywords: settings.seoKeywords,
+            ogImage: settings.ogImage,
         };
     }
 

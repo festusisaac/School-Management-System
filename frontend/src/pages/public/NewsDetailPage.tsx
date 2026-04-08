@@ -13,73 +13,32 @@ import {
   Copy
 } from 'lucide-react';
 
-// Reusing news images for mock detailing
 import news1 from '@assets/phjcschool/image80.jpeg';
-import news2 from '@assets/phjcschool/image84.jpeg';
-import news3 from '@assets/phjcschool/image88.jpeg';
+
+import cmsService, { CmsNews } from '../../services/cms.service';
 
 const NewsDetailPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const { settings, getFullUrl } = useSystem();
-  const schoolName = settings?.schoolName || 'YOUR SCHOOL';
-  const logoUrl = settings?.primaryLogo ? getFullUrl(settings.primaryLogo) : null;
+  const [allNews, setAllNews] = useState<CmsNews[]>([]);
+  const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
-  // Mock database search based on slug
-  const allNews = [
-    {
-      id: 1,
-      slug: 'annual-inter-house-sports-2026',
-      img: news1,
-      tag: 'Sports',
-      date: 'March 24, 2026',
-      title: 'Annual Inter-House Sports Highlights',
-      author: 'Sports Dept.',
-      readTime: '5 min read',
-      content: `The Annual Inter-House Sports competition at PHJC Azhin Kasa came to a thrilling conclusion yesterday, showcasing the incredible athletic talent and sportsmanship of our students. The event, which took place on the main sports field, brought together students, parents, and community members in a celebration of physical excellence and team spirit.
+  useEffect(() => {
+    const fetchNews = async () => {
+      try {
+        const data = await cmsService.getPublicNews();
+        setAllNews(data);
+      } catch (error) {
+        console.error('Failed to fetch news:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchNews();
+  }, []);
 
-      From the intense 100m sprints to the strategic relay races, every house displayed remarkable determination. Blue House ultimately emerged as the overall champions, narrowly edging out Red House in the final tally of medals.
-
-      "It's not just about winning," said the School Sports Coordinator. "It's about the character built through discipline and the friendships forged in healthy competition. We are immensely proud of every participant who gave their best on the field today."
-
-      The day featured traditional track events, high jump, long jump, and even a novelty race for parents and staff, which added a layer of community joy to the proceedings. Special awards were presented for "Most Disciplined House" and "Top Student Athlete" at the closing ceremony.`
-    },
-    {
-      id: 2,
-      slug: 'waec-results-success-2025',
-      img: news2,
-      tag: 'Achievement',
-      date: 'March 15, 2026',
-      title: '100% Success Rate in WAEC 2025',
-      author: 'Academic Board',
-      readTime: '4 min read',
-      content: `We are overjoyed to announce that PHJC School Azhin Kasa has achieved a phenomenal 100% pass rate in the 2025 West African Examinations Council (WAEC) senior secondary exams. This milestone achievement is a testament to the hard work of our students, the dedication of our teaching staff, and the unwavering support of our parents.
-
-      Analysis of the results shows that over 80% of our candidates achieved distinctions (A1-B3) in core subjects, including Mathematics, English Language, and Integrated Science. Our science laboratory practicals and intensive exam preparatory classes have clearly paid off, providing our students with a strong competitive edge.
-
-      The Principal, in an official statement, remarked: "At PHJC, we believe every child has the potential for greatness. This result confirms that with the right environment and consistent guidance, our students can compete with the best in the nation. We celebrate the class of 2025 and look forward to their continued success in higher education."`
-    },
-    {
-      id: 3,
-      slug: 'second-term-resumption-notice',
-      img: news3,
-      tag: 'Notices',
-      date: 'April 02, 2026',
-      title: '2nd Term Resumption Notice',
-      author: 'Admin',
-      readTime: '3 min read',
-      content: `As we prepare to welcome our students back for the 2025/2026 Second Academic Term, the school administration wishes to provide important updates regarding resumption and term activities.
-
-      Resumption Dates: All boarding students are expected back on Sunday, April 12th, by 4:00 PM. Regular classes for both Day and Boarding students will commence promptly at 7:30 AM on Monday, April 13th.
-
-      Requirements: Parents are reminded to ensure all holiday assignments are completed and that students return with the necessary stationery and updated school uniforms. A brief "Welcome Assembly" will be held on the first morning to layout the term's academic and spiritual goals.
-
-      We look forward to another term filled with discovery, growth, and collective achievement as we continue our mission of providing holistic education to our community.`
-    }
-    // ... other news items would follow
-  ];
-
-  const news = allNews.find(n => n.slug === slug) || allNews[0]; // Fallback to first if not found
+  const news = allNews.find(n => n.slug === slug);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -91,7 +50,24 @@ const NewsDetailPage = () => {
     window.scrollTo(0, 0);
   }, [slug]);
 
-  const relatedNews = allNews.filter(n => n.id !== news.id).slice(0, 3);
+  const relatedNews = allNews.filter(n => n.slug !== slug).slice(0, 3);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  if (!news) {
+    return (
+      <div className="flex flex-col justify-center items-center h-screen space-y-4">
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Article not found</h2>
+        <Link to="/news" className="text-primary-600 font-bold hover:underline">Back to News</Link>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -110,8 +86,8 @@ const NewsDetailPage = () => {
                 {news.tag}
               </span>
               <div className="flex items-center gap-4 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-l-2 border-slate-100 dark:border-slate-800 pl-4">
-                <div className="flex items-center gap-1.5"><Calendar size={14} /> {news.date}</div>
-                <div className="flex items-center gap-1.5"><Clock size={14} /> {news.readTime}</div>
+                <div className="flex items-center gap-1.5"><Calendar size={14} /> {new Date(news.date).toLocaleDateString()}</div>
+                <div className="flex items-center gap-1.5"><Clock size={14} /> 5 min read</div>
               </div>
             </div>
 
@@ -151,15 +127,15 @@ const NewsDetailPage = () => {
           </div>
 
           {/* Feature Image */}
-          <div className="relative aspect-video rounded-[3rem] overflow-hidden mb-16 shadow-2xl shadow-slate-200 dark:shadow-none group">
-            <img src={news.img} alt={news.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[3s]" />
-          </div>
+          {news.imageUrl && (
+            <div className="relative aspect-video rounded-[3rem] overflow-hidden mb-16 shadow-2xl shadow-slate-200 dark:shadow-none group">
+              <img src={news.imageUrl.startsWith('blob:') ? news.imageUrl : getFullUrl(news.imageUrl)} alt={news.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[3s]" />
+            </div>
+          )}
 
           {/* Article Content */}
-          <div className="prose prose-slate prose-lg dark:prose-invert max-w-none prose-headings:font-heading prose-headings:font-black prose-p:leading-relaxed prose-p:text-slate-600 dark:prose-p:text-slate-400 prose-p:font-medium mb-24">
-            {news.content.split('\n\n').map((paragraph, i) => (
-              <p key={i}>{paragraph.trim()}</p>
-            ))}
+          <div className="prose prose-slate prose-lg dark:prose-invert max-w-none prose-headings:font-heading prose-headings:font-black prose-p:leading-relaxed prose-p:text-slate-600 dark:prose-p:text-slate-400 prose-p:font-medium mb-24 whitespace-pre-wrap">
+            {news.content}
           </div>
 
           {/* Related Stories */}
@@ -175,7 +151,7 @@ const NewsDetailPage = () => {
               {relatedNews.map((related) => (
                 <Link key={related.id} to={`/news/${related.slug}`} className="group space-y-4">
                   <div className="aspect-video rounded-3xl overflow-hidden shadow-sm">
-                    <img src={related.img} alt={related.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                    <img src={related.imageUrl ? (related.imageUrl.startsWith('blob:') ? related.imageUrl : getFullUrl(related.imageUrl)) : news1} alt={related.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                   </div>
                   <div className="space-y-2">
                     <span className="text-[10px] font-black text-primary-600 uppercase tracking-widest">{related.tag}</span>

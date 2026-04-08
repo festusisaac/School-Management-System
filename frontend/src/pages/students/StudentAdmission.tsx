@@ -303,7 +303,7 @@ export default function StudentAdmission() {
                             height: student.height || '',
                             weight: student.weight || '',
                             asOnDate: student.asOnDate ? new Date(student.asOnDate).toISOString().split('T')[0] : '',
-                            previousSchool: student.previousSchool || '',
+                            previousSchoolName: student.previousSchoolName || '',
                             note: student.note || '',
                             feeGroupIds: student.feeGroupIds || [],
                             feeExclusions: student.feeExclusions || {},

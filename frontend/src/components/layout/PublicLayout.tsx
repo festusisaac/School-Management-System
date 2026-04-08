@@ -14,6 +14,8 @@ import {
   Youtube
 } from 'lucide-react';
 
+import NoticeBar from '../common/NoticeBar';
+
 interface PublicLayoutProps {
   children: React.ReactNode;
 }
@@ -46,8 +48,8 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
   ];
 
   const headerClass = isHomePage 
-    ? (isScrolled ? 'glass-nav py-3' : 'bg-transparent py-6')
-    : 'glass-nav py-3 bg-white/95 dark:bg-slate-900/95 shadow-sm border-b border-slate-100 dark:border-slate-800';
+    ? (isScrolled ? 'glass-nav py-4' : 'bg-transparent py-8')
+    : 'glass-nav py-4 bg-white/95 dark:bg-slate-900/95 shadow-sm border-b border-slate-100 dark:border-slate-800';
 
   const textClass = isHomePage 
     ? (isScrolled ? 'text-slate-900 dark:text-white' : 'text-white')
@@ -57,11 +59,19 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
     ? (isScrolled ? 'text-slate-600 dark:text-slate-400' : 'text-slate-200')
     : 'text-slate-600 dark:text-slate-400';
 
+  // Navigation top offset depends on if NoticeBar is showing
+  // Since NoticeBar is relative and at top, the fixed nav with top-0 will overlap it unless we adjust.
+  // Actually, we can just wrap both in a container or make nav sticky.
+  // Let's make the entire header section sticky.
+
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-white font-sans selection:bg-blue-100 selection:text-blue-900 transition-colors duration-500">
       
+      {/* Dynamic Announcement Bar */}
+      <NoticeBar />
+
       {/* Navigation */}
-      <nav className={`fixed w-full z-50 transition-all duration-500 ${headerClass}`}>
+      <nav className={`${isHomePage && !isScrolled ? 'absolute' : 'fixed'} w-full z-50 transition-all duration-500 ${headerClass}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
             <Link to="/" className="flex items-center gap-3 group max-w-[45%]">

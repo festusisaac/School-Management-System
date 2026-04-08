@@ -270,7 +270,7 @@ export default function OnlineAdmission() {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 title="Application Details"
-                size="4xl"
+                size="xl"
             >
                 {selectedApplication && (
                     <div className="space-y-6">

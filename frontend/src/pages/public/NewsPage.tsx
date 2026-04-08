@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useSystem } from '../../context/SystemContext';
 import { 
@@ -7,89 +7,35 @@ import {
   ArrowRight, 
   Mail, 
   Calendar, 
-  User, 
-  ChevronDown
+  User
 } from 'lucide-react';
 
-// News Assets
 import news1 from '@assets/phjcschool/image80.jpeg';
-import news2 from '@assets/phjcschool/image84.jpeg';
-import news3 from '@assets/phjcschool/image88.jpeg';
-import news4 from '@assets/phjcschool/image95.jpeg';
-import news5 from '@assets/phjcschool/image6.jpeg';
-import news6 from '@assets/phjcschool/image29.jpeg';
+
+import cmsService, { CmsNews } from '../../services/cms.service';
 
 const NewsPage = () => {
-  const { settings, getFullUrl } = useSystem();
-  const schoolName = settings?.schoolName || 'YOUR SCHOOL';
-  const logoUrl = settings?.primaryLogo ? getFullUrl(settings.primaryLogo) : null;
+  const { getFullUrl } = useSystem();
+  const [allNews, setAllNews] = useState<CmsNews[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
 
-  const categories = ['All', 'Academic', 'Sports', 'Events', 'Notices', 'Achievement'];
+  useEffect(() => {
+    const fetchNews = async () => {
+      try {
+        const data = await cmsService.getPublicNews();
+        setAllNews(data);
+      } catch (error) {
+        console.error('Failed to fetch news:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchNews();
+  }, []);
 
-  const allNews = [
-    {
-      id: 1,
-      slug: 'annual-inter-house-sports-2026',
-      img: news1,
-      tag: 'Sports',
-      date: 'March 24, 2026',
-      title: 'Annual Inter-House Sports Highlights',
-      author: 'Sports Dept.',
-      snippet: 'Relive the excitement of our students\' sportsmanship and team spirit during this year\'s athletic competition. Blue House emerged as the overall winner after a series of intense track and field events.'
-    },
-    {
-      id: 2,
-      slug: 'waec-results-success-2025',
-      img: news2,
-      tag: 'Achievement',
-      date: 'March 15, 2026',
-      title: '100% Success Rate in WAEC 2025',
-      author: 'Admin',
-      snippet: 'Celebrating our senior students\' remarkable academic achievement and a flawless pass rate in national exams. Over 80% of our students achieved distinctions in Mathematics and English Language.'
-    },
-    {
-      id: 3,
-      slug: 'second-term-resumption-notice',
-      img: news3,
-      tag: 'Notices',
-      date: 'April 02, 2026',
-      title: '2nd Term Resumption Notice',
-      author: 'Principal',
-      snippet: 'Important dates and preparations for the upcoming academic session. We look forward to welcoming our students back for another productive term of learning and growth.'
-    },
-    {
-      id: 4,
-      slug: 'new-computer-lab-inauguration',
-      img: news4,
-      tag: 'Events',
-      date: 'February 28, 2026',
-      title: 'Inauguration of the New High-Tech Computer Lab',
-      author: 'Admin',
-      snippet: 'Our commitment to digital literacy takes a giant leap forward with the opening of our state-of-the-art computer center, equipped with the latest workstations and high-speed internet.'
-    },
-    {
-      id: 5,
-      slug: 'pfa-meeting-general-assembly',
-      img: news5,
-      tag: 'Events',
-      date: 'February 10, 2026',
-      title: 'Parents-Teachers-Association General Assembly',
-      author: 'PFA Secretary',
-      snippet: 'A successful gathering of parents and staff to discuss the school\'s development plan for the second half of the year. Key resolutions were reached regarding student transportation and extra-curricular support.'
-    },
-    {
-      id: 6,
-      slug: 'library-expansion-project',
-      img: news6,
-      tag: 'Achievement',
-      date: 'January 15, 2026',
-      title: 'School Library Expansion Project Completed',
-      author: 'Librarian',
-      snippet: 'Increased seating capacity and over 500 new titles added to our school library. The new "Quiet Study Zone" is now officially open for senior students preparing for exams.'
-    }
-  ];
+  const categories = ['All', 'Academic', 'Sports', 'Events', 'Notices', 'Achievement'];
 
   const filteredNews = allNews.filter(news => {
     const matchesSearch = news.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -156,7 +102,11 @@ const NewsPage = () => {
           </div>
 
           {/* News Feed Grid */}
-          {filteredNews.length > 0 ? (
+          {loading ? (
+            <div className="flex justify-center items-center py-20">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+            </div>
+          ) : filteredNews.length > 0 ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
               {filteredNews.map((news) => (
                 <Link 
@@ -166,7 +116,7 @@ const NewsPage = () => {
                 >
                    <div className="relative h-64 mb-8 overflow-hidden rounded-[1.5rem]">
                      <img 
-                       src={news.img} 
+                       src={news.imageUrl ? (news.imageUrl.startsWith('blob:') ? news.imageUrl : getFullUrl(news.imageUrl)) : news1} 
                        alt={news.title} 
                        className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" 
                      />
@@ -177,7 +127,7 @@ const NewsPage = () => {
                    
                    <div className="flex flex-col flex-grow px-4 space-y-4">
                      <div className="flex items-center gap-4 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-                       <div className="flex items-center gap-1.5"><Calendar size={14} /> {news.date}</div>
+                       <div className="flex items-center gap-1.5"><Calendar size={14} /> {new Date(news.date).toLocaleDateString()}</div>
                      </div>
                      <h4 className="text-xl font-heading font-black text-slate-900 dark:text-white leading-tight group-hover:text-primary-600 transition-colors">
                        {news.title}

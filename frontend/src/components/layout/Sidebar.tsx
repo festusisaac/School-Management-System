@@ -247,6 +247,21 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             ]
         },
         {
+            label: 'Front CMS',
+            icon: School,
+            path: '/front-cms',
+            permission: 'front_cms:manage',
+            children: [
+                { label: 'Hero Section', path: '/front-cms/hero', permission: 'front_cms:manage' },
+                { label: 'About & Heritage', path: '/front-cms/sections', permission: 'front_cms:manage' },
+                { label: 'Statistics', path: '/front-cms/stats', permission: 'front_cms:manage' },
+                { label: 'Programs', path: '/front-cms/programs', permission: 'front_cms:manage' },
+                { label: 'Gallery', path: '/front-cms/gallery', permission: 'front_cms:manage' },
+                { label: 'Testimonials', path: '/front-cms/testimonials', permission: 'front_cms:manage' },
+                { label: 'News & Events', path: '/front-cms/news', permission: 'front_cms:manage' },
+            ]
+        },
+        {
             label: 'Settings',
             icon: Settings,
             path: '/settings',

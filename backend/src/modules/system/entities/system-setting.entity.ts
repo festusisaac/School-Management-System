@@ -145,6 +145,42 @@ export class SystemSetting {
     @Column({ type: 'text', nullable: true })
     admissionInstructions!: string;
 
+    // Notice Bar Settings
+    @Column({ type: 'boolean', default: false })
+    isNoticeActive!: boolean;
+
+    @Column({ type: 'text', nullable: true })
+    noticeText!: string;
+
+    @Column({ type: 'varchar', nullable: true })
+    noticeLink!: string;
+
+    // Payment Gateway Settings
+    @Column({ type: 'varchar', nullable: true })
+    paystackPublicKey!: string;
+
+    @Column({ type: 'varchar', nullable: true })
+    paystackSecretKey!: string;
+
+    @Column({ type: 'varchar', nullable: true })
+    flutterwavePublicKey!: string;
+
+    @Column({ type: 'varchar', nullable: true })
+    flutterwaveSecretKey!: string;
+
+    // SEO Settings
+    @Column({ type: 'varchar', nullable: true })
+    seoTitle!: string;
+
+    @Column({ type: 'text', nullable: true })
+    seoDescription!: string;
+
+    @Column({ type: 'text', nullable: true })
+    seoKeywords!: string;
+
+    @Column({ type: 'varchar', nullable: true })
+    ogImage!: string;
+
     @CreateDateColumn()
     createdAt!: Date;
 

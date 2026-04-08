@@ -26,6 +26,7 @@ import * as Settings from './pages/settings';
 import * as OnlineClasses from './pages/online-classes';
 import * as Homework from './pages/homework';
 import * as Communication from './pages/communication';
+import FrontCmsDashboard from './pages/front-cms/FrontCmsDashboard';
 import { 
   BookList, 
   BookDetail, 
@@ -252,12 +253,19 @@ function AppRoutes() {
 
               {/* Settings Routes */}
               <Route path="settings">
-                <Route index element={<Navigate to="general" replace />} />
-                <Route path="general" element={<Settings.GeneralSettingsPage />} />
-                <Route path="sessions" element={<Settings.SessionsPage />} />
-                <Route path="terms" element={<Settings.TermsPage />} />
-                <Route path="roles" element={<Settings.RolesPermissionsPage />} />
                 <Route path="users" element={<Settings.UsersPage />} />
+              </Route>
+
+              {/* Front CMS Routes */}
+              <Route path="front-cms">
+                <Route index element={<FrontCmsDashboard />} />
+                <Route path="hero" element={<FrontCmsDashboard />} />
+                <Route path="sections" element={<FrontCmsDashboard />} />
+                <Route path="stats" element={<FrontCmsDashboard />} />
+                <Route path="programs" element={<FrontCmsDashboard />} />
+                <Route path="gallery" element={<FrontCmsDashboard />} />
+                <Route path="testimonials" element={<FrontCmsDashboard />} />
+                <Route path="news" element={<FrontCmsDashboard />} />
               </Route>
             </Route>
           </Route>
