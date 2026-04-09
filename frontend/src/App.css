@@ -1,4 +1,8 @@
 /* Global Typography */
+html {
+  scroll-behavior: smooth;
+}
+
 :root {
   --font-heading: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --font-body: 'Inter', system-ui, -apple-system, sans-serif;

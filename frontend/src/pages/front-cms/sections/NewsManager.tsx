@@ -1,17 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Save, Loader2, Upload, Calendar, User, Tag, Image as ImageIcon, Newspaper } from 'lucide-react';
+import { Plus, Trash2, Save, Loader2, Upload, Calendar, User, Tag, Image as ImageIcon, Newspaper, Pencil, X } from 'lucide-react';
 import cmsService, { CmsNews } from '@services/cms.service';
 import { useSystem } from '@/context/SystemContext';
 import { useToast } from '@/context/ToastContext';
 import MediaSelectorModal from '../components/MediaSelectorModal';
+import RichTextEditor from '../../../components/common/RichTextEditor';
 
 const NewsManager: React.FC = () => {
   const [newsList, setNewsList] = useState<CmsNews[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
+  
   const toast = useToast();
-  const [newNews, setNewNews] = useState<Partial<CmsNews>>({
+  const { getFullUrl } = useSystem();
+
+  const [formData, setFormData] = useState<Partial<CmsNews>>({
     title: '',
     tag: 'Academic',
     author: 'Admin',
@@ -20,7 +25,6 @@ const NewsManager: React.FC = () => {
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
-  const { getFullUrl } = useSystem();
 
   const tags = ['Academic', 'Sports', 'Events', 'Notices', 'Achievement'];
 
@@ -39,22 +43,46 @@ const NewsManager: React.FC = () => {
     fetchNews();
   }, []);
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const resetForm = () => {
+    setFormData({ title: '', tag: 'Academic', author: 'Admin', snippet: '', content: '' });
+    setSelectedFile(null);
+    setIsAdding(false);
+    setEditId(null);
+  };
+
+  const handleEdit = (news: CmsNews) => {
+    setFormData({
+      title: news.title,
+      tag: news.tag,
+      author: news.author,
+      snippet: news.snippet,
+      content: news.content,
+      imageUrl: news.imageUrl
+    });
+    setEditId(news.id);
+    setIsAdding(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newNews.title || !newNews.snippet) {
+    if (!formData.title || !formData.snippet) {
       toast.showError('Title and snippet are required');
       return;
     }
     setSaving(true);
     try {
-      await cmsService.createNews(newNews, selectedFile || undefined);
-      toast.showSuccess('News article published');
-      setIsAdding(false);
-      setNewNews({ title: '', tag: 'Academic', author: 'Admin', snippet: '', content: '' });
-      setSelectedFile(null);
+      if (editId) {
+        await cmsService.updateNews(editId, formData, selectedFile || undefined);
+        toast.showSuccess('News article updated');
+      } else {
+        await cmsService.createNews(formData, selectedFile || undefined);
+        toast.showSuccess('News article published');
+      }
+      resetForm();
       fetchNews();
     } catch (error) {
-      toast.showError('Failed to publish news');
+      toast.showError(editId ? 'Failed to update news' : 'Failed to publish news');
     } finally {
       setSaving(false);
     }
@@ -76,6 +104,7 @@ const NewsManager: React.FC = () => {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between gap-4 mb-6">
+        <div />
         {!isAdding && (
           <button
             onClick={() => setIsAdding(true)}
@@ -87,14 +116,15 @@ const NewsManager: React.FC = () => {
       </div>
 
       {isAdding && (
-        <form onSubmit={handleCreate} className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm space-y-6 animate-in slide-in-from-top-4 duration-300">
+        <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm space-y-6 animate-in slide-in-from-top-4 duration-300">
           <div className="grid lg:grid-cols-2 gap-8">
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
+                  <label className="text-xs font-semibold uppercase text-gray-400 tracking-wider">Category</label>
                   <select
-                    value={newNews.tag}
-                    onChange={(e) => setNewNews({ ...newNews, tag: e.target.value })}
+                    value={formData.tag}
+                    onChange={(e) => setFormData({ ...formData, tag: e.target.value })}
                     className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
                   >
                     {tags.map((t) => (
@@ -106,8 +136,8 @@ const NewsManager: React.FC = () => {
                   <label className="text-xs font-semibold uppercase text-gray-400 tracking-wider">Author Name</label>
                   <input
                     type="text"
-                    value={newNews.author}
-                    onChange={(e) => setNewNews({ ...newNews, author: e.target.value })}
+                    value={formData.author}
+                    onChange={(e) => setFormData({ ...formData, author: e.target.value })}
                     className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
                   />
                 </div>
@@ -116,8 +146,8 @@ const NewsManager: React.FC = () => {
                 <label className="text-xs font-semibold uppercase text-gray-400 tracking-wider">Article Title</label>
                 <input
                   type="text"
-                  value={newNews.title}
-                  onChange={(e) => setNewNews({ ...newNews, title: e.target.value })}
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   placeholder="Ex: Highlights from Inter-House Sports 2026"
                   className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
                 />
@@ -125,8 +155,8 @@ const NewsManager: React.FC = () => {
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold uppercase text-gray-400 tracking-wider">Summary / Snippet</label>
                 <textarea
-                  value={newNews.snippet}
-                  onChange={(e) => setNewNews({ ...newNews, snippet: e.target.value })}
+                  value={formData.snippet}
+                  onChange={(e) => setFormData({ ...formData, snippet: e.target.value })}
                   rows={3}
                   placeholder="Short summary for the listing page..."
                   className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all resize-none"
@@ -140,8 +170,8 @@ const NewsManager: React.FC = () => {
                 <div className="relative aspect-video rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 group">
                   {selectedFile ? (
                     <img src={URL.createObjectURL(selectedFile)} alt="Preview" className="w-full h-full object-cover" />
-                  ) : newNews.imageUrl ? (
-                    <img src={getFullUrl(newNews.imageUrl)} alt="Preview" className="w-full h-full object-cover" />
+                  ) : formData.imageUrl ? (
+                    <img src={getFullUrl(formData.imageUrl)} alt="Preview" className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 space-y-3">
                       <ImageIcon size={32} className="opacity-20" />
@@ -154,7 +184,7 @@ const NewsManager: React.FC = () => {
                       Upload New
                       <input type="file" className="hidden" accept="image/*" onChange={(e) => {
                         setSelectedFile(e.target.files?.[0] || null);
-                        setNewNews({ ...newNews, imageUrl: undefined });
+                        setFormData({ ...formData, imageUrl: undefined });
                       }} />
                     </label>
                     <button 
@@ -168,15 +198,13 @@ const NewsManager: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 min-h-[300px]">
                 <label className="text-xs font-semibold uppercase text-gray-400 tracking-wider">Full Content</label>
-                <textarea
-                  value={newNews.content}
-                  onChange={(e) => setNewNews({ ...newNews, content: e.target.value })}
-                  rows={4}
+                <RichTextEditor 
+                  value={formData.content || ''}
+                  onChange={(val) => setFormData({ ...formData, content: val })}
                   placeholder="The full story goes here..."
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all resize-none"
-                ></textarea>
+                />
               </div>
             </div>
           </div>
@@ -188,12 +216,12 @@ const NewsManager: React.FC = () => {
               className="bg-primary-600 hover:bg-primary-700 text-white px-8 py-2.5 rounded-lg font-bold flex items-center gap-2 shadow-sm transition-all active:scale-95 disabled:opacity-50"
             >
               {saving ? <Loader2 className="animate-spin w-4 h-4" /> : <Save size={18} />}
-              Publish Article
+              {editId ? 'Update Article' : 'Publish Article'}
             </button>
             <button
               type="button"
-              onClick={() => setIsAdding(false)}
-              className="bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-8 py-2.5 rounded-lg font-bold border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-all"
+              onClick={resetForm}
+              className="bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-8 py-2.5 rounded-lg font-bold border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-all shadow-sm"
             >
               Cancel
             </button>
@@ -228,8 +256,16 @@ const NewsManager: React.FC = () => {
             </div>
             <div className="flex items-center gap-2">
               <button
+                onClick={() => handleEdit(news)}
+                className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                title="Edit Article"
+              >
+                <Pencil size={18} />
+              </button>
+              <button
                 onClick={() => handleDelete(news.id)}
                 className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                title="Delete Article"
               >
                 <Trash2 size={18} />
               </button>
@@ -249,7 +285,7 @@ const NewsManager: React.FC = () => {
         isOpen={isMediaModalOpen}
         onClose={() => setIsMediaModalOpen(false)}
         onSelect={(media) => {
-          setNewNews({ ...newNews, imageUrl: media.url });
+          setFormData({ ...formData, imageUrl: media.url });
           setSelectedFile(null);
         }}
       />

@@ -134,9 +134,10 @@ const NewsDetailPage = () => {
           )}
 
           {/* Article Content */}
-          <div className="prose prose-slate prose-lg dark:prose-invert max-w-none prose-headings:font-heading prose-headings:font-black prose-p:leading-relaxed prose-p:text-slate-600 dark:prose-p:text-slate-400 prose-p:font-medium mb-24 whitespace-pre-wrap">
-            {news.content}
-          </div>
+          <div 
+            className="prose prose-slate prose-lg dark:prose-invert max-w-none prose-headings:font-heading prose-headings:font-black prose-p:leading-relaxed prose-p:text-slate-600 dark:prose-p:text-slate-400 prose-p:font-medium prose-img:rounded-3xl mb-24"
+            dangerouslySetInnerHTML={{ __html: news.content }}
+          />
 
           {/* Related Stories */}
           <section className="pt-20 border-t-2 border-slate-100 dark:border-slate-800">

@@ -41,6 +41,7 @@ export class SystemSettingsService {
             isNoticeActive: settings.isNoticeActive,
             noticeText: settings.noticeText,
             noticeLink: settings.noticeLink,
+            noticeImage: settings.noticeImage,
             seoTitle: settings.seoTitle,
             seoDescription: settings.seoDescription,
             seoKeywords: settings.seoKeywords,

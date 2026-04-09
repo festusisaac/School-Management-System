@@ -38,14 +38,20 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Update navLinks to use absolute paths so they work from sub-pages
+  // Comprehensive school navigation links
   const navLinks = [
-    { name: 'About', href: '/#about' },
-    { name: 'Academics', href: '/#academics' },
-    { name: 'Admissions', href: '/#admissions' },
-    { name: 'Student Life', href: '/#student-life' },
-    { name: 'Portal', href: '/login' },
+    { name: 'Home', href: '/' },
+    { name: 'About Us', href: '/#about' },
+    { name: 'Academics', href: '/academics' },
+    { name: 'Admissions', href: '/admission' },
+    { name: 'News & Events', href: '/news' },
+    { name: 'Gallery', href: '/gallery' },
   ];
+
+  const isLinkActive = (href: string) => {
+    if (href.startsWith('/#')) return isHomePage && location.hash === href.replace('/', '');
+    return location.pathname === href;
+  };
 
   const headerClass = isHomePage 
     ? (isScrolled ? 'glass-nav py-4' : 'bg-transparent py-8')
@@ -92,15 +98,22 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
 
             {/* Desktop Nav */}
             <div className="hidden md:flex items-center gap-8">
-              {navLinks.map((link) => (
-                <a
-                  key={link.name}
-                  href={link.href}
-                  className={`text-sm font-medium hover:text-primary-600 transition-colors ${navTextClass}`}
-                >
-                  {link.name}
-                </a>
-              ))}
+              {navLinks.map((link) => {
+                const active = isLinkActive(link.href);
+                return (
+                  <a
+                    key={link.name}
+                    href={link.href}
+                    className={`text-sm font-medium transition-all relative group py-2 
+                      ${active ? 'text-primary-600' : navTextClass}
+                      hover:text-primary-600`}
+                  >
+                    {link.name}
+                    {/* Activity Indicator Line */}
+                    <span className={`absolute bottom-0 left-0 h-0.5 bg-primary-600 transition-all duration-300 ${active ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
+                  </a>
+                );
+              })}
               <Link
                 to="/login"
                 className="bg-primary-600 hover:bg-primary-700 text-white px-5 py-2 rounded-full text-sm font-semibold transition-all shadow-lg hover:shadow-primary-500/25 flex items-center gap-2"
@@ -122,17 +135,23 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
           <div className="md:hidden absolute top-full left-0 w-full bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 shadow-xl animate-fade-in transition-colors duration-300">
-            <div className="px-4 py-6 space-y-4">
-              {navLinks.map((link) => (
-                <a
-                  key={link.name}
-                  href={link.href}
-                  className="block text-base font-medium text-slate-600 dark:text-slate-400 hover:text-primary-600"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  {link.name}
-                </a>
-              ))}
+            <div className="px-4 py-6 space-y-2">
+              {navLinks.map((link) => {
+                const active = isLinkActive(link.href);
+                return (
+                  <a
+                    key={link.name}
+                    href={link.href}
+                    className={`block px-4 py-3 rounded-xl text-base font-semibold transition-all
+                      ${active 
+                        ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600' 
+                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    {link.name}
+                  </a>
+                );
+              })}
               <Link
                 to="/login"
                 className="block w-full bg-primary-600 text-white text-center py-3 rounded-xl font-semibold active:scale-[0.98] transition-transform"

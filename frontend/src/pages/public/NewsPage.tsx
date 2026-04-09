@@ -49,12 +49,7 @@ const NewsPage = () => {
       <main className="py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
-          {/* Breadcrumbs for News */}
-          <div className="mb-8">
-            <Link to="/" className="inline-flex items-center gap-2 text-slate-500 hover:text-primary-600 font-bold text-sm transition-all group">
-              <ArrowRight size={18} className="rotate-180 group-hover:-translate-x-1 transition-transform" /> Back to Home
-            </Link>
-          </div>
+
 
           {/* Page Heading */}
           <div className="text-center mb-16 space-y-6">

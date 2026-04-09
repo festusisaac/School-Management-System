@@ -6,11 +6,15 @@ import {
   ToggleLeft,
   ToggleRight,
   AlertCircle,
-  HelpCircle
+  HelpCircle,
+  Folder,
+  X
 } from 'lucide-react';
 import { useSystem } from '../../../context/SystemContext';
 import { useToast } from '../../../context/ToastContext';
 import systemService from '../../../services/systemService';
+import MediaSelectorModal from '../components/MediaSelectorModal';
+import { Image as ImageIcon } from 'lucide-react';
 
 const NoticeManager = () => {
     const { settings, refreshSettings } = useSystem();
@@ -20,15 +24,18 @@ const NoticeManager = () => {
     const [formData, setFormData] = useState({
         isNoticeActive: false,
         noticeText: '',
-        noticeLink: ''
+        noticeLink: '',
+        noticeImage: ''
     });
+    const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
 
     useEffect(() => {
         if (settings) {
             setFormData({
                 isNoticeActive: settings.isNoticeActive || false,
                 noticeText: settings.noticeText || '',
-                noticeLink: settings.noticeLink || ''
+                noticeLink: settings.noticeLink || '',
+                noticeImage: settings.noticeImage || ''
             });
         }
     }, [settings]);
@@ -43,7 +50,7 @@ const NoticeManager = () => {
         try {
             await systemService.updateSettings(formData);
             await refreshSettings();
-            showToast('Announcement Bar updated successfully', 'success');
+            showToast('Announcement Popup updated successfully', 'success');
         } catch (error) {
             console.error('Update failed:', error);
             showToast('Failed to update announcement bar', 'error');
@@ -51,6 +58,8 @@ const NoticeManager = () => {
             setLoading(false);
         }
     };
+
+    const { getFullUrl } = useSystem();
 
     const handleToggle = () => {
         setFormData(prev => ({ ...prev, isNoticeActive: !prev.isNoticeActive }));
@@ -112,8 +121,40 @@ const NoticeManager = () => {
                                 onChange={(e) => setFormData(prev => ({ ...prev, noticeText: e.target.value }))}
                                 placeholder="e.g. Admissions for 2026/2027 are now open!"
                                 className="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 outline-none text-gray-700 dark:text-gray-300 font-medium resize-none shadow-sm transition-all"
-                                rows={3}
+                                rows={2}
                             />
+                        </div>
+
+                        {/* Image Content */}
+                        <div className="space-y-4 pt-2">
+                            <label className="text-sm font-bold text-gray-700 dark:text-gray-300">
+                                Popup Image
+                            </label>
+                            <div className="relative aspect-video rounded-xl overflow-hidden bg-gray-50 dark:bg-gray-900 border-2 border-dashed border-gray-200 dark:border-gray-800 group transition-all hover:border-primary-300">
+                                {formData.noticeImage ? (
+                                    <img 
+                                        src={getFullUrl(formData.noticeImage)} 
+                                        alt="Notice" 
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 space-y-2">
+                                        <ImageIcon size={32} className="opacity-20" />
+                                        <span className="text-[10px] font-bold uppercase tracking-widest">Select Popup Image</span>
+                                    </div>
+                                )}
+                                
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsMediaModalOpen(true)}
+                                        className="bg-white text-gray-900 px-6 py-2.5 rounded-lg font-bold flex items-center gap-2 shadow-xl hover:scale-105 transition-transform"
+                                    >
+                                        <Folder size={18} className="text-primary-600" />
+                                        {formData.noticeImage ? 'Replace Image' : 'Choose Image'}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
                         {/* Action Link */}
@@ -140,26 +181,40 @@ const NoticeManager = () => {
                         </div>
                         
                         <h3 className="text-white/50 font-bold mb-4 flex items-center gap-2 tracking-wide uppercase text-[10px]">
-                            Live Preview
+                            Popup Preview
                         </h3>
                         
                         {formData.isNoticeActive ? (
-                            <div className="space-y-4 relative z-10">
-                                <div className="bg-primary-600 rounded-lg p-3 text-center">
-                                    <p className="text-white text-xs font-bold leading-tight">
-                                        {formData.noticeText || 'Announcement text...'}
+                            <div className="relative z-10 p-4 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-700 animate-in zoom-in duration-500 max-w-[240px] mx-auto">
+                                {formData.noticeImage ? (
+                                    <img 
+                                        src={getFullUrl(formData.noticeImage)} 
+                                        alt="Preview" 
+                                        className="w-full aspect-square object-cover rounded-lg mb-4"
+                                    />
+                                ) : (
+                                    <div className="w-full aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg mb-4 flex items-center justify-center">
+                                        <ImageIcon className="text-gray-400" size={32} />
+                                    </div>
+                                )}
+                                <div className="space-y-2 text-center">
+                                    <p className="text-slate-900 dark:text-white text-[11px] font-bold leading-tight">
+                                        {formData.noticeText || 'Important Announcement Title'}
                                     </p>
                                     {formData.noticeLink && (
-                                        <div className="mt-2 inline-block bg-white text-primary-600 text-[10px] px-2 py-0.5 rounded font-bold uppercase">
+                                        <div className="bg-primary-600 text-white text-[9px] px-3 py-1.5 rounded-full font-bold uppercase inline-block">
                                             Learn More
                                         </div>
                                     )}
                                 </div>
+                                <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg">
+                                    <X size={12} />
+                                </div>
                             </div>
                         ) : (
-                            <div className="h-24 flex flex-col items-center justify-center border border-dashed border-gray-800 rounded-lg space-y-2 opacity-50">
+                            <div className="h-48 flex flex-col items-center justify-center border border-dashed border-gray-800 rounded-lg space-y-2 opacity-50">
                                 <AlertCircle className="text-gray-500" size={24} />
-                                <p className="text-[10px] text-gray-500 font-bold tracking-wide uppercase">Notice Hidden</p>
+                                <p className="text-[10px] text-gray-500 font-bold tracking-wide uppercase">Popup Hidden</p>
                             </div>
                         )}
                     </div>
@@ -170,14 +225,22 @@ const NoticeManager = () => {
                             <div>
                                 <h4 className="text-sm font-bold text-primary-900 dark:text-primary-100 mb-1">Tips</h4>
                                 <ul className="text-[11px] text-primary-700 dark:text-primary-300 space-y-2 list-disc pl-4">
-                                    <li>Use for internal news, holidays, or admission alerts.</li>
-                                    <li>Keep messages under 80 characters for best visibility.</li>
+                                    <li>Use high-quality square or portrait images for the popup.</li>
+                                    <li>Enable only when there's an urgent or important update.</li>
                                 </ul>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <MediaSelectorModal 
+                isOpen={isMediaModalOpen}
+                onClose={() => setIsMediaModalOpen(false)}
+                onSelect={(media) => {
+                    setFormData(prev => ({ ...prev, noticeImage: media.url }));
+                }}
+            />
         </div>
     );
 };

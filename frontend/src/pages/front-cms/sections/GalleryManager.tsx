@@ -10,18 +10,23 @@ const GalleryManager: React.FC = () => {
   const [items, setItems] = useState<CmsGalleryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [newItem, setNewItem] = useState<{ title: string; category: string; imageUrl?: string }>({ title: '', category: 'The Campus' });
+  const [newItem, setNewItem] = useState<{ title: string; category: string; imageUrl?: string }>({ title: '', category: '' });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
   const { getFullUrl } = useSystem();
   const toast = useToast();
 
-  const categories = ['The Campus', 'Spirituality', 'Activities'];
+  const defaultCategories = ['The Campus', 'Spirituality', 'Activities', 'Events', 'Classroom', 'Sports'];
+  const [allCategories, setAllCategories] = useState<string[]>(defaultCategories);
 
   const fetchItems = async () => {
     try {
       const data = await cmsService.getGallery();
       setItems(data);
+      
+      // Update dynamic categories list
+      const uniqueCats = Array.from(new Set([...defaultCategories, ...data.map(i => i.category)]));
+      setAllCategories(uniqueCats);
     } catch (error) {
       toast.showError('Failed to load gallery items');
     } finally {
@@ -35,15 +40,15 @@ const GalleryManager: React.FC = () => {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newItem.title || (!selectedFile && !newItem.imageUrl)) {
-      toast.showError('Please provide a title and select an image');
+    if (!newItem.title || !newItem.category || (!selectedFile && !newItem.imageUrl)) {
+      toast.showError('Please provide a title, category and select an image');
       return;
     }
     setSaving(true);
     try {
       await cmsService.createGalleryItem({ title: newItem.title, category: newItem.category }, selectedFile || newItem.imageUrl || '');
       toast.showSuccess('Gallery item added');
-      setNewItem({ title: '', category: 'The Campus' });
+      setNewItem({ title: '', category: newItem.category, imageUrl: undefined });
       setSelectedFile(null);
       fetchItems();
     } catch (error) {
@@ -113,15 +118,21 @@ const GalleryManager: React.FC = () => {
               onChange={(e) => setNewItem({ ...newItem, title: e.target.value })}
               className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all shadow-sm"
             />
-            <select
-              value={newItem.category}
-              onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
-              className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg px-4 py-2.5 text-xs font-bold focus:ring-2 focus:ring-primary-500 outline-none transition-all shadow-sm"
-            >
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
+            <div className="relative">
+              <input
+                type="text"
+                list="gallery-categories"
+                placeholder="Category (e.g. Sports Day)"
+                value={newItem.category}
+                onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
+                className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg px-4 py-2.5 text-xs font-bold focus:ring-2 focus:ring-primary-500 outline-none transition-all shadow-sm"
+              />
+              <datalist id="gallery-categories">
+                {allCategories.map((cat) => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </datalist>
+            </div>
             <button
               type="submit"
               disabled={saving || !newItem.title || (!selectedFile && !newItem.imageUrl)}

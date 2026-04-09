@@ -43,7 +43,7 @@ const FrontCmsDashboard: React.FC = () => {
 
   const tabs = [
     { id: 'hero', name: 'Hero Section', icon: ImageIcon },
-    { id: 'notice', name: 'Announcement Bar', icon: Megaphone },
+    { id: 'notice', name: 'Announcement Popup', icon: Megaphone },
     { id: 'contacts', name: 'Inquiries', icon: MessageSquare },
     { id: 'seo', name: 'SEO & Social', icon: Globe },
     { id: 'media', name: 'Media Library', icon: Folder },

@@ -74,6 +74,7 @@ export interface SystemSetting {
     isNoticeActive?: boolean;
     noticeText?: string;
     noticeLink?: string;
+    noticeImage?: string;
     seoTitle?: string;
     seoDescription?: string;
     seoKeywords?: string;

@@ -17,7 +17,8 @@ import {
   Twitter,
   Instagram,
   Linkedin,
-  Youtube
+  Youtube,
+  Image as ImageIcon
 } from 'lucide-react';
 import image16 from '@assets/herobg/image16.jpeg';
 import image17 from '@assets/herobg/image17.jpeg';
@@ -51,6 +52,8 @@ import activity3 from '@assets/phjcschool/image31.jpeg';
 import news1 from '@assets/phjcschool/image80.jpeg';
 import news2 from '@assets/phjcschool/image84.jpeg';
 import news3 from '@assets/phjcschool/image88.jpeg';
+
+import LoadingScreen from '../../components/common/LoadingScreen';
 
 const ScrollReveal = ({ children, delay = 0 }: { children: React.ReactNode, delay?: number }) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -196,34 +199,79 @@ const LandingPage = () => {
     return () => clearInterval(timer);
   }, [testimonials.length]);
 
+  // Dynamic Gallery Categories Logic - MUST BE ABOVE LOADING RETURN
+  const standardCategoryMap: Record<string, string> = {
+    'the campus': 'campus',
+    'campus': 'campus',
+    'spirituality': 'spirituality',
+    'faith': 'spirituality',
+    'activities': 'activities',
+    'extra-curriculars': 'activities',
+    'extra curriculars': 'activities'
+  };
+
+  const getCategorySlug = (cat?: string) => {
+    const safeCat = (cat || 'Uncategorized').trim();
+    return standardCategoryMap[safeCat.toLowerCase()] || safeCat.toLowerCase().replace(/\s+/g, '-');
+  };
+
+  const cmsCategories = Array.from(new Set((cmsData?.gallery || []).map(i => i.category))).filter(Boolean);
+  
+  const galleryTabs = cmsCategories.length > 0 
+    ? cmsCategories.map(cat => {
+        const safeCat = (cat || 'Uncategorized').toLowerCase();
+        return {
+          id: getCategorySlug(cat),
+          name: cat || 'Uncategorized',
+          icon: safeCat.includes('campus') ? Globe : 
+                safeCat.includes('spirituality') ? Heart : 
+                safeCat.includes('activity') ? Users : ImageIcon
+        };
+      })
+    : [
+        { id: 'campus', name: 'The Campus', icon: Globe },
+        { id: 'spirituality', name: 'Spirituality', icon: Heart },
+        { id: 'activities', name: 'Extra-Curriculars', icon: Users },
+      ];
+
+  useEffect(() => {
+    if (cmsCategories.length > 0 && !galleryTabs.find(t => t.id === activeGalleryTab)) {
+      setActiveGalleryTab(galleryTabs[0].id);
+    }
+  }, [cmsCategories.length]);
+
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-950">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-primary-600/20 border-t-primary-600 rounded-full animate-spin"></div>
-          <p className="text-slate-500 font-medium animate-pulse">Initializing Portal...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen message="Initializing Portal..." />;
   }
 
-  const galleryData = {
-    campus: cmsData?.gallery?.filter(i => i.category?.toLowerCase() === 'campus') || [
+
+  // 4. Prepare data per category
+  const getGalleryItemsBySlug = (slug: string) => {
+    const cmsItems = (cmsData?.gallery || []).filter(i => getCategorySlug(i.category) === slug);
+    
+    if (cmsItems.length > 0) return cmsItems;
+
+    // Fallback static data for standard categories
+    if (slug === 'campus') return [
       { imageUrl: campus1, title: 'Modern Classrooms', category: 'The Campus' },
       { imageUrl: campus2, title: 'Computer Laboratory', category: 'The Campus' },
       { imageUrl: campus3, title: 'School Library', category: 'The Campus' },
-    ],
-    spirituality: cmsData?.gallery?.filter(i => i.category?.toLowerCase() === 'spirituality') || [
+    ];
+    if (slug === 'spirituality') return [
       { imageUrl: faith1, title: 'Morning Prayer', category: 'Spirituality' },
       { imageUrl: faith2, title: 'Catholic Heritage', category: 'Spirituality' },
       { imageUrl: faith3, title: 'Community Service', category: 'Spirituality' },
-    ],
-    activities: cmsData?.gallery?.filter(i => i.category?.toLowerCase() === 'activities') || [
+    ];
+    if (slug === 'activities') return [
       { imageUrl: activity1, title: 'JET Club Projects', category: 'Activities' },
       { imageUrl: activity2, title: 'Inter-House Sports', category: 'Activities' },
       { imageUrl: activity3, title: 'Cultural Day Celebrations', category: 'Activities' },
-    ]
+    ];
+    
+    return [];
   };
+
+  const activeGalleryItems = getGalleryItemsBySlug(activeGalleryTab);
 
   const programs = cmsData?.programs?.length 
     ? cmsData.programs 
@@ -471,12 +519,23 @@ const LandingPage = () => {
                   </div>
                 </div>
                 <h4 className="text-xl font-heading font-bold mb-4 text-slate-900 dark:text-white">{prog.title}</h4>
-                <p className="text-slate-500 dark:text-slate-400 leading-relaxed text-sm mb-6 flex-grow">
-                  {prog.description}
-                </p>
+                <div 
+                  className="text-slate-500 dark:text-slate-400 leading-relaxed text-sm mb-6 flex-grow prose prose-sm dark:prose-invert"
+                  dangerouslySetInnerHTML={{ __html: prog.description }}
+                />
               </div>
             </ScrollReveal>
           ))}
+        </div>
+
+        {/* View All Button */}
+        <div className="mt-8 flex justify-center">
+          <Link 
+            to="/academics" 
+            className="bg-primary-600 hover:bg-primary-700 text-white px-10 py-4 rounded-full font-bold text-base transition-all shadow-xl hover:shadow-primary-500/40 flex items-center gap-2 active:scale-95"
+          >
+            Discover Our Curriculum <ArrowRight size={20} />
+          </Link>
         </div>
       </section>
 
@@ -493,11 +552,7 @@ const LandingPage = () => {
             
             {/* Gallery Tabs */}
             <div className="flex flex-wrap items-center justify-center gap-3 md:gap-6 mb-16">
-              {[
-                { id: 'campus', name: 'The Campus', icon: Globe },
-                { id: 'spirituality', name: 'Spirituality', icon: Heart },
-                { id: 'activities', name: 'Extra-Curriculars', icon: Users },
-              ].map((tab) => (
+              {galleryTabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveGalleryTab(tab.id)}
@@ -515,7 +570,7 @@ const LandingPage = () => {
 
             {/* Gallery Grid */}
             <div className="grid md:grid-cols-3 gap-8 md:gap-10">
-              {galleryData[activeGalleryTab as keyof typeof galleryData].map((item, index) => (
+              {activeGalleryItems.map((item, index) => (
                 <div 
                   key={`${activeGalleryTab}-${index}`} 
                   className="group relative h-96 rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-700 animate-fade-in"
@@ -538,6 +593,16 @@ const LandingPage = () => {
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* View All Button */}
+            <div className="mt-16 flex justify-center">
+              <Link 
+                to="/gallery" 
+                className="bg-primary-600 hover:bg-primary-700 text-white px-10 py-4 rounded-full font-bold text-base transition-all shadow-xl hover:shadow-primary-500/40 flex items-center gap-2 active:scale-95"
+              >
+                View Full Gallery <ArrowRight size={20} />
+              </Link>
             </div>
           </div>
         </section>

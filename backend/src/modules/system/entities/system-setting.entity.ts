@@ -155,6 +155,9 @@ export class SystemSetting {
     @Column({ type: 'varchar', nullable: true })
     noticeLink!: string;
 
+    @Column({ type: 'varchar', nullable: true })
+    noticeImage!: string;
+
     // Payment Gateway Settings
     @Column({ type: 'varchar', nullable: true })
     paystackPublicKey!: string;

@@ -201,6 +201,10 @@ export class CreateSystemSettingDto {
     @IsOptional()
     noticeLink?: string;
 
+    @IsString()
+    @IsOptional()
+    noticeImage?: string;
+
     // Payment Gateway Settings
     @IsString()
     @IsOptional()
