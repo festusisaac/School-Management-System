@@ -31,7 +31,8 @@ import { downloadReceiptPDF } from '../../utils/pdfGenerator';
 import { exportPaymentHistory, exportFinancialStatement } from '../../utils/excelExport';
 
 export default function StudentFinancePage() {
-  const { user } = useAuthStore();
+  const { user, selectedChildId } = useAuthStore();
+  const isParent = (user?.role || user?.roleObject?.name || '').toLowerCase() === 'parent';
   const { showError, showSuccess } = useToast();
   const { getSchoolInfo } = useSystem();
   
@@ -53,7 +54,7 @@ export default function StudentFinancePage() {
 
   const receiptRef = useRef<HTMLDivElement>(null);
 
-  const studentId = user?.id;
+  const studentId = isParent ? selectedChildId : user?.id;
 
   const fetchData = useCallback(async () => {
     if (!studentId) return;

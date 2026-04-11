@@ -6,7 +6,8 @@ import { useToast } from '../../context/ToastContext';
 import ReportCardTemplate, { ReportCardData } from '../../components/examination/ReportCardTemplate';
 
 const StudentResultPage = () => {
-    const { user } = useAuthStore();
+    const { user, selectedChildId } = useAuthStore();
+    const isParent = (user?.role || user?.roleObject?.name || '').toLowerCase() === 'parent';
     const { showError, showSuccess } = useToast();
     const [loadingInit, setLoadingInit] = useState(true);
     const [checking, setChecking] = useState(false);
@@ -25,7 +26,9 @@ const StudentResultPage = () => {
     useEffect(() => {
         const fetchDashboard = async () => {
             try {
-                const data = await api.getStudentExamDashboard(user?.id || 'me');
+                const targetId = isParent ? selectedChildId : (user?.id || 'me');
+                if (isParent && !targetId) return;
+                const data = await api.getStudentExamDashboard(targetId);
                 if (data.examGroups) {
                     setExamGroups(data.examGroups);
                     if (data.examGroups.length > 0) {
@@ -40,7 +43,7 @@ const StudentResultPage = () => {
         };
 
         if (user) fetchDashboard();
-    }, [user]);
+    }, [user, isParent, selectedChildId]);
 
     const handleVerify = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -48,7 +51,10 @@ const StudentResultPage = () => {
         setResultData(null);
         
         try {
-            const result = await api.verifyStudentResult(user?.id || 'me', {
+            const targetId = isParent ? selectedChildId : (user?.id || 'me');
+            if (isParent && !targetId) return;
+
+            const result = await api.verifyStudentResult(targetId, {
                 examGroupId: form.examGroupId,
                 code: form.code,
                 pin: form.pin

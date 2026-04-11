@@ -57,7 +57,7 @@ describe('DashboardService', () => {
 
         mockQueryBuilder.getRawOne.mockResolvedValueOnce({ total: '50000' });
 
-        const result = await service.getAdminStats();
+        const result = await service.getAdminStats('mock-tenant-id');
 
         expect(result.students.total).toBe(100);
         expect(result.students.active).toBe(80);

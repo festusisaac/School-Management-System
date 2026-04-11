@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useSystem } from '../../context/SystemContext';
-import { 
-  BookOpen, 
-  Award, 
-  Lightbulb, 
-  GraduationCap, 
-  Users, 
-  ShieldCheck, 
+import {
+  BookOpen,
+  Award,
+  Lightbulb,
+  GraduationCap,
+  Users,
+  ShieldCheck,
   Microscope,
   ArrowRight,
   CheckCircle2
@@ -24,7 +24,7 @@ const AcademicsPage = () => {
   const { settings, getFullUrl } = useSystem();
   const [cmsData, setCmsData] = useState<CmsPublicInit | null>(null);
   const [loading, setLoading] = useState(true);
-  
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -45,15 +45,15 @@ const AcademicsPage = () => {
   // Logic to build dynamic levels from CMS programs, or use fallbacks
   const getLevels = () => {
     const cmsPrograms = cmsData?.programs || [];
-    
+
     if (cmsPrograms.length > 0) {
       return cmsPrograms.map(prog => ({
         title: prog.title,
         desc: prog.description,
         image: prog.imageUrl?.startsWith('blob:') ? prog.imageUrl : getFullUrl(prog.imageUrl),
         features: prog.level === 'Nursery' ? ['Montessori-inspired Methods', 'Sensory Development', 'Social Integration', 'Early Literacy'] :
-                  prog.level === 'Primary' ? ['Advanced Numeracy', 'Critical Literacy', 'Moral Instruction', 'Creative Arts'] :
-                  ['STEM Focus', 'National Exam Prep', 'Leadership Training', 'Career Guidance']
+          prog.level === 'Primary' ? ['Advanced Numeracy', 'Critical Literacy', 'Moral Instruction', 'Creative Arts'] :
+            ['STEM Focus', 'National Exam Prep', 'Leadership Training', 'Career Guidance']
       }));
     }
 
@@ -92,19 +92,19 @@ const AcademicsPage = () => {
       <section className="relative py-24 md:py-32 overflow-hidden">
         <div className="absolute inset-0 bg-slate-50 dark:bg-slate-900/50 -z-10"></div>
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary-600 via-secondary-500 to-primary-600"></div>
-        
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="max-w-3xl space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-1000">
             <div className="inline-flex items-center gap-3 px-4 py-2 bg-primary-50 dark:bg-primary-900/20 rounded-xl border border-primary-100 dark:border-primary-800/20">
               <GraduationCap className="w-4 h-4 text-primary-600" />
               <span className="text-xs font-bold text-primary-900 dark:text-primary-100 uppercase tracking-widest leading-none">Academic Excellence</span>
             </div>
-            
+
             <h1 className="text-5xl md:text-7xl font-heading font-black text-slate-900 dark:text-white leading-tight tracking-tight">
               Nurturing Minds, <br />
               <span className="text-primary-600">Inspiring Service.</span>
             </h1>
-            
+
             <p className="text-lg md:text-xl text-slate-600 dark:text-slate-400 font-medium leading-relaxed max-w-2xl">
               At {schoolName}, we provide a comprehensive educational journey that combines academic rigor with spiritual and moral development to prepare leaders for a global community.
             </p>
@@ -151,7 +151,7 @@ const AcademicsPage = () => {
                   <h2 className="text-3xl md:text-5xl font-heading font-black text-slate-900 dark:text-white leading-tight">{level.title}</h2>
                   <div className="h-1.5 w-20 bg-primary-600 rounded-full"></div>
                 </div>
-                <div 
+                <div
                   className="text-lg text-slate-600 dark:text-slate-400 leading-relaxed font-medium prose prose-lg dark:prose-invert"
                   dangerouslySetInnerHTML={{ __html: level.desc }}
                 />
@@ -167,9 +167,9 @@ const AcademicsPage = () => {
               <div className="lg:w-1/2 w-full">
                 <div className="relative group">
                   <div className="absolute -inset-4 bg-slate-100 dark:bg-slate-900 rounded-[3rem] -z-10 transition-transform duration-500 group-hover:scale-105"></div>
-                  <img 
-                    src={level.image} 
-                    alt={level.title} 
+                  <img
+                    src={level.image}
+                    alt={level.title}
                     className="rounded-[2.5rem] w-full aspect-[4/3] object-cover shadow-2xl grayscale group-hover:grayscale-0 transition-all duration-1000"
                   />
                   <div className="absolute inset-0 rounded-[2.5rem] ring-1 ring-inset ring-black/10"></div>
@@ -184,7 +184,7 @@ const AcademicsPage = () => {
       <section className="py-24 bg-slate-900 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary-600/10 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2"></div>
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[120px] translate-y-1/2 -translate-x-1/2"></div>
-        
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="flex flex-col lg:flex-row gap-16 items-center">
             <div className="lg:w-1/2 space-y-10">
@@ -192,7 +192,7 @@ const AcademicsPage = () => {
                 <h2 className="text-primary-400 font-bold text-xs uppercase tracking-widest leading-none">Our Standards</h2>
                 <h3 className="text-4xl md:text-5xl font-heading font-black text-white leading-tight">National Examination & Global Standards</h3>
               </div>
-              
+
               <div className="space-y-6">
                 {[
                   { icon: Microscope, title: 'STEM Centric Learning', text: 'Integrated science, technology, engineering, and math modules to spark innovation.' },
@@ -211,7 +211,7 @@ const AcademicsPage = () => {
                 ))}
               </div>
             </div>
-            
+
             <div className="lg:w-1/2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-[3rem] p-10 md:p-16 space-y-10 text-center relative overflow-hidden group">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary-500 to-transparent opacity-50"></div>
               <div className="w-20 h-20 bg-primary-600 rounded-3xl flex items-center justify-center text-white mx-auto shadow-2xl shadow-primary-500/30 group-hover:scale-110 transition-transform duration-500">
@@ -222,8 +222,8 @@ const AcademicsPage = () => {
                 <p className="text-slate-400 text-lg leading-relaxed">Recognized as one of the leading innovative institutions in the region for academic resilience and community transformation.</p>
               </div>
               <div className="pt-6">
-                <a 
-                  href="/admission" 
+                <a
+                  href="/admission"
                   className="inline-flex items-center gap-2 bg-white text-slate-900 px-10 py-4 rounded-2xl font-black text-base hover:bg-primary-50 transition-all active:scale-95 shadow-xl shadow-white/10"
                 >
                   Join Our Institution <ArrowRight size={20} />

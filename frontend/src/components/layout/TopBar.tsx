@@ -17,7 +17,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    const { user, logout } = useAuthStore();
+    const { user, logout, childrenList, selectedChildId, setSelectedChildId } = useAuthStore();
     const userName = user ? `${user.firstName} ${user.lastName}` : 'User';
     const userRole = user ? (user.roleObject?.name || user.role).charAt(0).toUpperCase() + (user.roleObject?.name || user.role).slice(1) : 'Staff';
     const initials = user ? `${user.firstName.charAt(0)}${user.lastName.charAt(0)}` : 'U';
@@ -97,6 +97,25 @@ export function TopBar({ onMenuClick }: TopBarProps) {
                             <option value="">All Sections</option>
                             {availableSections.map((sec) => (
                                 <option key={sec.id} value={sec.id}>{sec.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+
+                {/* Parent Child Switcher */}
+                {role === 'parent' && childrenList && childrenList.length > 0 && (
+                    <div className="hidden sm:flex items-center px-3 py-1.5 bg-primary-50 dark:bg-primary-900/30 border border-primary-100 dark:border-primary-800 rounded-lg mr-2 transition-all">
+                        <UserIcon className="w-4 h-4 text-primary-600 dark:text-primary-400 mr-2" />
+                        <span className="text-xs text-primary-700 dark:text-primary-300 font-medium mr-2 whitespace-nowrap">Viewing:</span>
+                        <select 
+                            value={selectedChildId || ''}
+                            onChange={(e) => setSelectedChildId(e.target.value)}
+                            className="bg-transparent border-none text-sm font-bold text-primary-800 dark:text-primary-200 focus:ring-0 cursor-pointer outline-none pl-0 pr-6 hover:text-primary-900 transition-colors w-full max-w-[150px] truncate"
+                        >
+                            {childrenList.map((child: any) => (
+                                <option key={child.id} value={child.id}>
+                                    {child.firstName} {child.lastName}
+                                </option>
                             ))}
                         </select>
                     </div>

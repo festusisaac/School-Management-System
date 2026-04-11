@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Student } from '../../students/entities/student.entity';
@@ -273,11 +273,11 @@ export class DashboardService {
         try {
             const lowAttRaw = await this.studentAttendanceRepository.createQueryBuilder('sa')
                 .select('c.name', 'name')
-                .addSelect('(COUNT(sa.id) FILTER (WHERE sa.status = \'Present\')::float / NULLIF(COUNT(sa.id), 0)::float) * 100', 'rate')
+                .addSelect('(COUNT(sa.id) FILTER (WHERE sa.status = \'present\')::float / NULLIF(COUNT(sa.id), 0)::float) * 100', 'rate')
                 .innerJoin('classes', 'c', 'c.id::text = sa.classId')
                 .where('(sa.tenantId = :tenantId OR sa.tenantId IS NULL)', { tenantId })
                 .groupBy('c.name')
-                .having('(COUNT(sa.id) FILTER (WHERE sa.status = \'Present\')::float / NULLIF(COUNT(sa.id), 0)::float) * 100 < 75')
+                .having('(COUNT(sa.id) FILTER (WHERE sa.status = \'present\')::float / NULLIF(COUNT(sa.id), 0)::float) * 100 < 75')
                 .limit(5)
                 .getRawMany();
             stats.academicHealth.lowAttendanceClasses = lowAttRaw.map(r => r.name);
@@ -395,5 +395,243 @@ export class DashboardService {
             console.error('[Dashboard] Error fetching activities', (e as any).message);
             return { recentEnrollments: [], recentPayments: [] };
         }
+    }
+
+    async getStudentDashboardStats(studentId: string, tenantIdInput: string, user?: any) {
+        const tenantId = await this.findCorrectTenantId(tenantIdInput);
+        
+        // --- Security Check for Parents ---
+        if (user && (user.role || '').toLowerCase() === 'parent') {
+           const hasAccess = await this.studentRepository.manager.query(`
+               SELECT 1 FROM students s 
+               JOIN parents p ON p.id = s."parentId" 
+               WHERE p."userId" = $1 AND s.id = $2 AND s."tenantId" = $3
+           `, [user.id, studentId, tenantId]);
+           
+           if (!hasAccess || hasAccess.length === 0) {
+              const { ForbiddenException } = require('@nestjs/common');
+              throw new ForbiddenException('You can only view your own children\'s dashboard data.');
+           }
+        }
+        // ----------------------------------
+        
+        // Ensure student exists and get basic info
+        const student = await this.studentRepository.findOne({
+            where: { id: studentId, tenantId },
+            relations: ['class']
+        });
+        
+        if (!student) {
+            throw new NotFoundException('Student not found');
+        }
+
+        const classId = student.classId;
+
+        let attendancePercentage: number | null = null;
+        let feesBalance = 0;
+        let latestAverage = 0;
+        let latestAverageTerm = 'No Assessments Yet';
+        let nextExamTitle = 'None Upcoming';
+        let nextExamDate: string | null = null;
+        let todayClasses = [];
+        let announcements: any[] = [];
+        let performanceTrend: any[] = [];
+        let pendingAssignments: any[] = [];
+        let liveClasses: any[] = [];
+
+        // Extended Dashboards Queries
+        try {
+            performanceTrend = await this.studentRepository.manager.query(`
+                SELECT r."averageScore" as score, eg.name as term
+                FROM student_term_results r
+                JOIN exam_groups eg ON eg.id = r."examGroupId"
+                WHERE r."studentId" = $1 AND eg."isPublished" = true
+                ORDER BY r."createdAt" ASC
+                LIMIT 4
+            `, [studentId]);
+
+            pendingAssignments = await this.studentRepository.manager.query(`
+                SELECT h.id, h.title, h."dueDate", s.name as subject
+                FROM homework h
+                JOIN subjects s ON s.id = h."subjectId"
+                LEFT JOIN homework_submissions sub ON sub."homeworkId" = h.id AND sub."studentId" = $1
+                WHERE h."classId" = $2 
+                  AND (sub.id IS NULL OR sub.status = 'PENDING')
+                  AND h."dueDate" >= $3
+                ORDER BY h."dueDate" ASC
+                LIMIT 4
+            `, [studentId, classId, new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)]);
+
+            liveClasses = await this.studentRepository.manager.query(`
+                SELECT oc.id, oc.title, oc."meetingUrl", oc.platform, oc."startTime", s.name as subject
+                FROM online_classes oc
+                JOIN subjects s ON s.id = oc."subjectId"
+                WHERE oc."classId" = $1 
+                  AND oc.status IN ('SCHEDULED', 'IN_PROGRESS')
+                  AND oc."startTime" <= $2
+                  AND oc."endTime" >= $3
+            `, [classId, new Date(Date.now() + 15 * 60 * 1000), new Date(Date.now() - 60 * 60 * 1000)]);
+        } catch (e) {
+            console.error('Error fetching extended dashboard stats', e);
+        }
+
+        // 1. Attendance Percentage
+        try {
+            const result = await this.studentAttendanceRepository.createQueryBuilder('att')
+                .select('COUNT(*) FILTER (WHERE att.status = \'present\')::float / NULLIF(COUNT(*), 0)::float * 100', 'rate')
+                .where('att.studentId = :studentId', { studentId })
+                .andWhere('(att.tenantId = :tenantId OR att.tenantId IS NULL)', { tenantId })
+                .getRawOne();
+            if (result && result.rate !== null) {
+                attendancePercentage = parseFloat(result.rate);
+            }
+        } catch (e) { console.error(e) }
+
+        // 2. Fees Balance
+        try {
+            const feeStatusRaw = await this.studentRepository.manager.query(`
+                WITH student_fees AS (
+                    SELECT 
+                        s.id as student_id,
+                        COALESCE(SUM(fh."defaultAmount"::numeric), 0) as total_assigned
+                    FROM students s
+                    LEFT JOIN fee_assignments fa ON fa."studentId" = s.id AND (fa."tenantId" = $1 OR fa."tenantId" IS NULL)
+                    LEFT JOIN fee_group_heads fgh ON fgh."feeGroupId" = fa."feeGroupId"
+                    LEFT JOIN fee_heads fh ON fh.id = fgh."feeHeadId"
+                    WHERE s.id = $2
+                    GROUP BY s.id
+                ),
+                student_paid AS (
+                    SELECT 
+                        "studentId",
+                        SUM(amount::numeric) as total_paid
+                    FROM transactions
+                    WHERE type = 'FEE_PAYMENT' AND "studentId" = $2 AND ("tenantId" = $1 OR "tenantId" IS NULL)
+                    GROUP BY "studentId"
+                )
+                SELECT 
+                    COALESCE(sf.total_assigned, 0) as assigned,
+                    COALESCE(sp.total_paid, 0) as paid
+                FROM student_fees sf
+                LEFT JOIN student_paid sp ON sp."studentId" = sf.student_id
+            `, [tenantId, studentId]);
+
+            if (feeStatusRaw && feeStatusRaw[0]) {
+                const assigned = parseFloat(feeStatusRaw[0].assigned || '0');
+                const paid = parseFloat(feeStatusRaw[0].paid || '0');
+                feesBalance = Math.max(0, assigned - paid);
+            }
+        } catch (e) { console.error(e) }
+
+        // 3. Latest Average
+        try {
+            // Get latest published result average score
+            const latestResult = await this.studentRepository.manager.query(`
+                SELECT r."averageScore" as "averageScore", eg.name as "examName"
+                FROM student_term_results r
+                JOIN exam_groups eg ON eg.id = r."examGroupId"
+                WHERE r."studentId" = $1 AND eg."isPublished" = true
+                ORDER BY r."createdAt" DESC
+                LIMIT 1
+            `, [studentId]);
+            
+            if (latestResult && latestResult[0]) {
+                if (latestResult[0].averageScore) latestAverage = parseFloat(latestResult[0].averageScore);
+                if (latestResult[0].examName) latestAverageTerm = latestResult[0].examName;
+            }
+        } catch (e) { console.error(e) }
+
+        // 4. Next Exam
+        try {
+            if (classId) {
+                const now = new Date();
+                const upcomingExam = await this.studentRepository.manager.query(`
+                    SELECT s.date, s."startTime", e.name
+                    FROM exam_schedules s
+                    JOIN exams e ON e.id = s."examId"
+                    WHERE e."classId" = $1 AND s.date >= $2
+                    ORDER BY s.date ASC, s."startTime" ASC
+                    LIMIT 1
+                `, [classId, now]);
+
+                if (upcomingExam && upcomingExam[0]) {
+                    nextExamTitle = upcomingExam[0].name;
+                    
+                    const examDate = new Date(upcomingExam[0].date);
+                    const isTomorrow = examDate.getDate() === now.getDate() + 1 && examDate.getMonth() === now.getMonth();
+                    const isToday = examDate.getDate() === now.getDate() && examDate.getMonth() === now.getMonth();
+                    
+                    let datePart = examDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    if (isToday) datePart = 'Today';
+                    if (isTomorrow) datePart = 'Tomorrow';
+
+                    const timePart = upcomingExam[0].startTime || '';
+                    nextExamDate = timePart ? `${datePart}, ${timePart.substring(0,5)}` : datePart;
+                }
+            }
+        } catch (e) { console.error(e) }
+
+        // 5. Today's Classes
+        try {
+            if (classId) {
+                let dayOfWeek = new Date().getDay();
+                const dow = dayOfWeek === 0 ? 7 : dayOfWeek; 
+
+                todayClasses = await this.studentRepository.manager.query(`
+                    SELECT 
+                        ts.id,
+                        tp."startTime" as time,
+                        s.name as subject,
+                        st."first_name" || ' ' || COALESCE(st."last_name", '') as teacher
+                    FROM timetables ts
+                    JOIN timetable_periods tp ON tp.id = ts."periodId"
+                    JOIN subjects s ON s.id = ts."subjectId"
+                    LEFT JOIN staff st ON st.id = COALESCE(ts."teacherId", (
+                        SELECT "teacherId" 
+                        FROM subject_teachers 
+                        WHERE "classId" = ts."classId" 
+                          AND "subjectId" = ts."subjectId" 
+                        LIMIT 1
+                    ))
+                    WHERE ts."classId" = $1 AND ts."dayOfWeek" = $2
+                    ORDER BY tp."periodOrder" ASC
+                `, [classId, dow]);
+            }
+        } catch (e) { console.error(e) }
+
+        // 6. Announcements (Noticeboard)
+        try {
+            const now = new Date();
+            announcements = await this.studentRepository.manager.query(`
+                SELECT id, title, type, "created_at" as date
+                FROM notices
+                WHERE "isActive" = true 
+                  AND ("targetAudience" = 'All' OR "targetAudience" = 'Students')
+                  AND ("expiresAt" IS NULL OR "expiresAt" > $1)
+                  AND ("tenantId" = $2 OR "tenantId" IS NULL)
+                ORDER BY "created_at" DESC
+                LIMIT 5
+            `, [now, tenantId]);
+        } catch (e) { console.error(e) }
+
+        return {
+            stats: {
+                attendance: attendancePercentage !== null ? Math.round(attendancePercentage) : null,
+                feesBalance,
+                latestAverage: Math.round(latestAverage * 10) / 10,
+                latestAverageTerm,
+                nextExam: nextExamTitle,
+                nextExamDate
+            },
+            performanceTrend,
+            pendingAssignments,
+            liveClasses,
+            todayClasses,
+            announcements: announcements.map((a: any) => ({
+                date: new Date(a.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                title: a.title,
+                type: a.type === 'Emergency' ? 'warning' : 'info'
+            }))
+        };
     }
 }

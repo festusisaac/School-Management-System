@@ -7,13 +7,37 @@ import { useSessionTimeout } from '../../hooks/useSessionTimeout';
 import { useAuthStore } from '../../stores/authStore';
 
 export function MainLayout() {
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const { WarningModal } = useSessionTimeout();
-    const { refreshUser } = useAuthStore();
+    const { refreshUser, user, setChildrenList, setSelectedChildId, childrenList } = useAuthStore();
 
     useEffect(() => {
+        // Only open on desktop by default
+        if (window.innerWidth >= 1024) {
+            setIsSidebarOpen(true);
+        }
         refreshUser();
     }, []);
+
+    // Load children if user is a parent
+    useEffect(() => {
+        const loadChildren = async () => {
+            const role = (user?.role || user?.roleObject?.name || '').toLowerCase();
+            if (role === 'parent' && childrenList.length === 0) {
+                try {
+                    const { default: api } = await import('../../services/api');
+                    const children = await api.getMyChildren();
+                    setChildrenList(children);
+                    if (children.length > 0) {
+                        setSelectedChildId(children[0].id);
+                    }
+                } catch (error) {
+                    console.error("Failed to load children", error);
+                }
+            }
+        };
+        loadChildren();
+    }, [user]);
 
     return (
         <div className="h-screen bg-gray-50 dark:bg-gray-950 flex overflow-hidden">

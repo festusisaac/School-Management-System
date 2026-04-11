@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DashboardController } from './controllers/dashboard.controller';
+import { StudentDashboardController } from './controllers/student-dashboard.controller';
 import { DashboardService } from './services/dashboard.service';
 import { Student } from '../students/entities/student.entity';
 import { Staff } from '../hr/entities/staff.entity';
@@ -30,7 +31,7 @@ import { StudentAttendance } from '../students/entities/student-attendance.entit
       StudentAttendance,
     ]),
   ],
-  controllers: [DashboardController],
+  controllers: [DashboardController, StudentDashboardController],
   providers: [DashboardService],
   exports: [DashboardService],
 })

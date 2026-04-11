@@ -20,7 +20,7 @@ export default function NoticeboardPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string>('All');
-  const { user } = useAuthStore();
+  const { user, selectedChildId } = useAuthStore();
   const { activeSectionId } = useSystem();
 
   const userRole = (user?.role || user?.roleObject?.name || 'student').toLowerCase();
@@ -28,7 +28,7 @@ export default function NoticeboardPage() {
 
   useEffect(() => {
     fetchNotices();
-  }, [activeSectionId]);
+  }, [activeSectionId, selectedChildId]);
 
   const fetchNotices = async () => {
     try {

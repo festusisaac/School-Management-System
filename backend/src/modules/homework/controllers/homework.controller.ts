@@ -137,7 +137,7 @@ export class HomeworkController {
         let studentId = undefined;
         
         // Data scoping for Students
-        if (req.user.role === 'student') {
+        if (req.user.role === 'student' || req.user.role === UserRole.STUDENT) {
             const rawId = req.user.studentId || req.user.id;
             studentId = await this.submissionService.resolveStudentId(rawId, req.user.tenantId);
 
@@ -151,6 +151,36 @@ export class HomeworkController {
                 query.classId = student.classId;
             } else {
                 // If no student record or class found, return empty set for security
+                return [];
+            }
+        }
+
+        // Data scoping for Parents
+        if (req.user.role === 'parent' || req.user.role === UserRole.PARENT) {
+            studentId = query.studentId;
+            if (!studentId) {
+                return []; // Parent must specify which child's homework to see
+            }
+
+            // Verify access
+            const hasAccess = await this.entityManager.query(`
+                SELECT 1 FROM students s 
+                JOIN parents p ON p.id = s."parentId" 
+                WHERE p."userId" = $1 AND s.id = $2 AND s."tenantId" = $3
+            `, [req.user.id, studentId, req.user.tenantId]);
+
+            if (!hasAccess || hasAccess.length === 0) {
+                throw new ForbiddenException('You can only view homework for your own children.');
+            }
+
+            // Fetch student to get their classId
+            const student = await this.entityManager.getRepository(Student).findOne({
+                where: { id: studentId, tenantId: req.user.tenantId }
+            });
+
+            if (student && student.classId) {
+                query.classId = student.classId;
+            } else {
                 return [];
             }
         }

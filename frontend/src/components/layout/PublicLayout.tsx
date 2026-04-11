@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useSystem } from '../../context/SystemContext';
 import { 
+  MapPin,
+  Globe,
   ChevronRight, 
   Menu, 
   X,
@@ -65,11 +67,6 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
     ? (isScrolled ? 'text-slate-600 dark:text-slate-400' : 'text-slate-200')
     : 'text-slate-600 dark:text-slate-400';
 
-  // Navigation top offset depends on if NoticeBar is showing
-  // Since NoticeBar is relative and at top, the fixed nav with top-0 will overlap it unless we adjust.
-  // Actually, we can just wrap both in a container or make nav sticky.
-  // Let's make the entire header section sticky.
-
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-white font-sans selection:bg-blue-100 selection:text-blue-900 transition-colors duration-500">
       
@@ -80,30 +77,50 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
       <nav className={`${isHomePage && !isScrolled ? 'absolute' : 'fixed'} w-full z-50 transition-all duration-500 ${headerClass}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
-            <Link to="/" className="flex items-center gap-3 group max-w-[45%]">
+            <a href="/" className="flex items-center gap-3 group">
               <div className="relative shrink-0">
                 <div className="absolute -inset-1 bg-gradient-to-tr from-primary-600 to-primary-400 rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
                 {logoUrl ? (
-                  <img src={logoUrl} alt="Logo" className="relative h-10 w-10 object-contain" />
+                  <img src={logoUrl} alt="Logo" className="relative h-10 w-10 md:h-12 md:w-12 object-contain transition-transform group-hover:scale-110" />
                 ) : (
                   <div className="relative h-10 w-10 bg-primary-600 rounded-lg flex items-center justify-center text-white font-bold">
                     {schoolName.charAt(0)}
                   </div>
                 )}
               </div>
-              <span className={`font-heading text-sm md:text-base font-bold tracking-tight transition-colors duration-300 line-clamp-2 leading-tight ${textClass}`}>
-                {schoolName}
-              </span>
-            </Link>
+              <div className="flex flex-col">
+                <span className={`text-sm md:text-base font-heading font-black tracking-tight transition-colors duration-300 line-clamp-2 leading-tight ${textClass}`}>
+                  {schoolName}
+                </span>
+                <span className={`text-[9px] font-bold uppercase tracking-widest mt-0.5 opacity-60 ${textClass}`}>
+                
+                </span>
+              </div>
+            </a>
 
             {/* Desktop Nav */}
             <div className="hidden md:flex items-center gap-8">
               {navLinks.map((link) => {
                 const active = isLinkActive(link.href);
+                // Use <a> for hash links or Home to ensure proper loading/scrolling
+                if (link.href === '/' || link.href.includes('#')) {
+                  return (
+                    <a
+                      key={link.name}
+                      href={link.href}
+                      className={`text-sm font-medium transition-all relative group py-2 
+                        ${active ? 'text-primary-600' : navTextClass}
+                        hover:text-primary-600`}
+                    >
+                      {link.name}
+                      <span className={`absolute bottom-0 left-0 h-0.5 bg-primary-600 transition-all duration-300 ${active ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
+                    </a>
+                  );
+                }
                 return (
-                  <a
+                  <Link
                     key={link.name}
-                    href={link.href}
+                    to={link.href}
                     className={`text-sm font-medium transition-all relative group py-2 
                       ${active ? 'text-primary-600' : navTextClass}
                       hover:text-primary-600`}
@@ -111,7 +128,7 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
                     {link.name}
                     {/* Activity Indicator Line */}
                     <span className={`absolute bottom-0 left-0 h-0.5 bg-primary-600 transition-all duration-300 ${active ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
-                  </a>
+                  </Link>
                 );
               })}
               <Link
@@ -138,10 +155,25 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
             <div className="px-4 py-6 space-y-2">
               {navLinks.map((link) => {
                 const active = isLinkActive(link.href);
+                if (link.href === '/' || link.href.includes('#')) {
+                  return (
+                    <a
+                      key={link.name}
+                      href={link.href}
+                      className={`block px-4 py-3 rounded-xl text-base font-semibold transition-all
+                        ${active 
+                          ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600' 
+                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      {link.name}
+                    </a>
+                  );
+                }
                 return (
-                  <a
+                  <Link
                     key={link.name}
-                    href={link.href}
+                    to={link.href}
                     className={`block px-4 py-3 rounded-xl text-base font-semibold transition-all
                       ${active 
                         ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600' 
@@ -149,7 +181,7 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     {link.name}
-                  </a>
+                  </Link>
                 );
               })}
               <Link
@@ -169,81 +201,145 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
         {children}
       </main>
 
-      {/* Footer */}
+      {/* Modern Premium Footer */}
       <footer className="bg-white dark:bg-slate-950 pt-24 pb-12 border-t border-slate-100 dark:border-slate-800 transition-colors duration-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-4 gap-12 mb-16">
-            <div className="col-span-2 space-y-6">
-              <Link to="/" className="flex items-center gap-3 group">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-12 mb-20">
+            {/* Column 1: Brand & Identity */}
+            <div className="space-y-8">
+              <a href="/" className="inline-flex items-center gap-3.5 group">
                 {logoUrl ? (
-                  <img src={logoUrl} alt="Logo" className="h-10 w-10 object-contain" />
+                  <img src={logoUrl} alt="Logo" className="h-10 w-10 object-contain transition-transform group-hover:scale-110" />
                 ) : (
-                  <div className="h-10 w-10 bg-primary-600 rounded-lg flex items-center justify-center text-white font-bold">
-                    {schoolName.charAt(0)}
-                  </div>
+                  <div className="h-10 w-10 bg-primary-600 rounded-xl flex items-center justify-center text-white font-bold">{schoolName.charAt(0)}</div>
                 )}
-                <span className="font-heading text-xl font-bold tracking-tight text-slate-900 dark:text-white group-hover:text-primary-600 transition-colors">
-                  {schoolName}
-                </span>
-              </Link>
-              <p className="text-slate-500 dark:text-slate-400 max-w-sm leading-relaxed">
-                Dedicated to academic excellence and moral formation, preparing the next generation of leaders with honesty, service, and honor.
-              </p>
-              <div className="flex items-center gap-4">
-                <a 
-                  href={`tel:${settings?.schoolPhone}`}
-                  className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:bg-primary-600 hover:text-white transition-all shadow-sm"
-                >
-                  <Phone size={18} />
-                </a>
-                <a 
-                  href={`mailto:${settings?.schoolEmail}`}
-                  className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:bg-primary-600 hover:text-white transition-all shadow-sm"
-                >
-                  <Mail size={18} />
-                </a>
+                <span className="font-heading text-xl font-bold tracking-tight text-slate-900 dark:text-white uppercase">{schoolName}</span>
+              </a>
+              <div className="space-y-4">
+                <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed font-medium italic">
+                  "{settings?.schoolMotto || 'Integrity, Diligence and Service'}"
+                </p>
+                <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                  <p className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-[0.2em] mb-1">Affiliation</p>
+                  <p className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                     Poor Handmaids of the Jesus Christ (PHJC)
+                  </p>
+                </div>
               </div>
             </div>
             
-            <div className="space-y-6">
-              <h5 className="font-heading font-bold text-lg text-slate-900 dark:text-white">Quick Links</h5>
-              <ul className="space-y-4 text-slate-500 dark:text-slate-400 font-medium">
-                <li><a href="/#about" className="hover:text-primary-600 transition-colors">About Us</a></li>
-                <li><a href="/#academics" className="hover:text-primary-600 transition-colors">Academics</a></li>
-                <li><a href="/#admissions" className="hover:text-primary-600 transition-colors">Admissions</a></li>
-                <li><a href="/#student-life" className="hover:text-primary-600 transition-colors">Student Life</a></li>
-              </ul>
+            {/* Column 2: Quick Explore */}
+            <div className="space-y-8">
+              <h5 className="text-sm font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Quick Links</h5>
+              <div className="grid grid-cols-1 gap-4">
+                {navLinks.map((link) => {
+                  if (link.href === '/' || link.href.includes('#')) {
+                    return (
+                      <a 
+                        key={link.name} 
+                        href={link.href} 
+                        className="text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-all flex items-center gap-2 group"
+                      >
+                        <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
+                        {link.name}
+                      </a>
+                    );
+                  }
+                  return (
+                    <Link 
+                      key={link.name} 
+                      to={link.href} 
+                      className="text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-all flex items-center gap-2 group"
+                    >
+                      <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
+                      {link.name}
+                    </Link>
+                  );
+                })}
+                <Link to="/admission" className="text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-all flex items-center gap-2 group">
+                  <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
+                  Admission
+                </Link>
+              </div>
             </div>
 
-            <div className="space-y-6">
-              <h5 className="font-heading font-bold text-lg text-slate-900 dark:text-white">Social Connect</h5>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Follow us on our social platforms for real-time updates.</p>
-              <div className="flex flex-wrap gap-3">
-                {[
-                  { icon: Facebook, href: settings?.socialFacebook },
-                  { icon: Twitter, href: settings?.socialTwitter },
-                  { icon: Instagram, href: settings?.socialInstagram },
-                  { icon: Linkedin, href: settings?.socialLinkedin },
-                  { icon: Youtube, href: settings?.socialYoutube }
-                ].filter(s => s.href).map((social, i) => (
-                  <a 
-                    key={i} 
-                    href={social.href} 
-                    target="_blank" 
-                    rel="noreferrer"
-                    className="w-10 h-10 bg-slate-50 dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-primary-600 rounded-xl flex items-center justify-center transition-all shadow-sm"
-                  >
-                    <social.icon size={18} />
-                  </a>
-                ))}
+            {/* Column 3: Contact Details */}
+            <div className="space-y-8">
+              <h5 className="text-sm font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Contact Us</h5>
+              <div className="space-y-6">
+                <div className="flex gap-4">
+                   <div className="shrink-0 w-10 h-10 bg-primary-50 dark:bg-primary-900/20 rounded-xl flex items-center justify-center text-primary-600">
+                      <MapPin size={18} />
+                   </div>
+                   <p className="text-sm font-bold text-slate-500 dark:text-slate-400 leading-relaxed">
+                     {settings?.schoolAddress || 'School Address not set'}
+                   </p>
+                </div>
+                <div className="flex gap-4">
+                   <div className="shrink-0 w-10 h-10 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl flex items-center justify-center text-emerald-600">
+                      <Phone size={18} />
+                   </div>
+                   <div className="flex flex-col">
+                      <p className="text-xs font-black uppercase text-slate-400 mb-0.5 tracking-wider">Phone Number</p>
+                      <a href={`tel:${settings?.schoolPhone}`} className="text-sm font-bold text-slate-700 dark:text-slate-200 hover:text-primary-600 transition-colors">
+                        {settings?.schoolPhone || 'N/A'}
+                      </a>
+                   </div>
+                </div>
+                <div className="flex gap-4">
+                   <div className="shrink-0 w-10 h-10 bg-amber-50 dark:bg-amber-900/20 rounded-xl flex items-center justify-center text-amber-600">
+                      <Mail size={18} />
+                   </div>
+                   <div className="flex flex-col">
+                      <p className="text-xs font-black uppercase text-slate-400 mb-0.5 tracking-wider">Email Address</p>
+                      <a href={`mailto:${settings?.schoolEmail}`} className="text-sm font-bold text-slate-700 dark:text-slate-200 hover:text-primary-600 transition-colors">
+                        {settings?.schoolEmail || 'N/A'}
+                      </a>
+                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Column 4: Stay Connected */}
+            <div className="space-y-8">
+              <h5 className="text-sm font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Stay Connected</h5>
+              <div className="space-y-6">
+                <p className="text-sm text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
+                  Join our official social community for real-time news and highlights.
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  {[
+                    { icon: Facebook, href: settings?.socialFacebook },
+                    { icon: Twitter, href: settings?.socialTwitter },
+                    { icon: Instagram, href: settings?.socialInstagram },
+                    { icon: Linkedin, href: settings?.socialLinkedin },
+                    { icon: Youtube, href: settings?.socialYoutube },
+                    { icon: Globe, href: settings?.officialWebsite }
+                  ].filter(s => s.href).map((social, i) => (
+                    <a 
+                      key={i} 
+                      href={social.href} 
+                      target="_blank" 
+                      rel="noreferrer"
+                      className="w-12 h-12 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 hover:border-primary-600 hover:text-primary-600 dark:hover:border-primary-400 dark:hover:text-primary-400 text-slate-600 dark:text-slate-400 rounded-2xl flex items-center justify-center transition-all shadow-sm group active:scale-95"
+                    >
+                      <social.icon size={20} className="transition-transform group-hover:scale-110" />
+                    </a>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
           
-          <div className="pt-12 border-t border-slate-100 dark:border-slate-800 text-center">
-            <p className="text-slate-400 dark:text-slate-500 text-xs font-medium">
-              © {new Date().getFullYear()} {schoolName}. All rights reserved.
+          {/* Copyright Area */}
+          <div className="pt-12 border-t border-slate-100 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-6">
+            <p className="text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-widest">
+              © {new Date().getFullYear()} {schoolName}. ALL RIGHTS RESERVED.
             </p>
+            <div className="flex items-center gap-8">
+               <a href="/privacy" className="text-[10px] font-black uppercase text-slate-400 hover:text-primary-600 tracking-widest">Privacy Policy</a>
+               <a href="/terms" className="text-[10px] font-black uppercase text-slate-400 hover:text-primary-600 tracking-widest">Terms of Use</a>
+            </div>
           </div>
         </div>
       </footer>

@@ -1,6 +1,8 @@
 const ACCESS_TOKEN_KEY = 'access_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
 const USER_KEY = 'user';
+const SELECTED_CHILD_ID_KEY = 'selected_child_id';
+const CHILDREN_LIST_KEY = 'children_list';
 
 export interface AuthSessionUser {
   id?: string;
@@ -49,7 +51,35 @@ export const authSession = {
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem(SELECTED_CHILD_ID_KEY);
+    localStorage.removeItem(CHILDREN_LIST_KEY);
     sessionStorage.clear();
+  },
+
+  getSelectedChildId(): string | null {
+    return localStorage.getItem(SELECTED_CHILD_ID_KEY);
+  },
+
+  setSelectedChildId(id: string | null) {
+    if (id) {
+      localStorage.setItem(SELECTED_CHILD_ID_KEY, id);
+    } else {
+      localStorage.removeItem(SELECTED_CHILD_ID_KEY);
+    }
+  },
+
+  getChildrenList(): any[] {
+    const rawList = localStorage.getItem(CHILDREN_LIST_KEY);
+    if (!rawList) return [];
+    try {
+      return JSON.parse(rawList);
+    } catch {
+      return [];
+    }
+  },
+
+  setChildrenList(list: any[]) {
+    localStorage.setItem(CHILDREN_LIST_KEY, JSON.stringify(list));
   },
 };
 

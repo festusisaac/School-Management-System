@@ -83,8 +83,24 @@ export class FeesController {
 
   @Get('statement/:studentId')
   async getStatement(@Param('studentId') studentId: string, @Request() req: any) {
+    const role = (req.user.role || '').toLowerCase();
+    
+    // Security scoping for parents
+    if (role === 'parent') {
+        const hasAccess = await this.entityManager.query(`
+            SELECT 1 FROM students s 
+            JOIN parents p ON p.id = s."parentId" 
+            WHERE p."userId" = $1 AND s.id = $2 AND s."tenantId" = $3
+        `, [req.user.id, studentId, req.user.tenantId]);
+        
+        if (!hasAccess || hasAccess.length === 0) {
+            throw new ForbiddenException('You can only view your own children\'s fee statement.');
+        }
+        return this.feesService.getStudentStatement(studentId, req.user.tenantId);
+    }
+
     // Security scoping for students
-    if (req.user.role === UserRole.STUDENT) {
+    if (role === 'student') {
         const resolvedStudentId = await this.studentsService.resolveStudentId(req.user.id, req.user.tenantId);
         if (!resolvedStudentId) throw new ForbiddenException('Student record linkage not found. Please contact administrator.');
         
@@ -126,8 +142,24 @@ export class FeesController {
 
   @Get('family/:studentId')
   async getFamilyFinancials(@Param('studentId') studentId: string, @Request() req: any) {
+    const role = (req.user.role || '').toLowerCase();
+
+    // Security scoping for parents
+    if (role === 'parent') {
+        const hasAccess = await this.entityManager.query(`
+            SELECT 1 FROM students s 
+            JOIN parents p ON p.id = s."parentId" 
+            WHERE p."userId" = $1 AND s.id = $2 AND s."tenantId" = $3
+        `, [req.user.id, studentId, req.user.tenantId]);
+        
+        if (!hasAccess || hasAccess.length === 0) {
+            throw new ForbiddenException('You can only view your own family financials.');
+        }
+        return this.feesService.getFamilyFinancials(studentId, req.user.tenantId);
+    }
+
     // Security scoping for students
-    if (req.user.role === UserRole.STUDENT) {
+    if (role === 'student') {
         const resolvedStudentId = await this.studentsService.resolveStudentId(req.user.id, req.user.tenantId);
         if (!resolvedStudentId) throw new ForbiddenException('Student record linkage not found. Please contact administrator.');
         

@@ -34,7 +34,8 @@ function cn(...inputs: ClassValue[]) {
 }
 
 const StudentAttendancePage: React.FC = () => {
-    const { user } = useAuthStore();
+    const { user, selectedChildId } = useAuthStore();
+    const isParent = (user?.role || user?.roleObject?.name || '').toLowerCase() === 'parent';
     const toast = useToast();
     
     const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -50,19 +51,23 @@ const StudentAttendancePage: React.FC = () => {
     });
 
     useEffect(() => {
-        if (user?.id) {
+        const studentId = isParent ? selectedChildId : user?.id;
+        if (studentId) {
             fetchAttendance();
         }
-    }, [currentMonth, user?.id]);
+    }, [currentMonth, user?.id, isParent, selectedChildId]);
 
     const fetchAttendance = async () => {
         try {
+            const studentId = isParent ? selectedChildId : user?.id;
+            if (!studentId) return;
+
             setLoading(true);
             const start = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
             const end = format(endOfMonth(currentMonth), 'yyyy-MM-dd');
             
-            console.log('Fetching attendance for:', user?.id, 'from:', start, 'to:', end);
-            const data = await api.getStudentAttendance(user!.id, start, end);
+            console.log('Fetching attendance for:', studentId, 'from:', start, 'to:', end);
+            const data = await api.getStudentAttendance(studentId, start, end);
             console.log('Received attendance data:', data);
             setAttendanceData(data);
             calculateStats(data);

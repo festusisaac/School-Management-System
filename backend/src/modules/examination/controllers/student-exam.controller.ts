@@ -10,6 +10,7 @@ import { AcademicTerm } from '../../system/entities/academic-term.entity';
 import { SystemSetting } from '../../system/entities/system-setting.entity';
 import { JwtAuthGuard } from '../../../guards/jwt-auth.guard';
 import { StudentTermResult } from '../entities/student-term-result.entity';
+import { UserRole } from '@common/dtos/auth.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('examination/student')
@@ -33,7 +34,7 @@ export class StudentExamController {
         const tenantId = req.user.tenantId;
 
         // Security scoping for students
-        if (req.user.role === 'student') {
+        if (req.user.role === 'student' || req.user.role === UserRole.STUDENT) {
             const actualStudent = await this.studentRepo.findOne({
                 where: [{ id: req.user.studentId || undefined, tenantId }, { userId: req.user.id, tenantId }],
                 select: ['id']
@@ -45,6 +46,19 @@ export class StudentExamController {
 
             if (!actualStudent || !targetStudent || actualStudent.id !== targetStudent.id) {
                 throw new ForbiddenException('You can only view your own exam dashboard.');
+            }
+        }
+
+        // Security scoping for parents
+        if (req.user.role === 'parent' || req.user.role === UserRole.PARENT) {
+            const hasAccess = await this.studentRepo.manager.query(`
+                SELECT 1 FROM students s 
+                JOIN parents p ON p.id = s."parentId" 
+                WHERE p."userId" = $1 AND s.id = $2 AND s."tenantId" = $3
+            `, [req.user.id, id, tenantId]);
+
+            if (!hasAccess || hasAccess.length === 0) {
+                throw new ForbiddenException('You can only view exam data for your own children.');
             }
         }
 
@@ -139,7 +153,7 @@ export class StudentExamController {
         });
 
         // 2. Security scoping for students & Resolve Student
-        if (req.user.role === 'student') {
+        if (req.user.role === 'student' || req.user.role === UserRole.STUDENT) {
             const actualStudent = await this.studentRepo.findOne({
                 where: [{ id: req.user.studentId || undefined, tenantId }, { userId: req.user.id, tenantId }],
                 select: ['id']
@@ -151,6 +165,19 @@ export class StudentExamController {
 
             if (!actualStudent || !targetStudent || actualStudent.id !== targetStudent.id) {
                 throw new ForbiddenException('You can only access your own results.');
+            }
+        }
+
+        // Security scoping for parents
+        if (req.user.role === 'parent' || req.user.role === UserRole.PARENT) {
+            const hasAccess = await this.studentRepo.manager.query(`
+                SELECT 1 FROM students s 
+                JOIN parents p ON p.id = s."parentId" 
+                WHERE p."userId" = $1 AND s.id = $2 AND s."tenantId" = $3
+            `, [req.user.id, id, tenantId]);
+
+            if (!hasAccess || hasAccess.length === 0) {
+                throw new ForbiddenException('You can only view results for your own children.');
             }
         }
 

@@ -34,6 +34,16 @@ export class LibraryService {
     private settingsRepo: Repository<LibrarySetting>,
   ) {}
 
+  async checkParentAccess(parentUserId: string, studentId: string, tenantId: string): Promise<boolean> {
+    const manager = this.bookRepo.manager;
+    const result = await manager.query(`
+      SELECT 1 FROM students s 
+      JOIN parents p ON p.id = s."parentId" 
+      WHERE p."userId" = $1 AND s.id = $2 AND s."tenantId" = $3
+    `, [parentUserId, studentId, tenantId]);
+    return result && result.length > 0;
+  }
+
   // Author CRUD
   async createAuthor(dto: CreateAuthorDto, tenantId: string): Promise<Author> {
     const author = this.authorRepo.create({ ...dto, tenantId });

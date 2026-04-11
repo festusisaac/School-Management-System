@@ -22,6 +22,7 @@ import { SystemProvider, useSystem } from './context/SystemContext'
 import * as Academics from './pages/academics';
 import * as HR from './pages/hr';
 import * as Students from './pages/students';
+import * as Parent from './pages/parent';
 import * as Finance from './pages/finance';
 import * as Examination from './pages/examination';
 import * as Settings from './pages/settings';
@@ -160,6 +161,13 @@ function AppRoutes() {
                 <Route path="online-classes" element={<OnlineClasses.OnlineClassesPage />} />
                 <Route path="online-classes/history" element={<OnlineClasses.CompletedClassesPage />} />
                 <Route path="homework" element={<Homework.HomeworkPage />} />
+              </Route>
+
+              {/* Parent Routes */}
+              <Route path="parent">
+                <Route path="dashboard" element={<Parent.ParentDashboard />} />
+                <Route path="billing" element={<Parent.ParentBilling />} />
+                <Route path="profile" element={<Parent.ParentProfile />} />
               </Route>
 
               {/* Online Classes Routes */}

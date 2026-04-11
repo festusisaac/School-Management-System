@@ -76,7 +76,8 @@ const getSubjectAbbreviation = (name: string): string => {
 };
 
 export default function StudentTimetablePage() {
-    const { user } = useAuthStore();
+    const { user, selectedChildId, childrenList } = useAuthStore();
+    const isParent = (user?.role || user?.roleObject?.name || '').toLowerCase() === 'parent';
     
     const [student, setStudent] = useState<any>(null);
     const [periods, setPeriods] = useState<Period[]>([]);
@@ -86,13 +87,21 @@ export default function StudentTimetablePage() {
     const [currentTime, setCurrentTime] = useState(new Date());
 
     const fetchData = useCallback(async () => {
-        if (!user?.id) return;
+        const studentId = isParent ? selectedChildId : user?.id;
+        if (!studentId) return;
+        if (isParent && childrenList.length === 0) return;
+
         setLoading(true);
         try {
-            const studentData = await api.getStudentProfile();
+            let studentData: any;
+            if (isParent) {
+                studentData = childrenList.find((c: any) => c.id === selectedChildId);
+            } else {
+                studentData = await api.getStudentProfile();
+            }
             setStudent(studentData);
 
-            if (studentData.classId) {
+            if (studentData?.classId) {
                 const [periodsData, timetableData] = await Promise.all([
                     api.getPeriods(),
                     api.getTimetable(studentData.classId, studentData.sectionId)
@@ -107,7 +116,7 @@ export default function StudentTimetablePage() {
         } finally {
             setLoading(false);
         }
-    }, [user?.id]);
+    }, [user?.id, isParent, selectedChildId, childrenList]);
 
     useEffect(() => {
         fetchData();

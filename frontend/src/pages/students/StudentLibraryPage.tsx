@@ -6,7 +6,8 @@ import { useToast } from '../../context/ToastContext';
 import { useSystem } from '../../context/SystemContext';
 
 const StudentLibraryPage = () => {
-    const { user } = useAuthStore();
+    const { user, selectedChildId } = useAuthStore();
+    const isParent = (user?.role || user?.roleObject?.name || '').toLowerCase() === 'parent';
     const { showError } = useToast();
     const { getFullUrl } = useSystem();
     const [loading, setLoading] = useState(true);
@@ -16,8 +17,15 @@ const StudentLibraryPage = () => {
     useEffect(() => {
         const fetchLoans = async () => {
             try {
+                const targetId = isParent ? selectedChildId : (user?.studentId || user?.id || 'me');
+                if (isParent && !targetId) {
+                    setLoans([]);
+                    setLoading(false);
+                    return;
+                }
+
                 setLoading(true);
-                const data = await libraryService.getStudentLoans(user?.studentId || user?.id || 'me');
+                const data = await libraryService.getStudentLoans(targetId);
                 setLoans(data || []);
             } catch (error: any) {
                 showError(error.response?.data?.message || 'Failed to load library data');
@@ -26,7 +34,7 @@ const StudentLibraryPage = () => {
             }
         };
         if (user) fetchLoans();
-    }, [user]);
+    }, [user, isParent, selectedChildId]);
 
     const activeLoans = loans.filter(l => l.status === 'active');
     const returnedLoans = loans.filter(l => l.status === 'returned');

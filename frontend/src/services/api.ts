@@ -407,9 +407,13 @@ class ApiService {
   }
 
   // Timetable Slots
-  async getTimetable(classId: string, sectionId?: string) {
+  async getTimetable(classId: string, sectionId?: string, studentId?: string) {
     const response = await this.axiosInstance.get('/academics/timetable/slots', {
-      params: { classId, sectionId: sectionId || undefined }
+      params: { 
+        classId: classId || undefined, 
+        sectionId: sectionId || undefined,
+        studentId: studentId || undefined
+      }
     })
     return response.data
   }
@@ -775,6 +779,14 @@ class ApiService {
     return this.get<any>(`/students/${id}`)
   }
 
+  async getMyChildren() {
+    return this.get<any[]>('/students/profile/my-children')
+  }
+
+  async getParentProfile() {
+    return this.get<any>('/students/profile/parent')
+  }
+
   async getStudentProfile() {
     return this.get<any>('/students/profile/me')
   }
@@ -878,6 +890,11 @@ class ApiService {
 
   async getAttendanceLogs(params: { startDate: string, endDate: string, classId?: string, sectionId?: string }) {
     return this.get<any[]>('/students/attendance/logs', { params })
+  }
+
+  // Student Dashboard API
+  async getStudentDashboardStats(studentId: string) {
+    return this.get<any>(`/reporting/dashboard/student/${studentId}`)
   }
 
   // Examination Student API

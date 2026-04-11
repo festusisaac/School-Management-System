@@ -5,7 +5,7 @@ import StudentDashboard from './StudentDashboard'
 import TeacherDashboard from './TeacherDashboard'
 import { useSystem } from '../../context/SystemContext'
 
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import {
   Users,
   GraduationCap,
@@ -71,7 +71,7 @@ interface RecentActivity {
 const COLORS = ['#3B82F6', '#EC4899', '#10B981', '#F59E0B'];
 
 const DashboardPage: React.FC = () => {
-  const { user } = useAuthStore()
+  const { user, selectedChildId } = useAuthStore()
   const userRole = (user?.role || user?.roleObject?.name || '').toLowerCase()
   const isStudentOrParent = userRole === 'student' || userRole === 'parent'
   const { activeSectionId } = useSystem()
@@ -115,7 +115,14 @@ const DashboardPage: React.FC = () => {
     )
   }
 
-  if (isStudentOrParent) {
+  if (userRole === 'parent') {
+    if (!selectedChildId) {
+      return <Navigate to="/parent/dashboard" replace />;
+    }
+    return <StudentDashboard />;
+  }
+
+  if (userRole === 'student') {
      return <StudentDashboard />;
   }
 

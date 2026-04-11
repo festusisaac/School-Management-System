@@ -50,7 +50,8 @@ interface OnlineClassesPageProps {
 }
 
 export default function OnlineClassesPage({ view = 'active' }: OnlineClassesPageProps) {
-    const { user } = useAuthStore();
+    const { user, selectedChildId } = useAuthStore();
+    const isParent = (user?.role || user?.roleObject?.name || '').toLowerCase() === 'parent';
     const toast = useToast();
     const [classes, setClasses] = useState<OnlineClass[]>([]);
     const [loading, setLoading] = useState(true);
@@ -64,15 +65,26 @@ export default function OnlineClassesPage({ view = 'active' }: OnlineClassesPage
 
     useEffect(() => {
         fetchClasses();
-    }, [view]);
+    }, [view, selectedChildId]);
 
     const fetchClasses = async () => {
         try {
+            if (isParent && !selectedChildId) {
+                setClasses([]);
+                setLoading(false);
+                return;
+            }
+
             setLoading(true);
             // Students see everything together, staff see based on view
-            const endpoint = (!isStaff || view === 'all') ? '/online-classes' : 
+            let endpoint = (!isStaff || view === 'all') ? '/online-classes' : 
                             (view === 'completed' ? '/online-classes?status=COMPLETED' : '/online-classes');
             
+            if (isParent) {
+                const separator = endpoint.includes('?') ? '&' : '?';
+                endpoint += `${separator}classId=${selectedChildId}`;
+            }
+
             const response = await api.get(endpoint);
             if (Array.isArray(response)) {
                 let filtered = response;

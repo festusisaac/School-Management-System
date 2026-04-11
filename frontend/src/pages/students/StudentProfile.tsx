@@ -20,6 +20,7 @@ import { createRoot } from 'react-dom/client';
 import { useSystem } from '../../context/SystemContext';
 import { usePermissions } from '../../hooks/usePermissions';
 import { cn } from '../../utils/cn';
+import { useAuthStore } from '../../stores/authStore';
 
 export default function StudentProfile() {
     const { id } = useParams();
@@ -41,6 +42,8 @@ export default function StudentProfile() {
     const [loadingAttendance, setLoadingAttendance] = useState(false);
     const [communications, setCommunications] = useState<any[]>([]);
     const [loadingCommunications, setLoadingCommunications] = useState(false);
+    const { selectedChildId, user } = useAuthStore();
+    const isParent = (user?.role || user?.roleObject?.name || '').toLowerCase() === 'parent';
 
     // Document States
     const [isUploadingDoc, setIsUploadingDoc] = useState(false);
@@ -152,10 +155,14 @@ export default function StudentProfile() {
             if (!id) return;
             try {
                 let data;
-                if (id === 'me') {
+                const targetId = (id === 'me' && isParent) ? selectedChildId : id;
+                
+                if (targetId === 'me') {
                     data = await api.getStudentProfile();
+                } else if (targetId) {
+                    data = await api.getStudentById(targetId);
                 } else {
-                    data = await api.getStudentById(id);
+                    return;
                 }
                 setStudent(data);
             } catch (error) {
@@ -165,7 +172,7 @@ export default function StudentProfile() {
             }
         };
         fetchStudent();
-    }, [id]);
+    }, [id, selectedChildId, isParent]);
 
     useEffect(() => {
         if (activeTab === 'Fees' && student?.id && !statement) {

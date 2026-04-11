@@ -10,6 +10,7 @@ import {
     UseGuards,
     HttpCode,
     HttpStatus,
+    BadRequestException,
 } from '@nestjs/common';
 import { RatingService } from '../services/rating.service';
 import { CreateTeacherRatingDto, UpdateTeacherRatingDto } from '../dto/teacher-rating.dto';
@@ -35,14 +36,27 @@ export class RatingController {
         @CurrentUser('id') userId: string,
         @CurrentUser('role') role: string,
         @CurrentUser('tenantId') tenantId: string,
+        @Query('studentId') studentId?: string,
     ) {
-        if (role !== 'student') {
-            throw new ForbiddenException('Only students can view their assigned teachers for rating.');
-        }
+        let student: any;
 
-        const student = await this.studentsService.findByUserId(userId);
-        if (!student) {
-            throw new NotFoundException('Student record not found');
+        if (role === 'parent') {
+            if (!studentId) {
+                throw new BadRequestException('Student ID is required for parents');
+            }
+            // Verify parent-child relationship
+            const children = await this.studentsService.getMyChildren(userId, tenantId);
+            student = children.find(c => c.id === studentId);
+            if (!student) {
+                throw new ForbiddenException('You can only view teachers for your own children.');
+            }
+        } else if (role === 'student') {
+            student = await this.studentsService.findByUserId(userId);
+            if (!student) {
+                throw new NotFoundException('Student record not found');
+            }
+        } else {
+            throw new ForbiddenException('Only students and parents can view assigned teachers for rating.');
         }
 
         const classId = student.classId;
@@ -132,20 +146,34 @@ export class RatingController {
     @Post()
     @HttpCode(HttpStatus.CREATED)
     async create(
-        @Body() createDto: CreateTeacherRatingDto,
+        @Body() createDto: CreateTeacherRatingDto & { studentId?: string },
         @CurrentUser('id') userId: string,
-        @CurrentUser('role') role: string
+        @CurrentUser('role') role: string,
+        @CurrentUser('tenantId') tenantId: string,
     ) {
-        if (role !== 'student') {
-            throw new ForbiddenException('Only students can rate teachers');
+        let studentId = createDto.studentId;
+
+        if (role === 'parent') {
+            if (!studentId) {
+                throw new BadRequestException('Student ID is required for parents to rate teachers');
+            }
+            // Verify parent-child relationship
+            const children = await this.studentsService.getMyChildren(userId, tenantId);
+            const child = children.find(c => c.id === studentId);
+            if (!child) {
+                throw new ForbiddenException('You can only rate teachers on behalf of your own children.');
+            }
+        } else if (role === 'student') {
+            const student = await this.studentsService.findByUserId(userId);
+            if (!student) {
+                throw new ForbiddenException('Student record not found for this user');
+            }
+            studentId = student.id;
+        } else {
+            throw new ForbiddenException('Only students and parents can rate teachers');
         }
 
-        const student = await this.studentsService.findByUserId(userId);
-        if (!student) {
-            throw new ForbiddenException('Student record not found for this user');
-        }
-
-        return this.ratingService.create(createDto, student.id);
+        return this.ratingService.create(createDto, studentId);
     }
 
     @Put(':id')

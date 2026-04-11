@@ -1251,14 +1251,28 @@ export class FeesService {
           const existingTx = await manager.findOne(Transaction, { where: { reference, tenantId } });
           if (existingTx) throw new ConflictException('Payment already recorded');
 
-          await this.recordPayment({
-            studentId,
-            amount: amountPaid.toString(),
-            paymentMethod: PaymentMethod.ONLINE,
-            reference,
-            type: TransactionType.FEE_PAYMENT,
-            meta: { ...meta, gateway: 'PAYSTACK', paystackData: data.data }
-          }, tenantId);
+          const bulkAllocations = meta?.bulkAllocations;
+          if (meta?.isBulk && Array.isArray(bulkAllocations) && bulkAllocations.length > 0) {
+            for (const [index, alloc] of bulkAllocations.entries()) {
+              await this.recordPayment({
+                studentId: alloc.studentId,
+                amount: alloc.amount.toString(),
+                paymentMethod: PaymentMethod.ONLINE,
+                reference: index === 0 ? reference : `${reference}_${index}`,
+                type: TransactionType.FEE_PAYMENT,
+                meta: { ...meta, isBulkSubTransaction: true, originalReference: reference, gateway: 'PAYSTACK', paystackData: data.data }
+              }, tenantId);
+            }
+          } else {
+            await this.recordPayment({
+              studentId,
+              amount: amountPaid.toString(),
+              paymentMethod: PaymentMethod.ONLINE,
+              reference,
+              type: TransactionType.FEE_PAYMENT,
+              meta: { ...meta, gateway: 'PAYSTACK', paystackData: data.data }
+            }, tenantId);
+          }
 
           return { success: true };
         }
@@ -1291,14 +1305,28 @@ export class FeesService {
           const existingTx = await manager.findOne(Transaction, { where: { reference, tenantId } });
           if (existingTx) return { success: true, detail: 'Already recorded' };
 
-          await this.recordPayment({
-            studentId,
-            amount: amountPaid.toString(),
-            paymentMethod: PaymentMethod.ONLINE,
-            reference,
-            type: TransactionType.FEE_PAYMENT,
-            meta: { ...meta, gateway: 'FLUTTERWAVE', flutterwaveData: data.data }
-          }, tenantId);
+          const bulkAllocations = meta?.bulkAllocations;
+          if (meta?.isBulk && Array.isArray(bulkAllocations) && bulkAllocations.length > 0) {
+            for (const [index, alloc] of bulkAllocations.entries()) {
+              await this.recordPayment({
+                studentId: alloc.studentId,
+                amount: alloc.amount.toString(),
+                paymentMethod: PaymentMethod.ONLINE,
+                reference: index === 0 ? reference : `${reference}_${index}`,
+                type: TransactionType.FEE_PAYMENT,
+                meta: { ...meta, isBulkSubTransaction: true, originalReference: reference, gateway: 'FLUTTERWAVE', flutterwaveData: data.data }
+              }, tenantId);
+            }
+          } else {
+            await this.recordPayment({
+              studentId,
+              amount: amountPaid.toString(),
+              paymentMethod: PaymentMethod.ONLINE,
+              reference,
+              type: TransactionType.FEE_PAYMENT,
+              meta: { ...meta, gateway: 'FLUTTERWAVE', flutterwaveData: data.data }
+            }, tenantId);
+          }
 
           return { success: true };
         }
@@ -1342,14 +1370,28 @@ export class FeesService {
         const existing = await manager.findOne(Transaction, { where: { reference, tenantId } });
         if (existing) return { status: 'success', detail: 'Already processed' };
 
-        await this.recordPayment({
-          studentId,
-          amount: (amount / 100).toString(),
-          paymentMethod: PaymentMethod.ONLINE,
-          reference,
-          type: TransactionType.FEE_PAYMENT,
-          meta: { paystackData: data, gateway: 'PAYSTACK', via: 'webhook' }
-        }, tenantId);
+        const bulkAllocations = metadata?.bulkAllocations;
+        if (metadata?.isBulk && Array.isArray(bulkAllocations) && bulkAllocations.length > 0) {
+          for (const [index, alloc] of bulkAllocations.entries()) {
+            await this.recordPayment({
+              studentId: alloc.studentId,
+              amount: alloc.amount.toString(),
+              paymentMethod: PaymentMethod.ONLINE,
+              reference: index === 0 ? reference : `${reference}_${index}`,
+              type: TransactionType.FEE_PAYMENT,
+              meta: { ...metadata, isBulkSubTransaction: true, originalReference: reference, gateway: 'PAYSTACK', paystackData: data }
+            }, tenantId);
+          }
+        } else {
+          await this.recordPayment({
+            studentId,
+            amount: (amount / 100).toString(),
+            paymentMethod: PaymentMethod.ONLINE,
+            reference,
+            type: TransactionType.FEE_PAYMENT,
+            meta: { ...metadata, gateway: 'PAYSTACK', paystackData: data, via: 'webhook' }
+          }, tenantId);
+        }
 
         return { status: 'success' };
       });
@@ -1387,14 +1429,28 @@ export class FeesService {
         const existing = await manager.findOne(Transaction, { where: { reference: finalRef, tenantId } });
         if (existing) return { status: 'success', detail: 'Already processed' };
 
-        await this.recordPayment({
-          studentId,
-          amount: amount.toString(),
-          paymentMethod: PaymentMethod.ONLINE,
-          reference: finalRef,
-          type: TransactionType.FEE_PAYMENT,
-          meta: { flutterwaveData: data, gateway: 'FLUTTERWAVE', via: 'webhook', flwId }
-        }, tenantId);
+        const bulkAllocations = metadata?.bulkAllocations;
+        if (metadata?.isBulk && Array.isArray(bulkAllocations) && bulkAllocations.length > 0) {
+          for (const [index, alloc] of bulkAllocations.entries()) {
+            await this.recordPayment({
+              studentId: alloc.studentId,
+              amount: alloc.amount.toString(),
+              paymentMethod: PaymentMethod.ONLINE,
+              reference: index === 0 ? finalRef : `${finalRef}_${index}`,
+              type: TransactionType.FEE_PAYMENT,
+              meta: { ...metadata, isBulkSubTransaction: true, originalReference: finalRef, gateway: 'FLUTTERWAVE', flutterwaveData: data }
+            }, tenantId);
+          }
+        } else {
+          await this.recordPayment({
+            studentId,
+            amount: amount.toString(),
+            paymentMethod: PaymentMethod.ONLINE,
+            reference: finalRef,
+            type: TransactionType.FEE_PAYMENT,
+            meta: { ...metadata, gateway: 'FLUTTERWAVE', flutterwaveData: data, via: 'webhook', flwId }
+          }, tenantId);
+        }
 
         return { status: 'success' };
       });

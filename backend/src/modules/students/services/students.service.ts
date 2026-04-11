@@ -565,12 +565,27 @@ export class StudentsService {
         
         if (!student) {
             console.warn(`[StudentsService] resolveStudentId: No student found for UserID: ${userId} in Tenant: ${tenantId}`);
-            
-            // Fallback: Check if there's any student whose admission number matches the user identifier
-            // This handles cases where the link is broken but the names/ids suggest they are the same.
         }
         
         return student ? student.id : null;
+    }
+
+    async getMyChildren(userId: string, tenantId: string): Promise<any[]> {
+        return this.studentsRepository.manager.query(`
+            SELECT s.*, c.name as "className", sec.name as "sectionName"
+            FROM students s
+            JOIN parents p ON p.id = s."parentId"
+            LEFT JOIN classes c ON c.id = s."classId"
+            LEFT JOIN sections sec ON sec.id = s."sectionId"
+            WHERE p."userId" = $1 AND s."tenantId" = $2 AND s."isActive" = true
+        `, [userId, tenantId]);
+    }
+
+    async getParentProfile(userId: string, tenantId: string): Promise<Parent | null> {
+        return this.parentRepository.findOne({
+            where: { userId, tenantId },
+            relations: ['students', 'students.class', 'students.section']
+        });
     }
 
     // --- Categories ---

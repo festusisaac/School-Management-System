@@ -6,9 +6,13 @@ import { authSession } from '../services/session'
 interface AuthStore {
   user: any | null
   token: string | null
+  childrenList: any[]
+  selectedChildId: string | null
   setUser: (user: any) => void
   setToken: (token: string) => void
   setRefreshToken: (token: string | null) => void
+  setChildrenList: (children: any[]) => void
+  setSelectedChildId: (id: string | null) => void
   refreshUser: () => Promise<void>
   logout: () => void
 }
@@ -16,6 +20,16 @@ interface AuthStore {
 export const useAuthStore = create<AuthStore>((set) => ({
   user: authSession.getUser(),
   token: authSession.getAccessToken(),
+  childrenList: authSession.getChildrenList(),
+  selectedChildId: authSession.getSelectedChildId(),
+  setChildrenList: (childrenList) => {
+    authSession.setChildrenList(childrenList)
+    set({ childrenList })
+  },
+  setSelectedChildId: (selectedChildId) => {
+    authSession.setSelectedChildId(selectedChildId)
+    set({ selectedChildId })
+  },
   setUser: (user) => {
     authSession.setUser(user)
     set({ user })
@@ -44,6 +58,6 @@ export const useAuthStore = create<AuthStore>((set) => ({
   },
   logout: () => {
     authSession.clear()
-    set({ user: null, token: null })
+    set({ user: null, token: null, childrenList: [], selectedChildId: null })
   },
 }))

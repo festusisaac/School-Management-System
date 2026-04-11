@@ -24,6 +24,8 @@ interface Teacher {
 }
 
 const StudentRatingPage: React.FC = () => {
+    const { user, selectedChildId } = useAuthStore();
+    const isParent = (user?.role || user?.roleObject?.name || '').toLowerCase() === 'parent';
     const [teachers, setTeachers] = useState<Teacher[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
@@ -33,13 +35,22 @@ const StudentRatingPage: React.FC = () => {
     const toast = useToast();
 
     useEffect(() => {
-        fetchMyTeachers();
-    }, []);
+        if (user) {
+            fetchMyTeachers();
+        }
+    }, [user, selectedChildId]);
 
     const fetchMyTeachers = async () => {
         try {
+            const targetId = isParent ? selectedChildId : undefined;
+            if (isParent && !targetId) {
+                setTeachers([]);
+                setLoading(false);
+                return;
+            }
+
             setLoading(true);
-            const data = await api.getMyTeachers();
+            const data = await api.getMyTeachers({ studentId: targetId });
             setTeachers(data);
         } catch (error) {
             console.error('Error fetching teachers:', error);
@@ -58,7 +69,8 @@ const StudentRatingPage: React.FC = () => {
         try {
             await api.createRating({
                 ...data,
-                teacherId: selectedTeacher?.id
+                teacherId: selectedTeacher?.id,
+                studentId: isParent ? selectedChildId : undefined
             });
             setShowModal(false);
             setSuccessMessage(true);
@@ -75,124 +87,101 @@ const StudentRatingPage: React.FC = () => {
     );
 
     return (
-        <div className="p-4 md:p-8 animate-in fade-in duration-500">
-            {/* Header Section */}
-            <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
-                <div className="max-w-2xl">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 rounded-full text-[10px] font-black uppercase tracking-wider mb-3">
-                        <Award size={14} className="animate-pulse" />
-                        Teacher Excellence Reviews
-                    </div>
-                    <h1 className="text-4xl font-black text-gray-900 dark:text-white tracking-tight">
-                        Rate Your <span className="text-primary-600">Teachers</span>
-                    </h1>
-                    <p className="text-gray-500 dark:text-gray-400 mt-2 font-medium max-w-lg">
-                        Your feedback helps us maintain the highest standards of teaching. All ratings are anonymous and valued by the administration.
+        <div className="p-6 md:p-8 max-w-7xl mx-auto fade-in">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Rate Teachers</h1>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Provide feedback securely for your assigned teachers.
                     </p>
                 </div>
-
-                <div className="relative w-full md:w-80 group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary-500 transition-colors" size={18} />
+                
+                <div className="relative w-full md:w-72">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                     <input
                         type="text"
-                        placeholder="Search instructors or subjects..."
+                        placeholder="Search teachers or subjects..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-11 pr-4 py-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all shadow-sm font-bold text-sm"
+                        className="w-full pl-9 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-colors"
                     />
                 </div>
             </div>
 
-            {/* Quick Stats / Info */}
             {successMessage && (
-                <div className="mb-8 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 rounded-2xl flex items-center justify-between gap-4 animate-in slide-in-from-top-4 duration-300">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-white dark:bg-emerald-900 rounded-xl shadow-sm">
-                            <CheckCircle2 size={24} className="text-emerald-500" />
-                        </div>
-                        <div>
-                            <p className="font-black text-sm">Submission Complete</p>
-                            <p className="text-xs opacity-80 font-medium">Your feedback has been delivered securely to the HR department.</p>
-                        </div>
+                <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl flex items-center justify-between">
+                    <div className="flex items-center gap-3 text-green-700 dark:text-green-400">
+                        <CheckCircle2 size={20} />
+                        <span className="text-sm font-medium">Your feedback has been successfully submitted!</span>
                     </div>
-                    <button onClick={() => setSuccessMessage(false)} className="text-xs font-black uppercase tracking-widest hover:underline">Dismiss</button>
+                    <button onClick={() => setSuccessMessage(false)} className="text-green-700 dark:text-green-400 hover:opacity-75">
+                        <span className="text-xl leading-none">&times;</span>
+                    </button>
                 </div>
             )}
 
-            {/* Content Grid */}
             {loading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {[1, 2, 3].map(i => (
-                        <div key={i} className="h-64 bg-gray-100 dark:bg-gray-800 rounded-3xl animate-pulse border border-gray-200 dark:border-gray-700" />
+                        <div key={i} className="h-48 bg-gray-100 dark:bg-gray-800/50 rounded-xl animate-pulse border border-gray-200 dark:border-gray-700" />
                     ))}
                 </div>
             ) : filteredTeachers.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {filteredTeachers.map((teacher) => (
                         <div 
                             key={teacher.id} 
-                            className="bg-white dark:bg-gray-800 rounded-[2rem] border border-gray-100 dark:border-gray-700 p-6 flex flex-col shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
+                            className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 flex flex-col hover:shadow-md transition-shadow"
                         >
-                            <div className="flex items-start justify-between mb-6">
-                                <div className="relative">
-                                    <div className="w-20 h-20 rounded-2xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-300 overflow-hidden border border-gray-50 dark:border-gray-700 shadow-inner group-hover:scale-105 transition-transform duration-500">
-                                        {teacher.photo ? (
-                                            <img src={getFileUrl(teacher.photo)} alt={teacher.name} className="w-full h-full object-cover" />
-                                        ) : (
-                                            <Camera size={32} />
-                                        )}
-                                    </div>
-                                    <div className="absolute -bottom-2 -right-2 p-2 bg-yellow-400 text-white rounded-xl shadow-lg ring-4 ring-white dark:ring-gray-800">
-                                        <Star size={16} fill="currentColor" />
-                                    </div>
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400 overflow-hidden shrink-0">
+                                    {teacher.photo ? (
+                                        <img src={getFileUrl(teacher.photo)} alt={teacher.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <Users size={20} />
+                                    )}
                                 </div>
-                                <div className={cn(
-                                    "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest",
-                                    teacher.role === 'Class Teacher' 
-                                        ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400"
-                                        : "bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400"
-                                )}>
-                                    {teacher.role}
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="text-base font-semibold text-gray-900 dark:text-white truncate capitalize">
+                                        {teacher.name}
+                                    </h3>
+                                    <span className="inline-block mt-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                                        {teacher.role}
+                                    </span>
                                 </div>
                             </div>
 
-                            <div className="flex-1">
-                                <h3 className="text-xl font-black text-gray-900 dark:text-white leading-tight mb-2 group-hover:text-primary-600 transition-colors capitalize">
-                                    {teacher.name}
-                                </h3>
-                                
-                                <div className="flex flex-wrap gap-1.5 mb-6">
+                            <div className="flex-1 mb-5">
+                                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider">Subjects</p>
+                                <div className="flex flex-wrap gap-2">
                                     {teacher.subjects.length > 0 ? teacher.subjects.map((sub, idx) => (
-                                        <span key={idx} className="flex items-center gap-1 text-[10px] bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-md font-bold border border-gray-100 dark:border-gray-800 capitalize">
-                                            <BookOpen size={10} />
+                                        <span key={idx} className="inline-flex items-center text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700/50 px-2 py-1 rounded">
                                             {sub}
                                         </span>
                                     )) : (
-                                        <span className="text-[10px] text-gray-400 font-bold italic">Classroom Oversight</span>
+                                        <span className="text-xs text-gray-500 italic">No specific subjects</span>
                                     )}
                                 </div>
                             </div>
 
                             <button
                                 onClick={() => handleRate(teacher)}
-                                className="mt-auto w-full group/btn flex items-center justify-between bg-gray-900 dark:bg-white text-white dark:text-gray-900 p-1.5 rounded-2xl font-black shadow-lg hover:shadow-primary-500/20 hover:bg-primary-600 dark:hover:bg-primary-500 transition-all duration-300"
+                                className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-primary-600 bg-primary-50 hover:bg-primary-100 dark:text-primary-400 dark:bg-primary-900/30 dark:hover:bg-primary-900/50 rounded-lg transition-colors border border-transparent dark:border-primary-800/30"
                             >
-                                <span className="ml-4 text-xs tracking-widest uppercase">Start Review</span>
-                                <div className="w-10 h-10 bg-white/20 dark:bg-black/10 rounded-xl flex items-center justify-center group-hover/btn:translate-x-1 transition-transform">
-                                    <ChevronRight size={20} />
-                                </div>
+                                <Star size={16} />
+                                Rate Teacher
                             </button>
                         </div>
                     ))}
                 </div>
             ) : (
-                <div className="py-24 flex flex-col items-center justify-center bg-white dark:bg-gray-800 rounded-[3rem] border border-dashed border-gray-200 dark:border-gray-700">
-                    <div className="w-20 h-20 bg-gray-50 dark:bg-gray-900 rounded-3xl flex items-center justify-center mb-6 text-gray-300">
-                        <Users size={40} />
+                <div className="py-16 flex flex-col items-center justify-center bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
+                    <div className="w-16 h-16 bg-gray-50 dark:bg-gray-900/50 rounded-full flex items-center justify-center mb-4 text-gray-400">
+                        <Users size={32} />
                     </div>
-                    <h3 className="text-xl font-black text-gray-900 dark:text-white mb-2">No Active Assignments</h3>
-                    <p className="text-gray-500 dark:text-gray-400 font-medium max-w-sm text-center">
-                        We couldn't find any teachers linked to your current class and subjects. If you have active courses, please contact the Registrar.
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Active Assignments</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm text-center">
+                        We couldn't find any teachers linked to your current class and subjects.
                     </p>
                 </div>
             )}

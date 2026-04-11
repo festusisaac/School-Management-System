@@ -34,7 +34,7 @@ interface SidebarProps {
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
     const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
     const { settings, getFullUrl } = useSystem();
-    const { user, logout } = useAuthStore();
+    const { user, logout, selectedChildId } = useAuthStore();
     const navigate = useNavigate();
     const userRole = (user?.role || user?.roleObject?.name || 'student').toLowerCase();
     const isStudentOrParent = userRole === 'student' || userRole === 'parent';
@@ -166,10 +166,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 { label: 'Student Categories', path: '/students/categories', permission: 'students:manage_categories' },
                 { label: 'Student House', path: '/students/houses', permission: 'students:manage_categories' },
                 { label: 'Deactivation Reason', path: '/students/deactivate-reasons', permission: 'students:manage_categories' },
-                // Only show Rate Teachers to Super Admin
-                ...(userRole === 'super administrator' ? [
-                    { label: 'Rate Teachers', path: '/students/rate-teachers', permission: 'students:view_directory_disabled' }
-                ] : []),
             ]
         },
         {
@@ -306,7 +302,23 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     };
 
     const finalStaffNavItems = filterNavItems(staffNavItems);
-    const navItems = isStudentOrParent ? studentNavItems : finalStaffNavItems;
+    
+    // For parents, replace standard Finance with Family Billing
+    const finalStudentNavItems = userRole === 'parent' 
+        ? studentNavItems.map(item => {
+            if (item.label === 'Dashboard') return { ...item, path: '/parent/dashboard' };
+            if (item.label === 'My Profile') return { ...item, path: '/parent/profile' };
+            if (item.label === 'Finance') return { ...item, label: 'Family Billing', path: '/parent/billing' };
+            return item;
+          }).filter(item => {
+              // Hide academic specific items for parents if no child is selected
+              const academicItems = ['Class Timetable', 'Attendance', 'Rate Teachers', 'My Library', 'Examination', 'Online Classes', 'Homework'];
+              if (academicItems.includes(item.label) && !selectedChildId) return false;
+              return true;
+          })
+        : studentNavItems;
+
+    const navItems = isStudentOrParent ? finalStudentNavItems : finalStaffNavItems;
 
     const handleNavClick = () => {
         // Close sidebar on mobile after navigation

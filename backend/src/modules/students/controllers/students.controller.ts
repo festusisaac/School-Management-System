@@ -66,6 +66,27 @@ export class StudentsController {
     }
 
     private async validateStudentAccess(studentId: string, tenantId: string, user: any) {
+        if (user.role === 'student') {
+           const resolvedStudentId = await this.studentsService.resolveStudentId(user.id, tenantId);
+           if (resolvedStudentId !== studentId && user.id !== studentId) {
+               throw new ForbiddenException('You can only view your own records.');
+           }
+           return true;
+        }
+
+        if (user.role === 'parent') {
+           const result = await this.entityManager.query(`
+               SELECT 1 
+               FROM students s 
+               JOIN parents p ON p.id = s."parentId"
+               WHERE p."userId" = $1 AND s.id = $2 AND s."tenantId" = $3
+           `, [user.id, studentId, tenantId]);
+           if (!result || result.length === 0) {
+              throw new ForbiddenException('You only have permission to access your own children.');
+           }
+           return true;
+        }
+
         const classIds = await this.getTeacherManagedClassIds(user);
         if (!classIds) return true; // Full access for admins
 
@@ -128,6 +149,22 @@ export class StudentsController {
         }
 
         return this.studentsService.findDeactivatedStudents(req.user?.tenantId!);
+    }
+
+    @Get('profile/my-children')
+    @UseGuards(JwtAuthGuard)
+    async getMyChildren(@Request() req: any) {
+        if (!req.user?.tenantId) throw new ForbiddenException('Tenant context missing');
+        return this.studentsService.getMyChildren(req.user.id, req.user.tenantId);
+    }
+
+    @Get('profile/parent')
+    @UseGuards(JwtAuthGuard)
+    async getParentProfile(@Request() req: any) {
+        if (!req.user?.tenantId) throw new ForbiddenException('Tenant context missing');
+        const profile = await this.studentsService.getParentProfile(req.user.id, req.user.tenantId);
+        if (!profile) throw new NotFoundException('Parent profile not found');
+        return profile;
     }
 
     @Get('profile/me')
@@ -397,13 +434,7 @@ export class StudentsController {
         @Query('endDate') endDate: string,
         @Request() req: any
     ) {
-        // Security scoping for students: Only allow viewing their own attendance
-        if (req.user.role === 'student') {
-            const resolvedStudentId = await this.studentsService.resolveStudentId(req.user.id, req.user.tenantId);
-            if (resolvedStudentId !== studentId && req.user.id !== studentId) {
-                throw new ForbiddenException('You can only view your own attendance records.');
-            }
-        }
+        await this.validateStudentAccess(studentId, req.user.tenantId, req.user);
         return this.studentsService.getStudentAttendance(studentId, startDate, endDate, req.user.tenantId);
     }
 

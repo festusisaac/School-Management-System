@@ -56,6 +56,33 @@ export class OnlineClassesController {
             }
         }
 
+        // Data scoping for Parents: Use child's classId from Query
+        if (req.user.role === UserRole.PARENT) {
+            const childId = classId; // Overloaded for this request
+            if (!childId) return [];
+
+            const hasAccess = await this.entityManager.query(`
+                SELECT 1 FROM students s 
+                JOIN parents p ON p.id = s."parentId" 
+                WHERE p."userId" = $1 AND s.id = $2 AND s."tenantId" = $3
+            `, [req.user.id, childId, req.user.tenantId]);
+
+            if (!hasAccess || hasAccess.length === 0) {
+               const { ForbiddenException } = require('@nestjs/common');
+               throw new ForbiddenException('You can only view classes for your own children.');
+            }
+
+            const student = await this.entityManager.getRepository(Student).findOne({
+                where: { id: childId, tenantId: req.user.tenantId }
+            });
+
+            if (student) {
+                resolvedClassId = student.classId;
+            } else {
+                return [];
+            }
+        }
+
         // If user is a teacher, force filter by their staffId
         if (req.user.role === UserRole.TEACHER) {
             resolvedTeacherId = await this.staffService.resolveStaffIdByEmail(req.user.email, req.user.tenantId);
@@ -76,6 +103,32 @@ export class OnlineClassesController {
             
             const student = await this.entityManager.getRepository(Student).findOne({
                 where: { id: resolvedStudentId!, tenantId: req.user.tenantId }
+            });
+            if (student) {
+                resolvedClassId = student.classId;
+            } else {
+                return [];
+            }
+        }
+
+        // Data scoping for Parents
+        if (req.user.role === UserRole.PARENT) {
+            const childId = classId;
+            if (!childId) return [];
+
+            const hasAccess = await this.entityManager.query(`
+                SELECT 1 FROM students s 
+                JOIN parents p ON p.id = s."parentId" 
+                WHERE p."userId" = $1 AND s.id = $2 AND s."tenantId" = $3
+            `, [req.user.id, childId, req.user.tenantId]);
+
+            if (!hasAccess || hasAccess.length === 0) {
+              const { ForbiddenException } = require('@nestjs/common');
+               throw new ForbiddenException('You can only view classes for your own children.');
+            }
+
+            const student = await this.entityManager.getRepository(Student).findOne({
+                where: { id: childId, tenantId: req.user.tenantId }
             });
             if (student) {
                 resolvedClassId = student.classId;

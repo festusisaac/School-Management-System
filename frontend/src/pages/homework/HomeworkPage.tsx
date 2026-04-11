@@ -22,7 +22,8 @@ import HomeworkDetailsModal from './components/HomeworkDetailsModal';
 import SubmissionModal from './components/SubmissionModal';
 
 export default function HomeworkPage() {
-    const { user } = useAuthStore();
+    const { user, selectedChildId } = useAuthStore();
+    const isParent = (user?.role || user?.roleObject?.name || '').toLowerCase() === 'parent';
     const toast = useToast();
     const [homeworkList, setHomeworkList] = useState<Homework[]>([]);
     const [loading, setLoading] = useState(true);
@@ -40,12 +41,17 @@ export default function HomeworkPage() {
 
     useEffect(() => {
         fetchHomework();
-    }, []);
+    }, [selectedChildId]);
 
     const fetchHomework = async () => {
         try {
             setLoading(true);
-            const response = await homeworkService.getHomework();
+            const params: any = {};
+            if (isParent) {
+                if (!selectedChildId) return;
+                params.studentId = selectedChildId;
+            }
+            const response = await homeworkService.getHomework(params);
             setHomeworkList(response || []);
         } catch (error) {
             console.error('Error fetching homework:', error);

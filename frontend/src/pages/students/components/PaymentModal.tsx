@@ -12,9 +12,11 @@ interface PaymentModalProps {
     student: any;
     feeHead: any; // { id, name, balance }
     onSuccess: () => void;
+    isBulk?: boolean;
+    bulkAllocations?: any[];
 }
 
-export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess }: PaymentModalProps) {
+export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess, isBulk, bulkAllocations }: PaymentModalProps) {
     const { showError, showSuccess } = useToast();
     const { settings, formatCurrency } = useSystem();
     const [amount, setAmount] = useState(feeHead?.balance || '');
@@ -44,8 +46,10 @@ export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess }: P
     };
 
     const paymentMeta = {
-        note: `Online payment for ${feeHead.name}`,
-        allocations: [{
+        note: isBulk ? 'Bulk family fee payment settlement' : `Online payment for ${feeHead.name}`,
+        isBulk: !!isBulk,
+        bulkAllocations: isBulk ? bulkAllocations : undefined,
+        allocations: isBulk ? [] : [{
             id: feeHead.id,
             name: feeHead.name,
             amount: payAmountNum.toString(),

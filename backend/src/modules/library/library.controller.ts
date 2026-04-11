@@ -23,6 +23,7 @@ import { CreateAuthorDto, UpdateAuthorDto } from './dtos/author.dto';
 import { CreateCategoryDto, UpdateCategoryDto } from './dtos/category.dto';
 import { UpdateBookDto } from './dtos/update-book.dto';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
+import { UserRole } from '@common/dtos/auth.dto';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 
 @ApiTags('Library')
@@ -188,6 +189,20 @@ export class LibraryController {
   @Get('loans/student/:studentId')
   @ApiOperation({ summary: 'Get all loans for a specific student' })
   async findStudentLoans(@Param('studentId') studentId: string, @Request() req: any) {
+    // Security scoping for Parents
+    if (req.user.role === UserRole.PARENT) {
+      const hasAccess = await this.libraryService.checkParentAccess(req.user.id, studentId, req.user.tenantId);
+      if (!hasAccess) {
+        const { ForbiddenException } = require('@nestjs/common');
+        throw new ForbiddenException('You can only view library data for your own children.');
+      }
+    }
+    
+    // Scoping for Students (already potentially handled by 'me' logic if studentId is 'me', but let's be explicit)
+    if (req.user.role === UserRole.STUDENT) {
+        // ... handled in service or by studentId resolution in frontend
+    }
+
     return this.libraryService.findStudentLoans(studentId, req.user.tenantId);
   }
 

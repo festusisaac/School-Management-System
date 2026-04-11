@@ -105,6 +105,23 @@ export class TimetableController {
             }
         }
 
+        // Data scoping for Parents: Force the selected child's class & section
+        if (req.user.role === UserRole.PARENT) {
+            const studentId = (req.query as any).studentId;
+            if (!studentId) return [];
+
+            // Verify parent-child relationship
+            const children = await this.studentsService.getMyChildren(req.user.id, req.user.tenantId);
+            const student = children.find(c => c.id === studentId);
+            
+            if (student) {
+                resolvedClassId = student.classId!;
+                resolvedSectionId = student.sectionId!;
+            } else {
+                return [];
+            }
+        }
+
         // Data scoping for Teachers: Can only view timetables for assigned classes
         if (req.user.role === 'teacher' || req.user.role === UserRole.TEACHER) {
             const staffResult = await this.staffRepository.findOne({
