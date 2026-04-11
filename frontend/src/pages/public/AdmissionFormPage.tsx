@@ -37,6 +37,7 @@ const AdmissionFormPage = () => {
 
     // Form State
     const [formData, setFormData] = useState({
+        primaryGuardian: 'Other',
         firstName: '',
         middleName: '',
         lastName: '',
@@ -59,18 +60,21 @@ const AdmissionFormPage = () => {
         preferredClassId: '',
         fatherName: '',
         fatherPhone: '',
+        fatherEmail: '',
         fatherOccupation: '',
         motherName: '',
         motherPhone: '',
+        motherEmail: '',
         motherOccupation: '',
         emergencyContact: '',
         permanentAddress: '',
     });
 
     // File State
-    const [files, setFiles] = useState<{ passportPhoto: File | null; birthCertificate: File | null }>({
+    const [files, setFiles] = useState<{ passportPhoto: File | null; birthCertificate: File | null; guardianPhoto: File | null }>({
         passportPhoto: null,
-        birthCertificate: null
+        birthCertificate: null,
+        guardianPhoto: null
     });
 
     useEffect(() => {
@@ -131,10 +135,38 @@ const AdmissionFormPage = () => {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setFormData(prev => {
+            const next = { ...prev, [name]: value };
+
+            if (name === 'primaryGuardian') {
+                if (value === 'Father') {
+                    next.guardianName = prev.fatherName;
+                    next.guardianPhone = prev.fatherPhone;
+                    next.email = prev.fatherEmail;
+                    next.guardianRelation = 'Father';
+                } else if (value === 'Mother') {
+                    next.guardianName = prev.motherName;
+                    next.guardianPhone = prev.motherPhone;
+                    next.email = prev.motherEmail;
+                    next.guardianRelation = 'Mother';
+                }
+            }
+
+            if (prev.primaryGuardian === 'Father') {
+                if (name === 'fatherName') next.guardianName = value;
+                if (name === 'fatherPhone') next.guardianPhone = value;
+                if (name === 'fatherEmail') next.email = value;
+            } else if (prev.primaryGuardian === 'Mother') {
+                if (name === 'motherName') next.guardianName = value;
+                if (name === 'motherPhone') next.guardianPhone = value;
+                if (name === 'motherEmail') next.email = value;
+            }
+
+            return next;
+        });
     };
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'passportPhoto' | 'birthCertificate') => {
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'passportPhoto' | 'birthCertificate' | 'guardianPhoto') => {
         if (e.target.files && e.target.files[0]) {
             setFiles(prev => ({ ...prev, [field]: e.target.files![0] }));
         }
@@ -171,11 +203,13 @@ const AdmissionFormPage = () => {
         setIsSubmitting(true);
         try {
             const finalData = new FormData();
-            Object.entries(formData).forEach(([key, value]) => {
-                finalData.append(key, value);
+            const { primaryGuardian, ...submissionData } = formData;
+            Object.entries(submissionData).forEach(([key, value]) => {
+                finalData.append(key, value as any);
             });
             if (files.passportPhoto) finalData.append('passportPhoto', files.passportPhoto);
             if (files.birthCertificate) finalData.append('birthCertificate', files.birthCertificate);
+            if (files.guardianPhoto) finalData.append('guardianPhoto', files.guardianPhoto);
 
             const paymentRef = localStorage.getItem('admission_payment_ref');
             if (paymentRef) {
@@ -269,17 +303,6 @@ const AdmissionFormPage = () => {
                         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <StepHeader title="Parent/Guardian & Medical" desc="Details of the person to contact concerning the student." icon={Users} color="bg-purple-50 text-purple-500" />
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <FormInput label="Guardian Name" name="guardianName" value={formData.guardianName} onChange={handleChange} required />
-                                <FormInput label="Guardian Phone" name="guardianPhone" value={formData.guardianPhone} onChange={handleChange} required />
-                                <FormSelect label="Relation" name="guardianRelation" value={formData.guardianRelation} onChange={handleChange} options={['Father', 'Mother', 'Uncle', 'Aunt', 'Other']} required />
-                                <FormInput label="Email Address" name="email" type="email" value={formData.email || ''} onChange={handleChange} />
-                                <div className="md:col-span-2">
-                                    <FormTextarea label="Current Resident Address" name="currentAddress" value={formData.currentAddress || ''} onChange={handleChange} rows={2} />
-                                </div>
-                                <div className="md:col-span-2">
-                                    <FormTextarea label="Permanent Address" name="permanentAddress" value={formData.permanentAddress || ''} onChange={handleChange} rows={2} />
-                                </div>
-
                                 <div className="md:col-span-2 mt-4 grid grid-cols-2 gap-4">
                                     <div className="md:col-span-2">
                                         <div className="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 border-b border-gray-100 pb-2">
@@ -288,13 +311,59 @@ const AdmissionFormPage = () => {
                                     </div>
                                     <FormInput label="Father's Name" name="fatherName" value={formData.fatherName} onChange={handleChange} />
                                     <FormInput label="Father's Phone" name="fatherPhone" value={formData.fatherPhone} onChange={handleChange} />
+                                    <FormInput label="Father's Email" name="fatherEmail" value={formData.fatherEmail} onChange={handleChange} />
+                                    <div className="hidden md:block"></div>
                                     <FormInput label="Mother's Name" name="motherName" value={formData.motherName} onChange={handleChange} />
                                     <FormInput label="Mother's Phone" name="motherPhone" value={formData.motherPhone} onChange={handleChange} />
-                                </div>
-
-                                <div className="md:col-span-2">
+                                    <FormInput label="Mother's Email" name="motherEmail" value={formData.motherEmail} onChange={handleChange} />
+                                    <div className="hidden md:block"></div>
                                     <FormInput label="Emergency Contact Person & Phone" name="emergencyContact" value={formData.emergencyContact} onChange={handleChange} placeholder="e.g. John Doe - 08012345678" />
                                 </div>
+
+                                <div className="md:col-span-2 mt-8 space-y-6">
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-3xl border border-slate-100 dark:border-slate-800">
+                                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-4 uppercase tracking-wider">Who is the Primary Guardian? <span className="text-red-500">*</span></label>
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                            {['Father', 'Mother', 'Other'].map(opt => (
+                                                <button
+                                                    key={opt}
+                                                    type="button"
+                                                    onClick={() => handleChange({ target: { name: 'primaryGuardian', value: opt } } as any)}
+                                                    className={twMerge(
+                                                        "p-3 rounded-xl border-2 text-center transition-all font-bold text-sm",
+                                                        formData.primaryGuardian === opt 
+                                                            ? "border-primary-600 bg-white dark:bg-slate-900 text-primary-600 shadow-md ring-4 ring-primary-50 dark:ring-primary-900/10" 
+                                                            : "border-transparent bg-slate-100 dark:bg-slate-800 text-slate-500"
+                                                    )}
+                                                >
+                                                    {opt === 'Other' ? 'Other/Guardian' : opt}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <p className="mt-3 text-[11px] text-slate-500 flex items-center gap-2 font-medium">
+                                            <Info className="w-3.5 h-3.5 text-primary-500" />
+                                            Selecting Father or Mother will automatically link their details to the mandatory Guardian record.
+                                        </p>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100 dark:border-slate-800">
+                                        <div className="md:col-span-2">
+                                            <div className="flex items-center gap-2 text-[10px] font-black text-primary-600 uppercase tracking-widest mb-2">
+                                                Guardian Record (Required for Portal Access)
+                                            </div>
+                                        </div>
+                                        <FormInput label="Guardian Name" name="guardianName" value={formData.guardianName} onChange={handleChange} required disabled={formData.primaryGuardian !== 'Other'} />
+                                        <FormInput label="Guardian Phone" name="guardianPhone" value={formData.guardianPhone} onChange={handleChange} required disabled={formData.primaryGuardian !== 'Other'} />
+                                        <FormSelect label="Relation" name="guardianRelation" value={formData.guardianRelation} onChange={handleChange} options={['Father', 'Mother', 'Uncle', 'Aunt', 'Other']} required disabled={formData.primaryGuardian !== 'Other'} />
+                                        <FormInput label="Guardian Email" name="email" type="email" value={formData.email || ''} onChange={handleChange} required disabled={formData.primaryGuardian !== 'Other'} />
+                                        
+                                        <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <FormTextarea label="Current Resident Address" name="currentAddress" value={formData.currentAddress || ''} onChange={handleChange} rows={2} />
+                                            <FormTextarea label="Permanent Address" name="permanentAddress" value={formData.permanentAddress || ''} onChange={handleChange} rows={2} />
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div className="md:col-span-2 mt-4 space-y-4">
                                     <div className="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">
                                         <Stethoscope className="w-4 h-4 text-rose-500" /> Medical History
@@ -336,7 +405,14 @@ const AdmissionFormPage = () => {
                         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <StepHeader title="Document Upload" desc="Attach mandatory identification files." icon={FileText} color="bg-emerald-50 text-emerald-500" />
                             <div className="space-y-6">
-                                <FileUpload 
+                                                                <FileUpload 
+                                    label="Guardian's Passport Photograph" 
+                                    desc="Required for portal access and identification. Max 2MB." 
+                                    file={files.guardianPhoto} 
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFileChange(e, 'guardianPhoto' as any)} 
+                                    id="guardian_photo"
+                                />
+<FileUpload 
                                     label="Passport Photograph" 
                                     desc="A clear colored passport with clean background. Max 2MB." 
                                     file={files.passportPhoto} 

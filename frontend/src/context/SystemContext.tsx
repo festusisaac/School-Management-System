@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { systemService, SystemSetting } from '../services/systemService';
 import { api, getFileUrl } from '../services/api';
+import { useAuthStore } from '../stores/authStore';
 import { updateCurrencyConfig, formatCurrency as genericFormatCurrency, formatCurrencyCompact as genericFormatCurrencyCompact } from '../utils/currency';
 
 interface SchoolInfo {
@@ -71,6 +72,7 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         return cached ? JSON.parse(cached) : {};
     });
     const [loading, setLoading] = useState(true);
+    const { token } = useAuthStore();
     
     // Multi-Section Multi-Tenancy Architecture 🚀
     const [activeSectionId, setActiveSectionIdState] = useState<string>(() => {
@@ -175,7 +177,8 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     useEffect(() => {
         refreshSettings();
-    }, [refreshSettings]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [refreshSettings, token]);
 
     const getFullUrl = (url?: string) => getFileUrl(url || '');
 

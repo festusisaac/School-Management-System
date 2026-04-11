@@ -62,6 +62,9 @@ export class OnlineAdmission {
     fatherPhone?: string;
 
     @Column({ nullable: true })
+    fatherEmail?: string;
+
+    @Column({ nullable: true })
     fatherOccupation?: string;
 
     @Column({ nullable: true })
@@ -69,6 +72,9 @@ export class OnlineAdmission {
 
     @Column({ nullable: true })
     motherPhone?: string;
+
+    @Column({ nullable: true })
+    motherEmail?: string;
 
     @Column({ nullable: true })
     motherOccupation?: string;
@@ -104,6 +110,9 @@ export class OnlineAdmission {
 
     @Column({ nullable: true })
     birthCertificate?: string;
+
+    @Column({ nullable: true })
+    guardianPhoto?: string;
 
     // Payment Tracking
     @Column({ default: 'pending' })

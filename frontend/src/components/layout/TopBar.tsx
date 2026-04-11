@@ -38,8 +38,8 @@ export function TopBar({ onMenuClick }: TopBarProps) {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const role = (user?.role || user?.roleObject?.name || '').toLowerCase();
-    const isSuperAdmin = role === 'super administrator';
+    const rawRole = (user?.role || user?.roleObject?.name || '').toLowerCase().trim();
+    const isSuperAdmin = rawRole === 'super administrator' || rawRole === 'super admin';
 
     return (
         <header className="h-16 px-6 bg-white/80 dark:bg-gray-900/80 border-b border-gray-100 dark:border-gray-800 backdrop-blur-xl flex items-center justify-between sticky top-0 z-30 shadow-sm lg:shadow-none transition-colors duration-200 print:hidden">
@@ -87,7 +87,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
 
             <div className="flex items-center gap-3">
                 {/* Global Section Context Switcher - Only visible to Super Administrators */}
-                {isSuperAdmin && availableSections && availableSections.length > 0 && (
+                {isSuperAdmin && (
                     <div className="hidden sm:flex items-center px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
                         <select 
                             value={activeSectionId}
@@ -103,7 +103,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
                 )}
 
                 {/* Parent Child Switcher */}
-                {role === 'parent' && childrenList && childrenList.length > 0 && (
+                {rawRole === 'parent' && childrenList && childrenList.length > 0 && (
                     <div className="hidden sm:flex items-center px-3 py-1.5 bg-primary-50 dark:bg-primary-900/30 border border-primary-100 dark:border-primary-800 rounded-lg mr-2 transition-all">
                         <UserIcon className="w-4 h-4 text-primary-600 dark:text-primary-400 mr-2" />
                         <span className="text-xs text-primary-700 dark:text-primary-300 font-medium mr-2 whitespace-nowrap">Viewing:</span>

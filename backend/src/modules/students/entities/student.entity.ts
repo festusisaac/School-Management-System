@@ -62,6 +62,12 @@ export class Student {
   @Column({ nullable: true })
   email?: string;
 
+  @Column({ nullable: true })
+  fatherEmail?: string;
+
+  @Column({ nullable: true })
+  motherEmail?: string;
+
   @Column({ type: 'date' })
   admissionDate!: Date;
 
@@ -157,6 +163,9 @@ export class Student {
 
   @Column({ nullable: true })
   guardianEmail?: string;
+
+  @Column({ nullable: true })
+  guardianPhoto?: string;
 
   @Column({ nullable: true, type: 'text' })
   guardianAddress?: string;

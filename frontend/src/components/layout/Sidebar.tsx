@@ -68,9 +68,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 { label: 'Check Result', path: '/students/examination/results' },
             ]
         },
-        { 
-            label: 'Online Classes', 
-            icon: Video, 
+        {
+            label: 'Online Classes',
+            icon: Video,
             path: '/students/online-classes'
         },
         {
@@ -106,9 +106,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 { label: 'Promote Students', path: '/academics/promotion', permission: 'academics:promote_students' },
             ]
         },
-        { 
-            label: 'Online Classes', 
-            icon: Video, 
+        {
+            label: 'Online Classes',
+            icon: Video,
             path: '/online-classes',
             // Dedicated permission for virtual learning
             children: [
@@ -297,25 +297,25 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 if (item.children) {
                     return item.children.some((child: any) => child.type !== 'header');
                 }
-                return true; 
+                return true;
             });
     };
 
     const finalStaffNavItems = filterNavItems(staffNavItems);
-    
+
     // For parents, replace standard Finance with Family Billing
-    const finalStudentNavItems = userRole === 'parent' 
+    const finalStudentNavItems = userRole === 'parent'
         ? studentNavItems.map(item => {
             if (item.label === 'Dashboard') return { ...item, path: '/parent/dashboard' };
             if (item.label === 'My Profile') return { ...item, path: '/parent/profile' };
             if (item.label === 'Finance') return { ...item, label: 'Family Billing', path: '/parent/billing' };
             return item;
-          }).filter(item => {
-              // Hide academic specific items for parents if no child is selected
-              const academicItems = ['Class Timetable', 'Attendance', 'Rate Teachers', 'My Library', 'Examination', 'Online Classes', 'Homework'];
-              if (academicItems.includes(item.label) && !selectedChildId) return false;
-              return true;
-          })
+        }).filter(item => {
+            // Hide academic specific items for parents if no child is selected
+            const academicItems = ['Class Timetable', 'Attendance', 'Rate Teachers', 'My Library', 'Examination', 'Online Classes', 'Homework'];
+            if (academicItems.includes(item.label) && !selectedChildId) return false;
+            return true;
+        })
         : studentNavItems;
 
     const navItems = isStudentOrParent ? finalStudentNavItems : finalStaffNavItems;

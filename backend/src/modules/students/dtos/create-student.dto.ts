@@ -93,6 +93,10 @@ export class CreateStudentDto {
     @IsOptional()
     fatherPhone?: string;
 
+    @IsEmail()
+    @IsOptional()
+    fatherEmail?: string;
+
     @IsString()
     @IsOptional()
     fatherOccupation?: string;
@@ -104,6 +108,10 @@ export class CreateStudentDto {
     @IsString()
     @IsOptional()
     motherPhone?: string;
+
+    @IsEmail()
+    @IsOptional()
+    motherEmail?: string;
 
     @IsString()
     @IsOptional()
@@ -124,6 +132,10 @@ export class CreateStudentDto {
     @IsEmail()
     @IsOptional()
     guardianEmail?: string;
+
+    @IsString()
+    @IsOptional()
+    guardianPhoto?: string;
 
     @IsString()
     @IsOptional()

@@ -572,18 +572,14 @@ class ApiService {
 
   async createStaff(data: any) {
     if (data instanceof FormData) {
-      return this.post<any>('/hr/staff', data, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
+      return this.post<any>('/hr/staff', data)
     }
     return this.post<any>('/hr/staff', data)
   }
 
   async updateStaff(id: string, data: any) {
     if (data instanceof FormData) {
-      return this.put<any>(`/hr/staff/${id}`, data, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
+      return this.put<any>(`/hr/staff/${id}`, data)
     }
     return this.put<any>(`/hr/staff/${id}`, data)
   }
@@ -658,9 +654,7 @@ class ApiService {
 
   async applyLeave(data: any) {
     if (data instanceof FormData) {
-      return this.post<any>('/hr/leaves/apply', data, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
+      return this.post<any>('/hr/leaves/apply', data)
     }
     return this.post<any>('/hr/leaves/apply', data)
   }
@@ -793,9 +787,7 @@ class ApiService {
 
   async updateStudent(id: string, data: any) {
     if (data instanceof FormData) {
-      return this.patch<any>(`/students/${id}`, data, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
+      return this.patch<any>(`/students/${id}`, data)
     }
     return this.patch<any>(`/students/${id}`, data, {
       headers: { 'Content-Type': 'application/json' }
@@ -820,9 +812,7 @@ class ApiService {
 
   async createOnlineAdmission(data: any) {
     if (data instanceof FormData) {
-      return this.post<any>('/students/online-admissions', data, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
+      return this.post<any>('/students/online-admissions', data)
     }
     return this.post<any>('/students/online-admissions', data)
   }

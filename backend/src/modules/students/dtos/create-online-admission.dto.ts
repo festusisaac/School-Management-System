@@ -49,6 +49,14 @@ export class CreateOnlineAdmissionDto {
     @IsOptional()
     email?: string;
 
+    @IsEmail()
+    @IsNotEmpty()
+    guardianEmail!: string;
+
+    @IsString()
+    @IsOptional()
+    guardianPhoto?: string;
+
     @IsString()
     @IsNotEmpty()
     guardianName!: string;
@@ -69,6 +77,10 @@ export class CreateOnlineAdmissionDto {
     @IsOptional()
     fatherPhone?: string;
 
+    @IsEmail()
+    @IsOptional()
+    fatherEmail?: string;
+
     @IsString()
     @IsOptional()
     fatherOccupation?: string;
@@ -80,6 +92,10 @@ export class CreateOnlineAdmissionDto {
     @IsString()
     @IsOptional()
     motherPhone?: string;
+
+    @IsEmail()
+    @IsOptional()
+    motherEmail?: string;
 
     @IsString()
     @IsOptional()

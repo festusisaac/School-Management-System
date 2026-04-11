@@ -14,6 +14,9 @@ export class Parent {
     fatherPhone?: string;
 
     @Column({ nullable: true })
+    fatherEmail?: string;
+
+    @Column({ nullable: true })
     fatherOccupation?: string;
 
     @Column({ nullable: true })
@@ -21,6 +24,9 @@ export class Parent {
 
     @Column({ nullable: true })
     motherPhone?: string;
+
+    @Column({ nullable: true })
+    motherEmail?: string;
 
     @Column({ nullable: true })
     motherOccupation?: string;
@@ -36,6 +42,9 @@ export class Parent {
 
     @Column({ nullable: true })
     guardianEmail?: string;
+
+    @Column({ nullable: true })
+    guardianPhoto?: string;
 
     @Column({ nullable: true, type: 'text' })
     guardianAddress?: string;

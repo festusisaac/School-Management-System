@@ -110,7 +110,7 @@ export class StudentsService {
     async create(createStudentDto: CreateStudentDto, tenantId: string, documentFiles?: Express.Multer.File[]): Promise<Student> {
         let parent: Parent | null = null;
 
-        // 1. Check for Sibling or Parent Link
+        // 1. Check for Sibling or Parent Link (explicit linking)
         if (createStudentDto.parentId) {
             parent = await this.parentRepository.findOne({
                 where: { id: createStudentDto.parentId, tenantId }
@@ -125,25 +125,70 @@ export class StudentsService {
             }
         }
 
-        // 2. If no parent found/linked, create new one
+        // 2. Auto-detect existing family by guardian email or phone (implicit sibling linking)
+        // This allows a parent to admit multiple children using the same contact details
+        // without needing to manually specify sibling linking each time.
+        if (!parent) {
+            const guardianEmail = createStudentDto.guardianEmail?.trim();
+            const guardianPhone = createStudentDto.guardianPhone?.trim();
+            const fatherEmail   = createStudentDto.fatherEmail?.trim();
+            const motherEmail   = createStudentDto.motherEmail?.trim();
+
+            // Build email candidates to match against (most reliable identifiers)
+            const emailsToCheck = [guardianEmail, fatherEmail, motherEmail].filter(Boolean) as string[];
+
+            for (const email of emailsToCheck) {
+                const existingParent = await this.parentRepository.findOne({
+                    where: [
+                        { guardianEmail: email, tenantId },
+                        { fatherEmail: email, tenantId },
+                        { motherEmail: email, tenantId },
+                    ]
+                });
+                if (existingParent) {
+                    parent = existingParent;
+                    console.log(`[Sibling Auto-Link] Found existing parent ${existingParent.id} via email match (${email}). Linking new student as sibling.`);
+                    break;
+                }
+            }
+
+            // Fallback: try phone match if no email match found
+            if (!parent && guardianPhone) {
+                const existingParentByPhone = await this.parentRepository.findOne({
+                    where: [
+                        { guardianPhone, tenantId },
+                    ]
+                });
+                if (existingParentByPhone) {
+                    parent = existingParentByPhone;
+                    console.log(`[Sibling Auto-Link] Found existing parent ${existingParentByPhone.id} via phone match (${guardianPhone}). Linking new student as sibling.`);
+                }
+            }
+        }
+
+        // 3. If no existing parent found at all, create a new one
         if (!parent) {
             const parentData = this.parentRepository.create({
                 fatherName: createStudentDto.fatherName,
                 fatherPhone: createStudentDto.fatherPhone,
+                fatherEmail: createStudentDto.fatherEmail,
                 fatherOccupation: createStudentDto.fatherOccupation,
                 motherName: createStudentDto.motherName,
                 motherPhone: createStudentDto.motherPhone,
+                motherEmail: createStudentDto.motherEmail,
                 motherOccupation: createStudentDto.motherOccupation,
                 guardianName: createStudentDto.guardianName,
                 guardianRelation: createStudentDto.guardianRelation,
                 guardianPhone: createStudentDto.guardianPhone,
                 guardianEmail: createStudentDto.guardianEmail,
+                guardianPhoto: createStudentDto.guardianPhoto,
                 guardianAddress: createStudentDto.guardianAddress,
                 emergencyContact: createStudentDto.emergencyContact,
                 permanentAddress: createStudentDto.permanentAddress,
                 tenantId: tenantId,
             });
             parent = await this.parentRepository.save(parentData);
+            console.log(`[Parent Create] New parent record created: ${parent.id}`);
         }
 
         // 3. Create Student with Parent Link
@@ -450,9 +495,37 @@ export class StudentsService {
             }
         }
 
-        // 3. Save the entity
+        // 3. Save the student entity
         await this.studentsRepository.save(student as any);
         console.log('Student entity saved successfully');
+
+        // 4. Sync parent entity with updated parent/guardian fields
+        // The parent entity is the source of truth for the Parent Portal.
+        // Every time a student is updated, we must mirror the changes to the linked parent record.
+        if (student.parentId || student.parent?.id) {
+            const parentId = student.parentId || student.parent?.id;
+            try {
+                const parentUpdatePayload: Partial<Parent> = {};
+                const parentFields: (keyof Parent)[] = [
+                    'fatherName', 'fatherPhone', 'fatherEmail', 'fatherOccupation',
+                    'motherName', 'motherPhone', 'motherEmail', 'motherOccupation',
+                    'guardianName', 'guardianRelation', 'guardianPhone', 'guardianEmail',
+                    'guardianPhoto', 'guardianAddress', 'emergencyContact', 'permanentAddress'
+                ];
+                for (const field of parentFields) {
+                    const newValue = (entityData as any)[field];
+                    if (newValue !== undefined) {
+                        (parentUpdatePayload as any)[field] = newValue === '' ? null : newValue;
+                    }
+                }
+                if (Object.keys(parentUpdatePayload).length > 0) {
+                    await this.parentRepository.update(parentId!, parentUpdatePayload);
+                    console.log(`Parent entity ${parentId} synced with ${Object.keys(parentUpdatePayload).length} fields.`);
+                }
+            } catch (err) {
+                console.error(`Failed to sync parent entity for student ${id}:`, err);
+            }
+        }
 
         // Save new documents if any
         if (documentFiles && documentFiles.length > 0) {
@@ -779,9 +852,11 @@ export class StudentsService {
             medicalConditions: admission.medicalConditions,
             fatherName: admission.fatherName || ((admission.guardianRelation || '').toLowerCase() === 'father' ? admission.guardianName : undefined),
             fatherPhone: admission.fatherPhone || ((admission.guardianRelation || '').toLowerCase() === 'father' ? admission.guardianPhone : undefined),
+            fatherEmail: admission.fatherEmail || ((admission.guardianRelation || '').toLowerCase() === 'father' ? (admission.email || undefined) : undefined),
             fatherOccupation: admission.fatherOccupation,
             motherName: admission.motherName || ((admission.guardianRelation || '').toLowerCase() === 'mother' ? admission.guardianName : undefined),
             motherPhone: admission.motherPhone || ((admission.guardianRelation || '').toLowerCase() === 'mother' ? admission.guardianPhone : undefined),
+            motherEmail: admission.motherEmail || ((admission.guardianRelation || '').toLowerCase() === 'mother' ? (admission.email || undefined) : undefined),
             motherOccupation: admission.motherOccupation,
             emergencyContact: admission.emergencyContact,
             currentAddress: admission.currentAddress,
@@ -792,6 +867,7 @@ export class StudentsService {
             admissionDate: new Date(),
             classId: admission.preferredClassId,
             studentPhoto: admission.passportPhoto,
+            guardianPhoto: admission.guardianPhoto,
             email: admission.email,
             // Security: Force password change on first login
             mustChangePassword: true,

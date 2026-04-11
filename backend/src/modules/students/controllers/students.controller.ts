@@ -103,6 +103,7 @@ export class StudentsController {
     @Permissions('students:create')
     @UseInterceptors(FileFieldsInterceptor([
         { name: 'studentPhoto', maxCount: 1 },
+        { name: 'guardianPhoto', maxCount: 1 },
         { name: 'documentFiles', maxCount: 10 },
     ], {
         storage: diskStorage({
@@ -115,12 +116,15 @@ export class StudentsController {
     }))
     create(
         @Body() createStudentDto: CreateStudentDto,
-        @UploadedFiles() files: { studentPhoto?: Express.Multer.File[], documentFiles?: Express.Multer.File[] },
+        @UploadedFiles() files: { studentPhoto?: Express.Multer.File[], guardianPhoto?: Express.Multer.File[], documentFiles?: Express.Multer.File[] },
         @Request() req: any
     ) {
         if (!req.user?.tenantId) throw new ForbiddenException('Tenant context missing');
         if (files?.studentPhoto && files.studentPhoto[0]) {
             createStudentDto.studentPhoto = files.studentPhoto[0].path;
+        }
+        if (files?.guardianPhoto && files.guardianPhoto[0]) {
+            createStudentDto.guardianPhoto = files.guardianPhoto[0].path;
         }
         return this.studentsService.create(createStudentDto, req.user.tenantId, files?.documentFiles);
     }
@@ -257,6 +261,7 @@ export class StudentsController {
     @UseInterceptors(FileFieldsInterceptor([
         { name: 'passportPhoto', maxCount: 1 },
         { name: 'birthCertificate', maxCount: 1 },
+        { name: 'guardianPhoto', maxCount: 1 },
     ], {
         storage: diskStorage({
             destination: './uploads/admissions',
@@ -268,7 +273,7 @@ export class StudentsController {
     }))
     async createOnlineAdmission(
         @Body() dto: CreateOnlineAdmissionDto, 
-        @UploadedFiles() files: { passportPhoto?: Express.Multer.File[], birthCertificate?: Express.Multer.File[] },
+        @UploadedFiles() files: { passportPhoto?: Express.Multer.File[], birthCertificate?: Express.Multer.File[], guardianPhoto?: Express.Multer.File[] },
         @Request() req: any
     ) {
         let tenantId = req.user?.tenantId;
@@ -286,6 +291,9 @@ export class StudentsController {
         }
         if (files?.birthCertificate && files.birthCertificate[0]) {
             (dto as any).birthCertificate = files.birthCertificate[0].path;
+        }
+        if (files?.guardianPhoto && files.guardianPhoto[0]) {
+            (dto as any).guardianPhoto = files.guardianPhoto[0].path;
         }
 
         return this.studentsService.createOnlineAdmission(dto, tenantId);
@@ -354,6 +362,7 @@ export class StudentsController {
     @Permissions('students:edit')
     @UseInterceptors(FileFieldsInterceptor([
         { name: 'studentPhoto', maxCount: 1 },
+        { name: 'guardianPhoto', maxCount: 1 },
         { name: 'documentFiles', maxCount: 10 },
     ], {
         storage: diskStorage({
@@ -367,12 +376,15 @@ export class StudentsController {
     async update(
         @Param('id') id: string,
         @Body() updateStudentDto: UpdateStudentDto,
-        @UploadedFiles() files: { studentPhoto?: Express.Multer.File[], documentFiles?: Express.Multer.File[] },
+        @UploadedFiles() files: { studentPhoto?: Express.Multer.File[], guardianPhoto?: Express.Multer.File[], documentFiles?: Express.Multer.File[] },
         @Request() req: any
     ) {
         await this.validateStudentAccess(id, req.user.tenantId, req.user);
         if (files?.studentPhoto && files.studentPhoto[0]) {
             updateStudentDto.studentPhoto = files.studentPhoto[0].path;
+        }
+        if (files?.guardianPhoto && files.guardianPhoto[0]) {
+            updateStudentDto.guardianPhoto = files.guardianPhoto[0].path;
         }
         return this.studentsService.update(id, updateStudentDto, req.user.tenantId, files?.documentFiles);
     }
