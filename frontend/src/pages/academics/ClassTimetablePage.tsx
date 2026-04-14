@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { Settings, Printer, X, Plus, Trash2, Copy, RefreshCw, ChevronDown, ArrowUp, ArrowDown } from 'lucide-react';
 import api from '../../services/api';
 import { useAuthStore } from '../../stores/authStore';
+import { useToast } from '../../context/ToastContext';
+import { AlertCircle } from 'lucide-react';
 
 interface Class {
     id: string;
@@ -122,6 +124,7 @@ const ClassTimetablePage = () => {
     const [editingCell, setEditingCell] = useState<{ day: number; periodId: string } | null>(null);
     const [selectedSubject, setSelectedSubject] = useState('');
     const { user } = useAuthStore();
+    const toast = useToast();
     const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.role?.toLowerCase() === 'superadmin' || user?.role?.toLowerCase() === 'super administrator';
 
     const printRef = useRef<HTMLDivElement>(null);
@@ -159,9 +162,8 @@ const ClassTimetablePage = () => {
             ]);
             setClasses(classesData);
             setPeriods(periodsData);
-            setError('');
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to fetch data');
+            toast.showError(err.response?.data?.message || 'Failed to fetch data');
         } finally {
             setLoading(false);
         }
@@ -172,7 +174,7 @@ const ClassTimetablePage = () => {
             const data = await api.getSections();
             setSections(data.filter((s: Section) => s.classId === classId));
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to fetch sections');
+            toast.showError(err.response?.data?.message || 'Failed to fetch sections');
         }
     };
 
@@ -199,7 +201,7 @@ const ClassTimetablePage = () => {
             const data = await api.getTimetable(selectedClass, selectedSection || undefined);
             setTimetable(data);
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to fetch timetable');
+            toast.showError(err.response?.data?.message || 'Failed to fetch timetable');
         }
     };
 
@@ -208,10 +210,9 @@ const ClassTimetablePage = () => {
             setLoading(true);
             await api.initializeDefaultPeriods();
             await fetchInitialData();
-            setSuccess('Default periods initialized successfully!');
-            setTimeout(() => setSuccess(''), 3000);
+            toast.showSuccess('Default periods initialized successfully!');
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to initialize periods');
+            toast.showError(err.response?.data?.message || 'Failed to initialize periods');
         } finally {
             setLoading(false);
         }
@@ -254,8 +255,9 @@ const ClassTimetablePage = () => {
             await fetchTimetable();
             setEditingCell(null);
             setSelectedSubject('');
+            toast.showSuccess('Slot saved successfully!');
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to save slot');
+            toast.showError(err.response?.data?.message || 'Failed to save slot');
         } finally {
             setSaving(false);
         }
@@ -268,8 +270,9 @@ const ClassTimetablePage = () => {
         try {
             await api.deleteTimetableSlot(slot.id);
             await fetchTimetable();
+            toast.showSuccess('Slot deleted successfully!');
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to delete slot');
+            toast.showError(err.response?.data?.message || 'Failed to delete slot');
         }
     };
 
@@ -295,21 +298,6 @@ const ClassTimetablePage = () => {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-8 print:p-0 print:bg-white font-sans transition-colors duration-200 overflow-x-hidden w-full">
             <div className="max-w-7xl mx-auto w-full">
-                {/* Messages */}
-                {error && (
-                    <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-r shadow-sm flex justify-between items-center print:hidden animate-fade-in">
-                        <div className="flex items-center gap-2">
-                            <span className="font-semibold">Error:</span> {error}
-                        </div>
-                        <button onClick={() => setError('')} className="p-1 hover:bg-red-100 rounded-full transition-colors"><X className="w-4 h-4" /></button>
-                    </div>
-                )}
-                {success && (
-                    <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded-r shadow-sm print:hidden animate-fade-in">
-                        <span className="font-semibold">Success:</span> {success}
-                    </div>
-                )}
-
                 {/* Header & Controls */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 print:hidden">
                     <div>
@@ -610,8 +598,7 @@ const ClassTimetablePage = () => {
                         onClose={() => setShowCopyModal(false)}
                         onSuccess={() => {
                             setShowCopyModal(false);
-                            setSuccess('Timetable copied successfully!');
-                            setTimeout(() => setSuccess(''), 3000);
+                            toast.showSuccess('Timetable copied successfully!');
                         }}
                     />
                 )}

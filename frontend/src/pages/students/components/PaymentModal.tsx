@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { CreditCard, X, ShieldCheck, Loader2, ArrowRight } from 'lucide-react';
 import api from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
@@ -19,14 +19,26 @@ interface PaymentModalProps {
 export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess, isBulk, bulkAllocations }: PaymentModalProps) {
     const { showError, showSuccess } = useToast();
     const { settings, formatCurrency } = useSystem();
-    const [amount, setAmount] = useState(feeHead?.balance || '');
+    
+    const [amount, setAmount] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [step, setStep] = useState<'DETAILS' | 'GATEWAY_SELECTION' | 'SUCCESS'>('DETAILS');
 
-    if (!isOpen || !feeHead) return null;
+    // Generate a stable reference for each payment session
+    const stableRef = useMemo(() => {
+        if (!isOpen) return '';
+        return Math.random().toString(36).substring(2, 10).toUpperCase() + '_' + Date.now();
+    }, [isOpen]);
 
-    const maxAmount = parseFloat(feeHead.balance);
-    const payAmountNum = parseFloat(amount);
+    // Update internal amount when feeHead changes or modal opens
+    useEffect(() => {
+        if (isOpen && feeHead?.balance) {
+            setAmount(feeHead.balance);
+        }
+    }, [isOpen, feeHead]);
+
+    const maxAmount = parseFloat(feeHead?.balance || '0');
+    const payAmountNum = parseFloat(amount || '0');
 
     const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         let val = e.target.value;
@@ -45,32 +57,32 @@ export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess, isB
         setStep('GATEWAY_SELECTION');
     };
 
-    const paymentMeta = {
-        note: isBulk ? 'Bulk family fee payment settlement' : `Online payment for ${feeHead.name}`,
+    const paymentMeta = useMemo(() => ({
+        note: isBulk ? 'Bulk family fee payment settlement' : `Online payment for ${feeHead?.name || 'Fees'}`,
         isBulk: !!isBulk,
         bulkAllocations: isBulk ? bulkAllocations : undefined,
         allocations: isBulk ? [] : [{
-            id: feeHead.id,
-            name: feeHead.name,
+            id: feeHead?.id,
+            name: feeHead?.name,
             amount: payAmountNum.toString(),
             status: payAmountNum >= maxAmount ? 'PAID' : 'PARTIAL'
         }]
-    };
+    }), [isBulk, bulkAllocations, feeHead, payAmountNum, maxAmount]);
 
     // Paystack Configuration
-    const paystackConfig = {
-        reference: `PS_${Math.random().toString(36).substring(2, 10).toUpperCase()}_${Date.now()}`,
-        email: student.email || 'student@example.com',
+    const paystackConfig = useMemo(() => ({
+        reference: `PS_${stableRef}`,
+        email: student?.email || 'student@example.com',
         amount: Math.round(payAmountNum * 100), // Minor units (kobo/cents)
         currency: settings.currencyCode || 'NGN',
         publicKey: (import.meta as any).env.VITE_PAYSTACK_PUBLIC_KEY,
         metadata: {
             custom_fields: [],
-            studentId: student.id,
-            tenantId: student.tenantId,
+            studentId: student?.id,
+            tenantId: student?.tenantId,
             ...paymentMeta
         }
-    };
+    }), [stableRef, student, payAmountNum, settings, paymentMeta]);
 
     const initializePaystack = usePaystackPayment(paystackConfig);
 
@@ -99,39 +111,36 @@ export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess, isB
 
     const payWithPaystack = () => {
         setIsProcessing(true);
-        // Close the gateway selection UI before Paystack popup opens
-        // so Paystack's widget gets clean full-screen access on mobile
         setStep('DETAILS');
         setTimeout(() => {
             initializePaystack({ onSuccess: handlePaystackSuccess, onClose: handlePaystackClose });
         }, 50);
     };
 
-
     // Flutterwave Configuration
-    const flutterwaveConfig = {
+    const flutterwaveConfig = useMemo(() => ({
         public_key: (import.meta as any).env.VITE_FLUTTERWAVE_PUBLIC_KEY,
-        tx_ref: `FW_${Math.random().toString(36).substring(2, 10).toUpperCase()}_${Date.now()}`,
+        tx_ref: `FW_${stableRef}`,
         amount: payAmountNum,
         currency: settings.currencyCode || 'NGN',
         payment_options: 'card,mobilemoney,ussd',
         customer: {
-            email: student.email || 'student@example.com',
-            phone_number: student.mobileNumber || student.fatherPhone || '',
-            name: `${student.firstName} ${student.lastName}`,
+            email: student?.email || 'student@example.com',
+            phone_number: student?.mobileNumber || student?.fatherPhone || '',
+            name: `${student?.firstName} ${student?.lastName}`,
         },
         customizations: {
             title: 'School Fee Payment',
-            description: `Payment for ${feeHead.name}`,
+            description: `Payment for ${feeHead?.name || 'Fees'}`,
             logo: 'https://st2.depositphotos.com/4403291/7418/v/450/depositphotos_74189661-stock-illustration-online-shop-log.jpg',
         },
         meta: {
-            studentId: student.id,
-            tenantId: student.tenantId,
+            studentId: student?.id,
+            tenantId: student?.tenantId,
             allocations: JSON.stringify(paymentMeta.allocations),
             note: paymentMeta.note
         }
-    };
+    }), [stableRef, student, payAmountNum, settings, paymentMeta]);
 
     const handleFlutterwavePayment = useFlutterwave(flutterwaveConfig);
 
@@ -172,7 +181,6 @@ export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess, isB
         }, 50);
     };
 
-
     const handleClose = () => {
         if (step === 'SUCCESS') {
             onSuccess();
@@ -184,8 +192,10 @@ export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess, isB
         onClose();
     };
 
+    if (!isOpen || !feeHead) return null;
+
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
             <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
                 {step === 'DETAILS' && (
                     <>

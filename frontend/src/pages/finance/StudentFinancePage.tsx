@@ -21,6 +21,7 @@ import { getDetailedPaymentMethod } from '../../utils/transactionUtils';
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { formatCurrency } from '../../utils/currency';
+import { formatDateLocal, formatTimeLocal } from '../../utils/date';
 import { PaymentModal } from '../students/components/PaymentModal';
 import { useAuthStore } from '../../stores/authStore';
 import { ReceiptTemplate } from './components/ReceiptTemplate';
@@ -333,8 +334,10 @@ export default function StudentFinancePage() {
             <h2 className="text-lg font-bold text-gray-900 dark:text-white tracking-tight">Fee Breakdown</h2>
           </div>
           <div className="divide-y divide-gray-50 dark:divide-gray-800">
-              {statement?.assignedHeads?.length > 0 ? (
-                  statement.assignedHeads.map((head: any) => {
+              {((statement?.assignedHeads?.length || 0) + (statement?.carryForwards?.length || 0)) > 0 ? (
+                <>
+                  {/* Assigned Fee Heads */}
+                  {statement?.assignedHeads?.map((head: any) => {
                       const amount = parseFloat(head.amount) || 0;
                       const balance = parseFloat(head.balance) || 0;
                       const paid = amount - balance;
@@ -355,7 +358,6 @@ export default function StudentFinancePage() {
                                       )}
                                   </div>
                                   
-                                  {/* Progress Bar */}
                                   <div className="w-full max-w-md mt-4">
                                       <div className="flex justify-between text-xs mb-2">
                                           <span className="font-bold text-gray-600 dark:text-gray-400 tabular-nums">{formatCurrency(paid)} Paid</span>
@@ -392,7 +394,72 @@ export default function StudentFinancePage() {
                               </div>
                           </div>
                       );
-                  })
+                  })}
+
+                  {/* Carry Forward Balances */}
+                  {statement?.carryForwards?.map((cf: any) => {
+                      const amount = parseFloat(cf.amount) || 0;
+                      const balance = parseFloat(cf.balance) || 0;
+                      const paid = parseFloat(cf.paid) || 0;
+                      const progress = amount > 0 ? (paid / amount) * 100 : 0;
+                      const isFullyPaid = balance <= 0;
+
+                      return (
+                          <div key={cf.id} className={`p-6 ${isFullyPaid ? 'bg-emerald-50/5 dark:bg-emerald-900/5' : 'bg-amber-50/10 dark:bg-amber-900/5'} hover:bg-opacity-20 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-6 group border-l-4 ${isFullyPaid ? 'border-emerald-500/30' : 'border-amber-500/30'}`}>
+                              <div className="flex-1">
+                                  <div className="flex items-center gap-3 mb-2">
+                                      <div className={`p-1.5 ${isFullyPaid ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-amber-100 dark:bg-amber-900/30'} rounded-lg`}>
+                                          {isFullyPaid ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <AlertCircle className="w-4 h-4 text-amber-600" />}
+                                      </div>
+                                      <h4 className={`text-base font-bold ${isFullyPaid ? 'text-emerald-900 dark:text-emerald-400' : 'text-amber-900 dark:text-amber-400'}`}>{cf.name}</h4>
+                                      {isFullyPaid ? (
+                                          <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-black rounded-lg uppercase tracking-wider border border-emerald-100 dark:border-emerald-800/30 shadow-sm">Settled</span>
+                                      ) : (
+                                          <span className="px-2.5 py-1 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-[10px] font-black rounded-lg uppercase tracking-wider border border-red-100 dark:border-red-800/30 shadow-sm">Arrears</span>
+                                      )}
+                                  </div>
+                                  
+                                  <div className="w-full max-w-md mt-4">
+                                      <div className="flex justify-between text-xs mb-2">
+                                          <span className={`font-bold tabular-nums ${isFullyPaid ? 'text-emerald-600' : 'text-amber-600'}`}>{formatCurrency(paid)} Paid</span>
+                                          <span className="font-bold text-gray-400 tabular-nums">/ {formatCurrency(amount)}</span>
+                                      </div>
+                                      <div className="h-2 bg-gray-100 dark:bg-gray-700/50 rounded-full overflow-hidden">
+                                          <div 
+                                              className={`h-full transition-all duration-1000 ${isFullyPaid ? 'bg-emerald-500' : 'bg-amber-500'}`} 
+                                              style={{ width: `${Math.min(progress, 100)}%` }}
+                                          />
+                                      </div>
+                                  </div>
+                              </div>
+                              
+                              <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-4 shrink-0 bg-transparent p-4 md:p-0 rounded-2xl md:rounded-none">
+                                  <div className="text-left md:text-right">
+                                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">{isFullyPaid ? 'Status' : 'Outstanding'}</p>
+                                      <p className={`text-xl font-black font-inter tracking-tight ${isFullyPaid ? 'text-emerald-600' : 'text-amber-700 dark:text-amber-500'}`}>
+                                          {isFullyPaid ? 'FULLY PAID' : formatCurrency(balance)}
+                                      </p>
+                                  </div>
+                                  {!isFullyPaid && (
+                                      <button
+                                          onClick={() => {
+                                              setSelectedFeeHead({
+                                                  ...cf,
+                                                  balance: cf.balance // Pass the calculated remaining balance
+                                              });
+                                              setShowPaymentModal(true);
+                                          }}
+                                          className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-md hover:shadow-xl hover:shadow-amber-500/20 active:scale-95 flex items-center gap-2"
+                                      >
+                                          <CreditCard size={14} />
+                                          Pay Arrears
+                                      </button>
+                                  )}
+                              </div>
+                          </div>
+                      );
+                  })}
+                </>
               ) : (
                   <div className="p-16 text-center flex flex-col items-center">
                       <div className="w-20 h-20 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4 border border-gray-100 dark:border-gray-700">
@@ -496,10 +563,10 @@ export default function StudentFinancePage() {
                               <tr key={tx.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-900/30 transition-colors group">
                                   <td className="px-6 py-4">
                                       <p className="text-sm font-bold text-gray-900 dark:text-white">
-                                          {new Date(tx.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' })}
+                                          {formatDateLocal(tx.createdAt)}
                                       </p>
                                       <p className="text-xs font-semibold text-gray-500">
-                                          {new Date(tx.createdAt).toLocaleTimeString(undefined, { timeStyle: 'short' })}
+                                          {formatTimeLocal(tx.createdAt)}
                                       </p>
                                   </td>
                                   <td className="px-6 py-4">

@@ -10,17 +10,32 @@ export class DashboardController {
     constructor(private readonly dashboardService: DashboardService) { }
 
     @Get('stats')
-    async getStats(@Query('sectionId') sectionId: string, @Req() req: any) {
-        return this.dashboardService.getAdminStats(req.user.tenantId, sectionId);
+    async getStats(
+        @Query('sectionId') sectionId: string,
+        @Query('sessionId') sessionId: string,
+        @Query('termId') termId: string,
+        @Req() req: any
+    ) {
+        return this.dashboardService.getAdminStats(req.user.tenantId, sectionId, sessionId, termId);
     }
 
     @Get('charts')
-    async getCharts(@Query('sectionId') sectionId: string, @Req() req: any) {
-        return this.dashboardService.getAdminCharts(req.user.tenantId, sectionId);
+    async getCharts(
+        @Query('sectionId') sectionId: string,
+        @Query('sessionId') sessionId: string,
+        @Query('termId') termId: string,
+        @Req() req: any
+    ) {
+        return this.dashboardService.getAdminCharts(req.user.tenantId, sectionId, sessionId, termId);
     }
 
     @Get('activities')
-    async getActivities(@Query('sectionId') sectionId: string, @Req() req: any) {
-        return this.dashboardService.getRecentActivities(req.user.tenantId, sectionId);
+    async getActivities(
+        @Query('sectionId') sectionId: string,
+        @Query('sessionId') sessionId: string,
+        @Query('termId') termId: string,
+        @Req() req: any
+    ) {
+        return this.dashboardService.getRecentActivities(req.user.tenantId, sectionId, sessionId, termId);
     }
 }

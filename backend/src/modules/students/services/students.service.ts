@@ -147,7 +147,10 @@ export class StudentsService {
                 });
                 if (existingParent) {
                     parent = existingParent;
-                    console.log(`[Sibling Auto-Link] Found existing parent ${existingParent.id} via email match (${email}). Linking new student as sibling.`);
+                    console.log(`[Sibling Auto-Link] Found existing parent ${existingParent.id} via email match (${email}).`);
+                    
+                    // Sync with latest details from this admission
+                    await this.syncParentDetails(parent.id, createStudentDto);
                     break;
                 }
             }
@@ -161,7 +164,10 @@ export class StudentsService {
                 });
                 if (existingParentByPhone) {
                     parent = existingParentByPhone;
-                    console.log(`[Sibling Auto-Link] Found existing parent ${existingParentByPhone.id} via phone match (${guardianPhone}). Linking new student as sibling.`);
+                    console.log(`[Sibling Auto-Link] Found existing parent ${existingParentByPhone.id} via phone match (${guardianPhone}).`);
+
+                    // Sync with latest details
+                    await this.syncParentDetails(parent.id, createStudentDto);
                 }
             }
         }
@@ -188,7 +194,6 @@ export class StudentsService {
                 tenantId: tenantId,
             });
             parent = await this.parentRepository.save(parentData);
-            console.log(`[Parent Create] New parent record created: ${parent.id}`);
         }
 
         // 3. Create Student with Parent Link
@@ -267,13 +272,20 @@ export class StudentsService {
             const parentEmail = parent?.guardianEmail || (parent?.guardianPhone ? `${parent.guardianPhone.replace(/\s+/g, '')}@parent.sms` : null);
             
             if (parent && parentEmail && !parent.userId) {
+                // Split name into first and last for cleaner user profile
+                const fullName = (parent.guardianName || parent.fatherName || 'Parent').trim();
+                const nameParts = fullName.split(' ');
+                const parentFirstName = nameParts[0];
+                const parentLastName = nameParts.slice(1).join(' ') || '';
+
                 const parentUser = await this.usersService.findOrCreateUser(parentEmail, {
-                    firstName: parent.guardianName || parent.fatherName || 'Parent',
-                    lastName: '',
+                    firstName: parentFirstName,
+                    lastName: parentLastName, 
                     password: parentEmail === studentIdentifier ? undefined : `Parent@${parent.guardianPhone?.slice(-4) || '1234'}`,
                     role: 'parent',
                     roleId: parentRole?.id,
-                    tenantId: tenantId
+                    tenantId: tenantId,
+                    photo: parent.guardianPhoto
                 });
                 await this.parentRepository.update(parent.id, { userId: parentUser.id });
                 
@@ -423,10 +435,7 @@ export class StudentsService {
     }
 
     async update(id: string, updateStudentDto: UpdateStudentDto, tenantId: string, documentFiles?: Express.Multer.File[]): Promise<Student> {
-        // 1. Fetch the existing student with all relations
         const student = await this.findOne(id, tenantId);
-
-        console.log(`=== BACKEND UPDATE START [ID: ${id}] ===`);
 
         // Destructure metadata out
         let { documentTitles, siblingId, feeGroupIds, feeExclusions, session, ...entityData } = updateStudentDto as any;
@@ -438,8 +447,6 @@ export class StudentsService {
         if (typeof feeExclusions === 'string') {
             try { feeExclusions = JSON.parse(feeExclusions); } catch (e) { }
         }
-
-        console.log('Entity Data to process:', entityData);
 
         // Map of ID fields to their relation names
         const relationMap: Record<string, string> = {
@@ -484,7 +491,6 @@ export class StudentsService {
 
                     // SPECIAL CASE: If Class changes, we MUST nullify Section as well (if not explicitly changing)
                     if (key === 'classId') {
-                        console.log('Class changed. Nullifying Section relation for safety.');
                         (student as any).sectionId = null;
                         (student as any).section = null;
                     }
@@ -497,7 +503,6 @@ export class StudentsService {
 
         // 3. Save the student entity
         await this.studentsRepository.save(student as any);
-        console.log('Student entity saved successfully');
 
         // 4. Sync parent entity with updated parent/guardian fields
         // The parent entity is the source of truth for the Parent Portal.
@@ -505,23 +510,7 @@ export class StudentsService {
         if (student.parentId || student.parent?.id) {
             const parentId = student.parentId || student.parent?.id;
             try {
-                const parentUpdatePayload: Partial<Parent> = {};
-                const parentFields: (keyof Parent)[] = [
-                    'fatherName', 'fatherPhone', 'fatherEmail', 'fatherOccupation',
-                    'motherName', 'motherPhone', 'motherEmail', 'motherOccupation',
-                    'guardianName', 'guardianRelation', 'guardianPhone', 'guardianEmail',
-                    'guardianPhoto', 'guardianAddress', 'emergencyContact', 'permanentAddress'
-                ];
-                for (const field of parentFields) {
-                    const newValue = (entityData as any)[field];
-                    if (newValue !== undefined) {
-                        (parentUpdatePayload as any)[field] = newValue === '' ? null : newValue;
-                    }
-                }
-                if (Object.keys(parentUpdatePayload).length > 0) {
-                    await this.parentRepository.update(parentId!, parentUpdatePayload);
-                    console.log(`Parent entity ${parentId} synced with ${Object.keys(parentUpdatePayload).length} fields.`);
-                }
+                await this.syncParentDetails(parentId!, updateStudentDto, student);
             } catch (err) {
                 console.error(`Failed to sync parent entity for student ${id}:`, err);
             }
@@ -1116,6 +1105,48 @@ export class StudentsService {
         }
 
         return results;
+    }
+    private async syncParentDetails(parentId: string, sourceDto: any, studentFallback?: Student): Promise<void> {
+        const parentUpdateFields: Partial<Parent> = {};
+        const fieldsToSync: (keyof Parent)[] = [
+            'fatherName', 'fatherPhone', 'fatherEmail', 'fatherOccupation',
+            'motherName', 'motherPhone', 'motherEmail', 'motherOccupation',
+            'guardianName', 'guardianRelation', 'guardianPhone', 'guardianEmail',
+            'guardianPhoto', 'guardianAddress', 'emergencyContact', 'permanentAddress'
+        ];
+
+        for (const field of fieldsToSync) {
+            // Prioritize value from DTO (explicit update)
+            let val = sourceDto[field];
+            
+            // If DTO is missing the field, fallback to student's current value
+            if (val === undefined && studentFallback) {
+                val = (studentFallback as any)[field];
+            }
+
+            if (val !== undefined) {
+                (parentUpdateFields as any)[field] = val === '' ? null : val;
+            }
+        }
+
+        if (Object.keys(parentUpdateFields).length > 0) {
+            await this.parentRepository.update(parentId, parentUpdateFields);
+            
+            // CRITICAL: Sync the User account photo if guardianPhoto was updated
+            if (parentUpdateFields.guardianPhoto) {
+                const parent = await this.parentRepository.findOne({ where: { id: parentId } });
+                if (parent && parent.userId) {
+                    try {
+                        await this.usersService.update(parent.userId, {
+                            photo: parent.guardianPhoto
+                        });
+                        console.log(`[Parent User Sync] Synced photo to User account ${parent.userId}`);
+                    } catch (e) {
+                        console.error('Failed to sync photo to Parent User account:', e);
+                    }
+                }
+            }
+        }
     }
 }
 

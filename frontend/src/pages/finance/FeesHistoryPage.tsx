@@ -31,6 +31,7 @@ import { clsx } from 'clsx';
 import { formatCurrency, CURRENCY_SYMBOL } from '../../utils/currency';
 import { useSystem } from '../../context/SystemContext';
 import { useAuthStore } from '../../stores/authStore';
+import { formatDateLocal, formatTimeLocal } from '../../utils/date';
 
 interface Transaction {
   id: string;
@@ -140,7 +141,7 @@ export default function FeesHistoryPage() {
 
     const headers = ['Date', 'Student', 'Admission ID', `Amount (${CURRENCY_SYMBOL})`, 'Method', 'Reference', 'Type'];
     const rows = transactions.map(t => [
-      new Date(t.createdAt).toLocaleDateString(),
+      formatDateLocal(t.createdAt),
       `${t.student?.firstName} ${t.student?.lastName}`,
       t.student?.admissionNo,
       t.amount,
@@ -411,13 +412,13 @@ export default function FeesHistoryPage() {
                   <td className="px-3 py-3 border-b border-gray-50 dark:border-gray-800">
                     <div className="flex flex-col min-w-[100px]">
                       <span className="text-sm font-bold text-gray-900 dark:text-white whitespace-nowrap">
-                        {new Date(tx.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {formatDateLocal(tx.createdAt)}
                       </span>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <span className="text-[10px] text-gray-400">#{tx.id.split('-')[0].toUpperCase()}</span>
                       </div>
                       <span className="text-[10px] text-primary-600 dark:text-primary-400 font-black whitespace-nowrap tracking-tighter">
-                        {new Date(tx.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: true })}
+                        {formatTimeLocal(tx.createdAt)}
                       </span>
                     </div>
                   </td>

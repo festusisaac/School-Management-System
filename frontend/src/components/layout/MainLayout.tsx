@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import NoticeNotification from '../communication/NoticeNotification';
@@ -11,11 +11,19 @@ export function MainLayout() {
     const { WarningModal } = useSessionTimeout();
     const { refreshUser, user, setChildrenList, setSelectedChildId, childrenList } = useAuthStore();
 
+    const location = useLocation();
+    
     useEffect(() => {
-        // Only open on desktop by default
-        if (window.innerWidth >= 1024) {
-            setIsSidebarOpen(true);
+        // Close sidebar on mobile when navigating
+        if (window.innerWidth < 1024) {
+            setIsSidebarOpen(false);
         }
+    }, [location.pathname]);
+
+    useEffect(() => {
+        // Initial responsive check - explicitly closed on mobile
+        const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+        setIsSidebarOpen(isDesktop);
         refreshUser();
     }, []);
 

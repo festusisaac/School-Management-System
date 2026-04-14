@@ -37,6 +37,7 @@ export class RatingController {
         @CurrentUser('role') role: string,
         @CurrentUser('tenantId') tenantId: string,
         @Query('studentId') studentId?: string,
+        @Query('sessionId') sessionId?: string,
     ) {
         let student: any;
 
@@ -70,7 +71,8 @@ export class RatingController {
         const subjectTeachers = await this.subjectTeacherService.getTeachersForClassOrSection(
             tenantId,
             classId,
-            sectionId || undefined
+            sectionId || undefined,
+            sessionId
         );
 
         // 2. Get Class Teacher

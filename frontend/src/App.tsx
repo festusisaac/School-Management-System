@@ -108,6 +108,7 @@ function AppRoutes() {
             <Route element={<ProtectedRoute />}>
             <Route element={<MainLayout />}>
               <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/notices" element={<Communication.Noticeboard />} />
 
               {/* Academics Routes */}
               <Route path="academics">

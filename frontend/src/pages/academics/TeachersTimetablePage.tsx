@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Printer, ChevronDown, Calendar, User, Clock } from 'lucide-react';
 import api from '../../services/api';
 import { useAuthStore } from '../../stores/authStore';
+import { useToast } from '../../context/ToastContext';
 
 interface Staff {
     id: string;
@@ -93,7 +94,7 @@ const TeachersTimetablePage = () => {
     const [timetable, setTimetable] = useState<TimetableSlot[]>([]);
     const [periods, setPeriods] = useState<Period[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
+    const toast = useToast();
     const { user } = useAuthStore();
     const isTeacher = user?.role?.toLowerCase() === 'teacher';
     const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.role?.toLowerCase() === 'superadmin' || user?.role?.toLowerCase() === 'super administrator';
@@ -134,9 +135,8 @@ const TeachersTimetablePage = () => {
                 }
             }
             
-            setError('');
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to fetch data');
+            toast.showError(err.response?.data?.message || 'Failed to fetch data');
         } finally {
             setLoading(false);
         }
@@ -147,9 +147,8 @@ const TeachersTimetablePage = () => {
             setLoading(true);
             const data = await api.getTeacherTimetable(selectedTeacher);
             setTimetable(data);
-            setError('');
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to fetch teacher timetable');
+            toast.showError(err.response?.data?.message || 'Failed to fetch teacher timetable');
             setTimetable([]);
         } finally {
             setLoading(false);
@@ -201,13 +200,6 @@ const TeachersTimetablePage = () => {
                         Print Schedule
                     </button>
                 </div>
-
-                {/* Error Message */}
-                {error && (
-                    <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-r shadow-sm">
-                        <span className="font-semibold">Error:</span> {error}
-                    </div>
-                )}
 
                 {/* Teacher Selection */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-8">

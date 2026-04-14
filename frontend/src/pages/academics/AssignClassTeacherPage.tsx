@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Users, UserCheck, Search, X, CheckCircle, AlertCircle } from 'lucide-react';
 import api from '../../services/api';
+import { useToast } from '../../context/ToastContext';
 
 interface Class {
     id: string;
@@ -41,8 +42,7 @@ const AssignClassTeacherPage = () => {
     const [selectedTeacher, setSelectedTeacher] = useState('');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
+    const toast = useToast();
     const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
@@ -88,9 +88,10 @@ const AssignClassTeacherPage = () => {
                 console.warn('No staff found with "isTeachingStaff" flag set to true.');
             }
 
-            setError('');
+            setClasses(classesData);
+            setSections(sectionsData);
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to fetch data');
+            toast.showError(err.response?.data?.message || 'Failed to fetch data');
         } finally {
             setLoading(false);
         }
@@ -98,7 +99,7 @@ const AssignClassTeacherPage = () => {
 
     const handleAssign = async () => {
         if (!selectedClass || !selectedTeacher || !selectedSection) {
-            setError('Please select class, section/type, and teacher');
+            toast.showError('Please select class, section/type, and teacher');
             return;
         }
 
@@ -214,25 +215,6 @@ const AssignClassTeacherPage = () => {
                     </h1>
                     <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm font-medium">Assign teachers to manage specific class sections</p>
                 </div>
-
-                {/* Messages */}
-                {error && (
-                    <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-r shadow-sm flex items-center gap-2">
-                        <AlertCircle className="w-5 h-5" />
-                        <div className="flex-1">
-                            <span className="font-semibold">Error:</span> {error}
-                        </div>
-                        <button onClick={() => setError('')} className="p-1 hover:bg-red-100 rounded-full transition-colors">
-                            <X className="w-4 h-4" />
-                        </button>
-                    </div>
-                )}
-                {success && (
-                    <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded-r shadow-sm flex items-center gap-2">
-                        <CheckCircle className="w-5 h-5" />
-                        <span className="font-semibold">Success:</span> {success}
-                    </div>
-                )}
 
                 {/* Assignment Form */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-8">

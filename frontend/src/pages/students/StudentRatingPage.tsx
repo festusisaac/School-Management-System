@@ -13,6 +13,8 @@ import {
 import api, { getFileUrl } from '../../services/api';
 import RatingModal from '../../components/hr/RatingModal';
 import { useToast } from '../../context/ToastContext';
+import { useSystem } from '../../context/SystemContext';
+import { useAuthStore } from '../../stores/authStore';
 import { cn } from '../../utils/cn';
 
 interface Teacher {
@@ -24,6 +26,9 @@ interface Teacher {
 }
 
 const StudentRatingPage: React.FC = () => {
+    const { settings } = useSystem();
+    const currentSessionId = settings?.currentSessionId;
+    const currentTermId = settings?.currentTermId;
     const { user, selectedChildId } = useAuthStore();
     const isParent = (user?.role || user?.roleObject?.name || '').toLowerCase() === 'parent';
     const [teachers, setTeachers] = useState<Teacher[]>([]);
@@ -38,7 +43,7 @@ const StudentRatingPage: React.FC = () => {
         if (user) {
             fetchMyTeachers();
         }
-    }, [user, selectedChildId]);
+    }, [user, selectedChildId, currentSessionId]);
 
     const fetchMyTeachers = async () => {
         try {
@@ -50,7 +55,10 @@ const StudentRatingPage: React.FC = () => {
             }
 
             setLoading(true);
-            const data = await api.getMyTeachers({ studentId: targetId });
+            const data = await api.getMyTeachers({ 
+                studentId: targetId,
+                sessionId: currentSessionId 
+            });
             setTeachers(data);
         } catch (error) {
             console.error('Error fetching teachers:', error);

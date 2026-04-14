@@ -185,20 +185,28 @@ class ApiService {
     return this.get<any>('/finance/carry-forward', { params })
   }
 
+  async bulkCarryForward(data: { oldSessionId?: string, newSessionId?: string, oldSessionName?: string, newSessionName?: string }) {
+    return this.post<any>('/finance/carry-forward/bulk', data)
+  }
+
   async deleteCarryForward(id: string) {
     return this.delete<any>(`/finance/carry-forward/${id}`)
   }
 
+  async getJobStatus(jobId: string) {
+    return this.get<any>(`/finance/carry-forward/job/${jobId}`)
+  }
+
   // Dashboard API methods
-  async getAdminStats(params?: any) {
+  async getAdminStats(params: { sectionId?: string; sessionId?: string; termId?: string } = {}) {
     return this.get<any>('/reporting/dashboard/admin/stats', { params })
   }
 
-  async getAdminCharts(params?: any) {
+  async getAdminCharts(params: { sectionId?: string; sessionId?: string; termId?: string } = {}) {
     return this.get<any>('/reporting/dashboard/admin/charts', { params })
   }
 
-  async getRecentActivities(params?: any) {
+  async getRecentActivities(params: { sectionId?: string; sessionId?: string; termId?: string } = {}) {
     return this.get<any>('/reporting/dashboard/admin/activities', { params })
   }
 
@@ -721,8 +729,8 @@ class ApiService {
     return this.post<any>('/hr/ratings', data)
   }
 
-  async getMyTeachers() {
-    return this.get<any[]>('/hr/ratings/my-teachers')
+  async getMyTeachers(params?: any) {
+    return this.get<any[]>('/hr/ratings/my-teachers', { params })
   }
 
   async updateRating(id: string, data: any) {
@@ -883,8 +891,12 @@ class ApiService {
   }
 
   // Student Dashboard API
-  async getStudentDashboardStats(studentId: string) {
-    return this.get<any>(`/reporting/dashboard/student/${studentId}`)
+  async getStudentDashboardStats(studentId: string, params: { sessionId?: string; termId?: string } = {}) {
+    return this.get<any>(`/reporting/dashboard/student/${studentId}`, { params })
+  }
+
+  async getParentOverview(params?: any) {
+    return this.get<any>('/reporting/dashboard/student/parent/overview', { params })
   }
 
   // Examination Student API
@@ -901,8 +913,8 @@ class ApiService {
   }
 
   // Teacher Dashboard API
-  async getTeacherStats() {
-    return this.get<any>('/hr/staff/dashboard/stats')
+  async getTeacherStats(params: { sessionId?: string; termId?: string } = {}) {
+    return this.get<any>('/hr/staff/dashboard/stats', { params })
   }
 
   async getTeacherTodayTimetable() {

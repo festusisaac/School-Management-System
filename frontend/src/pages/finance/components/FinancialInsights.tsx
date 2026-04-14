@@ -55,21 +55,34 @@ export const FinancialInsights: React.FC<FinancialInsightsProps> = ({ history, s
 
   // Fee breakdown by status
   const feeStatusData = useMemo(() => {
-    if (!statement?.assignedHeads) return [];
+    const allHeads = [
+      ...(statement?.assignedHeads || []),
+      ...(statement?.carryForwards || [])
+    ];
+    
+    if (allHeads.length === 0) return [];
 
-    const paid = statement.assignedHeads.filter((h: any) => parseFloat(h.balance) <= 0).length;
-    const partial = statement.assignedHeads.filter((h: any) => {
+    const paidCount = allHeads.filter((h: any) => parseFloat(h.balance) <= 0).length;
+    const partialCount = allHeads.filter((h: any) => {
       const balance = parseFloat(h.balance);
       const amount = parseFloat(h.amount);
       return balance > 0 && balance < amount;
     }).length;
-    const pending = statement.assignedHeads.filter((h: any) => parseFloat(h.balance) === parseFloat(h.amount)).length;
+    const pendingCount = allHeads.filter((h: any) => parseFloat(h.balance) === parseFloat(h.amount)).length;
 
     return [
-      { name: 'Fully Paid', value: paid, color: '#10b981' },
-      { name: 'Partial', value: partial, color: '#f59e0b' },
-      { name: 'Pending', value: pending, color: '#ef4444' },
+      { name: 'Fully Paid', value: paidCount, color: '#10b981' },
+      { name: 'Partial', value: partialCount, color: '#f59e0b' },
+      { name: 'Pending', value: pendingCount, color: '#ef4444' },
     ].filter(item => item.value > 0);
+  }, [statement]);
+
+  // Combined heads for detail list
+  const combinedHeads = useMemo(() => {
+     return [
+      ...(statement?.assignedHeads || []),
+      ...(statement?.carryForwards || [])
+    ].sort((a, b) => parseFloat(b.amount) - parseFloat(a.amount));
   }, [statement]);
 
   // Calculate statistics
@@ -226,11 +239,11 @@ export const FinancialInsights: React.FC<FinancialInsightsProps> = ({ history, s
         )}
 
         {/* Top Fee Heads */}
-        {statement?.assignedHeads && statement.assignedHeads.length > 0 && (
+        {combinedHeads.length > 0 && (
           <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm p-6">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Fee Breakdown</h3>
             <div className="space-y-3">
-              {statement.assignedHeads.slice(0, 5).map((head: any, index: number) => {
+              {combinedHeads.slice(0, 5).map((head: any, index: number) => {
                 const amount = parseFloat(head.amount);
                 const balance = parseFloat(head.balance);
                 const paid = amount - balance;
@@ -239,12 +252,17 @@ export const FinancialInsights: React.FC<FinancialInsightsProps> = ({ history, s
                 return (
                   <div key={head.id}>
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm font-bold text-gray-900 dark:text-white">{head.name}</span>
+                       <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-gray-900 dark:text-white">{head.name}</span>
+                          {head.type === 'CARRY_FORWARD' && (
+                             <span className="px-1 py-0.5 bg-amber-50 text-amber-600 text-[8px] font-black rounded uppercase">Arrears</span>
+                          )}
+                       </div>
                       <span className="text-sm font-bold text-gray-600 dark:text-gray-400">{progress.toFixed(0)}%</span>
                     </div>
                     <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-primary-500 to-primary-600 rounded-full transition-all duration-500"
+                        className={`h-full bg-gradient-to-r ${head.type === 'CARRY_FORWARD' ? 'from-amber-400 to-amber-600' : 'from-primary-500 to-primary-600'} rounded-full transition-all duration-500`}
                         style={{ width: `${Math.min(progress, 100)}%` }}
                       />
                     </div>

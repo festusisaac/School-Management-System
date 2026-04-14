@@ -11,7 +11,11 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 
 const StudentDashboard: React.FC = () => {
     const { user, selectedChildId, childrenList } = useAuthStore();
-    const { formatCurrency } = useSystem();
+    const { formatCurrency, settings } = useSystem();
+    const currentSessionId = settings?.currentSessionId;
+    const currentTermId = settings?.currentTermId;
+    const currentSessionName = settings?.activeSessionName || 'Current Session';
+    const currentTermName = settings?.activeTermName || 'Current Term';
     const [studentProfile, setStudentProfile] = useState<any>(null);
     const [dashboardData, setDashboardData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -20,13 +24,18 @@ const StudentDashboard: React.FC = () => {
     useEffect(() => {
         const fetchDashboardInfo = async () => {
             try {
+                const params = {
+                    sessionId: currentSessionId || undefined,
+                    termId: currentTermId || undefined
+                };
+
                 if (isParent) {
                     if (!selectedChildId) return;
                     const childProfile = childrenList.find((c: any) => c.id === selectedChildId);
                     setStudentProfile(childProfile);
 
                     if (childProfile?.id) {
-                        const statsData = await api.getStudentDashboardStats(childProfile.id);
+                        const statsData = await api.getStudentDashboardStats(childProfile.id, params);
                         setDashboardData(statsData);
                     }
                 } else {
@@ -34,7 +43,7 @@ const StudentDashboard: React.FC = () => {
                     setStudentProfile(profile);
 
                     if (profile?.id) {
-                        const statsData = await api.getStudentDashboardStats(profile.id);
+                        const statsData = await api.getStudentDashboardStats(profile.id, params);
                         setDashboardData(statsData);
                     }
                 }
@@ -45,7 +54,7 @@ const StudentDashboard: React.FC = () => {
             }
         };
         fetchDashboardInfo();
-    }, [isParent, selectedChildId, childrenList]);
+    }, [isParent, selectedChildId, childrenList, currentSessionId, currentTermId]);
     
     // Real Data from API or fallbacks
     const stats = dashboardData?.stats || {
@@ -106,7 +115,7 @@ const StudentDashboard: React.FC = () => {
                 <div className="absolute top-0 right-0 w-64 h-64 bg-primary-50 dark:bg-primary-900/10 rounded-full blur-3xl -mr-20 -mt-20"></div>
                 <div className="relative z-10">
                     <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-                         {isParent ? 'Welcome Parent,' : 'Welcome back,'} {user?.firstName}!
+                         {isParent ? `Viewing ${studentProfile?.firstName}'s Portal` : `Welcome back, ${user?.firstName}!`}
                     </h1>
                     <div className="mt-2 flex flex-wrap items-center gap-4 text-sm">
                         <span className="flex items-center text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full font-medium shadow-sm">
@@ -114,7 +123,7 @@ const StudentDashboard: React.FC = () => {
                             Admission No: {studentProfile?.admissionNo || user?.username || 'N/A'}
                         </span>
                         <span className="text-gray-500 dark:text-gray-400 font-medium bg-gray-50 dark:bg-gray-800 px-3 py-1 rounded-full border border-gray-200 dark:border-gray-600">
-                            Class: {studentProfile?.class?.name || 'Assigned Soon'}
+                            Class: {studentProfile?.className || studentProfile?.class?.name || 'Assigned Soon'}
                         </span>
                     </div>
                 </div>
@@ -178,9 +187,16 @@ const StudentDashboard: React.FC = () => {
                             <CreditCard className={`w-6 h-6 ${stats.feesBalance > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`} />
                         </div>
                     </div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-4 font-medium">
-                        {stats.feesBalance === 0 ? 'Fully Cleared' : 'Outstanding Payment Needed'}
-                    </p>
+                    <div className="mt-4 flex items-center justify-between">
+                        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+                            {stats.feesBalance === 0 ? 'Fully Cleared' : 'Outstanding Payment'}
+                        </p>
+                        {stats.feesBalance > 0 && (
+                            <Link to="/students/finance" className="text-xs font-black text-primary-600 dark:text-primary-400 uppercase tracking-widest hover:underline">
+                                Pay Now
+                            </Link>
+                        )}
+                    </div>
                 </div>
 
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 hover:border-orange-200 dark:hover:border-orange-800 transition-colors group">
@@ -338,6 +354,11 @@ const StudentDashboard: React.FC = () => {
                                     <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 hover:text-primary-600 cursor-pointer transition-colors leading-relaxed">{ann.title}</p>
                                 </div>
                             ))}
+                        </div>
+                        <div className="px-6 py-3 bg-gray-50/50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-700">
+                             <Link to="/notices" className="block text-center text-xs font-bold text-primary-600 uppercase tracking-widest hover:text-primary-700 transition-colors">
+                                View All Notices
+                             </Link>
                         </div>
                     </div>
                 </div>

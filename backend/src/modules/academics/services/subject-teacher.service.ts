@@ -62,10 +62,10 @@ export class SubjectTeacherService {
         return savedAssignments;
     }
 
-    async getTeachersForClassOrSection(tenantId: string, classId: string, sectionId?: string) {
-        const sessionId = await this.systemSettingsService.getActiveSessionId();
+    async getTeachersForClassOrSection(tenantId: string, classId: string, sectionId?: string, sessionId?: string) {
+        const activeSessionId = sessionId || await this.systemSettingsService.getActiveSessionId();
         const where: any = { tenantId, classId, sectionId: sectionId || IsNull() };
-        if (sessionId) where.sessionId = sessionId;
+        if (activeSessionId) where.sessionId = activeSessionId;
 
         return this.subjectTeacherRepository.find({
             where,

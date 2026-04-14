@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Users, Clock, Calendar, CheckCircle, FileText, ArrowRight } from 'lucide-react';
+import { BookOpen, Users, Clock, Calendar, CheckCircle, FileText, ArrowRight, TrendingUp } from 'lucide-react';
 import apiService from '../../services/api';
+import { useSystem } from '../../context/SystemContext';
 
 interface TeacherStats {
     totalStudents: number;
@@ -29,6 +30,12 @@ interface TimetablePeriod {
 }
 
 const TeacherDashboard: React.FC = () => {
+    const { settings } = useSystem();
+    const currentSessionId = settings?.currentSessionId;
+    const currentTermId = settings?.currentTermId;
+    const currentSessionName = settings?.activeSessionName || 'Current Session';
+    const currentTermName = settings?.activeTermName || 'Current Term';
+
     const [stats, setStats] = useState<TeacherStats | null>(null);
     const [todayTimetable, setTodayTimetable] = useState<TimetablePeriod[]>([]);
     const [loading, setLoading] = useState(true);
@@ -36,8 +43,12 @@ const TeacherDashboard: React.FC = () => {
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
+                const params = {
+                    sessionId: currentSessionId || undefined,
+                    termId: currentTermId || undefined
+                };
                 const [statsData, timetableData] = await Promise.all([
-                    apiService.getTeacherStats(),
+                    apiService.getTeacherStats(params),
                     apiService.getTeacherTodayTimetable()
                 ]);
                 setStats(statsData);
@@ -50,7 +61,7 @@ const TeacherDashboard: React.FC = () => {
         };
 
         fetchDashboardData();
-    }, []);
+    }, [currentSessionId, currentTermId]);
 
     if (loading) {
         return (
@@ -66,7 +77,18 @@ const TeacherDashboard: React.FC = () => {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
                 <div>
                     <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">Teacher Dashboard</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Welcome back. Here is your overview for today.</p>
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                        <span className="flex items-center text-xs font-semibold text-primary-700 bg-primary-50 dark:bg-primary-900/40 dark:text-primary-300 px-2.5 py-1 rounded-full border border-primary-100 dark:border-primary-800">
+                             <Calendar className="w-3 h-3 mr-1.5" />
+                             {currentSessionName}
+                        </span>
+                        {currentTermName && (
+                            <span className="flex items-center text-xs font-semibold text-secondary-700 bg-secondary-50 dark:bg-secondary-900/40 dark:text-secondary-300 px-2.5 py-1 rounded-full border border-secondary-100 dark:border-secondary-800">
+                                <TrendingUp className="w-3 h-3 mr-1.5" />
+                                {currentTermName}
+                            </span>
+                        )}
+                    </div>
                 </div>
                 <div className="mt-4 md:mt-0 flex space-x-3">
                     <div className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm flex items-center">

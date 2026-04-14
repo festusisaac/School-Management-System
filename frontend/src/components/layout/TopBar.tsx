@@ -18,9 +18,22 @@ export function TopBar({ onMenuClick }: TopBarProps) {
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     const { user, logout, childrenList, selectedChildId, setSelectedChildId } = useAuthStore();
-    const userName = user ? `${user.firstName} ${user.lastName}` : 'User';
-    const userRole = user ? (user.roleObject?.name || user.role).charAt(0).toUpperCase() + (user.roleObject?.name || user.role).slice(1) : 'Staff';
-    const initials = user ? `${user.firstName.charAt(0)}${user.lastName.charAt(0)}` : 'U';
+    
+    // UI Cleanup for names (strips legacy system suffixes like 'Member')
+    const cleanName = (name: string) => {
+        if (!name) return '';
+        return name.replace(/\s*Member\s*$/gi, '').replace(/\s*Staff\s*$/gi, '').trim();
+    };
+
+    const userName = user ? `${cleanName(user.firstName)} ${cleanName(user.lastName)}`.trim() || 'User' : 'User';
+    // Normalize the role label — the DB may store 'member', 'parent', etc.
+    const rawRoleStr = (user?.roleObject?.name || user?.role || '').toLowerCase().trim();
+    const userRole = rawRoleStr === 'parent' || rawRoleStr === 'member'
+        ? 'Parent'
+        : rawRoleStr === 'student'
+            ? 'Student'
+            : (user?.roleObject?.name || user?.role || 'Staff');
+    const initials = user ? `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}` : 'U';
 
     const handleLogout = () => {
         logout();
@@ -42,7 +55,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
     const isSuperAdmin = rawRole === 'super administrator' || rawRole === 'super admin';
 
     return (
-        <header className="h-16 px-6 bg-white/80 dark:bg-gray-900/80 border-b border-gray-100 dark:border-gray-800 backdrop-blur-xl flex items-center justify-between sticky top-0 z-30 shadow-sm lg:shadow-none transition-colors duration-200 print:hidden">
+        <header className="h-16 px-6 bg-white/80 dark:bg-gray-900/80 border-b border-gray-100 dark:border-gray-800 backdrop-blur-xl flex items-center justify-between sticky top-0 z-40 shadow-sm lg:shadow-none transition-colors duration-200 print:hidden">
         <div className="flex items-center gap-3">
                 <button
                     onClick={onMenuClick}
@@ -114,7 +127,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
                         >
                             {childrenList.map((child: any) => (
                                 <option key={child.id} value={child.id}>
-                                    {child.firstName} {child.lastName}
+                                    {cleanName(child.firstName)} {cleanName(child.lastName)}
                                 </option>
                             ))}
                         </select>
@@ -160,19 +173,25 @@ export function TopBar({ onMenuClick }: TopBarProps) {
 
                     {/* Dropdown Menu */}
                     {isProfileOpen && (
-                        <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 py-2 animate-in fade-in zoom-in duration-200 origin-top-right">
+                        <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 py-2 animate-in fade-in zoom-in duration-200 origin-top-right z-[100]">
                             <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700 mb-1">
                                 <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{userName}</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300 border border-primary-100 dark:border-primary-800">
+                                        {userRole}
+                                    </span>
+                                </div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-1">{user?.email}</p>
                             </div>
 
                             <button 
                                 onClick={() => {
                                     setIsProfileOpen(false);
-                                    if (user?.role === 'student' || user?.roleObject?.name?.toLowerCase() === 'student') {
-                                        navigate(`/students/profile/${user.student?.id || user.id}`);
-                                    } else if (user?.role === 'parent' || user?.roleObject?.name?.toLowerCase() === 'parent') {
-                                        navigate('/parents/dashboard');
+                                    const role = (user?.role || user?.roleObject?.name || '').toLowerCase();
+                                    if (role === 'student') {
+                                        navigate('/students/profile/me');
+                                    } else if (role === 'parent' || role === 'member') {
+                                        navigate('/parent/profile');
                                     } else {
                                         navigate('/hr/staff/profile');
                                     }

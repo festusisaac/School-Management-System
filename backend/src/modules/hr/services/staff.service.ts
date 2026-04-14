@@ -477,7 +477,8 @@ export class StaffService {
         };
     }
 
-    async getTeacherDashboardStats(email: string, tenantId: string) {
+    async getTeacherDashboardStats(email: string, tenantId: string, sessionId?: string, termId?: string) {
+        const isValidSession = sessionId && sessionId !== 'undefined' && sessionId !== 'null' && sessionId !== '';
         const staff = await this.staffRepository.findOne({
             where: { email, tenantId },
             relations: ['department']
@@ -499,8 +500,8 @@ export class StaffService {
         let classesToday = 0;
         try {
             const result = await manager.query(
-                `SELECT COUNT(*) as count FROM "timetables" WHERE "teacherId" = $1 AND "dayOfWeek" = $2 AND "tenantId" = $3`,
-                [staffId, timetableDay, tenantId]
+                `SELECT COUNT(*) as count FROM "timetables" WHERE "teacherId" = $1 AND "dayOfWeek" = $2 AND "tenantId" = $3 ${isValidSession ? 'AND "sessionId" = $4' : ''}`,
+                isValidSession ? [staffId, timetableDay, tenantId, sessionId] : [staffId, timetableDay, tenantId]
             );
             classesToday = parseInt(result[0]?.count || '0', 10);
         } catch (e) { console.error('Dashboard: classesToday query error', e); }
@@ -523,8 +524,9 @@ export class StaffService {
             const result = await manager.query(
                 `SELECT COUNT(*) as count FROM "homework_submissions" hs 
                  INNER JOIN "homework" h ON hs."homeworkId" = h.id 
-                 WHERE h."teacherId" = $1 AND h."tenantId" = $2 AND hs.status = 'SUBMITTED' AND hs.grade IS NULL`,
-                [staffId, tenantId]
+                 WHERE h."teacherId" = $1 AND h."tenantId" = $2 AND hs.status = 'SUBMITTED' AND hs.grade IS NULL
+                 ${isValidSession ? 'AND h."sessionId" = $3' : ''}`,
+                isValidSession ? [staffId, tenantId, sessionId] : [staffId, tenantId]
             );
             pendingHomework = parseInt(result[0]?.count || '0', 10);
         } catch (e) { console.error('Dashboard: pendingHomework query error', e); }
@@ -551,8 +553,9 @@ export class StaffService {
                  INNER JOIN "homework" h ON hs."homeworkId" = h.id 
                  INNER JOIN "students" s ON hs."studentId" = s.id 
                  WHERE h."teacherId" = $1 AND h."tenantId" = $2 AND hs.status = 'SUBMITTED' AND hs.grade IS NULL 
+                 ${isValidSession ? 'AND h."sessionId" = $3' : ''}
                  ORDER BY hs."submittedAt" DESC LIMIT 5`,
-                [staffId, tenantId]
+                isValidSession ? [staffId, tenantId, sessionId] : [staffId, tenantId]
             );
         } catch (e) { console.error('Dashboard: recentUngraded query error', e); }
 

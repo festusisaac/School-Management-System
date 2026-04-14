@@ -26,10 +26,16 @@ import { CreateDiscountProfileDto } from '../dtos/create-discount-profile.dto';
 import { FeeAssignment } from '../entities/fee-assignment.entity';
 import { EmailService } from '../../internal-communication/email.service';
 import { SmsService } from '../../internal-communication/sms.service';
+import { AcademicSession } from '../../system/entities/academic-session.entity';
+
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
+import { Parent } from '../../students/entities/parent.entity';
 
 @Injectable()
 export class FeesService {
   constructor(
+    @InjectQueue('finance') private readonly financeQueue: Queue,
     @InjectRepository(Transaction)
     private readonly transactionRepo: Repository<Transaction>,
     @InjectRepository(FeeStructure)
@@ -55,96 +61,99 @@ export class FeesService {
     private readonly emailService: EmailService,
     private readonly smsService: SmsService,
     private readonly systemSettingsService: SystemSettingsService,
+    @InjectRepository(AcademicSession)
+    private readonly sessionRepo: Repository<AcademicSession>,
   ) { }
 
   // Record an offline/payment
   async recordPayment(dto: CreatePaymentDto, tenantId: string) {
-    const paymentAmount = parseFloat(dto.amount);
-    if (paymentAmount <= 0) throw new BadRequestException('Payment amount must be greater than zero.');
+    return this.transactionRepo.manager.transaction(async (manager) => {
+      const paymentAmount = parseFloat(dto.amount);
+      if (paymentAmount <= 0) throw new BadRequestException('Payment amount must be greater than zero.');
 
-    // Tenancy Validation: Ensure student belongs to this tenant
-    const student = await this.studentRepo.findOne({ 
-        where: { id: dto.studentId, tenantId },
-        relations: ['class']
-    });
-    if (!student) throw new NotFoundException('Student not found in this school context.');
-
-    // Duplicate check for references
-    if (dto.reference) {
-      const existing = await this.transactionRepo.findOne({
-        where: { reference: dto.reference, tenantId }
+      // Tenancy Validation
+      const student = await manager.findOne(Student, { 
+          where: { id: dto.studentId, tenantId },
+          relations: ['class']
       });
-      if (existing) throw new ConflictException(`Transaction with reference '${dto.reference}' already recorded.`);
-    }
+      if (!student) throw new NotFoundException('Student not found in this school context.');
 
-    const transactions: Transaction[] = [];
-    const allocations = dto.meta?.allocations || [];
-    let allocatedSum = 0;
+      // Duplicate check for references (Inside Transaction)
+      if (dto.reference) {
+        const existing = await manager.findOne(Transaction, {
+          where: { reference: dto.reference, tenantId }
+        });
+        if (existing) throw new ConflictException(`Transaction with reference '${dto.reference}' already recorded.`);
+      }
 
-    // 1. If allocations are provided, split the transaction
-    if (Array.isArray(allocations) && allocations.length > 0) {
-      for (const alloc of allocations) {
-        const allocAmount = parseFloat(alloc.amount);
-        if (allocAmount > 0) {
-          allocatedSum += allocAmount;
-          const sessionId = await this.systemSettingsService.getActiveSessionId();
-          const tx = this.transactionRepo.create({
-            amount: alloc.amount.toString(),
-            studentId: dto.studentId,
-            tenantId,
-            sessionId: sessionId || undefined,
-            reference: dto.reference || null,
-            paymentMethod: dto.paymentMethod || PaymentMethod.CASH,
-            type: dto.type || TransactionType.FEE_PAYMENT,
-            schoolSectionId: student.class?.schoolSectionId,
-            meta: {
-              ...dto.meta,
-              allocations: [alloc],
-              isSplitTransaction: true
-            }
-          });
-          transactions.push(tx);
+      const transactions: Transaction[] = [];
+      const allocations = dto.meta?.allocations || [];
+      let allocatedSum = 0;
+
+      const sessionId = await this.systemSettingsService.getActiveSessionId();
+
+      // 1. If allocations are provided, split the transaction
+      if (Array.isArray(allocations) && allocations.length > 0) {
+        for (const alloc of allocations) {
+          const allocAmount = parseFloat(alloc.amount);
+          if (allocAmount > 0) {
+            allocatedSum += allocAmount;
+            const tx = manager.create(Transaction, {
+              amount: alloc.amount.toString(),
+              studentId: dto.studentId,
+              tenantId,
+              sessionId: sessionId || undefined,
+              reference: dto.reference || null,
+              paymentMethod: dto.paymentMethod || PaymentMethod.CASH,
+              type: dto.type || TransactionType.FEE_PAYMENT,
+              schoolSectionId: student.class?.schoolSectionId,
+              meta: {
+                ...dto.meta,
+                allocations: [alloc],
+                isSplitTransaction: true
+              }
+            });
+            transactions.push(tx);
+          }
+        }
+
+        if (Math.abs(paymentAmount - allocatedSum) > 0.01) {
+          throw new BadRequestException(`Payment amount (${paymentAmount.toFixed(2)}) must be fully allocated. Unallocated: ${(paymentAmount - allocatedSum).toFixed(2)}`);
         }
       }
 
-      // Enforce full allocation if ANY allocations were provided
-      if (Math.abs(paymentAmount - allocatedSum) > 0.01) {
-        throw new BadRequestException(`Payment amount (${paymentAmount.toFixed(2)}) must be fully allocated to fee heads. Unallocated amount: ${(paymentAmount - allocatedSum).toFixed(2)}`);
+      // 2. Default single transaction
+      if (transactions.length === 0) {
+        const tx = manager.create(Transaction, {
+          amount: dto.amount,
+          studentId: dto.studentId,
+          tenantId,
+          sessionId: sessionId || undefined,
+          reference: dto.reference || null,
+          paymentMethod: dto.paymentMethod || PaymentMethod.CASH,
+          type: dto.type || TransactionType.FEE_PAYMENT,
+          schoolSectionId: student.class?.schoolSectionId,
+          meta: dto.meta || {}
+        });
+        transactions.push(tx);
       }
-    }
 
-    // 2. If no allocations (or sum was 0), create a single transaction
-    if (transactions.length === 0) {
-      const sessionId = await this.systemSettingsService.getActiveSessionId();
-      const tx = this.transactionRepo.create({
-        amount: dto.amount,
-        studentId: dto.studentId,
-        tenantId,
-        sessionId: sessionId || undefined,
-        reference: dto.reference || null,
-        paymentMethod: dto.paymentMethod || PaymentMethod.CASH,
-        type: dto.type || TransactionType.FEE_PAYMENT,
-        schoolSectionId: student.class?.schoolSectionId,
-        meta: dto.meta || {}
-      });
-      transactions.push(tx);
-    }
+      const saved = await manager.save(transactions);
 
-    const saved = await this.transactionRepo.save(transactions);
+      // Notifications (External to the atomic block)
+      if (dto.type === TransactionType.FEE_PAYMENT || !dto.type) {
+        this.sendPaymentNotifications(
+          dto.studentId,
+          tenantId,
+          dto.amount,
+          dto.reference || 'N/A',
+          dto.paymentMethod || PaymentMethod.CASH,
+          dto.meta
+        ).catch(err => console.error('Notification error:', err));
+      }
 
-    // Trigger notification (async, don't await to avoid blocking response)
-    if (dto.type === TransactionType.FEE_PAYMENT || !dto.type) {
-      this.sendPaymentNotifications(
-        dto.studentId,
-        tenantId,
-        dto.amount,
-        dto.reference || 'N/A',
-        dto.paymentMethod || PaymentMethod.CASH,
-        dto.meta
-      ).catch(err => console.error('Notification error:', err));
-    }
-
-    return saved;
+      return saved;
+    });
   }
 
   private async sendPaymentNotifications(studentId: string, tenantId: string, amount: string, reference: string, method: string, meta: any) {
@@ -225,14 +234,21 @@ export class FeesService {
 
     const sessionId = await this.systemSettingsService.getActiveSessionId();
 
-    // 1. Get all transactions for student in current session
+    // 1. Get all FEE_PAYMENT and REFUND transactions for student in current session
+    //    Exclude CARRY_FORWARD entries — those are accounting transfers, not actual payments.
     const txWhere: any = { studentId: resolvedStudentId, tenantId };
     if (sessionId) txWhere.sessionId = sessionId;
 
-    const transactions = await this.transactionRepo.find({
+    const allTransactions = await this.transactionRepo.find({
       where: txWhere,
       order: { createdAt: 'DESC' },
     });
+
+    // Separate actual payments from carry-forward audit entries.
+    // CARRY_FORWARD transactions are accounting transfers (debt moved sessions), not real payments.
+    const transactions = allTransactions.filter(tx =>
+      tx.type !== TransactionType.CARRY_FORWARD
+    );
 
     // 2. Get Discount Profile
     let discountProfile = null;
@@ -248,12 +264,22 @@ export class FeesService {
       }
     }
 
-    // 3. Get Carry Forwards for current session
+    // 2. Carry Forwards (Opening Balances)
     const cfWhere: any = { studentId: resolvedStudentId, tenantId };
-    if (sessionId) cfWhere.sessionId = sessionId;
+    
+    // Resolve session name for fallback if needed
+    let sessionName = null;
+    if (sessionId) {
+      const session = await this.sessionRepo.findOne({ where: { id: sessionId } });
+      if (session) sessionName = session.name;
+    }
 
     const carryForwards = await this.carryRepo.find({
-      where: cfWhere,
+      where: sessionId ? [
+        { ...cfWhere, sessionId },
+        { ...cfWhere, sessionId: IsNull(), academicYear: sessionName }
+      ] : cfWhere,
+      relations: ['feeHead']
     });
 
     // 4. Get Assignments & Calculate Dues for current session
@@ -301,11 +327,19 @@ export class FeesService {
     const totalPaid = transactions.reduce((acc, curr) => acc + parseFloat(curr.amount || '0'), 0);
     const balance = totalDue - totalPaid;
 
-    const labeledCarryForwards = carryForwards.map(cf => ({
-      ...cf,
-      name: `Balance Brought Forward (${cf.academicYear})`,
-      type: 'CARRY_FORWARD'
-    }));
+    const labeledCarryForwards = carryForwards.map(cf => {
+      const totalAmount = parseFloat(cf.amount || '0');
+      const paidAmount = paidByHead[cf.id] || 0;
+      const headName = cf.feeHead?.name;
+      return {
+        ...cf,
+        name: headName ? `Arrears: ${headName} (${cf.academicYear})` : `Balance Brought Forward (${cf.academicYear})`,
+        amount: totalAmount.toFixed(2),
+        paid: paidAmount.toFixed(2),
+        balance: (totalAmount - paidAmount).toFixed(2),
+        type: 'CARRY_FORWARD'
+      };
+    });
 
     return {
       student,
@@ -330,8 +364,19 @@ export class FeesService {
 
     // 2. Carry Forwards
     const cfWhere: any = { studentId, tenantId };
-    if (sessionId) cfWhere.sessionId = sessionId;
-    const carryForwards = await this.carryRepo.find({ where: cfWhere });
+    
+    let sessionName = null;
+    if (sessionId) {
+      const session = await this.sessionRepo.findOne({ where: { id: sessionId } });
+      if (session) sessionName = session.name;
+    }
+
+    const carryForwards = await this.carryRepo.find({
+      where: sessionId ? [
+        { ...cfWhere, sessionId },
+        { ...cfWhere, sessionId: IsNull(), academicYear: sessionName }
+      ] : cfWhere,
+    });
 
     // 3. Assignments
     const asWhere: any = { studentId, isActive: true, tenantId };
@@ -354,75 +399,203 @@ export class FeesService {
     return totalDue - totalPaid;
   }
 
-  // Calculate closing balance for a student in a specific (usually past) session
-  async getSessionBalance(studentId: string, sessionId: string, tenantId: string): Promise<number> {
+  // New helper to get unpaid heads for a student in a session
+  async getStudentUnpaidHeads(studentId: string, sessionId: string, tenantId: string) {
     // 1. Transactions for that session
     const transactions = await this.transactionRepo.find({
-      where: { studentId, sessionId, tenantId },
+        where: { studentId, sessionId, tenantId },
     });
 
     // 2. Assignments for that session
     const assignments = await this.assignmentRepo.find({
-      where: { studentId, sessionId, tenantId },
-      relations: ['feeGroup', 'feeGroup.heads'],
+        where: { studentId, sessionId, tenantId },
+        relations: ['feeGroup', 'feeGroup.heads'],
     });
 
     // 3. Carry Forwards for that session
     const carryForwards = await this.carryRepo.find({
-      where: { studentId, sessionId, tenantId },
+        where: { studentId, sessionId, tenantId },
     });
 
     const paidByHead: Record<string, number> = {};
     transactions.forEach(tx => {
-      const txAllocations = tx.meta?.allocations || [];
-      if (Array.isArray(txAllocations)) {
-        txAllocations.forEach((a: any) => {
-          if (a.id) paidByHead[a.id] = (paidByHead[a.id] || 0) + parseFloat(a.amount || '0');
-        });
-      }
+        const txAllocations = tx.meta?.allocations || [];
+        if (Array.isArray(txAllocations)) {
+            txAllocations.forEach((a: any) => {
+                if (a.id) paidByHead[a.id] = (paidByHead[a.id] || 0) + parseFloat(a.amount || '0');
+            });
+        }
     });
 
-    const totalAssigned = assignments.reduce((acc, a) => {
-      const heads = a.feeGroup?.heads || [];
-      return acc + heads.reduce((hAcc, h) => hAcc + parseFloat(h.defaultAmount || '0'), 0);
-    }, 0);
+    // Sum of previous carry-forwards (treated as "Opening Balances")
+    const cfByHead: Record<string, number> = {};
+    carryForwards.forEach(cf => {
+        if (cf.feeHeadId) {
+            cfByHead[cf.feeHeadId] = (cfByHead[cf.feeHeadId] || 0) + parseFloat(cf.amount || '0');
+        }
+    });
 
-    const totalCarryForward = carryForwards.reduce((acc, cf) => acc + parseFloat(cf.amount || '0'), 0);
-    const totalDue = totalAssigned + totalCarryForward;
-    const totalPaid = transactions.reduce((acc, tx) => acc + parseFloat(tx.amount || '0'), 0);
+    const results: any[] = [];
+    const processedHeadIds = new Set<string>();
 
-    return totalDue - totalPaid;
+    // Process Assignments
+    assignments.forEach(a => {
+        const excludedIds = a.excludedHeadIds || [];
+        const heads = a.feeGroup?.heads || [];
+        heads.filter(h => !excludedIds.includes(h.id)).forEach(h => {
+            const headDue = parseFloat(h.defaultAmount || '0');
+            const headPaid = paidByHead[h.id] || 0;
+            const headCf = cfByHead[h.id] || 0;
+            const headBalance = (headDue + headCf) - headPaid;
+            
+            if (headBalance > 0) {
+                results.push({
+                    id: h.id,
+                    name: h.name,
+                    amount: headBalance.toFixed(2),
+                    originalDue: headDue,
+                    totalBilled: (headDue + headCf).toFixed(2)
+                });
+            }
+            processedHeadIds.add(h.id);
+        });
+    });
+
+    // Process leftover Carry Forwards (if any heads were carried forward but not assigned this session)
+    carryForwards.forEach(cf => {
+        if (cf.feeHeadId && !processedHeadIds.has(cf.feeHeadId)) {
+            const headCf = parseFloat(cf.amount || '0');
+            const headPaid = paidByHead[cf.feeHeadId] || 0;
+            const headBalance = headCf - headPaid;
+            if (headBalance > 0) {
+                results.push({
+                    id: cf.feeHeadId,
+                    name: cf.feeHead?.name || 'Previous Balance',
+                    amount: headBalance.toFixed(2),
+                    originalDue: 0,
+                    totalBilled: headCf.toFixed(2)
+                });
+            }
+        }
+    });
+
+    return results;
   }
 
-  // Carry forward all student balances from one session to another
-  async carryForwardAllBalances(oldSessionId: string, newSessionId: string, tenantId: string): Promise<void> {
-    const students = await this.studentRepo.find({ where: { isActive: true, tenantId } });
+  // Start a bulk carry forward job
+  async startBulkCarryForward(options: any, tenantId: string) {
+    const job = await this.financeQueue.add('bulk-carry-forward', {
+      ...options,
+      tenantId
+    });
+    return { jobId: job.id };
+  }
+
+  // Original sync method (kept for internal use but modified for queue)
+  async carryForwardAllBalances(options: { 
+    oldSessionId?: string, 
+    newSessionId?: string,
+    oldSessionName?: string,
+    newSessionName?: string 
+  }, tenantId: string): Promise<any> {
+    const sessionRepo = this.studentRepo.manager.getRepository('AcademicSession');
     
-    // Fetch old and new session names for labels
-    const oldSession = await this.studentRepo.manager.getRepository('AcademicSession').findOne({ where: { id: oldSessionId } });
+    let oldId = options.oldSessionId;
+    let newId = options.newSessionId;
+
+    // Resolve IDs from names if needed
+    if (!oldId && options.oldSessionName) {
+      const s = await sessionRepo.findOne({ where: { name: options.oldSessionName } });
+      if (s) oldId = s.id;
+    }
+    if (!newId && options.newSessionName) {
+      const s = await sessionRepo.findOne({ where: { name: options.newSessionName } });
+      if (s) newId = s.id;
+    }
+
+    if (!oldId) throw new BadRequestException('Source session not found or specified.');
+    if (!newId) throw new BadRequestException('Target session not found or specified.');
+
+    const students = await this.studentRepo.find({ where: { isActive: true, tenantId } });
+    const oldSession = await sessionRepo.findOne({ where: { id: oldId } });
     const academicYearLabel = oldSession ? oldSession.name : 'Previous Session';
 
-    for (const student of students) {
-      const balance = await this.getSessionBalance(student.id, oldSessionId, tenantId);
-      
-      if (balance > 0) {
-        // Only create if not already exists for the new session to prevent duplicates
-        const existing = await this.carryRepo.findOne({
-            where: { studentId: student.id, sessionId: newSessionId, tenantId }
-        });
+    let processed = 0;
+    let skipped = 0;
+    let totalAmount = 0;
 
-        if (!existing) {
+    for (const student of students) {
+      const unpaidHeads = await this.getStudentUnpaidHeads(student.id, oldId as string, tenantId);
+      
+      if (unpaidHeads.length > 0) {
+        for (const head of unpaidHeads) {
+            // DUPLICATION CHECK: Prevent double billing for same head in same session
+            const existing = await this.carryRepo.findOne({
+                where: { 
+                    studentId: student.id, 
+                    feeHeadId: head.id, 
+                    sessionId: newId as string,
+                    tenantId 
+                }
+            });
+
+            if (existing) continue;
+
             const carryEntry = this.carryRepo.create({
                 studentId: student.id,
-                amount: balance.toFixed(2),
+                amount: head.amount,
                 academicYear: academicYearLabel,
-                sessionId: newSessionId,
-                tenantId
+                sessionId: newId as string,
+                feeHeadId: head.id,
+                tenantId,
+                meta: { originalSessionId: oldId }
             });
-            await this.carryRepo.save(carryEntry);
+            const savedCarry = await this.carryRepo.save(carryEntry);
+
+            // AUDIT TRANSACTION: Record the carry-forward in the OLD session as CARRY_FORWARD type.
+            // This is purely for audit trail — it is excluded from totalPaid in all statement calculations.
+            const clearingTx = this.transactionRepo.create({
+                amount: head.amount,
+                studentId: student.id,
+                tenantId,
+                sessionId: oldId as string,
+                type: TransactionType.CARRY_FORWARD,
+                paymentMethod: PaymentMethod.CASH,
+                reference: `CF-TO-${options.newSessionName || 'NEXT'}`,
+                meta: {
+                    isCarryForwardClearing: true,
+                    targetSession: options.newSessionName,
+                    carryForwardId: savedCarry.id,
+                    feeHeadId: head.id,
+                    narrative: `Bal. (${head.name}) Transferred to ${options.newSessionName || 'Next Session'}`,
+                    allocations: [{ id: head.id, name: head.name, amount: head.amount }]
+                }
+            });
+            await this.transactionRepo.save(clearingTx);
+
+            // DEACTIVATE OLD FEE ASSIGNMENT: Clear the debt from the old session view.
+            await this.assignmentRepo.createQueryBuilder()
+                .update()
+                .set({ isActive: false })
+                .where('"studentId" = :sid AND "sessionId" = :sesId AND "tenantId" = :tid', {
+                    sid: student.id, sesId: oldId, tid: tenantId
+                })
+                .execute();
+
+            totalAmount += parseFloat(head.amount);
         }
+        processed++;
+      } else {
+        skipped++;
       }
     }
+
+    return {
+      total: students.length,
+      processed,
+      skipped,
+      totalAmount: totalAmount.toFixed(2)
+    };
   }
 
   // History
@@ -569,6 +742,8 @@ export class FeesService {
         studentId: originalTx.studentId as string,
         tenantId,
         type: TransactionType.REFUND,
+        sessionId: originalTx.sessionId,
+        schoolSectionId: originalTx.schoolSectionId,
         paymentMethod: originalTx.paymentMethod,
         reference: `REF-${originalTx.reference || originalTx.id.substring(0, 8)}`,
         meta: {
@@ -1047,31 +1222,58 @@ export class FeesService {
 
   // Carry forward
   async carryForward(dto: any, tenantId: string) {
-    let amount = dto.amount;
-    if (!amount || amount === 'auto' || parseFloat(amount) === 0) {
-      const statement = await this.getStudentStatement(dto.studentId, tenantId);
-      amount = statement.balance;
-    }
+    const sessionId = dto.oldSessionId || await this.systemSettingsService.getActiveSessionId();
+    if (!sessionId) throw new BadRequestException('No source academic session found.');
 
-    if (parseFloat(amount) <= 0) {
+    const unpaidHeads = await this.getStudentUnpaidHeads(dto.studentId, sessionId, tenantId);
+    
+    if (unpaidHeads.length === 0) {
       throw new BadRequestException('Student has no outstanding balance to carry forward.');
     }
 
-    const existing = await this.carryRepo.findOne({
-      where: {
-        studentId: dto.studentId,
-        academicYear: dto.academicYear,
-        tenantId
-      }
-    });
+    const processedCarryForwards: any[] = [];
+    const totalAmount = unpaidHeads.reduce((acc, h) => acc + parseFloat(h.amount), 0);
 
-    if (existing) {
-      existing.amount = amount;
-      return this.carryRepo.save(existing);
+    for (const head of unpaidHeads) {
+        // Create individual head-level carry forward
+        const c = this.carryRepo.create({ 
+            studentId: dto.studentId,
+            amount: head.amount,
+            academicYear: dto.academicYear,
+            sessionId: dto.sessionId, // Target Session
+            feeHeadId: head.id,
+            tenantId,
+            meta: { originalSessionId: sessionId }
+        });
+        const saved = await this.carryRepo.save(c);
+        processedCarryForwards.push(saved);
+
+        // POST CLEARING TRANSACTION IN SOURCE SESSION (Per Head)
+        const clearingTx = this.transactionRepo.create({
+            amount: head.amount,
+            studentId: dto.studentId,
+            tenantId,
+            sessionId: sessionId,
+            type: TransactionType.ADJUSTMENT,
+            paymentMethod: PaymentMethod.CASH,
+            reference: `CF-TO-${dto.academicYear || 'NEXT'}`,
+            meta: {
+                isCarryForwardClearing: true,
+                targetSession: dto.academicYear,
+                carryForwardId: saved.id,
+                feeHeadId: head.id,
+                narrative: `Bal. (${head.name}) Transferred to ${dto.academicYear || 'Next Session'}`,
+                allocations: [{ id: head.id, name: head.name, amount: head.amount }]
+            }
+        });
+        await this.transactionRepo.save(clearingTx);
     }
 
-    const c = this.carryRepo.create({ ...dto, amount, tenantId });
-    return this.carryRepo.save(c);
+    return { 
+        studentId: dto.studentId, 
+        totalAmount: totalAmount.toFixed(2), 
+        count: processedCarryForwards.length 
+    };
   }
 
   async listCarryForwards(options: any = {}, tenantId: string) {
@@ -1081,11 +1283,16 @@ export class FeesService {
     const query = this.carryRepo.createQueryBuilder('c')
       .leftJoinAndMapOne('c.student', Student, 'student', 'student.id = CAST(c.studentId AS UUID)')
       .leftJoinAndSelect('student.class', 'class')
+      .leftJoinAndSelect('c.feeHead', 'feeHead')
       .where('c.tenantId = :tenantId', { tenantId })
       .orderBy('c.createdAt', 'DESC');
 
     if (options.studentId) {
       query.andWhere('c.studentId = :studentId', { studentId: options.studentId });
+    }
+
+    if (options.academicYear) {
+      query.andWhere('c.academicYear = :academicYear', { academicYear: options.academicYear });
     }
 
     const [items, total] = await query
@@ -1097,6 +1304,21 @@ export class FeesService {
   }
 
   async deleteCarryForward(id: string, tenantId: string) {
+    // 1. Find the carry forward to get metadata
+    const cf = await this.carryRepo.findOne({ where: { id, tenantId } });
+    if (cf) {
+        // 2. Delete corresponding clearing transactions in any session for this carry forward
+        // We look for transactions that have this carryForwardId in their meta
+        const transactions = await this.transactionRepo.find({
+            where: { studentId: cf.studentId, tenantId, type: TransactionType.ADJUSTMENT }
+        });
+
+        const toDelete = transactions.filter(tx => tx.meta?.carryForwardId === id);
+        if (toDelete.length > 0) {
+            await this.transactionRepo.delete(toDelete.map(tx => tx.id));
+        }
+    }
+
     return this.carryRepo.delete({ id, tenantId });
   }
 

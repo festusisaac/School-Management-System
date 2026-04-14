@@ -36,11 +36,30 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     const { settings, getFullUrl } = useSystem();
     const { user, logout, selectedChildId } = useAuthStore();
     const navigate = useNavigate();
-    const userRole = (user?.role || user?.roleObject?.name || 'student').toLowerCase();
-    const isStudentOrParent = userRole === 'student' || userRole === 'parent';
-    const userName = user ? `${user.firstName} ${user.lastName}` : 'User';
-    const userRoleLabel = user ? (user.roleObject?.name || user.role || 'Student') : 'Student';
-    const initials = user ? `${user.firstName?.charAt(0)}${user.lastName?.charAt(0)}` : 'U';
+    const userRole = (user?.role || user?.roleObject?.name || 'student').toLowerCase().trim();
+    const isStudentOrParent = userRole === 'student' || userRole === 'parent' || userRole === 'member';
+
+    // Role Mapping for display
+    const roleMapping: Record<string, string> = {
+        'student': 'Student',
+        'parent': 'Parent',
+        'member': 'Parent',
+        'super administrator': 'Super Administrator',
+        'admin': 'Administrator',
+        'teacher': 'Teacher'
+    };
+
+    // Name Cleanup Utility
+    const cleanName = (name: string) => {
+        if (!name) return '';
+        return name.replace(/\s*Member\s*$/gi, '').trim();
+    };
+
+    const firstName = cleanName(user?.firstName || '');
+    const lastName = cleanName(user?.lastName || '');
+    const userName = user ? `${firstName} ${lastName}`.trim() || 'User' : 'User';
+    const userRoleLabel = roleMapping[userRole] || user?.roleObject?.name || user?.role || 'User';
+    const initials = user ? `${firstName?.charAt(0)}${lastName?.charAt(0)}` : 'U';
 
     const handleLogout = () => {
         logout();
@@ -332,7 +351,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             {/* Backdrop — Mobile Only */}
             {isOpen && (
                 <div
-                    className="fixed inset-0 bg-gray-900/60 z-40 lg:hidden backdrop-blur-sm transition-opacity animate-in fade-in duration-200 print:hidden"
+                    className="fixed inset-0 bg-gray-900/60 z-[70] lg:hidden backdrop-blur-sm transition-opacity animate-in fade-in duration-200 print:hidden"
                     onClick={onClose}
                 />
             )}
@@ -340,7 +359,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             {/* ─────────────────── MOBILE SIDEBAR PANEL ─────────────────── */}
             {/* Slides in from the left on mobile; always visible on desktop */}
             <div className={twMerge(
-                "fixed inset-y-0 left-0 z-50 flex flex-col print:hidden",
+                "fixed inset-y-0 left-0 z-[80] flex flex-col print:hidden",
                 // Desktop: slim pinned sidebar
                 "lg:relative lg:translate-x-0 lg:z-10",
                 // Mobile sizing & transition

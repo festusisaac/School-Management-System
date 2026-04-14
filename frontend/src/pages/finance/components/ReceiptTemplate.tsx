@@ -2,6 +2,7 @@ import { forwardRef } from 'react';
 import { formatCurrency } from '../../../utils/currency';
 import { numberToWords } from '../../../utils/numberToWords';
 import { getDetailedPaymentMethod } from '../../../utils/transactionUtils';
+import { formatDateLocal, formatTimeLocal } from '../../../utils/date';
 import { clsx } from 'clsx';
 
 interface ReceiptProps {
@@ -110,8 +111,8 @@ export const ReceiptTemplate = forwardRef<HTMLDivElement, ReceiptProps>(({ trans
                     <div className="text-right">
                         <h3 className="text-xs font-black uppercase text-gray-400 tracking-widest mb-3 border-b border-gray-200 pb-1">Payment Details</h3>
                         <div className="space-y-1">
-                            <p className="text-sm font-medium text-gray-600">Date: <span className="font-bold text-black">{new Date(createdAt).toLocaleDateString()}</span></p>
-                            <p className="text-sm font-medium text-gray-600">Time: <span className="font-bold text-black">{new Date(createdAt).toLocaleTimeString()}</span></p>
+                            <p className="text-sm font-medium text-gray-600">Date: <span className="font-bold text-black">{formatDateLocal(createdAt)}</span></p>
+                            <p className="text-sm font-medium text-gray-600">Time: <span className="font-bold text-black">{formatTimeLocal(createdAt)}</span></p>
                             {type !== 'WAIVER' && (
                                 <>
                                     <p className="text-sm font-medium text-gray-600">Method: <span className="font-bold text-black uppercase">{getDetailedPaymentMethod(transaction)}</span></p>
@@ -141,8 +142,17 @@ export const ReceiptTemplate = forwardRef<HTMLDivElement, ReceiptProps>(({ trans
                                 allocations.map((alloc: any, idx: number) => (
                                     <tr key={idx} className="border-b border-gray-200 print:break-inside-avoid">
                                         <td className="py-3 px-4 text-sm font-bold text-gray-900">
-                                            {alloc.name || 'Fee Payment'}
-                                            {alloc.status && <span className="text-[10px] ml-2 font-normal text-gray-500 uppercase">({alloc.status})</span>}
+                                            <div className="flex flex-col">
+                                                <div className="flex items-center gap-2">
+                                                    {alloc.name || 'Fee Payment'}
+                                                    {(alloc.name?.toLowerCase().includes('brought forward') || alloc.type === 'CARRY_FORWARD') && (
+                                                        <span className="px-1.5 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 text-[8px] font-black rounded uppercase tracking-tighter shadow-sm">
+                                                            Prior Arrears
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                {alloc.status && <span className="text-[10px] font-normal text-gray-500 uppercase mt-0.5">{alloc.status} Payment</span>}
+                                            </div>
                                         </td>
                                         <td className="py-3 px-4 text-sm text-right text-gray-600 w-32">
                                             {alloc.totalDue ? formatCurrency(parseFloat(alloc.totalDue)) : '-'}

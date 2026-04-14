@@ -22,6 +22,7 @@ import { useToast } from '../../context/ToastContext';
 import { useSystem } from '../../context/SystemContext';
 import { clsx } from 'clsx';
 import { useNavigate } from 'react-router-dom';
+import { systemService, AcademicSession } from '../../services/systemService';
 
 interface Debtor {
   id: string;
@@ -56,12 +57,19 @@ const CarryForwardPage = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Carry Forward State
+  const [availableSessions, setAvailableSessions] = useState<AcademicSession[]>([]);
+  const [historyRecords, setHistoryRecords] = useState<Set<string>>(new Set());
   const [showCarryModal, setShowCarryModal] = useState<boolean>(false);
+  const [showBulkConfirm, setShowBulkConfirm] = useState<boolean>(false);
   const [targetYear, setTargetYear] = useState('');
   const [processing, setProcessing] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Debtor | null>(null);
+  const [showProcessed, setShowProcessed] = useState(false);
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const [jobProgress, setJobProgress] = useState(0);
+  const [jobStatus, setJobStatus] = useState<string | null>(null);
 
-  const limit = 20;
+  const limit = 50;
 
   // Search debouncing
   useEffect(() => {
@@ -72,7 +80,17 @@ const CarryForwardPage = () => {
   // Initial loads
   useEffect(() => {
     fetchClasses();
+    fetchSessions();
   }, []);
+
+  const fetchSessions = async () => {
+    try {
+      const data = await systemService.getSessions();
+      setAvailableSessions(data || []);
+    } catch (error) {
+      console.error('Failed to fetch sessions');
+    }
+  };
 
   // Set default target year based on global session
   useEffect(() => {
@@ -93,6 +111,28 @@ const CarryForwardPage = () => {
   useEffect(() => {
     fetchDebtors();
   }, [debouncedSearch, selectedClass, page]);
+
+  // Fetch history when targetYear changes to track processed students
+  useEffect(() => {
+    if (targetYear) {
+      fetchProcessedHistory();
+    } else {
+      setHistoryRecords(new Set());
+    }
+  }, [targetYear]);
+
+  const fetchProcessedHistory = async () => {
+    try {
+      const response = await api.listCarryForwards({
+        academicYear: targetYear,
+        limit: 1000 // Get a good batch for status tracking
+      });
+      const processedIds = new Set<string>(response.items?.map((r: any) => String(r.studentId)) || []);
+      setHistoryRecords(processedIds);
+    } catch (error) {
+      console.error('Failed to fetch carry-forward history:', error);
+    }
+  };
 
   const fetchClasses = async () => {
     try {
@@ -166,7 +206,7 @@ const CarryForwardPage = () => {
         });
         showSuccess(`Balance carried forward for ${selectedStudent.student.firstName}`);
       } else {
-        // Bulk implementation
+        // Bulk implementation for specific selections
         const promises = Array.from(selectedIds).map(id => {
           const debtor = debtors.find(d => d.id === id);
           if (debtor) {
@@ -183,9 +223,63 @@ const CarryForwardPage = () => {
       setShowCarryModal(false);
       setSelectedIds(new Set());
       fetchDebtors();
+      fetchProcessedHistory();
     } catch (error: any) {
       showError(error.response?.data?.message || 'Failed to process carry forward');
     } finally {
+      setProcessing(false);
+    }
+  };
+
+  // Polling for job status
+  useEffect(() => {
+    let interval: any;
+    if (activeJobId) {
+      interval = setInterval(async () => {
+        try {
+          const status = await api.getJobStatus(activeJobId);
+          setJobProgress(status.progress || 0);
+          setJobStatus(status.state);
+
+          if (status.state === 'completed' || status.state === 'failed') {
+            setActiveJobId(null);
+            setProcessing(false);
+            if (status.state === 'completed') {
+              showSuccess(`Successfully processed students.`);
+              fetchDebtors();
+              fetchProcessedHistory();
+            } else {
+              showError(`Job failed: ${status.failedReason || 'Unknown error'}`);
+            }
+          }
+        } catch (error) {
+          console.error('Polling error', error);
+        }
+      }, 2000);
+    }
+    return () => clearInterval(interval);
+  }, [activeJobId]);
+
+  const executeBulkCarryForward = async () => {
+    if (!targetYear) {
+      showError('Please specify the target academic year');
+      return;
+    }
+
+    setProcessing(true);
+    setJobProgress(0);
+    setJobStatus('waiting');
+    try {
+      const { jobId } = await api.bulkCarryForward({
+        oldSessionName: settings?.activeSessionName,
+        newSessionName: targetYear,
+        oldSessionId: settings?.currentSessionId
+      });
+      
+      setActiveJobId(jobId);
+      setShowBulkConfirm(false);
+    } catch (error: any) {
+      showError(error.response?.data?.message || 'Failed to initiate bulk carry forward');
       setProcessing(false);
     }
   };
@@ -195,318 +289,269 @@ const CarryForwardPage = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tighter">Balance Carry Forward</h1>
-          <p className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-widest">Move outstanding student debt to next session</p>
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tighter">Carry Forward</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-[10px] font-bold uppercase tracking-widest">Manage outstanding student arrears</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => navigate('/finance/carry-forward/history')}
-            className="px-4 py-2.5 rounded-xl text-xs font-bold text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 transition-all uppercase tracking-wider flex items-center gap-2"
+            className="px-4 py-2 rounded-xl text-xs font-bold text-gray-500 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:bg-gray-50 transition-all uppercase tracking-wider flex items-center gap-2"
           >
-            <History size={16} />
-            View History
+            <History size={14} />
+            History
           </button>
           <button
-            onClick={() => handleCarryForward()}
-            disabled={selectedIds.size === 0}
-            className={clsx(
-              "flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-black transition-all shadow-lg uppercase tracking-widest",
-              selectedIds.size > 0
-                ? "bg-primary-600 text-white hover:bg-primary-700 shadow-primary-500/20"
-                : "bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed shadow-none"
-            )}
+            onClick={() => setShowBulkConfirm(true)}
+            className="px-4 py-2 rounded-xl text-xs font-black text-white bg-primary-600 hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/10 uppercase tracking-widest flex items-center gap-2"
           >
-            <ArrowRightCircle size={18} />
-            Process Selected {selectedIds.size > 0 && `(${selectedIds.size})`}
+            <CheckCircle2 size={14} />
+            Process All Debtors
           </button>
         </div>
       </div>
 
-
-      {/* Stats Quick View */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm relative overflow-hidden group">
-          <div className="absolute -right-4 -bottom-4 text-primary-50 dark:text-primary-900/10 transition-transform group-hover:scale-110">
-            <Calculator size={80} />
-          </div>
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Students with Balance</p>
-          <p className="text-3xl font-black text-gray-900 dark:text-white">{total}</p>
-          <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-gray-400">
-            Available for carry forward
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm relative overflow-hidden group">
-          <div className="absolute -right-4 -bottom-4 text-amber-50 dark:text-amber-900/10 transition-transform group-hover:scale-110">
-            <AlertTriangle size={80} />
-          </div>
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Outstanding</p>
-          <p className="text-3xl font-black text-gray-900 dark:text-white">
-            {formatCurrency(debtors.reduce((acc, curr) => acc + parseFloat(curr.balance), 0))}
+      {/* Simplified Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Pending Students</p>
+          <p className="text-xl font-black text-gray-900 dark:text-white">
+            {total - historyRecords.size < 0 ? 0 : total - historyRecords.size}
           </p>
-          <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-amber-600">
-            Current page liability
-          </div>
         </div>
-
-        <div className="bg-gradient-to-br from-primary-600 to-primary-700 p-6 rounded-2xl shadow-xl text-white relative overflow-hidden">
-          <div className="relative z-10">
-            <p className="text-[10px] font-black text-primary-100 uppercase tracking-widest mb-1">Selected Count</p>
-            <p className="text-3xl font-black">{selectedIds.size}</p>
-            <div className="mt-4 flex items-center gap-1.5 text-xs font-bold text-primary-100/80 bg-white/10 px-2 py-1 rounded-lg w-fit">
-              <CheckCircle2 size={14} />
-              Ready to process
-            </div>
-          </div>
-          <History size={80} className="absolute -right-4 -bottom-4 text-white/10" />
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Outstanding</p>
+          <p className="text-xl font-black text-gray-900 dark:text-white">{formatCurrency(parseFloat(debtors.reduce((acc, curr) => acc + parseFloat(curr.balance), 0).toString()))}</p>
+        </div>
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Target Session</p>
+          <select 
+            value={targetYear}
+            onChange={(e) => setTargetYear(e.target.value)}
+            className="w-full bg-transparent border-none p-0 text-sm font-black text-primary-600 focus:ring-0 cursor-pointer"
+          >
+            <option value="">Select Target...</option>
+            {availableSessions.map(s => (
+              <option key={s.id} value={s.name}>{s.name} {s.isActive ? '(Active)' : ''}</option>
+            ))}
+          </select>
+        </div>
+        <div className="bg-primary-50 dark:bg-primary-900/10 p-4 rounded-2xl border border-primary-100 dark:border-primary-900/20">
+          <p className="text-[10px] font-black text-primary-600 uppercase tracking-widest mb-1">Processed</p>
+          <p className="text-xl font-black text-primary-700 dark:text-primary-400">
+            {targetYear ? historyRecords.size : '--'}
+          </p>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-            <input
-              type="text"
-              placeholder="Filter by name or admission number..."
-              className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary-500 transition-all font-medium"
-              value={searchQuery}
-              onChange={e => {
-                setSearchQuery(e.target.value);
-                setPage(1);
-              }}
-            />
-          </div>
-          <div className="relative min-w-[200px]">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-            <select
-              className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary-500 appearance-none font-medium text-gray-600 dark:text-gray-300"
+      {/* Search & Bulk Action */}
+      <div className="flex flex-col md:flex-row gap-3">
+        <div className="relative flex-1 group">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-primary-500 transition-colors" size={16} />
+          <input
+            type="text"
+            placeholder="Search student or admission number..."
+            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 transition-all"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <select
+              className="px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl text-xs font-bold transition-all text-gray-600"
               value={selectedClass}
-              onChange={e => {
-                setSelectedClass(e.target.value);
-                setPage(1);
-              }}
+              onChange={e => setSelectedClass(e.target.value)}
             >
               <option value="all">Every Class</option>
               {classes.map(c => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
-            </select>
+          </select>
+          <div className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
+              <span className="text-[10px] font-black text-gray-400 uppercase">Show Processed</span>
+              <button 
+                onClick={() => setShowProcessed(!showProcessed)}
+                className={clsx(
+                  "w-8 h-4 rounded-full transition-all relative",
+                  showProcessed ? "bg-primary-500" : "bg-gray-300 dark:bg-gray-600"
+                )}
+              >
+                <div className={clsx(
+                  "absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all",
+                  showProcessed ? "right-0.5" : "left-0.5"
+                )} />
+              </button>
           </div>
+          <button
+              onClick={() => handleCarryForward()}
+              disabled={selectedIds.size === 0}
+              className="px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-xs font-black disabled:opacity-30 transition-all uppercase tracking-widest shrink-0"
+          >
+            Process Selected ({selectedIds.size})
+          </button>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden border-t-4 border-t-blue-500">
+      {/* Minimal Table */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
               <tr className="bg-gray-50/50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700">
-                <th className="px-6 py-4 w-10">
-                  <button onClick={toggleSelectAll} className="w-5 h-5 rounded border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center transition-colors">
-                    {selectedIds.size === debtors.length && debtors.length > 0 && <div className="w-3 h-3 bg-primary-500 rounded-sm" />}
+                <th className="px-6 py-3 w-10">
+                  <button onClick={toggleSelectAll} className="w-4 h-4 rounded border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center">
+                    {selectedIds.size === debtors.length && debtors.length > 0 && <div className="w-2 h-2 bg-primary-500 rounded-px" />}
                   </button>
                 </th>
-                <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Student Information</th>
-                <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Outstanding Balance</th>
-                <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Status</th>
-                <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest text-right">Action</th>
+                <th className="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Student</th>
+                <th className="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Outstanding</th>
+                <th className="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
+                <th className="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-24 text-center">
-                    <div className="flex flex-col items-center justify-center gap-3">
-                      <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
-                      <span className="text-sm font-medium text-gray-400">Querying balances...</span>
-                    </div>
-                  </td>
+                  <td colSpan={5} className="px-6 py-12 text-center text-gray-400 text-xs font-medium italic">Searching for arrears...</td>
                 </tr>
-              ) : debtors.map((debtor) => (
-                <tr key={debtor.id} className={clsx(
-                  "group transition-all",
-                  selectedIds.has(debtor.id) ? "bg-primary-50/50 dark:bg-primary-900/10" : "hover:bg-gray-50/50 dark:hover:bg-gray-700/50"
-                )}>
-                  <td className="px-6 py-4">
-                    <button
-                      onClick={() => toggleSelect(debtor.id)}
-                      className={clsx(
-                        "w-5 h-5 rounded border-2 transition-colors flex items-center justify-center",
-                        selectedIds.has(debtor.id) ? "border-primary-500 bg-primary-500" : "border-gray-300 dark:border-gray-600"
+              ) : debtors.filter(d => showProcessed || !historyRecords.has(d.student.id)).map((debtor) => {
+                const isProcessed = historyRecords.has(debtor.student.id);
+                return (
+                  <tr key={debtor.id} className={clsx(
+                    "hover:bg-gray-50/30 dark:hover:bg-gray-700/30 transition-colors",
+                    isProcessed && "opacity-60"
+                  )}>
+                    <td className="px-6 py-3">
+                      <button
+                        onClick={() => !isProcessed && toggleSelect(debtor.id)}
+                        disabled={isProcessed}
+                        className={clsx(
+                          "w-4 h-4 rounded border-2 flex items-center justify-center transition-all",
+                          selectedIds.has(debtor.id) ? "border-primary-500 bg-primary-500" : "border-gray-300 dark:border-gray-600",
+                          isProcessed && "cursor-not-allowed bg-gray-100 dark:bg-gray-700"
+                        )}
+                      >
+                        {selectedIds.has(debtor.id) && <div className="w-2 h-2 bg-white rounded-px" />}
+                      </button>
+                    </td>
+                    <td className="px-6 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 flex items-center justify-center text-gray-400 text-xs font-black">
+                          {debtor.student.firstName[0]}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-gray-900 dark:text-white">{debtor.student.firstName} {debtor.student.lastName}</p>
+                          <p className="text-[10px] text-gray-400 font-bold uppercase">{debtor.student.admissionNo}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-3">
+                      <p className="text-sm font-black text-gray-900 dark:text-white">{formatCurrency(parseFloat(debtor.balance))}</p>
+                    </td>
+                    <td className="px-6 py-3">
+                      {isProcessed ? (
+                        <div className="flex items-center gap-1.5 text-green-600 dark:text-green-500">
+                          <CheckCircle2 size={12} />
+                          <span className="text-[10px] font-black uppercase tracking-widest">Processed</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 text-amber-500">
+                          <AlertTriangle size={12} />
+                          <span className="text-[10px] font-black uppercase tracking-widest">Pending</span>
+                        </div>
                       )}
-                    >
-                      {selectedIds.has(debtor.id) && <div className="w-3 h-3 bg-white rounded-sm" />}
-                    </button>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-100">
-                        <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-50 dark:bg-gray-900">
-                          <User size={18} />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="font-bold text-gray-900 dark:text-white">
-                          {debtor.student.firstName} {debtor.student.lastName}
-                        </div>
-                        <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-0.5">
-                          {debtor.student.admissionNo} • {debtor.student.class?.name}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-col">
-                      <span className="text-base font-black text-gray-900 dark:text-white">{formatCurrency(parseFloat(debtor.balance))}</span>
-                      <span className="text-[10px] text-gray-400 font-bold">Total Arrears</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    {parseFloat(debtor.balance) > 50000 ? (
-                      <span className="px-2 py-0.5 bg-red-100 text-red-700 text-[10px] font-black rounded-full uppercase tracking-widest border border-red-200">Critical</span>
-                    ) : (
-                      <span className="px-2 py-0.5 bg-primary-100 text-primary-700 text-[10px] font-black rounded-full uppercase tracking-widest border border-primary-200">Eligible</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => handleCarryForward(debtor)}
-                      className="p-2 bg-gray-50 dark:bg-gray-900 hover:bg-primary-600 hover:text-white rounded-xl text-primary-600 transition-all border border-gray-100 dark:border-gray-700 shadow-sm group/btn"
-                      title="Carry Forward Balance"
-                    >
-                      <ArrowRight size={18} className="translate-x-0 group-hover/btn:translate-x-1 transition-transform" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-
-              {!loading && debtors.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-6 py-20 text-center">
-                    <div className="flex flex-col items-center justify-center text-gray-400">
-                      <SearchX size={48} className="mb-4 text-gray-200" />
-                      <h4 className="text-lg font-bold text-gray-500">All clear! No pending balances found.</h4>
-                      <p className="text-xs">Adjust your filters if you were expecting results.</p>
-                    </div>
-                  </td>
-                </tr>
-              )}
+                    </td>
+                    <td className="px-6 py-3 text-right">
+                      {!isProcessed && (
+                        <button
+                          onClick={() => handleCarryForward(debtor)}
+                          className="p-1.5 hover:bg-primary-600 hover:text-white rounded-lg transition-all text-gray-400"
+                        >
+                          <ArrowRightCircle size={18} />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
-
-        {/* Pagination */}
-        <div className="p-4 bg-gray-50/50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
-          <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest px-3 py-1.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 shadow-sm">
-            {total} Students Total
-          </p>
+        <div className="p-4 flex items-center justify-between bg-gray-50/30 dark:bg-gray-700/10">
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{total} Total Students</p>
           <div className="flex items-center gap-2">
-            <button
-              disabled={page === 1}
-              onClick={() => setPage(page - 1)}
-              className="p-2 hover:bg-white dark:hover:bg-gray-800 rounded-lg text-gray-400 disabled:opacity-30 transition-all"
-            >
-              <ChevronLeft size={20} />
-            </button>
-            <span className="text-xs font-black text-gray-600 dark:text-gray-400 px-4">Page {page} of {Math.ceil(total / limit) || 1}</span>
-            <button
-              disabled={page >= Math.ceil(total / limit)}
-              onClick={() => setPage(page + 1)}
-              className="p-2 hover:bg-white dark:hover:bg-gray-800 rounded-lg text-gray-400 disabled:opacity-30 transition-all"
-            >
-              <ChevronRight size={20} />
-            </button>
+              <button disabled={page === 1} onClick={() => setPage(page-1)} className="p-1 text-gray-400 disabled:opacity-20"><ChevronLeft size={18} /></button>
+              <span className="text-xs font-black text-gray-400">{page}</span>
+              <button disabled={page >= Math.ceil(total / limit)} onClick={() => setPage(page+1)} className="p-1 text-gray-400 disabled:opacity-20"><ChevronRight size={18} /></button>
           </div>
         </div>
       </div>
 
-      {/* Carry Forward Modal */}
-      {showCarryModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-white/20">
-            <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-primary-50 to-white dark:from-primary-900/30 dark:to-gray-800">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 shadow-inner">
-                  <ArrowRightCircle size={24} />
-                </div>
-                <div>
-                  <h3 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tighter">Process Carry Forward</h3>
-                  <p className="text-xs text-gray-500 font-bold">Transfer balance to new session</p>
-                </div>
-              </div>
-              <button onClick={() => setShowCarryModal(false)} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 rounded-xl transition-all">
-                <X size={20} />
-              </button>
+      {/* Confirmation Modal */}
+      {(showCarryModal || showBulkConfirm) && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px]" onClick={() => { !processing && (setShowCarryModal(false) || setShowBulkConfirm(false)); }} />
+          <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-gray-100 dark:border-gray-700">
+              <h3 className="text-lg font-black uppercase tracking-tighter">Confirm Operation</h3>
+              <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1">Carry forward to {targetYear}</p>
             </div>
-
-            <div className="p-8 space-y-6">
-              <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-800">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Scope of Transaction</p>
-                {selectedStudent ? (
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold">
-                      {selectedStudent.student.firstName[0]}
-                    </div>
-                    <div>
-                      <p className="text-sm font-black text-gray-900 dark:text-white">{selectedStudent.student.firstName} {selectedStudent.student.lastName}</p>
-                      <p className="text-[10px] text-gray-500 font-bold uppercase">{formatCurrency(parseFloat(selectedStudent.balance))} Outstanding</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-2">
-                    <p className="text-base font-black text-gray-900 dark:text-white">{selectedIds.size} Students Selected</p>
-                    <p className="text-[10px] text-gray-500 font-bold uppercase">Multiple transfer operation</p>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Target Academic Year</label>
-                <div className="relative">
-                  <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                  <select
-                    className="w-full pl-12 pr-4 py-4 bg-gray-50 dark:bg-gray-900 border-2 border-transparent focus:border-primary-500 rounded-2xl text-base font-bold transition-all shadow-inner appearance-none"
-                    value={targetYear}
-                    onChange={e => setTargetYear(e.target.value)}
-                  >
-                    <option value="">Select Session...</option>
-                    {Array.from({ length: 3 }, (_, i) => {
-                      const y = new Date().getFullYear() + 1 - i;
-                      return `${y}/${y + 1}`;
-                    }).map(y => (
-                      <option key={y} value={y}>{y}</option>
-                    ))}
-                  </select>
-                </div>
-                <p className="text-[10px] text-primary-500 font-bold pl-1">Balance will be added as "Opening Balance" in this session.</p>
-              </div>
-
-              <div className="p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800 rounded-2xl flex gap-3">
-                <AlertTriangle className="text-amber-600 flex-shrink-0" size={20} />
-                <p className="text-xs text-amber-800 dark:text-amber-400 font-medium">
-                  This action creates a permanent opening balance record. Ensure the target year is correct.
+            <div className="p-6 space-y-4">
+              <p className="text-xs text-gray-600 dark:text-gray-400 font-bold leading-relaxed">
+                This will create a permanent opening balance record in the target session. Consolidated notifications will be sent to parents.
+              </p>
+              <div className="bg-amber-50 dark:bg-amber-900/10 p-4 rounded-xl border border-amber-100 dark:border-amber-900/20">
+                <p className="text-[10px] font-black text-amber-700 dark:text-amber-500 uppercase">Selected Scope</p>
+                <p className="text-sm font-black mt-1">
+                  {showBulkConfirm ? 'Global: All Active Debtors' : selectedStudent ? `Student: ${selectedStudent.student.firstName}` : `${selectedIds.size} Selected Students`}
                 </p>
               </div>
             </div>
+            <div className="p-4 bg-gray-50 dark:bg-gray-900/50 flex flex-col gap-2">
+              <button
+                disabled={processing || !targetYear}
+                onClick={showBulkConfirm ? executeBulkCarryForward : executeCarryForward}
+                className="w-full py-3 bg-primary-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-primary-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {processing ? <Loader2 size={16} className="animate-spin" /> : null}
+                {processing ? 'Processing...' : 'Confirm & Process'}
+              </button>
+              {!processing && (
+                <button
+                  onClick={() => { setShowCarryModal(false); setShowBulkConfirm(false); }}
+                  className="w-full py-3 text-gray-400 font-black text-[10px] uppercase tracking-widest"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
-            <div className="p-6 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700 flex gap-3">
-              <button
-                disabled={processing}
-                onClick={executeCarryForward}
-                className="flex-1 py-4 bg-primary-600 hover:bg-primary-700 text-white rounded-2xl font-black transition-all shadow-xl shadow-primary-500/20 disabled:opacity-50 uppercase tracking-widest text-sm flex items-center justify-center gap-2"
-              >
-                {processing ? <Loader2 className="animate-spin" size={18} /> : <CheckCircle2 size={18} />}
-                Confirm Transfer
-              </button>
-              <button
-                disabled={processing}
-                onClick={() => setShowCarryModal(false)}
-                className="flex-[0.5] py-4 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-2xl font-bold hover:bg-gray-50 transition-all uppercase tracking-widest text-xs"
-              >
-                Cancel
-              </button>
+      {/* Progress Overlay for Background Jobs */}
+      {activeJobId && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-8 animate-in zoom-in-95 duration-200">
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 bg-primary-50 dark:bg-primary-900/20 rounded-full flex items-center justify-center mx-auto">
+                <Loader2 className="text-primary-600 animate-spin" size={32} />
+              </div>
+              <div>
+                <h3 className="text-xl font-black uppercase tracking-tighter">Processing Transfers</h3>
+                <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1">Sending consolidated alerts to parents...</p>
+              </div>
+              
+              <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
+                <div 
+                  className="bg-primary-600 h-full transition-all duration-500 ease-out"
+                  style={{ width: `${jobProgress}%` }}
+                />
+              </div>
+              
+              <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-gray-400">
+                <span>{jobStatus}</span>
+                <span className="text-primary-600">{jobProgress}% Complete</span>
+              </div>
             </div>
           </div>
         </div>

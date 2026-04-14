@@ -1,5 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { BullModule } from '@nestjs/bull';
 import { FeesController } from './controllers/fees.controller';
 import { FeesService } from './services/fees.service';
 import { Transaction } from './entities/transaction.entity';
@@ -12,7 +13,9 @@ import { FeeHead } from './entities/fee-head.entity';
 import { FeeGroup } from './entities/fee-group.entity';
 import { DiscountProfile } from './entities/discount-profile.entity';
 import { DiscountRule } from './entities/discount-rule.entity';
+import { FinanceProcessor } from './processors/finance.processor';
 import { StudentsModule } from '../students/students.module';
+import { AcademicSession } from '../system/entities/academic-session.entity';
 
 import { FeeAssignment } from './entities/fee-assignment.entity';
 
@@ -24,6 +27,9 @@ import { SystemModule } from '../system/system.module';
     InternalCommunicationModule,
     SystemModule,
     forwardRef(() => StudentsModule),
+    BullModule.registerQueue({
+      name: 'finance',
+    }),
     TypeOrmModule.forFeature([
       Transaction,
       FeeStructure,
@@ -36,10 +42,11 @@ import { SystemModule } from '../system/system.module';
       FeeAssignment,
       DiscountProfile,
       DiscountRule,
+      AcademicSession,
     ]),
   ],
   controllers: [FeesController],
-  providers: [FeesService],
+  providers: [FeesService, FinanceProcessor],
   exports: [FeesService, TypeOrmModule],
 })
 export class FinanceModule { }

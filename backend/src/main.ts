@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+process.env.TZ = 'UTC';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';

@@ -10,26 +10,27 @@ import api from '../../services/api';
 
 const ParentDashboard: React.FC = () => {
     const { user, setSelectedChildId, setChildrenList } = useAuthStore();
-    const { formatCurrency } = useSystem();
+    const { formatCurrency, settings, getFullUrl } = useSystem();
     const navigate = useNavigate();
 
     const [children, setChildren] = useState<any[]>([]);
-    const [familyStats, setFamilyStats] = useState<any>(null);
+    const [familyStats, setFamilyStats] = useState<any>({ totalFamilyBalance: 0 });
+    const [notices, setNotices] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+
+    const currentSessionId = settings?.currentSessionId;
 
     useEffect(() => {
         const fetchParentData = async () => {
             try {
-                const response = (await api.getMyChildren()) as any;
-                const childrenData = Array.isArray(response) ? response : (response?.data || []);
+                const params = { sessionId: currentSessionId || undefined };
+                const data = await api.getParentOverview(params);
 
-                setChildren(childrenData);
-                setChildrenList(childrenData);
-
-                if (childrenData.length > 0) {
-                    const statsResponse = (await api.getFamilyFinancials(childrenData[0].id)) as any;
-                    const stats = statsResponse?.data || statsResponse;
-                    setFamilyStats(stats);
+                if (data) {
+                    setChildren(data.children || []);
+                    setChildrenList(data.children || []);
+                    setFamilyStats({ totalFamilyBalance: data.totalFamilyBalance || 0 });
+                    setNotices(data.notices || []);
                 }
             } catch (error) {
                 console.error("Failed to fetch parent dashboard data:", error);
@@ -38,7 +39,7 @@ const ParentDashboard: React.FC = () => {
             }
         };
         fetchParentData();
-    }, [setChildrenList]);
+    }, [setChildrenList, currentSessionId]);
 
     const handleSelectChild = (childId: string) => {
         setSelectedChildId(childId);
@@ -105,7 +106,11 @@ const ParentDashboard: React.FC = () => {
                             className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all group flex flex-col md:flex-row items-center gap-6"
                         >
                             <div className="w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-2xl font-bold text-gray-400 border border-gray-200 dark:border-gray-600">
-                                {child.firstName.charAt(0)}{child.lastName.charAt(0)}
+                                {child.photo ? (
+                                    <img src={getFullUrl(child.photo)} alt={child.firstName} className="w-full h-full rounded-full object-cover" />
+                                ) : (
+                                    `${child.firstName.charAt(0)}${child.lastName.charAt(0)}`
+                                )}
                             </div>
                             <div className="flex-1 text-center md:text-left">
                                 <h4 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">
@@ -118,7 +123,7 @@ const ParentDashboard: React.FC = () => {
                                 <div className="mt-4 flex flex-wrap justify-center md:justify-start gap-4">
                                     <div className="text-center md:text-left">
                                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Attendance</p>
-                                        <p className="text-sm font-bold text-gray-700 dark:text-gray-300">85%</p>
+                                        <p className="text-sm font-bold text-gray-700 dark:text-gray-300">{child.attendance}%</p>
                                     </div>
                                     <div className="text-center md:text-left">
                                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Balance</p>
@@ -148,18 +153,22 @@ const ParentDashboard: React.FC = () => {
                         <h3 className="font-bold text-gray-900 dark:text-white">Recent School Notices</h3>
                     </div>
                     <div className="p-6 space-y-4">
-                        {[1, 2].map((i) => (
-                            <div key={i} className="flex gap-4 group cursor-pointer">
-                                <div className="w-12 h-12 shrink-0 bg-gray-50 dark:bg-gray-900 rounded-lg flex flex-col items-center justify-center border border-gray-100 dark:border-gray-700">
-                                    <span className="text-[10px] font-bold text-gray-400 uppercase">Apr</span>
-                                    <span className="text-sm font-bold text-gray-700 dark:text-gray-300">1{i}</span>
+                        {notices.length === 0 ? (
+                            <p className="text-gray-400 text-sm italic">No active notices.</p>
+                        ) : (
+                            notices.map((notice) => (
+                                <div key={notice.id} className="flex gap-4 group cursor-pointer">
+                                    <div className="w-12 h-12 shrink-0 bg-gray-50 dark:bg-gray-900 rounded-lg flex flex-col items-center justify-center border border-gray-100 dark:border-gray-700">
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase">{notice.date.split(' ')[0]}</span>
+                                        <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{notice.date.split(' ')[1]}</span>
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-bold text-gray-900 dark:text-white group-hover:text-primary-600">{notice.title}</h4>
+                                        <p className="text-xs text-gray-500 line-clamp-1 mt-1">{notice.content?.replace(/<[^>]*>?/gm, '')}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h4 className="text-sm font-bold text-gray-900 dark:text-white group-hover:text-primary-600">Annual Inter-house Sports Competition</h4>
-                                    <p className="text-xs text-gray-500 line-clamp-1 mt-1">Details regarding the upcoming sports event for all classes...</p>
-                                </div>
-                            </div>
-                        ))}
+                            ))
+                        )}
                         <Link to="/notices" className="block text-center text-xs font-bold text-primary-600 uppercase tracking-widest pt-2">View All Notices</Link>
                     </div>
                 </div>

@@ -74,7 +74,11 @@ const DashboardPage: React.FC = () => {
   const { user, selectedChildId } = useAuthStore()
   const userRole = (user?.role || user?.roleObject?.name || '').toLowerCase()
   const isStudentOrParent = userRole === 'student' || userRole === 'parent'
-  const { activeSectionId } = useSystem()
+  const { activeSectionId, settings } = useSystem()
+  const currentSessionId = settings?.currentSessionId
+  const currentTermId = settings?.currentTermId
+  const currentSessionName = settings?.activeSessionName || 'Current Session'
+  const currentTermName = settings?.activeTermName || 'Current Term'
 
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [activities, setActivities] = useState<RecentActivity | null>(null)
@@ -88,11 +92,16 @@ const DashboardPage: React.FC = () => {
           return;
       }
       try {
-        const queryParams = activeSectionId ? `?sectionId=${activeSectionId}` : '';
+        const params = { 
+          sectionId: activeSectionId || undefined,
+          sessionId: currentSessionId || undefined,
+          termId: currentTermId || undefined
+        };
+        
         const [statsData, activitiesData, chartsData] = await Promise.all([
-          apiService.getAdminStats(activeSectionId ? { sectionId: activeSectionId } : undefined),
-          apiService.getRecentActivities(activeSectionId ? { sectionId: activeSectionId } : undefined),
-          apiService.getAdminCharts(activeSectionId ? { sectionId: activeSectionId } : undefined),
+          apiService.getAdminStats(params),
+          apiService.getRecentActivities(params),
+          apiService.getAdminCharts(params),
         ])
         setStats(statsData)
         setActivities(activitiesData)
@@ -105,7 +114,7 @@ const DashboardPage: React.FC = () => {
     }
 
     fetchData()
-  }, [activeSectionId])
+  }, [activeSectionId, currentSessionId, currentTermId])
 
   if (loading) {
     return (
@@ -210,17 +219,31 @@ const DashboardPage: React.FC = () => {
       )}
 
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">Admin Dashboard</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Overview of school performance and activities.</p>
+          <div className="flex flex-wrap items-center gap-2 mt-1">
+            <span className="flex items-center text-xs font-semibold text-primary-700 bg-primary-50 dark:bg-primary-900/40 dark:text-primary-300 px-2.5 py-1 rounded-full border border-primary-100 dark:border-primary-800">
+              <Calendar className="w-3 h-3 mr-1.5" />
+              {currentSessionName}
+            </span>
+            {currentTermName && (
+              <span className="flex items-center text-xs font-semibold text-secondary-700 bg-secondary-50 dark:bg-secondary-900/40 dark:text-secondary-300 px-2.5 py-1 rounded-full border border-secondary-100 dark:border-secondary-800">
+                <TrendingUp className="w-3 h-3 mr-1.5" />
+                {currentTermName}
+              </span>
+            )}
+          </div>
         </div>
         <div className="flex space-x-3 mt-4 md:mt-0">
+          <Link 
+            to="/students/admission"
+            className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700 shadow-sm transition-colors"
+          >
+            <UserPlus className="w-4 h-4 mr-2" />
+            New Admission
+          </Link>
           <button className="flex items-center px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 shadow-sm transition-colors">
-            <Calendar className="w-4 h-4 mr-2 text-gray-500 dark:text-gray-400" />
-            {new Date().toLocaleDateString()}
-          </button>
-          <button className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 shadow-sm transition-colors">
             <ArrowUpRight className="w-4 h-4 mr-2" />
             Generate Report
           </button>
@@ -548,7 +571,7 @@ const DashboardPage: React.FC = () => {
             </div>
           </div>
           <div className="mt-4 space-y-3">
-            {genderData.map((entry, index) => (
+         {genderData.map((entry, index) => (
               <div key={index} className="flex justify-between items-center">
                 <div className="flex items-center">
                   <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>

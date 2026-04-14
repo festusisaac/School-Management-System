@@ -9,6 +9,7 @@ export enum TransactionType {
   REFUND = 'REFUND',
   ADJUSTMENT = 'ADJUSTMENT',
   WAIVER = 'WAIVER',
+  CARRY_FORWARD = 'CARRY_FORWARD',
 }
 
 export enum PaymentMethod {
@@ -77,6 +78,7 @@ export class Transaction {
   @JoinColumn({ name: 'schoolSectionId' })
   schoolSection?: SchoolSection;
 
-  @CreateDateColumn()
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @Index()
   createdAt!: Date;
 }

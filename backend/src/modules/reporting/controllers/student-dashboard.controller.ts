@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Param, Req, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, UseGuards, Param, Query, Req, ForbiddenException } from '@nestjs/common';
 import { DashboardService } from '../services/dashboard.service';
 import { JwtAuthGuard } from '../../../guards/jwt-auth.guard';
 
@@ -8,7 +8,12 @@ export class StudentDashboardController {
     constructor(private readonly dashboardService: DashboardService) { }
 
     @Get(':id')
-    async getStudentDashboard(@Param('id') id: string, @Req() req: any) {
+    async getStudentDashboard(
+        @Param('id') id: string,
+        @Query('sessionId') sessionId: string,
+        @Query('termId') termId: string,
+        @Req() req: any
+    ) {
         const user = req.user;
         const role = (user.role || '').toLowerCase();
         
@@ -20,8 +25,21 @@ export class StudentDashboardController {
         // Use the tenant ID from the token
         const tenantId = user.tenantId;
 
-        // Pass ID directly to service since it might be the userId or the studentId depending on token structure
-        // The service logic already has resolution logic or we can trust the ID
-        return this.dashboardService.getStudentDashboardStats(id, tenantId, user);
+        return this.dashboardService.getStudentDashboardStats(id, tenantId, user, sessionId, termId);
+    }
+
+    @Get('parent/overview')
+    async getParentOverview(
+        @Query('sessionId') sessionId: string,
+        @Req() req: any
+    ) {
+        const user = req.user;
+        const role = (user.role || '').toLowerCase();
+
+        if (role !== 'parent') {
+            throw new ForbiddenException('Only parents can access the family overview.');
+        }
+
+        return this.dashboardService.getParentDashboardOverview(user.id, user.tenantId, sessionId);
     }
 }

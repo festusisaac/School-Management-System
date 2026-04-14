@@ -39,8 +39,12 @@ export class StaffController {
     }
 
     @Get('dashboard/stats')
-    async getTeacherDashboardStats(@Request() req: any) {
-        return this.staffService.getTeacherDashboardStats(req.user.email, req.user.tenantId);
+    async getTeacherDashboardStats(
+        @Query('sessionId') sessionId: string,
+        @Query('termId') termId: string,
+        @Request() req: any
+    ) {
+        return this.staffService.getTeacherDashboardStats(req.user.email, req.user.tenantId, sessionId, termId);
     }
 
     @Get('statistics')

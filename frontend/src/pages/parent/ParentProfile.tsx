@@ -19,7 +19,8 @@ export default function ParentProfile() {
         const fetchProfile = async () => {
             try {
                 const response = await api.getParentProfile();
-                setProfile(response?.data || response);
+                const data = response?.data || response;
+                setProfile(data);
             } catch (error) {
                 console.error('Failed to fetch parent profile:', error);
             } finally {
@@ -43,8 +44,14 @@ export default function ParentProfile() {
         );
     }
 
+    // Name Cleanup Utility
+    const cleanName = (name: string) => {
+        if (!name) return '';
+        return name.replace(/\s*Member\s*$/gi, '').trim();
+    };
+
     const parentDisplayName =
-        profile?.fatherName || profile?.motherName || profile?.guardianName || 'Parent';
+        cleanName(profile?.fatherName || profile?.motherName || profile?.guardianName || 'Parent');
     const initials = parentDisplayName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
 
     return (
@@ -61,9 +68,18 @@ export default function ParentProfile() {
             {/* Identity Hero Card */}
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
                 <div className="flex items-center gap-5">
-                    <div className="w-16 h-16 rounded-full bg-primary-600 flex items-center justify-center text-xl font-bold text-white flex-shrink-0">
-                        {initials}
-                    </div>
+                    {/* Avatar — show guardian photo if exists, else initials */}
+                    {profile?.guardianPhoto ? (
+                        <img
+                            src={getFileUrl(profile.guardianPhoto)}
+                            alt={parentDisplayName}
+                            className="w-16 h-16 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600 flex-shrink-0"
+                        />
+                    ) : (
+                        <div className="w-16 h-16 rounded-full bg-primary-600 flex items-center justify-center text-xl font-bold text-white flex-shrink-0">
+                            {initials}
+                        </div>
+                    )}
                     <div className="flex-1 min-w-0">
                         <h2 className="text-xl font-bold text-gray-900 dark:text-white truncate">{parentDisplayName}</h2>
                         <div className="flex flex-wrap items-center gap-2 mt-1.5">
@@ -98,7 +114,7 @@ export default function ParentProfile() {
                                     <div className="px-6 py-5">
                                         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Father</p>
                                         <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-                                            <InfoItem label="Full Name" value={profile.fatherName} icon={<User className="w-3.5 h-3.5" />} />
+                                            <InfoItem label="Full Name" value={cleanName(profile.fatherName)} icon={<User className="w-3.5 h-3.5" />} />
                                             <InfoItem label="Phone" value={profile.fatherPhone} icon={<Phone className="w-3.5 h-3.5" />} />
                                             <InfoItem label="Email" value={profile.fatherEmail} icon={<Mail className="w-3.5 h-3.5" />} />
                                             <InfoItem label="Occupation" value={profile.fatherOccupation} icon={<Briefcase className="w-3.5 h-3.5" />} />
@@ -109,7 +125,7 @@ export default function ParentProfile() {
                                     <div className="px-6 py-5">
                                         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Mother</p>
                                         <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-                                            <InfoItem label="Full Name" value={profile.motherName} icon={<User className="w-3.5 h-3.5" />} />
+                                            <InfoItem label="Full Name" value={cleanName(profile.motherName)} icon={<User className="w-3.5 h-3.5" />} />
                                             <InfoItem label="Phone" value={profile.motherPhone} icon={<Phone className="w-3.5 h-3.5" />} />
                                             <InfoItem label="Email" value={profile.motherEmail} icon={<Mail className="w-3.5 h-3.5" />} />
                                             <InfoItem label="Occupation" value={profile.motherOccupation} icon={<Briefcase className="w-3.5 h-3.5" />} />
@@ -130,21 +146,11 @@ export default function ParentProfile() {
                                 </h3>
                             </div>
                             <div className="px-6 py-5">
-                                <div className="flex items-start gap-5">
-                                    {/* Guardian Photo — only render if exists */}
-                                    {profile.guardianPhoto && (
-                                        <img
-                                            src={getFileUrl(profile.guardianPhoto)}
-                                            alt="Guardian"
-                                            className="w-20 h-20 rounded-lg object-cover border border-gray-200 dark:border-gray-600 flex-shrink-0"
-                                        />
-                                    )}
-                                    <div className="flex-1 grid grid-cols-2 gap-x-8 gap-y-4">
-                                        <InfoItem label="Guardian Name" value={profile.guardianName} icon={<User className="w-3.5 h-3.5" />} />
-                                        <InfoItem label="Relationship" value={profile.guardianRelation} />
-                                        <InfoItem label="Phone" value={profile.guardianPhone} icon={<Phone className="w-3.5 h-3.5" />} />
-                                        <InfoItem label="Email" value={profile.guardianEmail} icon={<Mail className="w-3.5 h-3.5" />} />
-                                    </div>
+                                <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+                                    <InfoItem label="Guardian Name" value={cleanName(profile.guardianName)} icon={<User className="w-3.5 h-3.5" />} />
+                                    <InfoItem label="Relationship" value={profile.guardianRelation} />
+                                    <InfoItem label="Phone" value={profile.guardianPhone} icon={<Phone className="w-3.5 h-3.5" />} />
+                                    <InfoItem label="Email" value={profile.guardianEmail} icon={<Mail className="w-3.5 h-3.5" />} />
                                 </div>
                             </div>
                         </div>

@@ -146,12 +146,12 @@ export class UsersService implements OnModuleInit {
       // Update existing user properties if provided
       const updates: any = {};
       
-      if (details.roleId) updates.roleId = details.roleId;
-      if (details.role) updates.role = details.role;
-      if (details.tenantId) updates.tenantId = details.tenantId;
-      if (details.photo) updates.photo = details.photo;
-      if (details.firstName) updates.firstName = details.firstName;
-      if (details.lastName) updates.lastName = details.lastName;
+      if (details.roleId !== undefined) updates.roleId = details.roleId;
+      if (details.role !== undefined) updates.role = details.role;
+      if (details.tenantId !== undefined) updates.tenantId = details.tenantId;
+      if (details.photo !== undefined) updates.photo = details.photo;
+      if (details.firstName !== undefined) updates.firstName = details.firstName;
+      if (details.lastName !== undefined) updates.lastName = details.lastName;
       if (details.mustChangePassword !== undefined) updates.mustChangePassword = details.mustChangePassword;
 
       // Handle password update for re-provisioning (e.g. newly admitted student)
@@ -171,7 +171,7 @@ export class UsersService implements OnModuleInit {
       email,
       password: details.password || 'sms@123', // Default password if not provided
       firstName: details.firstName || 'Staff',
-      lastName: details.lastName || 'Member',
+      lastName: details.lastName || '',
       roleId: details.roleId,
       role: details.role,
       tenantId: details.tenantId,

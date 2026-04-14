@@ -52,6 +52,7 @@ import { FrontCmsModule } from '@modules/front-cms/front-cms.module';
         migrations: [join(__dirname, 'database', 'migrations', '*.{ts,js}')],
         synchronize: configService.get('DATABASE_SYNC') === 'true',
         logging: configService.get('DATABASE_LOGGING') === 'true',
+        timezone: 'Z',
       }),
     }),
     BullModule.forRootAsync({

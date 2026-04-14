@@ -51,31 +51,19 @@ export class DashboardService {
             .getCount();
         if (tokenMatch > 0) return tokenTenantId;
 
-        // 2. If not, auto-discover from first student record ever entered
-        const firstStudent = await this.studentRepository.createQueryBuilder('s')
-            .select('s.tenantId', 'id')
-            .where('s.tenantId IS NOT NULL')
-            .limit(1)
-            .getRawOne();
-        if (firstStudent?.id) return firstStudent.id;
-
-        // 3. Try from staff if student is empty
-        const firstStaff = await this.staffRepository.createQueryBuilder('st')
-            .select('st.tenantId', 'id')
-            .where('st.tenantId IS NOT NULL')
-            .limit(1)
-            .getRawOne();
-        if (firstStaff?.id) return firstStaff.id;
-
-        return tokenTenantId; // No data found at all, return token anyway
+        // 2. Do NOT fall back to LIMIT 1 from another tenant — that causes cross-tenant
+        //    data contamination. Return the token's tenantId and let the query resolve naturally.
+        return tokenTenantId;
     }
 
-    async getAdminStats(tenantIdInput: string, sectionId?: string) {
+    async getAdminStats(tenantIdInput: string, sectionId?: string, sessionId?: string, termId?: string) {
         // Robust discovery
         const tenantId = await this.findCorrectTenantId(tenantIdInput);
         const isValidSection = sectionId && sectionId !== 'undefined' && sectionId !== 'null' && sectionId !== '';
+        const isValidSession = sessionId && sessionId !== 'undefined' && sessionId !== 'null' && sessionId !== '';
+        const isValidTerm = termId && termId !== 'undefined' && termId !== 'null' && termId !== '';
         
-        console.log(`[DashboardService] Stats: Using tenantId: ${tenantId}, sectionId: ${sectionId}`);
+        console.log(`[DashboardService] Stats: Using tenantId: ${tenantId}, sectionId: ${sectionId}, sessionId: ${sessionId}, termId: ${termId}`);
 
         // Initialize with default values for safety
         let stats = {
@@ -162,27 +150,49 @@ export class DashboardService {
             if (isValidSection) {
                 transQb.andWhere('transaction.schoolSectionId = :sectionId', { sectionId });
             }
+            if (isValidSession) {
+                transQb.andWhere('transaction.sessionId = :sessionId', { sessionId });
+            }
             const revenueResult = await transQb.select('SUM(transaction.amount::numeric)', 'total').getRawOne();
             stats.finance.totalRevenue = parseFloat(revenueResult?.total || '0') || 0;
 
             const feeStatusRaw = await this.studentRepository.manager.query(`
-                WITH student_fees AS (
+                WITH total_fees AS (
                     SELECT 
                         s.id as student_id,
-                        COALESCE(SUM(fh."defaultAmount"::numeric), 0) as total_assigned
+                        COALESCE(SUM(fh."defaultAmount"::numeric), 0) as amount
                     FROM students s
                     LEFT JOIN fee_assignments fa ON fa."studentId" = s.id AND (fa."tenantId" = $1 OR fa."tenantId" IS NULL)
                     LEFT JOIN fee_group_heads fgh ON fgh."feeGroupId" = fa."feeGroupId"
                     LEFT JOIN fee_heads fh ON fh.id = fgh."feeHeadId"
-                    WHERE (s."tenantId" = $1 OR s."tenantId" IS NULL) ${isValidSection ? 'AND (s."sectionId" = $2)' : ''}
+                    WHERE (s."tenantId" = $1 OR s."tenantId" IS NULL) 
+                      ${isValidSection ? 'AND (s."sectionId" = $2)' : ''}
+                      ${isValidSession ? 'AND (fa."sessionId" = ' + (isValidSection ? '$3' : '$2') + ')' : ''}
                     GROUP BY s.id
+                    
+                    UNION ALL
+                    
+                    SELECT 
+                        "studentId" as student_id,
+                        SUM(amount::numeric) as amount
+                    FROM carry_forwards
+                    WHERE ("tenantId" = $1 OR "tenantId" IS NULL)
+                      ${isValidSession ? 'AND ("sessionId" = ' + (isValidSection ? '$3' : '$2') + ' OR ("sessionId" IS NULL AND "academicYear" = (SELECT name FROM academic_sessions WHERE id = ' + (isValidSection ? '$3' : '$2') + ')))' : ''}
+                    GROUP BY "studentId"
+                ),
+                student_fees_aggregated AS (
+                    SELECT student_id, SUM(amount) as total_assigned
+                    FROM total_fees
+                    GROUP BY student_id
                 ),
                 student_paid AS (
                     SELECT 
                         "studentId",
                         SUM(amount::numeric) as total_paid
                     FROM transactions
-                    WHERE type = 'FEE_PAYMENT' AND ("tenantId" = $1 OR "tenantId" IS NULL)
+                    WHERE type = 'FEE_PAYMENT' 
+                      AND ("tenantId" = $1 OR "tenantId" IS NULL)
+                      ${isValidSession ? 'AND ("sessionId" = ' + (isValidSection ? '$3' : '$2') + ')' : ''}
                     GROUP BY "studentId"
                 ),
                 student_balances AS (
@@ -190,7 +200,7 @@ export class DashboardService {
                         sf.student_id,
                         sf.total_assigned,
                         COALESCE(sp.total_paid, 0) as total_paid
-                    FROM student_fees sf
+                    FROM student_fees_aggregated sf
                     LEFT JOIN student_paid sp ON sp."studentId" = sf.student_id
                 )
                 SELECT 
@@ -199,7 +209,7 @@ export class DashboardService {
                     COUNT(*) FILTER (WHERE total_paid = 0 AND total_assigned > 0) as unpaid,
                     COALESCE(SUM(GREATEST(0, total_assigned - total_paid)), 0) as outstanding
                 FROM student_balances
-            `, isValidSection ? [tenantId, sectionId] : [tenantId]);
+            `, isValidSection && isValidSession ? [tenantId, sectionId, sessionId] : (isValidSection || isValidSession ? [tenantId, sectionId || sessionId] : [tenantId]));
 
             if (feeStatusRaw && feeStatusRaw[0]) {
                 stats.feesOverview.paid = parseInt(feeStatusRaw[0].paid || '0');
@@ -213,24 +223,33 @@ export class DashboardService {
 
         // --- SECTION 5: PERFORMANCE ---
         try {
-            const performanceStats = await this.examResultRepository.createQueryBuilder('res')
-                .select('AVG(res.score::numeric)', 'avgScore')
-                .where('(res.tenantId = :tenantId OR res.tenantId IS NULL)', { tenantId })
-                .getRawOne();
-            stats.studentPerformance.schoolWideAverage = parseFloat(performanceStats?.avgScore || '0').toFixed(1);
+            const performanceResults = await this.studentRepository.manager.query(`
+                SELECT AVG(r."averageScore"::numeric) as "avgScore"
+                FROM student_term_results r
+                JOIN exam_groups eg ON eg.id = r."examGroupId"
+                WHERE (r."tenantId" = $1 OR r."tenantId" IS NULL)
+                ${isValidSession ? 'AND eg."sessionId" = $2' : ''}
+                AND eg."isPublished" = true
+            `, isValidSession ? [tenantId, sessionId] : [tenantId]);
+            
+            stats.studentPerformance.schoolWideAverage = parseFloat(performanceResults[0]?.avgScore || '0').toFixed(1);
         } catch (e) {
             console.error('[Dashboard] Error fetching performance stats', (e as any).message);
         }
 
         try {
-            stats.studentPerformance.studentsAtRisk = await this.examResultRepository.createQueryBuilder('res')
-                .select('res.studentId')
-                .where('(res.tenantId = :tenantId OR res.tenantId IS NULL)', { tenantId })
-                .groupBy('res.studentId')
-                .having('AVG(res.score::numeric) < 45')
-                .getCount();
+            const riskCount = await this.studentRepository.manager.query(`
+                SELECT COUNT(DISTINCT r."studentId") as count
+                FROM student_term_results r
+                JOIN exam_groups eg ON eg.id = r."examGroupId"
+                WHERE (r."tenantId" = $1 OR r."tenantId" IS NULL)
+                AND r."averageScore"::numeric < 40
+                ${isValidSession ? 'AND eg."sessionId" = $2' : ''}
+            `, isValidSession ? [tenantId, sessionId] : [tenantId]);
+            
+            stats.studentPerformance.studentsAtRisk = parseInt(riskCount[0]?.count || '0');
         } catch (e) {
-            console.error('[Dashboard] Error fetching students at risk', (e as any).message);
+            console.error('[Dashboard] Error fetching risk stats', (e as any).message);
         }
 
         try {
@@ -276,6 +295,7 @@ export class DashboardService {
                 .addSelect('(COUNT(sa.id) FILTER (WHERE sa.status = \'present\')::float / NULLIF(COUNT(sa.id), 0)::float) * 100', 'rate')
                 .innerJoin('classes', 'c', 'c.id::text = sa.classId')
                 .where('(sa.tenantId = :tenantId OR sa.tenantId IS NULL)', { tenantId })
+                .andWhere(isValidSession ? 'sa.sessionId = :sessionId' : '1=1', { sessionId })
                 .groupBy('c.name')
                 .having('(COUNT(sa.id) FILTER (WHERE sa.status = \'present\')::float / NULLIF(COUNT(sa.id), 0)::float) * 100 < 75')
                 .limit(5)
@@ -287,19 +307,26 @@ export class DashboardService {
 
         // --- SECTION 6: OTHERS ---
         try {
+            const resultWhere: any = { isPublished: true };
+            if (tenantId) resultWhere.tenantId = tenantId;
+            if (isValidSession) resultWhere.sessionId = sessionId;
+
             stats.academicHealth.publishedResultsCount = await this.examGroupRepository.count({
-                where: [
-                    { tenantId, isPublished: true },
-                    { tenantId: IsNull(), isPublished: true }
-                ]
-            });
-            stats.academicHealth.unpublishedResultsCount = await this.examGroupRepository.count({
-                where: [
-                    { tenantId, isPublished: false },
-                    { tenantId: IsNull(), isPublished: false }
-                ]
+                where: resultWhere
             });
 
+            const unpublishedWhere: any = { isPublished: false };
+            if (tenantId) unpublishedWhere.tenantId = tenantId;
+            if (isValidSession) unpublishedWhere.sessionId = sessionId;
+
+            stats.academicHealth.unpublishedResultsCount = await this.examGroupRepository.count({
+                where: unpublishedWhere
+            });
+        } catch (e) {
+            console.error('[Dashboard] Error fetching result counts', (e as any).message);
+        }
+
+        try {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             stats.academicHealth.teachersYetToSubmit = await this.staffRepository.createQueryBuilder('staff')
@@ -332,10 +359,11 @@ export class DashboardService {
         return stats;
     }
 
-    async getAdminCharts(tenantIdInput: string, sectionId?: string) {
+    async getAdminCharts(tenantIdInput: string, sectionId?: string, sessionId?: string, termId?: string) {
         try {
             const tenantId = await this.findCorrectTenantId(tenantIdInput);
             const isValidSection = sectionId && sectionId !== 'undefined' && sectionId !== 'null' && sectionId !== '';
+            const isValidSession = sessionId && sessionId !== 'undefined' && sessionId !== 'null' && sessionId !== '';
 
             let maleQb = this.studentRepository.createQueryBuilder('student').where('(student.tenantId = :tenantId OR student.tenantId IS NULL)', { tenantId }).andWhere('student.gender = :gender', { gender: 'Male' });
             let femaleQb = this.studentRepository.createQueryBuilder('student').where('(student.tenantId = :tenantId OR student.tenantId IS NULL)', { tenantId }).andWhere('student.gender = :gender', { gender: 'Female' });
@@ -345,6 +373,14 @@ export class DashboardService {
                 maleQb.leftJoin('student.class', 'cls1').andWhere('cls1.schoolSectionId = :sectionId', { sectionId });
                 femaleQb.leftJoin('student.class', 'cls2').andWhere('cls2.schoolSectionId = :sectionId', { sectionId });
                 enrollQb.leftJoin('student.class', 'cls3').andWhere('cls3.schoolSectionId = :sectionId', { sectionId });
+            }
+
+            if (isValidSession) {
+                // Enrollment trend for specific session - filter student.createdAt by session dates if available
+                // for now we filter by student.sessionId if it exists (assuming we add it)
+                // but usually students are admitted during a year. Let's just keep the trend general 
+                // OR filter by the session ID if the student record has it.
+                // studentQb.andWhere('student.sessionId = :sessionId', { sessionId });
             }
 
             const maleStudents = await maleQb.getCount();
@@ -371,10 +407,11 @@ export class DashboardService {
         }
     }
 
-    async getRecentActivities(tenantIdInput: string, sectionId?: string) {
+    async getRecentActivities(tenantIdInput: string, sectionId?: string, sessionId?: string, termId?: string) {
         try {
             const tenantId = await this.findCorrectTenantId(tenantIdInput);
             const isValidSection = sectionId && sectionId !== 'undefined' && sectionId !== 'null' && sectionId !== '';
+            const isValidSession = sessionId && sessionId !== 'undefined' && sessionId !== 'null' && sessionId !== '';
 
             let studQb = this.studentRepository.createQueryBuilder('student').where('(student.tenantId = :tenantId OR student.tenantId IS NULL)', { tenantId }).orderBy('student.createdAt', 'DESC').take(5);
             let transQb = this.transactionRepository.createQueryBuilder('transaction').where('(transaction.tenantId = :tenantId OR transaction.tenantId IS NULL)', { tenantId }).andWhere('transaction.type = :type', { type: TransactionType.FEE_PAYMENT }).orderBy('transaction.createdAt', 'DESC').take(5);
@@ -382,6 +419,9 @@ export class DashboardService {
             if (isValidSection) {
                 studQb.leftJoin('student.class', 'cls').andWhere('cls.schoolSectionId = :sectionId', { sectionId });
                 transQb.andWhere('transaction.schoolSectionId = :sectionId', { sectionId });
+            }
+            if (isValidSession) {
+                transQb.andWhere('transaction.sessionId = :sessionId', { sessionId });
             }
 
             const recentEnrollments = await studQb.getMany();
@@ -397,8 +437,10 @@ export class DashboardService {
         }
     }
 
-    async getStudentDashboardStats(studentId: string, tenantIdInput: string, user?: any) {
+    async getStudentDashboardStats(studentId: string, tenantIdInput: string, user?: any, sessionId?: string, termId?: string) {
         const tenantId = await this.findCorrectTenantId(tenantIdInput);
+        const isValidSession = sessionId && sessionId !== 'undefined' && sessionId !== 'null' && sessionId !== '';
+        console.log(`[DashboardService] StudentStats: studentId: ${studentId}, sessionId: ${sessionId}, termId: ${termId}`);
         
         // --- Security Check for Parents ---
         if (user && (user.role || '').toLowerCase() === 'parent') {
@@ -446,9 +488,10 @@ export class DashboardService {
                 FROM student_term_results r
                 JOIN exam_groups eg ON eg.id = r."examGroupId"
                 WHERE r."studentId" = $1 AND eg."isPublished" = true
+                  ${isValidSession ? 'AND eg."sessionId" = $2' : ''}
                 ORDER BY r."createdAt" ASC
                 LIMIT 4
-            `, [studentId]);
+            `, isValidSession ? [studentId, sessionId] : [studentId]);
 
             pendingAssignments = await this.studentRepository.manager.query(`
                 SELECT h.id, h.title, h."dueDate", s.name as subject
@@ -477,11 +520,16 @@ export class DashboardService {
 
         // 1. Attendance Percentage
         try {
-            const result = await this.studentAttendanceRepository.createQueryBuilder('att')
+            const attQb = await this.studentAttendanceRepository.createQueryBuilder('att')
                 .select('COUNT(*) FILTER (WHERE att.status = \'present\')::float / NULLIF(COUNT(*), 0)::float * 100', 'rate')
                 .where('att.studentId = :studentId', { studentId })
-                .andWhere('(att.tenantId = :tenantId OR att.tenantId IS NULL)', { tenantId })
-                .getRawOne();
+                .andWhere('(att.tenantId = :tenantId OR att.tenantId IS NULL)', { tenantId });
+            
+            if (isValidSession) {
+                attQb.andWhere('att.sessionId = :sessionId', { sessionId });
+            }
+            
+            const result = await attQb.getRawOne();
             if (result && result.rate !== null) {
                 attendancePercentage = parseFloat(result.rate);
             }
@@ -490,50 +538,50 @@ export class DashboardService {
         // 2. Fees Balance
         try {
             const feeStatusRaw = await this.studentRepository.manager.query(`
-                WITH student_fees AS (
-                    SELECT 
-                        s.id as student_id,
-                        COALESCE(SUM(fh."defaultAmount"::numeric), 0) as total_assigned
-                    FROM students s
-                    LEFT JOIN fee_assignments fa ON fa."studentId" = s.id AND (fa."tenantId" = $1 OR fa."tenantId" IS NULL)
-                    LEFT JOIN fee_group_heads fgh ON fgh."feeGroupId" = fa."feeGroupId"
-                    LEFT JOIN fee_heads fh ON fh.id = fgh."feeHeadId"
-                    WHERE s.id = $2
-                    GROUP BY s.id
-                ),
-                student_paid AS (
-                    SELECT 
-                        "studentId",
-                        SUM(amount::numeric) as total_paid
-                    FROM transactions
-                    WHERE type = 'FEE_PAYMENT' AND "studentId" = $2 AND ("tenantId" = $1 OR "tenantId" IS NULL)
-                    GROUP BY "studentId"
-                )
                 SELECT 
-                    COALESCE(sf.total_assigned, 0) as assigned,
-                    COALESCE(sp.total_paid, 0) as paid
-                FROM student_fees sf
-                LEFT JOIN student_paid sp ON sp."studentId" = sf.student_id
-            `, [tenantId, studentId]);
+                    (
+                        SELECT COALESCE(SUM(fh."defaultAmount"::numeric), 0)
+                        FROM students s
+                        LEFT JOIN fee_assignments fa ON fa."studentId"::text = s.id::text 
+                            AND (fa."tenantId"::text = $1::text OR fa."tenantId" IS NULL)
+                            AND fa."isActive" = true
+                            ${isValidSession ? 'AND fa."sessionId"::text = $3::text' : ''}
+                        LEFT JOIN fee_group_heads fgh ON fgh."feeGroupId"::text = fa."feeGroupId"::text
+                        LEFT JOIN fee_heads fh ON fh.id::text = fgh."feeHeadId"::text
+                        WHERE s.id = $2
+                    ) + (
+                        SELECT COALESCE(SUM(amount::numeric), 0)
+                        FROM carry_forwards
+                        WHERE "studentId"::text = $2::text AND ("tenantId"::text = $1::text OR "tenantId" IS NULL)
+                        ${isValidSession ? 'AND ("sessionId"::text = $3::text OR ("sessionId" IS NULL AND "academicYear" = (SELECT name FROM academic_sessions WHERE id::text = $3::text)))' : ''}
+                    ) as assigned,
+                    (
+                        SELECT COALESCE(SUM(amount::numeric), 0)
+                        FROM transactions
+                        WHERE type = 'FEE_PAYMENT' AND "studentId"::text = $2::text AND ("tenantId"::text = $1::text OR "tenantId" IS NULL)
+                        ${isValidSession ? 'AND "sessionId"::text = $3::text' : ''}
+                    ) as paid
+            `, isValidSession ? [tenantId, studentId, sessionId] : [tenantId, studentId]);
 
             if (feeStatusRaw && feeStatusRaw[0]) {
                 const assigned = parseFloat(feeStatusRaw[0].assigned || '0');
                 const paid = parseFloat(feeStatusRaw[0].paid || '0');
                 feesBalance = Math.max(0, assigned - paid);
             }
-        } catch (e) { console.error(e) }
+        } catch (e) { console.error('[DashboardService] Student balance error:', (e as any).message) }
 
         // 3. Latest Average
         try {
-            // Get latest published result average score
+            // Get latest published result average score for this specific session if provided
             const latestResult = await this.studentRepository.manager.query(`
                 SELECT r."averageScore" as "averageScore", eg.name as "examName"
                 FROM student_term_results r
                 JOIN exam_groups eg ON eg.id = r."examGroupId"
                 WHERE r."studentId" = $1 AND eg."isPublished" = true
+                ${isValidSession ? 'AND eg."sessionId" = $2' : ''}
                 ORDER BY r."createdAt" DESC
                 LIMIT 1
-            `, [studentId]);
+            `, isValidSession ? [studentId, sessionId] : [studentId]);
             
             if (latestResult && latestResult[0]) {
                 if (latestResult[0].averageScore) latestAverage = parseFloat(latestResult[0].averageScore);
@@ -549,10 +597,12 @@ export class DashboardService {
                     SELECT s.date, s."startTime", e.name
                     FROM exam_schedules s
                     JOIN exams e ON e.id = s."examId"
+                    JOIN exam_groups eg ON eg.id = e."examGroupId"
                     WHERE e."classId" = $1 AND s.date >= $2
+                    ${isValidSession ? 'AND eg."sessionId" = $3' : ''}
                     ORDER BY s.date ASC, s."startTime" ASC
                     LIMIT 1
-                `, [classId, now]);
+                `, isValidSession ? [classId, now, sessionId] : [classId, now]);
 
                 if (upcomingExam && upcomingExam[0]) {
                     nextExamTitle = upcomingExam[0].name;
@@ -631,6 +681,136 @@ export class DashboardService {
                 date: new Date(a.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
                 title: a.title,
                 type: a.type === 'Emergency' ? 'warning' : 'info'
+            }))
+        };
+    }
+
+    async getParentDashboardOverview(userId: string, tenantIdInput: string, sessionId?: string) {
+        const isValidSession = sessionId && sessionId !== 'undefined' && sessionId !== 'null' && sessionId !== '';
+
+        // 1. Fetch children — look up via parent-user link WITHOUT strict tenantId filter.
+        //    Each child carries its own tenantId which we use for their balance queries.
+        const children = await this.studentRepository.manager.query(`
+            SELECT s.id, s."firstName", s."lastName", s."tenantId",
+                   s."admissionNo", c.name as "className", sec.name as "sectionName",
+                   s."studentPhoto" as "photo"
+            FROM students s
+            JOIN parents p ON p.id = s."parentId"
+            LEFT JOIN classes c ON c.id = s."classId"
+            LEFT JOIN sections sec ON sec.id = s."sectionId"
+            WHERE p."userId" = $1 AND s."isActive" = true
+        `, [userId]);
+
+        // Derive tenant from first child found (or fall back to token's tenant)
+        const tenantId = children.length > 0 ? children[0].tenantId : (await this.findCorrectTenantId(tenantIdInput));
+
+        let totalFamilyBalance = 0;
+        const childrenWithStats = [];
+
+        // 2. Aggregate stats for each child
+        for (const child of children) {
+            let attendance = 0;
+            let balance = 0;
+            let latestAverage = 0;
+
+            const childId = child.id;
+
+            // Attendance
+            try {
+                const attQb = await this.studentAttendanceRepository.createQueryBuilder('att')
+                    .select('COUNT(*) FILTER (WHERE att.status = \'present\')::float / NULLIF(COUNT(*), 0)::float * 100', 'rate')
+                    .where('att.studentId = :childId', { childId })
+                    .andWhere('(att.tenantId = :tenantId OR att.tenantId IS NULL)', { tenantId });
+                if (isValidSession) attQb.andWhere('att.sessionId = :sessionId', { sessionId });
+                const attRes = await attQb.getRawOne();
+                attendance = attRes?.rate ? Math.round(parseFloat(attRes.rate)) : 0;
+            } catch (e) { console.error(e) }
+
+            // Balance
+            try {
+                const childTenantId = child.tenantId || tenantId;
+                const feeStatusRaw = await this.studentRepository.manager.query(`
+                    SELECT 
+                        (
+                            SELECT COALESCE(SUM(fh."defaultAmount"::numeric), 0)
+                            FROM students s
+                            LEFT JOIN fee_assignments fa ON fa."studentId"::text = s.id::text
+                                AND (fa."tenantId"::text = $1::text OR fa."tenantId" IS NULL)
+                                AND fa."isActive" = true
+                                ${isValidSession ? 'AND fa."sessionId"::text = $3::text' : ''}
+                            LEFT JOIN fee_group_heads fgh ON fgh."feeGroupId"::text = fa."feeGroupId"::text
+                            LEFT JOIN fee_heads fh ON fh.id::text = fgh."feeHeadId"::text
+                            WHERE s.id = $2
+                        ) + (
+                            SELECT COALESCE(SUM(amount::numeric), 0)
+                            FROM carry_forwards
+                            WHERE "studentId"::text = $2::text AND ("tenantId"::text = $1::text OR "tenantId" IS NULL)
+                            ${isValidSession ? 'AND ("sessionId"::text = $3::text OR ("sessionId" IS NULL AND "academicYear" = (SELECT name FROM academic_sessions WHERE id::text = $3::text)))' : ''}
+                        ) as assigned,
+                        (
+                            SELECT COALESCE(SUM(amount::numeric), 0)
+                            FROM transactions
+                            WHERE type = 'FEE_PAYMENT' AND "studentId"::text = $2::text AND ("tenantId"::text = $1::text OR "tenantId" IS NULL)
+                            ${isValidSession ? 'AND "sessionId"::text = $3::text' : ''}
+                        ) as paid
+                `, isValidSession ? [childTenantId, childId, sessionId] : [childTenantId, childId]);
+
+                if (feeStatusRaw && feeStatusRaw[0]) {
+                    const assigned = parseFloat(feeStatusRaw[0].assigned || '0');
+                    const paid = parseFloat(feeStatusRaw[0].paid || '0');
+                    balance = Math.max(0, assigned - paid);
+                    totalFamilyBalance += balance;
+                }
+            } catch (e) { console.error('[DashboardService] Parent balance error:', (e as any).message) }
+
+            // Performance
+            try {
+                const perfRes = await this.studentRepository.manager.query(`
+                    SELECT r."averageScore"
+                    FROM student_term_results r
+                    JOIN exam_groups eg ON eg.id = r."examGroupId"
+                    WHERE r."studentId" = $1 AND eg."isPublished" = true
+                    ${isValidSession ? 'AND eg."sessionId" = $2' : ''}
+                    ORDER BY r."createdAt" DESC
+                    LIMIT 1
+                `, isValidSession ? [childId, sessionId] : [childId]);
+                latestAverage = perfRes[0]?.averageScore ? Math.round(parseFloat(perfRes[0].averageScore)) : 0;
+            } catch (e) { console.error(e) }
+
+            childrenWithStats.push({
+                ...child,
+                photo: child.photo?.replace(/\\/g, '/'),
+                attendance,
+                balance,
+                latestAverage
+            });
+        }
+
+        // 3. Notices
+        let notices = [];
+        try {
+            const now = new Date();
+            notices = await this.studentRepository.manager.query(`
+                SELECT id, title, type, "content", "created_at" as date
+                FROM notices
+                WHERE "isActive" = true 
+                  AND "targetAudience" = 'All'
+                  AND ("expiresAt" IS NULL OR "expiresAt" > $1)
+                  AND ("tenantId" = $2 OR "tenantId" IS NULL)
+                ORDER BY "created_at" DESC
+                LIMIT 5
+            `, [now, tenantId]);
+        } catch (e) { console.error(e) }
+
+        return {
+            children: childrenWithStats,
+            totalFamilyBalance,
+            notices: notices.map((a: any) => ({
+                id: a.id,
+                title: a.title,
+                content: a.content,
+                type: a.type === 'Emergency' ? 'warning' : 'info',
+                date: new Date(a.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
             }))
         };
     }

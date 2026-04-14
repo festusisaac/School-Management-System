@@ -316,10 +316,33 @@ export class FeesController {
     return this.feesService.listReminders({ studentId, page, limit }, req.user.tenantId);
   }
 
-  // --- Balance Carry-Forward ---
   @Post('carry-forward')
   carryForward(@Body() dto: CarryForwardDto, @Request() req: any) {
     return this.feesService.carryForward(dto, req.user.tenantId);
+  }
+
+  @Post('carry-forward/bulk')
+  bulkCarryForward(@Body() dto: any, @Request() req: any) {
+    return this.feesService.startBulkCarryForward(dto, req.user.tenantId);
+  }
+
+  @Get('carry-forward/job/:jobId')
+  async getJobStatus(@Param('jobId') jobId: string) {
+    const job = await (this.feesService as any).financeQueue.getJob(jobId);
+    if (!job) throw new NotFoundException('Job not found');
+    
+    const state = await job.getState();
+    const progress = job.progress();
+    const result = job.returnvalue;
+    const failedReason = job.failedReason;
+
+    return {
+      id: job.id,
+      state,
+      progress,
+      result,
+      failedReason
+    };
   }
 
   @Get('carry-forward')
