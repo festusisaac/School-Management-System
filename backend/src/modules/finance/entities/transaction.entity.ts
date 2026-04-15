@@ -7,7 +7,6 @@ import { SchoolSection } from '../../academics/entities/school-section.entity';
 export enum TransactionType {
   FEE_PAYMENT = 'FEE_PAYMENT',
   REFUND = 'REFUND',
-  ADJUSTMENT = 'ADJUSTMENT',
   WAIVER = 'WAIVER',
   CARRY_FORWARD = 'CARRY_FORWARD',
 }

@@ -357,10 +357,11 @@ export class FeesService {
   async getStudentCurrentBalance(studentId: string, tenantId: string): Promise<number> {
     const sessionId = await this.systemSettingsService.getActiveSessionId();
     
-    // 1. Transactions
+    // 1. Transactions — exclude CARRY_FORWARD entries (accounting transfers, not real payments)
     const txWhere: any = { studentId, tenantId };
     if (sessionId) txWhere.sessionId = sessionId;
-    const transactions = await this.transactionRepo.find({ where: txWhere });
+    const allTx = await this.transactionRepo.find({ where: txWhere });
+    const transactions = allTx.filter(tx => (tx.type as string) !== TransactionType.CARRY_FORWARD);
 
     // 2. Carry Forwards
     const cfWhere: any = { studentId, tenantId };
@@ -401,10 +402,11 @@ export class FeesService {
 
   // New helper to get unpaid heads for a student in a session
   async getStudentUnpaidHeads(studentId: string, sessionId: string, tenantId: string) {
-    // 1. Transactions for that session
-    const transactions = await this.transactionRepo.find({
+    // 1. Transactions for that session — exclude CARRY_FORWARD (not real payments)
+    const allSessionTx = await this.transactionRepo.find({
         where: { studentId, sessionId, tenantId },
     });
+    const transactions = allSessionTx.filter(tx => (tx.type as string) !== TransactionType.CARRY_FORWARD);
 
     // 2. Assignments for that session
     const assignments = await this.assignmentRepo.find({
@@ -541,46 +543,48 @@ export class FeesService {
 
             if (existing) continue;
 
-            const carryEntry = this.carryRepo.create({
-                studentId: student.id,
-                amount: head.amount,
-                academicYear: academicYearLabel,
-                sessionId: newId as string,
-                feeHeadId: head.id,
-                tenantId,
-                meta: { originalSessionId: oldId }
-            });
-            const savedCarry = await this.carryRepo.save(carryEntry);
-
-            // AUDIT TRANSACTION: Record the carry-forward in the OLD session as CARRY_FORWARD type.
-            // This is purely for audit trail — it is excluded from totalPaid in all statement calculations.
-            const clearingTx = this.transactionRepo.create({
-                amount: head.amount,
-                studentId: student.id,
-                tenantId,
-                sessionId: oldId as string,
-                type: TransactionType.CARRY_FORWARD,
-                paymentMethod: PaymentMethod.CASH,
-                reference: `CF-TO-${options.newSessionName || 'NEXT'}`,
-                meta: {
-                    isCarryForwardClearing: true,
-                    targetSession: options.newSessionName,
-                    carryForwardId: savedCarry.id,
+            await this.carryRepo.manager.transaction(async (manager) => {
+                const carryEntry = manager.create(CarryForward, {
+                    studentId: student.id,
+                    amount: head.amount,
+                    academicYear: academicYearLabel,
+                    sessionId: newId as string,
                     feeHeadId: head.id,
-                    narrative: `Bal. (${head.name}) Transferred to ${options.newSessionName || 'Next Session'}`,
-                    allocations: [{ id: head.id, name: head.name, amount: head.amount }]
-                }
-            });
-            await this.transactionRepo.save(clearingTx);
+                    tenantId,
+                    meta: { originalSessionId: oldId }
+                });
+                const savedCarry = await manager.save(carryEntry);
 
-            // DEACTIVATE OLD FEE ASSIGNMENT: Clear the debt from the old session view.
-            await this.assignmentRepo.createQueryBuilder()
-                .update()
-                .set({ isActive: false })
-                .where('"studentId" = :sid AND "sessionId" = :sesId AND "tenantId" = :tid', {
-                    sid: student.id, sesId: oldId, tid: tenantId
-                })
-                .execute();
+                // AUDIT TRANSACTION: Record the carry-forward in the OLD session as CARRY_FORWARD type.
+                // This is purely for audit trail — it is excluded from totalPaid in all statement calculations.
+                const clearingTx = manager.create(Transaction, {
+                    amount: head.amount,
+                    studentId: student.id,
+                    tenantId,
+                    sessionId: oldId as string,
+                    type: TransactionType.CARRY_FORWARD,
+                    paymentMethod: PaymentMethod.CASH,
+                    reference: `CF-${savedCarry.id}`,
+                    meta: {
+                        isCarryForwardClearing: true,
+                        targetSession: options.newSessionName,
+                        carryForwardId: savedCarry.id,
+                        feeHeadId: head.id,
+                        narrative: `Bal. (${head.name}) Transferred to ${options.newSessionName || 'Next Session'}`,
+                        allocations: [{ id: head.id, name: head.name, amount: head.amount }]
+                    }
+                });
+                await manager.save(clearingTx);
+
+                // DEACTIVATE OLD FEE ASSIGNMENT: Clear the debt from the old session view.
+                await manager.createQueryBuilder(FeeAssignment, 'fa')
+                    .update()
+                    .set({ isActive: false })
+                    .where('"studentId" = :sid AND "sessionId" = :sesId AND "tenantId" = :tid', {
+                        sid: student.id, sesId: oldId, tid: tenantId
+                    })
+                    .execute();
+            });
 
             totalAmount += parseFloat(head.amount);
         }
@@ -618,6 +622,13 @@ export class FeesService {
     
     if (sessionId) {
       q.andWhere('t.sessionId = :sessionId', { sessionId });
+    }
+
+    // By default exclude CARRY_FORWARD entries from the payment ledger.
+    // These are internal accounting transfers, not real payments.
+    // An admin can explicitly filter by type=CARRY_FORWARD to audit them.
+    if (!options.type) {
+      q.andWhere('t.type != :cfType', { cfType: TransactionType.CARRY_FORWARD });
     }
 
     if (options.sectionId) {
@@ -1235,38 +1246,49 @@ export class FeesService {
     const totalAmount = unpaidHeads.reduce((acc, h) => acc + parseFloat(h.amount), 0);
 
     for (const head of unpaidHeads) {
-        // Create individual head-level carry forward
-        const c = this.carryRepo.create({ 
-            studentId: dto.studentId,
-            amount: head.amount,
-            academicYear: dto.academicYear,
-            sessionId: dto.sessionId, // Target Session
-            feeHeadId: head.id,
-            tenantId,
-            meta: { originalSessionId: sessionId }
-        });
-        const saved = await this.carryRepo.save(c);
-        processedCarryForwards.push(saved);
-
-        // POST CLEARING TRANSACTION IN SOURCE SESSION (Per Head)
-        const clearingTx = this.transactionRepo.create({
-            amount: head.amount,
-            studentId: dto.studentId,
-            tenantId,
-            sessionId: sessionId,
-            type: TransactionType.ADJUSTMENT,
-            paymentMethod: PaymentMethod.CASH,
-            reference: `CF-TO-${dto.academicYear || 'NEXT'}`,
-            meta: {
-                isCarryForwardClearing: true,
-                targetSession: dto.academicYear,
-                carryForwardId: saved.id,
+        await this.carryRepo.manager.transaction(async (manager) => {
+            // Create individual head-level carry forward
+            const c = manager.create(CarryForward, { 
+                studentId: dto.studentId,
+                amount: head.amount,
+                academicYear: dto.academicYear,
+                sessionId: dto.sessionId, // Target Session
                 feeHeadId: head.id,
-                narrative: `Bal. (${head.name}) Transferred to ${dto.academicYear || 'Next Session'}`,
-                allocations: [{ id: head.id, name: head.name, amount: head.amount }]
-            }
+                tenantId,
+                meta: { originalSessionId: sessionId }
+            });
+            const saved = await manager.save(c);
+            processedCarryForwards.push(saved);
+
+            // AUDIT TRANSACTION: Record in OLD session as CARRY_FORWARD type (excluded from totalPaid).
+            const clearingTx = manager.create(Transaction, {
+                amount: head.amount,
+                studentId: dto.studentId,
+                tenantId,
+                sessionId: sessionId,
+                type: TransactionType.CARRY_FORWARD,
+                paymentMethod: PaymentMethod.CASH,
+                reference: `CF-${saved.id}`,
+                meta: {
+                    isCarryForwardClearing: true,
+                    targetSession: dto.academicYear,
+                    carryForwardId: saved.id,
+                    feeHeadId: head.id,
+                    narrative: `Bal. (${head.name}) Transferred to ${dto.academicYear || 'Next Session'}`,
+                    allocations: [{ id: head.id, name: head.name, amount: head.amount }]
+                }
+            });
+            await manager.save(clearingTx);
+
+            // DEACTIVATE OLD FEE ASSIGNMENT so debt no longer shows in old session.
+            await manager.createQueryBuilder(FeeAssignment, 'fa')
+                .update()
+                .set({ isActive: false })
+                .where('"studentId" = :sid AND "sessionId" = :sesId AND "tenantId" = :tid', {
+                    sid: dto.studentId, sesId: sessionId, tid: tenantId
+                })
+                .execute();
         });
-        await this.transactionRepo.save(clearingTx);
     }
 
     return { 
@@ -1310,7 +1332,7 @@ export class FeesService {
         // 2. Delete corresponding clearing transactions in any session for this carry forward
         // We look for transactions that have this carryForwardId in their meta
         const transactions = await this.transactionRepo.find({
-            where: { studentId: cf.studentId, tenantId, type: TransactionType.ADJUSTMENT }
+            where: { studentId: cf.studentId, tenantId, type: TransactionType.CARRY_FORWARD }
         });
 
         const toDelete = transactions.filter(tx => tx.meta?.carryForwardId === id);

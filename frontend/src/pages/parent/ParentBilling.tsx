@@ -230,14 +230,15 @@ export default function ParentBilling() {
 
                                 {/* Transaction History */}
                                 <div className="px-6 pb-6">
+                                    {/* Real Payments */}
                                     <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2 mb-4">
                                         <History size={14} className="text-emerald-500" /> Recent Payments
                                     </h4>
-                                    <div className="space-y-2">
-                                        {childData.transactions?.length === 0 ? (
+                                    <div className="space-y-2 mb-4">
+                                        {childData.transactions?.filter((tx: any) => tx.type !== 'CARRY_FORWARD').length === 0 ? (
                                             <p className="text-xs text-gray-400 italic py-4 text-center border border-dashed border-gray-200 dark:border-gray-700 rounded-lg">No payments recorded for this child.</p>
                                         ) : (
-                                            childData.transactions?.slice(0, 3).map((tx: any) => (
+                                            childData.transactions?.filter((tx: any) => tx.type !== 'CARRY_FORWARD').slice(0, 3).map((tx: any) => (
                                                 <div key={tx.id} className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg text-xs">
                                                     <div className="flex items-center gap-3">
                                                         <div className="p-1.5 bg-emerald-50 dark:bg-emerald-900/20 rounded text-emerald-600">
@@ -245,7 +246,7 @@ export default function ParentBilling() {
                                                         </div>
                                                         <div>
                                                             <p className="font-bold text-gray-800 dark:text-gray-200 capitalize">
-                                                                {tx.meta?.narrative || tx.type.toLowerCase().replace('_', ' ')}
+                                                                {tx.meta?.narrative || tx.type.toLowerCase().replace(/_/g, ' ')}
                                                             </p>
                                                             <p className="text-[10px] text-gray-400">{format(new Date(tx.createdAt), 'MMM dd, yyyy')} • Ref: {tx.reference || tx.id.substring(0, 8)}</p>
                                                         </div>
@@ -258,6 +259,33 @@ export default function ParentBilling() {
                                             ))
                                         )}
                                     </div>
+
+                                    {/* Balance Transfers (audit trail, not payments) */}
+                                    {childData.transactions?.some((tx: any) => tx.type === 'CARRY_FORWARD') && (
+                                        <>
+                                            <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2 mb-3 mt-2">
+                                                <ArrowRight size={14} className="text-amber-500" /> Balance Transfers
+                                            </h4>
+                                            <div className="space-y-2">
+                                                {childData.transactions?.filter((tx: any) => tx.type === 'CARRY_FORWARD').map((tx: any) => (
+                                                    <div key={tx.id} className="flex items-center justify-between p-3 bg-amber-50/40 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-lg text-xs">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded text-amber-600">
+                                                                <ArrowRight size={14} />
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-bold text-amber-800 dark:text-amber-300">
+                                                                    {tx.meta?.narrative || 'Balance Carried Forward'}
+                                                                </p>
+                                                                <p className="text-[10px] text-gray-400">{format(new Date(tx.createdAt), 'MMM dd, yyyy')} • Ref: {tx.reference || tx.id.substring(0, 8)}</p>
+                                                            </div>
+                                                        </div>
+                                                        <span className="font-bold text-amber-700 dark:text-amber-400">{formatCurrency(tx.amount)}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
 
                                 {/* Action Bar */}

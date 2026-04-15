@@ -11,32 +11,15 @@ async function run() {
     });
     await c.connect();
 
-    const AYO_ID = '0bc98791-4eeb-435e-9286-ee4bd4e8ba58';
+    // Check all transaction types and counts
+    const r = await c.query("SELECT type, COUNT(*) as count FROM transactions GROUP BY type ORDER BY count DESC");
+    console.log('\nTransaction types in DB:');
+    console.table(r.rows);
 
-    // Show ALL transactions for Ayo - no type filter
-    const allTx = await c.query(`
-        SELECT id, type, amount, "sessionId", reference, meta, "createdAt"
-        FROM transactions
-        WHERE "studentId" = $1
-        ORDER BY "createdAt" DESC
-    `, [AYO_ID]);
-    console.log('\nAll transactions for Ayo:');
-    console.table(allTx.rows.map(r => ({
-        id: r.id.substring(0,8),
-        type: r.type,
-        amount: r.amount,
-        sessionId: r.sessionId?.substring(0,8),
-        reference: r.reference,
-        createdAt: r.createdAt
-    })));
-
-    // Check valid enum values
-    const enumVals = await c.query(`
-        SELECT enumlabel FROM pg_enum 
-        JOIN pg_type ON pg_type.oid = pg_enum.enumtypid
-        WHERE pg_type.typname = 'transactions_type_enum'
-    `);
-    console.log('\nValid type enum values:', enumVals.rows.map(r => r.enumlabel));
+    // Check specifically for ADJUSTMENT
+    const adj = await c.query("SELECT id, amount, reference, meta FROM transactions WHERE type = 'ADJUSTMENT' LIMIT 10");
+    console.log(`\nADJUSTMENT transactions: ${adj.rowCount}`);
+    if (adj.rows.length > 0) console.table(adj.rows);
 
     await c.end();
 }
