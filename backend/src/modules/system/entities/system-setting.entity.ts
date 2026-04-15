@@ -76,10 +76,10 @@ export class SystemSetting {
     printLogo!: string;
 
     @Column({ type: 'varchar', nullable: true })
-    invoiceLogo!: string;
+    bursarSignature!: string;
 
     @Column({ type: 'varchar', nullable: true })
-    documentLogo!: string;
+    principalSignature!: string;
 
     // --- NEW FIELDS ---
 

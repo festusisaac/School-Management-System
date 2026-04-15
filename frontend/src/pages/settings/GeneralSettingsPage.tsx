@@ -223,8 +223,8 @@ const GeneralSettingsPage = () => {
         primaryLogo: 'Primary Logo',
         favicon: 'Favicon',
         printLogo: 'Print Logo',
-        invoiceLogo: 'Invoice Logo',
-        documentLogo: 'Document Logo'
+        principalSignature: 'Principal Signature',
+        bursarSignature: 'Bursar Signature'
     };
 
     // Derived filtered terms based on selected session
@@ -825,18 +825,18 @@ const GeneralSettingsPage = () => {
                                     onDelete={handleLogoDelete}
                                 />
                                 <LogoUploader
-                                    label="Invoice Header Logo"
-                                    type="invoiceLogo"
-                                    currentUrl={settings.invoiceLogo}
-                                    recommended="400x120"
+                                    label="Principal Signature"
+                                    type="principalSignature"
+                                    currentUrl={settings.principalSignature}
+                                    recommended="Transparent PNG, min 200x100"
                                     onUpload={handleLogoUpload}
                                     onDelete={handleLogoDelete}
                                 />
                                 <LogoUploader
-                                    label="Document Watermark/Logo"
-                                    type="documentLogo"
-                                    currentUrl={settings.documentLogo}
-                                    recommended="600x600"
+                                    label="Bursar Signature"
+                                    type="bursarSignature"
+                                    currentUrl={settings.bursarSignature}
+                                    recommended="Transparent PNG, min 200x100"
                                     onUpload={handleLogoUpload}
                                     onDelete={handleLogoDelete}
                                 />

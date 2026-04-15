@@ -78,6 +78,10 @@ class ApiService {
     return this.get<any>('/finance/debtors', { params })
   }
 
+  async verifyPublicReceipt(id: string) {
+    return this.get<any>(`/finance/public-verify/receipt/${id}`)
+  }
+
   async getFeeStructures() {
     return this.get<any[]>('/finance/structures')
   }

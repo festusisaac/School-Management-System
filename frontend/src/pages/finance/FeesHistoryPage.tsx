@@ -23,6 +23,7 @@ import {
   X
 } from 'lucide-react';
 import { ReceiptTemplate } from './components/ReceiptTemplate';
+import { TransactionPreview } from './components/TransactionPreview';
 import StudentFinancePage from './StudentFinancePage';
 import ReactDOM from 'react-dom/client';
 import api from '../../services/api';
@@ -93,6 +94,7 @@ export default function FeesHistoryPage() {
   // Actions
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [showRefund, setShowRefund] = useState(false);
   const [refundReason, setRefundReason] = useState('');
   const [processingRefund, setProcessingRefund] = useState(false);
@@ -515,9 +517,9 @@ export default function FeesHistoryPage() {
                   <td className="px-3 py-3 text-right border-b border-gray-50 dark:border-gray-800">
                     <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
-                        onClick={() => { setSelectedTx(tx); setShowReceipt(true); }}
+                        onClick={() => { setSelectedTx(tx); setShowPreview(true); }}
                         className="p-1.5 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded text-gray-400 hover:text-primary-600 transition-colors"
-                        title="View Receipt"
+                        title="View Preview"
                       >
                         <Eye size={14} />
                       </button>
@@ -663,7 +665,7 @@ export default function FeesHistoryPage() {
 
       {/* Receipt Modal (View only) */}
       {showReceipt && selectedTx && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 right-0 p-4 flex justify-end bg-white border-b border-gray-100 z-10">
               <button
@@ -682,6 +684,18 @@ export default function FeesHistoryPage() {
             />
           </div>
         </div>
+      )}
+
+      {/* Transaction Preview Modal */}
+      {showPreview && selectedTx && (
+          <TransactionPreview
+              transaction={selectedTx}
+              onClose={() => setShowPreview(false)}
+              onPrint={() => {
+                  setShowPreview(false);
+                  setShowReceipt(true);
+              }}
+          />
       )}
 
 

@@ -65,6 +65,35 @@ export class FeesService {
     private readonly sessionRepo: Repository<AcademicSession>,
   ) { }
 
+  // --- Public Transaction Verification ---
+  async getPublicTransaction(id: string) {
+    const tx = await this.transactionRepo.findOne({
+      where: { id },
+      relations: ['student', 'student.class'],
+    });
+    
+    if (!tx) {
+      throw new NotFoundException('Transaction not found or invalid');
+    }
+
+    // Only return non-sensitive fields necessary for receipt verification
+    return {
+      id: tx.id,
+      amount: tx.amount,
+      type: tx.type,
+      reference: tx.reference,
+      paymentMethod: tx.paymentMethod,
+      createdAt: tx.createdAt,
+      meta: tx.meta,
+      student: {
+        firstName: tx.student?.firstName,
+        lastName: tx.student?.lastName,
+        admissionNo: tx.student?.admissionNo,
+        className: tx.student?.class?.name,
+      }
+    };
+  }
+
   // Record an offline/payment
   async recordPayment(dto: CreatePaymentDto, tenantId: string) {
     return this.transactionRepo.manager.transaction(async (manager) => {

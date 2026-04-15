@@ -16,6 +16,8 @@ interface ReceiptProps {
         currencyName?: string;
         subunitName?: string;
         invoicePrefix?: string;
+        bursarSignature?: string;
+        principalSignature?: string;
     };
 }
 
@@ -49,7 +51,7 @@ export const ReceiptTemplate = forwardRef<HTMLDivElement, ReceiptProps>(({ trans
         borderColor === "border-red-500" ? "#ef4444" :
             borderColor === "border-amber-500" ? "#f59e0b" : "#4ade80";
 
-    const verificationUrl = `https://school.com/verify/${transaction.id}`;
+    const verificationUrl = `${window.location.origin}/verify/receipt/${transaction.id}`;
 
     return (
         <div ref={ref} className="bg-white text-black font-sans leading-relaxed relative print:w-full print:p-0 print:m-0">
@@ -238,8 +240,11 @@ export const ReceiptTemplate = forwardRef<HTMLDivElement, ReceiptProps>(({ trans
                     {/* Signature */}
                     <div className="text-center w-40">
                         <div className="h-16 mb-2 flex items-end justify-center">
-                            {/* Placeholder for digital signature img */}
-                            <div className="font-script text-2xl text-primary-900 transform -rotate-12 opacity-80">Bursar.Sig</div>
+                            {schoolInfo?.bursarSignature ? (
+                                <img src={schoolInfo.bursarSignature} alt="Bursar Signature" className="max-h-full max-w-full object-contain" />
+                            ) : (
+                                <div className="font-script text-2xl text-primary-900 transform -rotate-12 opacity-80">Bursar.Sig</div>
+                            )}
                         </div>
                         <div className="border-t border-gray-900 pt-2">
                             <p className="text-xs font-bold uppercase text-gray-900">Bursar's Signature</p>

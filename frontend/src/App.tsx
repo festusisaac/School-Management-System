@@ -100,6 +100,7 @@ function AppRoutes() {
             <Route path="/news/:slug" element={<PublicLayout><NewsDetailPage /></PublicLayout>} />
             
             {/* Public Admission Routes */}
+            <Route path="/verify/receipt/:id" element={<Finance.VerifyReceiptPage />} />
             <Route path="/admission" element={<PublicLayout><AdmissionIntroPage /></PublicLayout>} />
             <Route path="/admission/apply" element={<PublicLayout><AdmissionFormPage /></PublicLayout>} />
             <Route path="/admission/success" element={<PublicLayout><AdmissionSuccessPage /></PublicLayout>} />

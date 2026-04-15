@@ -13,6 +13,8 @@ interface SchoolInfo {
     invoicePrefix?: string;
     currencyName?: string;
     subunitName?: string;
+    bursarSignature?: string;
+    principalSignature?: string;
 }
 
 interface SystemContextType {
@@ -206,12 +208,14 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             address: settings.schoolAddress || '123 Education Lane',
             phone: settings.schoolPhone || '+1 234 567 890',
             email: settings.schoolEmail || 'school@example.com',
-            logo: getFullUrl(settings.invoiceLogo || settings.primaryLogo),
+            logo: getFullUrl(settings.printLogo || settings.primaryLogo),
             invoicePrefix: settings.invoicePrefix,
             currencyName,
-            subunitName
+            subunitName,
+            bursarSignature: settings.bursarSignature ? getFullUrl(settings.bursarSignature) : undefined,
+            principalSignature: settings.principalSignature ? getFullUrl(settings.principalSignature) : undefined
         };
-    }, [settings, getFullUrl]);
+    }, [settings]);
 
     return (
         <SystemContext.Provider value={{ 

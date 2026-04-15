@@ -87,6 +87,9 @@ export default function ParentBilling() {
   const bulkAllocations = data?.siblings?.map((s: any) => ({
       studentId: s.student.id,
       amount: s.balance,
+      totalDue: s.balance,
+      balance: '0',
+      status: 'PAID',
       name: `${s.student.firstName} ${s.student.lastName}`
   })).filter((a: any) => parseFloat(a.amount) > 0) || [];
 

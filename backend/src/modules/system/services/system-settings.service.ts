@@ -84,7 +84,7 @@ export class SystemSettingsService {
         const settings = await this.getSettings();
 
         // Allowed logo types
-        const allowedTypes = ['primaryLogo', 'favicon', 'printLogo', 'invoiceLogo', 'documentLogo', 'ogImage'];
+        const allowedTypes = ['primaryLogo', 'favicon', 'printLogo', 'bursarSignature', 'principalSignature', 'ogImage'];
         if (!allowedTypes.includes(logoType)) {
             throw new Error(`Invalid logo type: ${logoType}`);
         }
@@ -103,7 +103,7 @@ export class SystemSettingsService {
     async deleteLogo(logoType: string): Promise<SystemSetting> {
         const settings = await this.getSettings();
 
-        const allowedTypes = ['primaryLogo', 'favicon', 'printLogo', 'invoiceLogo', 'documentLogo', 'ogImage'];
+        const allowedTypes = ['primaryLogo', 'favicon', 'printLogo', 'bursarSignature', 'principalSignature', 'ogImage'];
         if (!allowedTypes.includes(logoType)) {
             throw new Error(`Invalid logo type: ${logoType}`);
         }

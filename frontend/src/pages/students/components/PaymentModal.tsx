@@ -61,10 +61,12 @@ export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess, isB
         note: isBulk ? 'Bulk family fee payment settlement' : `Online payment for ${feeHead?.name || 'Fees'}`,
         isBulk: !!isBulk,
         bulkAllocations: isBulk ? bulkAllocations : undefined,
-        allocations: isBulk ? [] : [{
+        allocations: isBulk ? bulkAllocations : [{
             id: feeHead?.id,
             name: feeHead?.name,
             amount: payAmountNum.toString(),
+            totalDue: maxAmount.toString(),
+            balance: Math.max(0, maxAmount - payAmountNum).toString(),
             status: payAmountNum >= maxAmount ? 'PAID' : 'PARTIAL'
         }]
     }), [isBulk, bulkAllocations, feeHead, payAmountNum, maxAmount]);

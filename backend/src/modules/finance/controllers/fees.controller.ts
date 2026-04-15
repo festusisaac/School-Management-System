@@ -57,6 +57,12 @@ export class FeesController {
   }
 
   // --- Fees History ---
+  @Public()
+  @Get('public-verify/receipt/:id')
+  async verifyPublicReceipt(@Param('id') id: string) {
+    return this.feesService.getPublicTransaction(id);
+  }
+
   @Get('payments')
   async payments(
     @Query('studentId') studentId?: string,

@@ -25,8 +25,8 @@ export interface SystemSetting {
     primaryLogo?: string;
     favicon?: string;
     printLogo?: string;
-    invoiceLogo?: string;
-    documentLogo?: string;
+    bursarSignature?: string;
+    principalSignature?: string;
     schoolStamp?: string;
     // Financial Settings
     currencySymbol?: string;

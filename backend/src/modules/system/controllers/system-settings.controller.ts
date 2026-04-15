@@ -10,8 +10,8 @@ export enum LogoType {
     PRIMARY = 'primaryLogo',
     FAVICON = 'favicon',
     PRINT = 'printLogo',
-    INVOICE = 'invoiceLogo',
-    DOCUMENT = 'documentLogo',
+    BURSAR_SIGNATURE = 'bursarSignature',
+    PRINCIPAL_SIGNATURE = 'principalSignature',
     OG_IMAGE = 'ogImage',
 }
 
