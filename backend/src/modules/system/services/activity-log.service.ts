@@ -10,13 +10,20 @@ export class ActivityLogService {
     private readonly activityLogRepository: Repository<ActivityLog>,
   ) {}
 
-  async logAction(userEmail: string, action: string, details?: string, ipAddress?: string): Promise<ActivityLog> {
-    const log = this.activityLogRepository.create({
-      userEmail,
-      action,
-      details,
-      ipAddress,
-    });
+  async logAction(data: {
+    userEmail: string;
+    action: string;
+    details?: string;
+    ipAddress?: string;
+    tenantId?: string;
+    method?: string;
+    path?: string;
+    statusCode?: number;
+    portal?: string;
+    userAgent?: string;
+    label?: string;
+  }): Promise<ActivityLog> {
+    const log = this.activityLogRepository.create(data);
     return this.activityLogRepository.save(log);
   }
 

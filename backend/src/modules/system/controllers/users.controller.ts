@@ -10,8 +10,14 @@ import {
   Req,
   ForbiddenException,
   Patch,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 import { UsersService } from '../services/users.service';
 import { CreateUserDto, UpdateUserDto } from '../dtos/users.dto';
 import { JwtAuthGuard, RolesGuard } from '../../../guards/jwt-auth.guard';
@@ -57,10 +63,33 @@ export class UsersController {
   @Patch(':id')
   @ApiOperation({ summary: 'Partially update a user' })
   patch(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto, @Req() req: any) {
-    if (req.user.role !== 'admin' && req.user.sub !== id) {
+    if (req.user.role !== 'admin' && req.user.role !== 'super administrator' && req.user.sub !== id) {
       throw new ForbiddenException('You can only update your own profile');
     }
     return this.usersService.update(id, updateUserDto);
+  }
+
+  @Post(':id/photo')
+  @ApiOperation({ summary: 'Upload user profile photo' })
+  @UseInterceptors(FileInterceptor('photo', {
+    storage: diskStorage({
+      destination: './uploads/users',
+      filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = extname(file.originalname);
+        cb(null, `avatar-${uniqueSuffix}${ext}`);
+      }
+    })
+  }))
+  async uploadPhoto(@Param('id') id: string, @Req() req: any, @UploadedFile() file: Express.Multer.File) {
+    if (req.user.role !== 'admin' && req.user.role !== 'super administrator' && req.user.sub !== id) {
+      throw new ForbiddenException('You can only update your own profile');
+    }
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+    const photoUrl = `/uploads/users/${file.filename}`;
+    return this.usersService.update(id, { photo: photoUrl });
   }
 
   @Delete(':id')

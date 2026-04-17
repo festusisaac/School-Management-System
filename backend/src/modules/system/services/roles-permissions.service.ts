@@ -16,6 +16,7 @@ export class RolesPermissionsService implements OnModuleInit {
   
   async onModuleInit() {
     // await this.renameAdminToSuperAdmin();
+    await this.ensureCorePermissions();
     await this.seedDefaultRoles();
   }
 
@@ -64,6 +65,44 @@ export class RolesPermissionsService implements OnModuleInit {
         await this.roleRepository.save(role);
       }
     }
+
+    const adminRole = await this.roleRepository.findOne({
+      where: { name: 'Admin' },
+      relations: ['permissions'],
+    });
+
+    if (adminRole) {
+      const autoPermissions = await this.permissionRepository.find({
+        where: [
+          { slug: 'front_cms:manage' },
+          { slug: 'audit_reports:view' },
+        ],
+      });
+
+      const missingPermissions = autoPermissions.filter(
+        (permission) => !adminRole.permissions.some((existingPermission) => existingPermission.slug === permission.slug),
+      );
+
+      if (missingPermissions.length > 0) {
+        adminRole.permissions = [...adminRole.permissions, ...missingPermissions];
+        await this.roleRepository.save(adminRole);
+      }
+    }
+  }
+
+  private async ensureCorePermissions() {
+    await this.createPermission(
+      'front_cms:manage',
+      'Manage Front CMS',
+      'Front CMS',
+      'Manage website content, media, contacts, and public-facing CMS sections',
+    );
+    await this.createPermission(
+      'audit_reports:view',
+      'Audit & Reports Module',
+      'Audit & Reports',
+      'Access audit dashboards, activity logs, communication audit, and report hub',
+    );
   }
 
   async findAllRoles(): Promise<Role[]> {

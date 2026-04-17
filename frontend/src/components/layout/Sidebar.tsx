@@ -231,6 +231,18 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             ]
         },
         {
+            label: 'Audit & Reports',
+            icon: Star,
+            path: '/audit-reports',
+            permission: 'audit_reports:view',
+            children: [
+                { label: 'Overview', path: '/audit-reports/overview', permission: 'audit_reports:view' },
+                { label: 'Activity Logs', path: '/audit-reports/activity', permission: 'audit_reports:view' },
+                { label: 'Communication Audit', path: '/audit-reports/communication', permission: 'audit_reports:view' },
+                { label: 'Report Hub', path: '/audit-reports/reports-hub', permission: 'audit_reports:view' },
+            ]
+        },
+        {
             label: 'Examination',
             icon: BookOpen,
             path: '/examination',

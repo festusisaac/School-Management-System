@@ -76,6 +76,11 @@ export const seedPermissions = async (dataSource: DataSource) => {
     { slug: 'communication:send_broadcast', name: 'Send Broadcast', module: 'Communication', description: 'Send Email or SMS broadcasts to students and staff' },
     { slug: 'communication:manage_templates', name: 'Manage Templates', module: 'Communication', description: 'Create and edit reusable communication templates' },
     { slug: 'communication:view_logs', name: 'View Comm Logs', module: 'Communication', description: 'Audit history of sent messages and notifications' },
+
+    // Audit & Reports
+    { slug: 'audit_reports:view', name: 'Audit & Reports Module', module: 'Audit & Reports', description: 'Access audit dashboards, activity logs, communication audit, and report hub' },
+
+    { slug: 'front_cms:manage', name: 'Manage Front CMS', module: 'Front CMS', description: 'Manage website content, media, contacts, and public-facing CMS sections' },
   ];
 
   // Get all current slugs in the database

@@ -119,6 +119,99 @@ export class FeesService {
     return bulkAllocations;
   }
 
+  private async getLiveOutstandingSnapshot(manager: any, studentId: string, tenantId: string, sessionId?: string) {
+    const txWhere: any = { studentId, tenantId };
+    if (sessionId) txWhere.sessionId = sessionId;
+
+    const allTransactions = await manager.find(Transaction, { where: txWhere });
+    const transactions = allTransactions.filter((tx: Transaction) => tx.type !== TransactionType.CARRY_FORWARD);
+
+    const cfWhere: any = { studentId, tenantId };
+    let sessionName = null;
+    if (sessionId) {
+      const session = await manager.findOne(AcademicSession, { where: { id: sessionId } });
+      if (session) sessionName = session.name;
+    }
+
+    const carryForwards = await manager.find(CarryForward, {
+      where: sessionId ? [
+        { ...cfWhere, sessionId },
+        { ...cfWhere, sessionId: IsNull(), academicYear: sessionName }
+      ] : cfWhere,
+    });
+
+    const assignmentWhere: any = { studentId, isActive: true, tenantId };
+    if (sessionId) assignmentWhere.sessionId = sessionId;
+    const assignments = await manager.find(FeeAssignment, {
+      where: assignmentWhere,
+      relations: ['feeGroup', 'feeGroup.heads'],
+    });
+
+    const paidByItem: Record<string, number> = {};
+    transactions.forEach((tx: Transaction) => {
+      const txAllocations = tx.meta?.allocations || [];
+      if (Array.isArray(txAllocations)) {
+        txAllocations.forEach((alloc: any) => {
+          if (alloc?.id) {
+            paidByItem[alloc.id] = (paidByItem[alloc.id] || 0) + parseFloat(alloc.amount || '0');
+          }
+        });
+      }
+    });
+
+    const dueByItem: Record<string, number> = {};
+    assignments.forEach((assignment: FeeAssignment) => {
+      const excludedIds = assignment.excludedHeadIds || [];
+      (assignment.feeGroup?.heads || [])
+        .filter((head: FeeHead) => !excludedIds.includes(head.id))
+        .forEach((head: FeeHead) => {
+          dueByItem[head.id] = (dueByItem[head.id] || 0) + parseFloat(head.defaultAmount || '0');
+        });
+    });
+
+    carryForwards.forEach((carryForward: CarryForward) => {
+      dueByItem[carryForward.id] = (dueByItem[carryForward.id] || 0) + parseFloat(carryForward.amount || '0');
+    });
+
+    const outstandingByItem: Record<string, number> = {};
+    Object.entries(dueByItem).forEach(([itemId, due]) => {
+      outstandingByItem[itemId] = Math.max(0, due - (paidByItem[itemId] || 0));
+    });
+
+    const totalOutstanding = Object.values(outstandingByItem).reduce((sum, amount) => sum + amount, 0);
+
+    return { outstandingByItem, totalOutstanding };
+  }
+
+  private async validatePaymentAgainstOutstanding(
+    manager: any,
+    dto: CreatePaymentDto,
+    tenantId: string,
+    sessionId?: string,
+  ) {
+    const paymentAmount = parseFloat(dto.amount);
+    const allocations = dto.meta?.allocations || [];
+    const { outstandingByItem, totalOutstanding } = await this.getLiveOutstandingSnapshot(manager, dto.studentId, tenantId, sessionId);
+
+    if (Array.isArray(allocations) && allocations.length > 0) {
+      for (const alloc of allocations) {
+        const allocAmount = parseFloat(alloc.amount || '0');
+        const liveOutstanding = outstandingByItem[alloc.id] || 0;
+
+        if (allocAmount - liveOutstanding > 0.01) {
+          throw new BadRequestException(
+            `Payment exceeds current outstanding balance for '${alloc.name || alloc.feeHeadName || 'fee item'}'. Please refresh and try again.`,
+          );
+        }
+      }
+      return;
+    }
+
+    if (paymentAmount - totalOutstanding > 0.01) {
+      throw new BadRequestException('Payment exceeds current outstanding balance. Please refresh and try again.');
+    }
+  }
+
   private async recordGroupedGatewayPayment(
     bulkAllocations: any[],
     tenantId: string,
@@ -199,6 +292,8 @@ export class FeesService {
       const paymentAmount = parseFloat(dto.amount);
       if (paymentAmount <= 0) throw new BadRequestException('Payment amount must be greater than zero.');
 
+      await manager.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [`STUDENT-PAYMENT-${dto.studentId}`]);
+
       // Tenancy Validation
       const student = await manager.findOne(Student, {
         where: { id: dto.studentId, tenantId },
@@ -219,6 +314,8 @@ export class FeesService {
       let allocatedSum = 0;
 
       const sessionId = await this.systemSettingsService.getActiveSessionId();
+
+      await this.validatePaymentAgainstOutstanding(manager, dto, tenantId, sessionId || undefined);
 
       // 1. If allocations are provided, split the transaction
       if (Array.isArray(allocations) && allocations.length > 0) {
@@ -357,6 +454,11 @@ export class FeesService {
     const resolvedStudentId = student.id;
 
     const sessionId = await this.systemSettingsService.getActiveSessionId();
+    let sessionName: string | null = null;
+    if (sessionId) {
+      const activeSession = await this.sessionRepo.findOne({ where: { id: sessionId } });
+      sessionName = activeSession?.name || null;
+    }
 
     // 1. Get all FEE_PAYMENT and REFUND transactions for student in current session
     //    Exclude CARRY_FORWARD entries — those are accounting transfers, not actual payments.
@@ -392,12 +494,6 @@ export class FeesService {
     const cfWhere: any = { studentId: resolvedStudentId, tenantId };
 
     // Resolve session name for fallback if needed
-    let sessionName = null;
-    if (sessionId) {
-      const session = await this.sessionRepo.findOne({ where: { id: sessionId } });
-      if (session) sessionName = session.name;
-    }
-
     const carryForwards = await this.carryRepo.find({
       where: sessionId ? [
         { ...cfWhere, sessionId },
@@ -440,7 +536,7 @@ export class FeesService {
             name: h.name,
             amount: h.defaultAmount, // Original total amount
             paid: paidAmount.toFixed(2),
-            balance: (totalAmount - paidAmount).toFixed(2),
+            balance: Math.max(0, totalAmount - paidAmount).toFixed(2),
             group: a.feeGroup?.name
           };
         });
@@ -460,13 +556,15 @@ export class FeesService {
         name: headName ? `Arrears: ${headName} (${cf.academicYear})` : `Balance Brought Forward (${cf.academicYear})`,
         amount: totalAmount.toFixed(2),
         paid: paidAmount.toFixed(2),
-        balance: (totalAmount - paidAmount).toFixed(2),
+        balance: Math.max(0, totalAmount - paidAmount).toFixed(2),
         type: 'CARRY_FORWARD'
       };
     });
 
     return {
       student,
+      sessionId: sessionId || null,
+      sessionName,
       totalDue: totalDue.toFixed(2),
       totalPaid: totalPaid.toFixed(2),
       balance: balance.toFixed(2),
@@ -615,6 +713,92 @@ export class FeesService {
       tenantId
     });
     return { jobId: job.id };
+  }
+
+  async queueStatementReport(studentId: string, tenantId: string) {
+    const job = await this.financeQueue.add('export-statement-report', {
+      studentId,
+      tenantId,
+    });
+    return { jobId: job.id };
+  }
+
+  async queueFeeHistoryReport(options: {
+    studentId?: string;
+    startDate?: string;
+    endDate?: string;
+    method?: PaymentMethod;
+    type?: TransactionType;
+    sectionId?: string;
+  }, tenantId: string) {
+    const job = await this.financeQueue.add('export-fee-history-report', {
+      ...options,
+      tenantId,
+    });
+    return { jobId: job.id };
+  }
+
+  async getFinanceJobStatus(jobId: string) {
+    const job = await this.financeQueue.getJob(jobId);
+    if (!job) {
+      throw new NotFoundException('Job not found');
+    }
+
+    return {
+      id: job.id,
+      state: await job.getState(),
+      progress: job.progress(),
+      result: job.returnvalue,
+      failedReason: job.failedReason,
+    };
+  }
+
+  async buildStatementReportPayload(studentId: string, tenantId: string) {
+    const statement = await this.getStudentStatement(studentId, tenantId);
+    return {
+      reportType: 'statement',
+      generatedAt: new Date().toISOString(),
+      student: statement.student,
+      statement,
+    };
+  }
+
+  async buildFeeHistoryReportPayload(options: {
+    studentId?: string;
+    startDate?: string;
+    endDate?: string;
+    method?: PaymentMethod;
+    type?: TransactionType;
+    sectionId?: string;
+  }, tenantId: string) {
+    const activeSessionId = await this.systemSettingsService.getActiveSessionId();
+    let sessionName: string | null = null;
+    if (activeSessionId) {
+      const activeSession = await this.sessionRepo.findOne({ where: { id: activeSessionId } });
+      sessionName = activeSession?.name || null;
+    }
+
+    const report = await this.paymentHistory({
+      ...options,
+      page: 1,
+      limit: 2000,
+    }, tenantId);
+
+    return {
+      reportType: 'fee-history',
+      generatedAt: new Date().toISOString(),
+      sessionId: activeSessionId || null,
+      sessionName,
+      filters: {
+        studentId: options.studentId || null,
+        startDate: options.startDate || null,
+        endDate: options.endDate || null,
+        method: options.method || null,
+        type: options.type || null,
+        sectionId: options.sectionId || null,
+      },
+      ...report,
+    };
   }
 
   // Original sync method (kept for internal use but modified for queue)

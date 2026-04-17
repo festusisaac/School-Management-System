@@ -101,14 +101,14 @@ export const ReceiptTemplate = forwardRef<HTMLDivElement, ReceiptProps>(({ trans
             className="bg-white text-black font-sans leading-relaxed relative print:w-full print:p-0 print:m-0 print:break-after-page"
         >
             {/* Watermark moved to top layer */}
-            <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -rotate-45 text-9xl font-black uppercase pointer-events-none select-none z-50 ${watermarkColor}`}>
+            <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -rotate-45 text-6xl sm:text-8xl lg:text-9xl font-black uppercase pointer-events-none select-none z-50 ${watermarkColor}`}>
                 {watermarkText}
             </div>
 
             <div
                 data-receipt-card
                 className={clsx(
-                    "relative z-10 p-8 m-10 max-w-3xl mx-auto min-h-[95vh] border-4 border-double print:m-0 print:max-w-none print:min-h-0 flex flex-col",
+                    "relative z-10 p-4 sm:p-6 lg:p-8 m-3 sm:m-6 lg:m-10 max-w-3xl mx-auto min-h-[95vh] border-4 border-double print:m-0 print:max-w-none print:min-h-0 flex flex-col",
                     borderColor
                 )}
                 style={{ borderColor: borderHex }}

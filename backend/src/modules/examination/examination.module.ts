@@ -11,6 +11,8 @@ import { ScoreEntryController } from './controllers/score-entry.controller';
 import { ResultProcessingController } from './controllers/result-processing.controller';
 import { ResultControlController } from './controllers/result-control.controller';
 import { StudentExamController } from './controllers/student-exam.controller';
+import { CbtSyncController } from './controllers/cbt-sync.controller';
+import { CbtManifestService } from './services/cbt-manifest.service';
 import { Student } from '../students/entities/student.entity';
 import { StudentAttendance } from '../students/entities/student-attendance.entity';
 import { ExamGroup } from './entities/exam-group.entity';
@@ -32,6 +34,8 @@ import { ScratchCardLog } from './entities/scratch-card-log.entity';
 import { AcademicSession } from '../system/entities/academic-session.entity';
 import { AcademicTerm } from '../system/entities/academic-term.entity';
 import { SystemSetting } from '../system/entities/system-setting.entity';
+import { CbtQuestion } from './entities/cbt-question.entity';
+import { CbtOption } from './entities/cbt-option.entity';
 import { SystemModule } from '../system/system.module';
 
 @Module({
@@ -58,6 +62,8 @@ import { SystemModule } from '../system/system.module';
             AcademicSession,
             AcademicTerm,
             SystemSetting,
+            CbtQuestion,
+            CbtOption,
         ]),
         SystemModule,
         BullModule.registerQueue({
@@ -70,12 +76,14 @@ import { SystemModule } from '../system/system.module';
         ResultProcessingController,
         ResultControlController,
         StudentExamController,
+        CbtSyncController,
     ],
     providers: [
         ExamSetupService,
         ScoreEntryService,
         ResultProcessingService,
         ResultControlService,
+        CbtManifestService,
         ScoreImportProcessor
     ],
     exports: [

@@ -1492,7 +1492,7 @@ export default function StudentAdmission() {
                                         </div>
 
                                         <div className="space-y-3">
-                                            {feeAllocationSummary.groups.map(group => (
+                                            {feeAllocationSummary.groups.map((group: any) => (
                                                 <div key={group.id} className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/40 p-4">
                                                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3">
                                                         <div>

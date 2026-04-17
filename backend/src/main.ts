@@ -11,7 +11,8 @@ import { WinstonModule } from 'nest-winston';
 import { logger as winstonLogger } from './config/logger.config';
 import { LoggingInterceptor } from './interceptors/logging.interceptor';
 import { json, urlencoded } from 'express';
-
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: WinstonModule.createLogger({ instance: winstonLogger }),
@@ -19,6 +20,15 @@ async function bootstrap() {
   
   app.use(json({ limit: '50mb' }));
   app.use(urlencoded({ extended: true, limit: '50mb' }));
+
+  app.use(helmet());
+
+  app.use(
+    rateLimit({
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      max: 100, // limit each IP to 100 requests per windowMs
+    }),
+  );
 
   const configService = app.get(ConfigService);
 
@@ -29,6 +39,8 @@ async function bootstrap() {
   app.enableCors({
     origin: configService.get('CORS_ORIGIN', 'http://localhost:3001').split(','),
     credentials: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type, Accept, Authorization',
   });
 
   // Global Validation Pipe

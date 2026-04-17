@@ -45,6 +45,18 @@ export class AuthController {
     return this.authService.refresh(refreshTokenDto.refresh_token);
   }
 
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Logout current user', description: 'Logs out the user and creates an audit trail' })
+  @ApiResponse({ status: 200, description: 'User logged out successfully' })
+  async logout(@Request() req: any) {
+    // Stateless JWT means no server-side token invalidation is strictly required,
+    // but hitting this endpoint triggers the AuditInterceptor to log "User Logged Out".
+    return { message: 'Logged out successfully' };
+  }
+
   @Get('me')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

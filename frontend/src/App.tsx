@@ -29,6 +29,7 @@ import * as Settings from './pages/settings';
 import * as OnlineClasses from './pages/online-classes';
 import * as Homework from './pages/homework';
 import * as Communication from './pages/communication';
+import * as Audit from './pages/audit';
 import FrontCmsDashboard from './pages/front-cms/FrontCmsDashboard';
 import { 
   BookList, 
@@ -244,6 +245,15 @@ function AppRoutes() {
                 <Route path="manage-notices" element={<Communication.ManageNotices />} />
               </Route>
 
+              {/* Audit & Reports Routes */}
+              <Route path="audit-reports">
+                <Route index element={<Audit.AuditOverviewPage />} />
+                <Route path="overview" element={<Audit.AuditOverviewPage />} />
+                <Route path="activity" element={<Audit.ActivityLogsPage />} />
+                <Route path="communication" element={<Audit.CommunicationAuditPage />} />
+                <Route path="reports-hub" element={<Audit.ReportHubPage />} />
+              </Route>
+
               {/* Settings Routes */}
               <Route path="settings">
                 <Route index element={<Navigate to="general" replace />} />
@@ -253,6 +263,7 @@ function AppRoutes() {
                 <Route path="roles-permissions" element={<Settings.RolesPermissionsPage />} />
                 <Route path="users" element={<Settings.UsersPage />} />
                 <Route path="payments" element={<Settings.PaymentSettingsPage />} />
+                <Route path="profile" element={<Settings.AdminProfilePage />} />
               </Route>
 
               {/* Front CMS Routes */}

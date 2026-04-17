@@ -3,12 +3,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bull';
 import { ServeStaticModule } from '@nestjs/serve-static';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { join } from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MaintenanceGuard } from './guards/maintenance.guard';
 import { SystemSetupGuard } from './guards/system-setup.guard';
+import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 
 // Modules
 import { InternalCommunicationModule } from '@modules/internal-communication/internal-communication.module';
@@ -98,6 +99,10 @@ import { FrontCmsModule } from '@modules/front-cms/front-cms.module';
     {
       provide: APP_GUARD,
       useClass: MaintenanceGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AuditInterceptor,
     },
   ],
 })

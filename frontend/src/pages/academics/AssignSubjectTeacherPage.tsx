@@ -39,6 +39,7 @@ const AssignSubjectTeacherPage = () => {
     const [sections, setSections] = useState<Section[]>([]);
     const [subjects, setSubjects] = useState<Subject[]>([]);
     const [teachers, setTeachers] = useState<Staff[]>([]);
+    const [error, setError] = useState('');
 
     const [selectedClass, setSelectedClass] = useState('');
     const [selectedSection, setSelectedSection] = useState('');

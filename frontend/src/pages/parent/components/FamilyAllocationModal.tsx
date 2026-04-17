@@ -126,10 +126,10 @@ export function FamilyAllocationModal({
     return (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <div className="w-full max-w-5xl max-h-[92vh] overflow-hidden rounded-3xl bg-white dark:bg-gray-800 shadow-2xl border border-white/20 flex flex-col">
-                <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex items-start justify-between gap-4">
+                <div className="p-4 sm:p-6 border-b border-gray-100 dark:border-gray-700 flex items-start justify-between gap-4">
                     <div>
-                        <h3 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">{title}</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{description}</p>
+                        <h3 className="text-lg sm:text-xl font-black text-gray-900 dark:text-white tracking-tight">{title}</h3>
+                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-2xl">{description}</p>
                     </div>
                     <button
                         onClick={onClose}
@@ -139,7 +139,7 @@ export function FamilyAllocationModal({
                     </button>
                 </div>
 
-                <div className="p-6 border-b border-gray-100 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-900/30">
+                <div className="p-4 sm:p-6 border-b border-gray-100 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-900/30">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
                             <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Outstanding</p>
@@ -173,8 +173,69 @@ export function FamilyAllocationModal({
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-auto p-6">
-                    <div className="overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700">
+                <div className="flex-1 overflow-auto p-4 sm:p-6">
+                    <div className="space-y-3 md:hidden">
+                        {draftLines.map((line, index) => {
+                            const outstanding = parseFloat(line.amountDue || '0') || 0;
+                            const allocated = parseFloat(line.amount || '0') || 0;
+                            const remaining = outstanding - allocated;
+
+                            return (
+                                <div key={`${line.studentId}-${line.id}`} className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 space-y-3">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                            <p className="text-sm font-black text-gray-900 dark:text-white">{line.studentName}</p>
+                                            <p className="text-[10px] text-gray-400 uppercase tracking-wider mt-1">
+                                                {line.sourceType === 'CARRY_FORWARD' ? 'Arrears' : 'Assigned Fee'}
+                                            </p>
+                                        </div>
+                                        <span className="text-xs font-bold text-gray-500 dark:text-gray-400">
+                                            {formatCurrency(outstanding)}
+                                        </span>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">{line.feeHeadName}</p>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+                                            Allocate Amount
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            max={outstanding}
+                                            value={line.amount}
+                                            onChange={(event) => updateLineAmount(index, event.target.value)}
+                                            onBlur={() => formatLineAmount(index)}
+                                            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3 text-base font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                            placeholder="0.00"
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="rounded-xl bg-gray-50 dark:bg-gray-900 px-3 py-2">
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Outstanding</p>
+                                            <p className="mt-1 text-sm font-black text-gray-900 dark:text-white">{formatCurrency(outstanding)}</p>
+                                        </div>
+                                        <div className="rounded-xl bg-gray-50 dark:bg-gray-900 px-3 py-2">
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Remaining</p>
+                                            <p className={clsx(
+                                                "mt-1 text-sm font-black",
+                                                remaining > 0 ? "text-amber-600" : "text-emerald-600"
+                                            )}>
+                                                {formatCurrency(remaining)}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    <div className="hidden md:block overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700">
                         <table className="w-full text-left">
                             <thead className="bg-gray-50 dark:bg-gray-900/50">
                                 <tr className="border-b border-gray-200 dark:border-gray-700">
@@ -236,16 +297,16 @@ export function FamilyAllocationModal({
                     </div>
                 </div>
 
-                <div className="p-6 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="p-4 sm:p-6 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                             Every payment line will be posted to a specific child and fee head before gateway checkout.
                         </p>
                     </div>
                     <button
                         onClick={handleConfirm}
                         disabled={activeLines.length === 0}
-                        className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary-600 text-white font-bold hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary-600 text-white font-bold hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         Proceed to Payment
                         <ArrowRight size={18} />

@@ -13,21 +13,20 @@ import {
   FileText,
   Users
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import api, { getFileUrl } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { useAuthStore } from '../../stores/authStore';
 import { useSystem } from '../../context/SystemContext';
 import { PaymentModal } from '../students/components/PaymentModal';
 import { FamilyAllocationModal, ParentPaymentAllocationLine } from './components/FamilyAllocationModal';
+import { ParentStatementModal } from './components/ParentStatementModal';
 import { clsx } from 'clsx';
 import { format } from 'date-fns';
 
 export default function ParentBilling() {
   const { user } = useAuthStore();
   const { showError } = useToast();
-  const { formatCurrency } = useSystem();
-  const navigate = useNavigate();
+  const { formatCurrency, getSchoolInfo } = useSystem();
   
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -38,6 +37,9 @@ export default function ParentBilling() {
   const [selectedFeeHead, setSelectedFeeHead] = useState<any>(null);
   const [selectedAllocations, setSelectedAllocations] = useState<ParentPaymentAllocationLine[]>([]);
   const [expandedChild, setExpandedChild] = useState<string | null>(null);
+  const [selectedStatementStudent, setSelectedStatementStudent] = useState<any>(null);
+  const [selectedStatement, setSelectedStatement] = useState<any>(null);
+  const [loadingStatement, setLoadingStatement] = useState(false);
 
   const fetchFamilyData = useCallback(async () => {
     if (!user?.id) return;
@@ -131,6 +133,19 @@ export default function ParentBilling() {
     });
     setShowAllocationModal(false);
     setShowPaymentModal(true);
+  };
+
+  const handleViewStatement = async (student: any) => {
+    try {
+      setLoadingStatement(true);
+      const statement = await api.getStudentStatement(student.id);
+      setSelectedStatementStudent(student);
+      setSelectedStatement(statement);
+    } catch (error) {
+      showError('Failed to load account statement');
+    } finally {
+      setLoadingStatement(false);
+    }
   };
 
   if (loading) {
@@ -341,11 +356,15 @@ export default function ParentBilling() {
 
                                 {/* Action Bar */}
                                 <div className="px-6 py-4 bg-gray-50 dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
-                                    <button 
-                                        onClick={() => navigate(`/students/profile/${child.id}`)}
-                                        className="px-4 py-2 text-xs font-bold text-gray-500 hover:text-gray-700 transition-all"
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleViewStatement(child);
+                                        }}
+                                        disabled={loadingStatement && selectedStatementStudent?.id === child.id}
+                                        className="px-4 py-2 text-xs font-bold text-gray-500 hover:text-gray-700 transition-all disabled:opacity-50"
                                     >
-                                        View Full Account Statement
+                                        {loadingStatement && selectedStatementStudent?.id === child.id ? 'Loading...' : 'View Full Account Statement'}
                                     </button>
                                     {balance > 0 && (
                                         <button 
@@ -435,6 +454,17 @@ export default function ParentBilling() {
           setAllocationContext(null);
         }}
         onConfirm={handleAllocationConfirmed}
+      />
+
+      <ParentStatementModal
+        isOpen={!!selectedStatementStudent && !!selectedStatement}
+        onClose={() => {
+          setSelectedStatementStudent(null);
+          setSelectedStatement(null);
+        }}
+        student={selectedStatementStudent}
+        statement={selectedStatement}
+        schoolInfo={getSchoolInfo()}
       />
     </div>
   );

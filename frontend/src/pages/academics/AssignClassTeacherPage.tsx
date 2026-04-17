@@ -108,13 +108,12 @@ const AssignClassTeacherPage = () => {
             const sectionId = selectedSection === 'GENERAL' ? undefined : selectedSection;
             await api.assignClassTeacher(selectedClass, sectionId, selectedTeacher);
             await fetchInitialData();
-            setSuccess('Class teacher assigned successfully!');
+            toast.showSuccess('Class teacher assigned successfully!');
             setSelectedClass('');
             setSelectedSection('');
             setSelectedTeacher('');
-            setTimeout(() => setSuccess(''), 3000);
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to assign class teacher');
+            toast.showError(err.response?.data?.message || 'Failed to assign class teacher');
         } finally {
             setSaving(false);
         }
@@ -139,11 +138,10 @@ const AssignClassTeacherPage = () => {
                 console.log('Class after refetch:', cls);
             }
 
-            setSuccess('Class teacher removed successfully!');
-            setTimeout(() => setSuccess(''), 3000);
+            toast.showSuccess('Class teacher removed successfully!');
         } catch (err: any) {
             console.error('Remove error:', err);
-            setError(err.response?.data?.message || 'Failed to remove class teacher');
+            toast.showError(err.response?.data?.message || 'Failed to remove class teacher');
         }
     };
 

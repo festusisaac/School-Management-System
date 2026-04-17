@@ -131,4 +131,27 @@ export class FinanceProcessor {
 
     return { total, processed, skipped };
   }
+
+  @Process('export-statement-report')
+  async handleStatementReport(job: Job<{ studentId: string; tenantId: string }>) {
+    await job.progress(15);
+    const payload = await this.feesService.buildStatementReportPayload(job.data.studentId, job.data.tenantId);
+    await job.progress(100);
+    return payload;
+  }
+
+  @Process('export-fee-history-report')
+  async handleFeeHistoryReport(job: Job<any>) {
+    await job.progress(10);
+    const payload = await this.feesService.buildFeeHistoryReportPayload({
+      studentId: job.data.studentId,
+      startDate: job.data.startDate,
+      endDate: job.data.endDate,
+      method: job.data.method,
+      type: job.data.type,
+      sectionId: job.data.sectionId,
+    }, job.data.tenantId);
+    await job.progress(100);
+    return payload;
+  }
 }

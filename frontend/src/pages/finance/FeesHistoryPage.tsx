@@ -33,6 +33,8 @@ import { useSystem } from '../../context/SystemContext';
 import { useAuthStore } from '../../stores/authStore';
 import { formatDateLocal, formatTimeLocal } from '../../utils/date';
 import { printReceipt } from './utils/printReceipt';
+import jsPDF from 'jspdf';
+import { exportFeeHistoryPdf } from './utils/reportPdf';
 
 interface Transaction {
   id: string;
@@ -42,6 +44,7 @@ interface Transaction {
   reference: string;
   createdAt: string;
   student?: {
+    id?: string;
     firstName: string;
     lastName: string;
     admissionNo: string;
@@ -108,6 +111,7 @@ export default function FeesHistoryPage() {
   const [showRefund, setShowRefund] = useState(false);
   const [refundReason, setRefundReason] = useState('');
   const [processingRefund, setProcessingRefund] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   const fetchHistory = useCallback(async () => {
     setLoading(true);
@@ -203,6 +207,207 @@ export default function FeesHistoryPage() {
     });
   };
 
+  const handleExportPDF = async () => {
+    try {
+      setExportingPdf(true);
+
+      const exportLimit = Math.min(Math.max(total, transactions.length, limit), 1000);
+      const exportRows = total > transactions.length
+        ? (await api.getFinancePayments({
+            studentId: searchQuery || undefined,
+            startDate: startDate || undefined,
+            endDate: endDate || undefined,
+            method: method || undefined,
+            type: type || undefined,
+            sectionId: activeSectionId || undefined,
+            page: 1,
+            limit: exportLimit
+          })).items || []
+        : transactions;
+
+      if (!exportRows.length) {
+        showError('No transactions available to export.');
+        return;
+      }
+
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 10;
+      const lineHeight = 6;
+      let y = margin;
+
+      const schoolInfo = getSchoolInfo();
+      const truncate = (value: string, max: number) => {
+        if (!value) return '-';
+        return value.length > max ? `${value.slice(0, max - 1)}…` : value;
+      };
+
+      const resolveStatus = (tx: Transaction) => {
+        if (tx.type === 'REFUND') return 'REFUNDED';
+        if (tx.type === 'WAIVER') return 'WAIVED';
+        if (tx.type === 'CARRY_FORWARD') return 'TRANSFERRED';
+        return (tx.meta?.allocations || tx.meta?.bulkAllocations)?.some((a: any) => a.status === 'PARTIAL')
+          ? 'PARTIAL'
+          : 'PAID';
+      };
+
+      const drawHeader = () => {
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(16);
+        pdf.text(schoolInfo.name || 'School Management System', margin, y);
+        y += 7;
+
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(9);
+        pdf.text(`Fee History Report`, margin, y);
+        pdf.text(`Generated: ${new Date().toLocaleString()}`, pageWidth - margin, y, { align: 'right' });
+        y += 6;
+
+        const filterParts = [
+          searchQuery ? `Search: ${searchQuery}` : null,
+          startDate ? `From: ${startDate}` : null,
+          endDate ? `To: ${endDate}` : null,
+          method ? `Method: ${method}` : null,
+          type ? `Type: ${type}` : null,
+        ].filter(Boolean);
+
+        pdf.text(
+          `Summary: ${stats.paymentCount} payments | ${stats.partialCount} partial | ${stats.refundCount} refunds | ${stats.waiverCount} waivers | Total ${formatCurrency(totalAmount)}`,
+          margin,
+          y
+        );
+        y += 6;
+
+        if (filterParts.length) {
+          pdf.text(filterParts.join(' | '), margin, y);
+          y += 6;
+        }
+
+        pdf.setDrawColor(220, 220, 220);
+        pdf.line(margin, y, pageWidth - margin, y);
+        y += 5;
+
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(8);
+        const headers = [
+          ['Date', 24],
+          ['Student', 45],
+          ['Admission', 24],
+          ['Amount', 22],
+          ['Type', 24],
+          ['Status', 24],
+          ['Method', 24],
+          ['Reference', 58],
+        ] as const;
+
+        let x = margin;
+        headers.forEach(([label, width]) => {
+          pdf.text(label, x, y);
+          x += width;
+        });
+        y += 3;
+        pdf.line(margin, y, pageWidth - margin, y);
+        y += 5;
+      };
+
+      drawHeader();
+
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8);
+
+      exportRows.forEach((tx: Transaction, index: number) => {
+        if (y > pageHeight - margin - lineHeight) {
+          pdf.addPage();
+          y = margin;
+          drawHeader();
+          pdf.setFont('helvetica', 'normal');
+          pdf.setFontSize(8);
+        }
+
+        const row = [
+          truncate(`${formatDateLocal(tx.createdAt)} ${formatTimeLocal(tx.createdAt)}`, 20),
+          truncate(tx.student ? `${tx.student.firstName} ${tx.student.lastName}` : 'Direct', 28),
+          truncate(tx.student?.admissionNo || 'N/A', 14),
+          truncate(formatCurrency(tx.amount), 14),
+          truncate(tx.type.replace(/_/g, ' '), 14),
+          truncate(resolveStatus(tx), 14),
+          truncate(tx.paymentMethod?.replace(/_/g, ' ') || '---', 14),
+          truncate(tx.reference || '---', 38),
+        ];
+
+        const widths = [24, 45, 24, 22, 24, 24, 24, 58];
+        let x = margin;
+        row.forEach((cell, cellIndex) => {
+          pdf.text(cell, x, y);
+          x += widths[cellIndex];
+        });
+        y += lineHeight;
+
+        pdf.setDrawColor(240, 240, 240);
+        pdf.line(margin, y - 2, pageWidth - margin, y - 2);
+
+        if (index === exportRows.length - 1 && total > exportRows.length) {
+          y += 3;
+          pdf.setFont('helvetica', 'italic');
+          pdf.text(`Export limited to first ${exportRows.length} filtered records to keep PDF generation fast.`, margin, y);
+          pdf.setFont('helvetica', 'normal');
+        }
+      });
+
+      pdf.save(`fee-history-${new Date().toISOString().split('T')[0]}.pdf`);
+      showSuccess('PDF export completed successfully!');
+    } catch (error) {
+      showError('Failed to export fee history PDF');
+    } finally {
+      setExportingPdf(false);
+    }
+  };
+
+  const handleQueuedExportPDF = async () => {
+    try {
+      setExportingPdf(true);
+      const { jobId } = await api.queueFeeHistoryReport({
+        studentId: searchQuery || undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+        method: method || undefined,
+        type: type || undefined,
+        sectionId: activeSectionId || undefined,
+      });
+
+      let attempts = 0;
+      while (attempts < 180) {
+        const status = await api.getFinanceReportStatus(jobId);
+        if (status.state === 'completed' && status.result) {
+          if (!status.result.items?.length) {
+            showError('No transactions available to export.');
+            return;
+          }
+          exportFeeHistoryPdf(status.result, getSchoolInfo());
+          showSuccess('PDF export completed successfully!');
+          return;
+        }
+        if (status.state === 'failed') {
+          throw new Error(status.failedReason || 'Report export failed');
+        }
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        attempts += 1;
+      }
+
+      throw new Error('Report export timed out');
+    } catch (error) {
+      showError('Failed to export fee history PDF');
+    } finally {
+      setExportingPdf(false);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-10">
       {/* Header */}
@@ -227,6 +432,14 @@ export default function FeesHistoryPage() {
           >
             <Download size={18} />
             Export CSV
+          </button>
+          <button
+            onClick={handleQueuedExportPDF}
+            disabled={exportingPdf || loading}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-primary-600 border border-gray-900 dark:border-primary-600 rounded-xl text-sm font-semibold text-white hover:bg-black dark:hover:bg-primary-700 transition-all shadow-sm disabled:opacity-50"
+          >
+            {exportingPdf ? <RefreshCcw size={18} className="animate-spin" /> : <FileText size={18} />}
+            {exportingPdf ? 'Exporting PDF...' : 'Export PDF'}
           </button>
         </div>
       </div>
@@ -677,8 +890,6 @@ export default function FeesHistoryPage() {
           }}
         />
       )}
-
-
     </div>
   );
 }

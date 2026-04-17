@@ -449,11 +449,12 @@ export class StaffService {
         }
 
         // Log the activity
-        await this.activityLogService.logAction(
+        await this.activityLogService.logAction({
             userEmail,
-            'BULK_STAFF_IMPORT',
-            `Imported ${results.success} staff members successfully. ${results.failed} failed.`,
-        ).catch((err: any) => console.error('[StaffService] Activity log failed:', err.message));
+            action: 'BULK_STAFF_IMPORT',
+            details: `Imported ${results.success} staff members successfully. ${results.failed} failed.`,
+            tenantId,
+        }).catch((err: any) => console.error('[StaffService] Activity log failed:', err.message));
 
         return results;
     }

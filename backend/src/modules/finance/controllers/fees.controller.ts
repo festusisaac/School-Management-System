@@ -32,6 +32,28 @@ export class FeesController {
     return this.feesService.recordPayment(dto, req.user.tenantId);
   }
 
+  @Post('reports/statement')
+  queueStatementReport(@Body() dto: { studentId: string }, @Request() req: any) {
+    return this.feesService.queueStatementReport(dto.studentId, req.user.tenantId);
+  }
+
+  @Post('reports/fee-history')
+  queueFeeHistoryReport(@Body() dto: {
+    studentId?: string;
+    startDate?: string;
+    endDate?: string;
+    method?: any;
+    type?: any;
+    sectionId?: string;
+  }, @Request() req: any) {
+    return this.feesService.queueFeeHistoryReport(dto, req.user.tenantId);
+  }
+
+  @Get('reports/status/:jobId')
+  getReportStatus(@Param('jobId') jobId: string) {
+    return this.feesService.getFinanceJobStatus(jobId);
+  }
+
   // --- Online Payment Verification ---
   @Post('paystack/verify')
   verifyPaystackPayment(@Body() dto: { reference: string, meta: any, studentId: string }, @Request() req: any) {

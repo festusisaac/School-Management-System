@@ -139,8 +139,8 @@ const ReportCardTemplate: React.FC<Props> = ({
                 <tbody>
                     <tr>
                         <td style={{ width: '15%', textAlign: 'center', padding: '5px' }}>
-                            {(settings.printLogo || settings.primaryLogo || settings.invoiceLogo) ? (
-                                <img src={getFullUrl(settings.printLogo || settings.primaryLogo || settings.invoiceLogo)} style={{ width: '60px', height: '60px', objectFit: 'contain' }} alt="Logo" />
+                            {(settings.printLogo || settings.primaryLogo || settings.principalSignature) ? (
+                                <img src={getFullUrl(settings.printLogo || settings.primaryLogo || settings.principalSignature)} style={{ width: '60px', height: '60px', objectFit: 'contain' }} alt="Logo" />
                             ) : (
                                 <div style={{ width: '60px', height: '60px', background: '#9333ea', color: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '10px' }}>LOGO</div>
                             )}
@@ -151,8 +151,8 @@ const ReportCardTemplate: React.FC<Props> = ({
                             <div style={{ fontStyle: 'italic', marginTop: '2px' }}>"{settings.schoolMotto || 'Excellence & Integrity'}"</div>
                         </td>
                         <td style={{ width: '15%', textAlign: 'center', padding: '5px' }}>
-                            {(settings.primaryLogo || settings.invoiceLogo || settings.printLogo) ? (
-                                <img src={getFullUrl(settings.primaryLogo || settings.invoiceLogo || settings.printLogo)} style={{ width: '60px', height: '60px', objectFit: 'contain' }} alt="Logo" />
+                            {(settings.primaryLogo || settings.principalSignature || settings.printLogo) ? (
+                                <img src={getFullUrl(settings.primaryLogo || settings.principalSignature || settings.printLogo)} style={{ width: '60px', height: '60px', objectFit: 'contain' }} alt="Logo" />
                             ) : (
                                 <div style={{ width: '60px', height: '60px', background: '#9333ea', color: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '10px' }}>LOGO</div>
                             )}
@@ -525,8 +525,8 @@ const ReportCardTemplate: React.FC<Props> = ({
                                                 <strong>Principal's Comments:</strong> {data.academicInfo.principalComment || ''}
                                                 <span style={{ float: 'right' }}>
                                                     <strong>Sign.:</strong> 
-                                                    {data.academicInfo.principalSignature || settings?.invoiceLogo ? (
-                                                        <img src={data.academicInfo.principalSignature || getFullUrl(settings?.invoiceLogo || '')} alt="" style={{ height: '25px', maxWidth: '80px', objectFit: 'contain', verticalAlign: 'middle' }} />
+                                                    {data.academicInfo.principalSignature || settings?.principalSignature ? (
+                                                        <img src={data.academicInfo.principalSignature || getFullUrl(settings?.principalSignature || '')} alt="" style={{ height: '25px', maxWidth: '80px', objectFit: 'contain', verticalAlign: 'middle' }} />
                                                     ) : (
                                                         <span style={{ display: 'inline-block', width: '50px', borderBottom: '1px solid #000' }}></span>
                                                     )}

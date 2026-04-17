@@ -10,7 +10,7 @@ async function run() {
         database: process.env.DATABASE_NAME
     });
     await c.connect();
-
+    
     // Find duplicated carry_forwards
     const result = await c.query(`
         SELECT "studentId", "feeHeadId", "sessionId", COUNT(*)

@@ -2,7 +2,9 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DashboardController } from './controllers/dashboard.controller';
 import { StudentDashboardController } from './controllers/student-dashboard.controller';
+import { AuditController } from './controllers/audit.controller';
 import { DashboardService } from './services/dashboard.service';
+import { AuditService } from './services/audit.service';
 import { Student } from '../students/entities/student.entity';
 import { Staff } from '../hr/entities/staff.entity';
 import { Transaction } from '../finance/entities/transaction.entity';
@@ -14,6 +16,8 @@ import { ExamGroup } from '../examination/entities/exam-group.entity';
 import { StaffAttendance } from '../hr/entities/staff-attendance.entity';
 import { Payroll } from '../hr/entities/payroll.entity';
 import { StudentAttendance } from '../students/entities/student-attendance.entity';
+import { ActivityLog } from '../system/entities/activity-log.entity';
+import { CommunicationLog } from '../communication/entities/communication-log.entity';
 
 @Module({
   imports: [
@@ -29,10 +33,12 @@ import { StudentAttendance } from '../students/entities/student-attendance.entit
       StaffAttendance,
       Payroll,
       StudentAttendance,
+      ActivityLog,
+      CommunicationLog,
     ]),
   ],
-  controllers: [DashboardController, StudentDashboardController],
-  providers: [DashboardService],
-  exports: [DashboardService],
+  controllers: [DashboardController, StudentDashboardController, AuditController],
+  providers: [DashboardService, AuditService],
+  exports: [DashboardService, AuditService],
 })
 export class ReportingModule { }

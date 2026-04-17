@@ -23,7 +23,7 @@ export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess, isB
     
     const [amount, setAmount] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
-    const [step, setStep] = useState<'DETAILS' | 'GATEWAY_SELECTION' | 'SUCCESS'>('DETAILS');
+    const [step, setStep] = useState<'DETAILS' | 'GATEWAY_SELECTION' | 'VERIFYING' | 'SUCCESS'>('DETAILS');
     const [lastTransaction, setLastTransaction] = useState<any>(null);
     const distinctStudentsInBulk = useMemo(() => new Set((bulkAllocations || []).map((alloc: any) => alloc.studentId)).size, [bulkAllocations]);
     const isAllocatedFlow = !!isBulk && Array.isArray(bulkAllocations) && bulkAllocations.length > 0;
@@ -59,6 +59,10 @@ export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess, isB
             setAmount(feeHead.balance);
         }
     }, [isOpen, feeHead]);
+
+    const startVerificationFeedback = () => {
+        setStep('VERIFYING');
+    };
 
     const maxAmount = parseFloat(feeHead?.balance || '0');
     const payAmountNum = parseFloat(amount || '0');
@@ -117,6 +121,7 @@ export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess, isB
 
     const handlePaystackSuccess = async (reference: any) => {
         setIsProcessing(true);
+        startVerificationFeedback();
         try {
             await api.verifyPaystackPayment({
                 reference: reference.reference,
@@ -140,20 +145,22 @@ export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess, isB
             setStep('SUCCESS');
         } catch (error: any) {
             showError(error.response?.data?.message || 'Payment verification failed.');
-            setStep('DETAILS');
+            setStep('GATEWAY_SELECTION');
         } finally {
             setIsProcessing(false);
         }
     };
 
     const handlePaystackClose = () => {
-        showError('Payment cancelled.');
+        if (step !== 'VERIFYING') {
+            showError('Payment cancelled.');
+        }
         setIsProcessing(false);
+        setStep('GATEWAY_SELECTION');
     };
 
     const payWithPaystack = () => {
         setIsProcessing(true);
-        setStep('DETAILS');
         setTimeout(() => {
             initializePaystack({ onSuccess: handlePaystackSuccess, onClose: handlePaystackClose });
         }, 50);
@@ -190,12 +197,12 @@ export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess, isB
 
     const payWithFlutterwave = () => {
         setIsProcessing(true);
-        setStep('DETAILS');
         setTimeout(() => {
             handleFlutterwavePayment({
                 callback: async (response) => {
                     closePaymentModal();
                     if (response.status === 'successful') {
+                         startVerificationFeedback();
                          try {
                             await api.verifyFlutterwavePayment({
                                 transactionId: response.transaction_id.toString(),
@@ -220,19 +227,22 @@ export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess, isB
                             setStep('SUCCESS');
                         } catch (error: any) {
                             showError(error.response?.data?.message || 'Payment verification failed.');
-                            setStep('DETAILS');
+                            setStep('GATEWAY_SELECTION');
                         } finally {
                             setIsProcessing(false);
                         }
                     } else {
                         showError('Payment failed or cancelled.');
                         setIsProcessing(false);
-                        setStep('DETAILS');
+                        setStep('GATEWAY_SELECTION');
                     }
                 },
                 onClose: () => {
-                    showError('Payment cancelled.');
+                    if (step !== 'VERIFYING') {
+                        showError('Payment cancelled.');
+                    }
                     setIsProcessing(false);
+                    setStep('GATEWAY_SELECTION');
                 },
             });
         }, 50);
@@ -342,6 +352,19 @@ export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess, isB
                         <p className="text-sm text-gray-500">
                             You are about to pay <span className="font-black text-gray-900 dark:text-white">{formatCurrency(parseFloat(amount))}</span> for {feeHead.name}.
                         </p>
+                        {isProcessing && (
+                            <div className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-left">
+                                <div className="flex items-start gap-3">
+                                    <Loader2 className="mt-0.5 animate-spin text-primary-600" size={18} />
+                                    <div>
+                                        <p className="text-sm font-black text-primary-900">Waiting for payment confirmation</p>
+                                        <p className="text-xs font-medium text-primary-700 mt-1">
+                                            Complete the payment in the provider window. We will verify it automatically once it returns.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                         
                         <div className="grid grid-cols-1 gap-4 my-6">
                             <button
@@ -382,6 +405,26 @@ export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess, isB
                         >
                             Back
                         </button>
+                    </div>
+                )}
+
+                {step === 'VERIFYING' && (
+                    <div className="p-8 text-center space-y-6">
+                        <div className="w-20 h-20 bg-primary-50 rounded-full flex items-center justify-center mx-auto border border-primary-100">
+                            <Loader2 size={36} className="animate-spin text-primary-600" />
+                        </div>
+                        <div className="space-y-2">
+                            <h3 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Verifying Payment</h3>
+                            <p className="text-sm text-gray-500">
+                                Your payment was received. We are confirming it with the payment provider and updating your ledger now.
+                            </p>
+                        </div>
+                        <div className="rounded-2xl bg-amber-50 border border-amber-100 px-4 py-4 text-left">
+                            <p className="text-sm font-bold text-amber-900">Do not make this payment again.</p>
+                            <p className="text-xs font-medium text-amber-700 mt-1">
+                                This step can take a few seconds. Once verification completes, we will show your receipt automatically.
+                            </p>
+                        </div>
                     </div>
                 )}
 

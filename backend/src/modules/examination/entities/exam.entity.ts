@@ -60,6 +60,9 @@ export class Exam {
     @Column({ type: 'uuid', nullable: true })
     sessionId?: string;
 
+    @Column({ nullable: true, unique: true })
+    syncKey?: string;
+
     @ManyToOne(() => AcademicSession)
     @JoinColumn({ name: 'sessionId' })
     session?: AcademicSession;

@@ -267,6 +267,17 @@ export const systemService = {
         return response;
     },
 
+    uploadUserPhoto: async (id: string, file: File) => {
+        const formData = new FormData();
+        formData.append('photo', file);
+        const response = await api.post<any>(`/users/${id}/photo`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response;
+    },
+
     deleteUser: async (id: string) => {
         const response = await api.delete(`/users/${id}`);
         return response;

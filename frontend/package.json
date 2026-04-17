@@ -26,6 +26,7 @@
     "lucide-react": "^0.561.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-error-boundary": "^6.1.1",
     "react-hot-toast": "^2.4.1",
     "react-paystack": "^6.0.0",
     "react-router-dom": "^6.18.0",

@@ -192,6 +192,8 @@ export function TopBar({ onMenuClick }: TopBarProps) {
                                         navigate('/students/profile/me');
                                     } else if (role === 'parent' || role === 'member') {
                                         navigate('/parent/profile');
+                                    } else if (role === 'super administrator' || role === 'administrator' || role === 'admin') {
+                                        navigate('/settings/profile');
                                     } else {
                                         navigate('/hr/staff/profile');
                                     }

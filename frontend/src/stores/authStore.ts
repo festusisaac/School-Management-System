@@ -57,6 +57,12 @@ export const useAuthStore = create<AuthStore>((set) => ({
     }
   },
   logout: () => {
+    const token = authSession.getAccessToken()
+    if (token) {
+      axios.post(`${API_BASE_URL}/auth/logout`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      }).catch(() => {}) // Ignore errors, just want to trigger audit log
+    }
     authSession.clear()
     set({ user: null, token: null, childrenList: [], selectedChildId: null })
   },

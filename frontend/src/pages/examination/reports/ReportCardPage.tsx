@@ -307,7 +307,7 @@ const ReportCardPage = () => {
                         nextTermBegins: broadsheetResponse.termDetails?.nextTermStartDate ? new Date(broadsheetResponse.termDetails.nextTermStartDate).toLocaleDateString() : '',
                         classTeacherName: teacher ? `${teacher.firstName} ${teacher.lastName}` : 'N/A',
                         classTeacherSignature: teacher?.signature ? getFullUrl(teacher.signature) : '',
-                        principalSignature: settings?.invoiceLogo ? getFullUrl(settings.invoiceLogo) : '',
+                        principalSignature: settings?.principalSignature ? getFullUrl(settings.principalSignature) : '',
                         teacherComment: result.teacherComment,
                         principalComment: result.principalComment,
                         promotionStatus: result.promotionStatus

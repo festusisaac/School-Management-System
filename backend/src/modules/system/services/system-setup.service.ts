@@ -126,7 +126,9 @@ export class SystemSetupService {
             'library:issue_return', 'library:view_reports', 'finance:collect_fees', 'finance:view_payments',
             'finance:view_reports', 'finance:manage_fee_structure', 'finance:manage_reminders',
             'exams:manage_setup', 'exams:manage_schedule', 'exams:manage_admit_cards', 'exams:enter_marks',
-            'exams:manage_domains', 'exams:view_reports', 'exams:process_results'
+            'exams:manage_domains', 'exams:view_reports', 'exams:process_results',
+            'audit_reports:view',
+            'front_cms:manage'
           ]
         }
       ];
@@ -222,12 +224,13 @@ export class SystemSetupService {
       await queryRunner.manager.save(settings);
 
       // 6. Log Initialization Action
-      await this.activityLogService.logAction(
-        dto.adminEmail,
-        'SYSTEM_INITIALIZATION',
-        `System initialized was completed. Institutional Name: ${dto.schoolName}`,
-        req.ip
-      );
+      await this.activityLogService.logAction({
+        userEmail: dto.adminEmail,
+        action: 'SYSTEM_INITIALIZATION',
+        details: `System initialized was completed. Institutional Name: ${dto.schoolName}`,
+        ipAddress: req.ip,
+        portal: 'ADMIN',
+      });
 
       await queryRunner.commitTransaction();
       return { message: 'System initialized successfully.' };

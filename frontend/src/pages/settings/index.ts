@@ -4,3 +4,4 @@ export { default as TermsPage } from './TermsPage';
 export { default as RolesPermissionsPage } from './RolesPermissionsPage';
 export { default as UsersPage } from './UsersPage';
 export { default as PaymentSettingsPage } from './PaymentSettingsPage';
+export { default as AdminProfilePage } from './AdminProfilePage';

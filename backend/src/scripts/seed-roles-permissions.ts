@@ -57,6 +57,8 @@ const permissionsData = [
   { slug: 'settings:general', name: 'General Settings', module: 'Settings' },
   { slug: 'settings:roles_permissions', name: 'Roles & Permissions', module: 'Settings' },
   { slug: 'settings:manage_users', name: 'Manage Users', module: 'Settings' },
+  { slug: 'audit_reports:view', name: 'Audit & Reports Module', module: 'Audit & Reports' },
+  { slug: 'front_cms:manage', name: 'Manage Front CMS', module: 'Front CMS' },
 ];
 
 async function seed() {

@@ -74,6 +74,14 @@ class ApiService {
     return this.get<any>('/finance/payments', { params })
   }
 
+  async getFinanceReportStatus(jobId: string) {
+    return this.get<any>(`/finance/reports/status/${jobId}`)
+  }
+
+  async queueFeeHistoryReport(data: { studentId?: string; startDate?: string; endDate?: string; method?: string; type?: string; sectionId?: string }) {
+    return this.post<{ jobId: string }>('/finance/reports/fee-history', data)
+  }
+
   async getDebtorsList(params: { classId?: string; search?: string; page?: number; limit?: number; minBalance?: number; riskLevel?: string; sectionId?: string } = {}) {
     return this.get<any>('/finance/debtors', { params })
   }
@@ -185,7 +193,7 @@ class ApiService {
     return this.post<any>('/finance/carry-forward', data)
   }
 
-  async listCarryForwards(params: { studentId?: string; academicYear?: string; page?: number; limit?: number } = {}) {
+  async listCarryForwards(params: { studentId?: string; academicYear?: string; search?: string; page?: number; limit?: number } = {}) {
     return this.get<any>('/finance/carry-forward', { params })
   }
 
@@ -212,6 +220,18 @@ class ApiService {
 
   async getRecentActivities(params: { sectionId?: string; sessionId?: string; termId?: string } = {}) {
     return this.get<any>('/reporting/dashboard/admin/activities', { params })
+  }
+
+  async getAuditOverview() {
+    return this.get<any>('/reporting/audit/overview')
+  }
+
+  async getAuditActivityLogs(params?: { search?: string; action?: string; portal?: string; page?: number; limit?: number }) {
+    return this.get<any>('/reporting/audit/activity-logs', { params })
+  }
+
+  async getAuditCommunicationLogs(params?: { search?: string; type?: string; status?: string; page?: number; limit?: number }) {
+    return this.get<any>('/reporting/audit/communication-logs', { params })
   }
 
   // Classes
@@ -745,7 +765,6 @@ class ApiService {
     return this.delete<any>(`/hr/ratings/${id}`)
   }
 
-  // Student API methods
   async getStudents(params?: any) {
     return this.get<any[]>('/students', { params })
   }
@@ -793,9 +812,6 @@ class ApiService {
     return this.get<any>('/students/profile/parent')
   }
 
-  async getStudentProfile() {
-    return this.get<any>('/students/profile/me')
-  }
 
   async updateStudent(id: string, data: any) {
     if (data instanceof FormData) {
@@ -818,9 +834,6 @@ class ApiService {
     return this.patch<any>(`/students/${id}/activate`, {})
   }
 
-  async deleteStudentDocument(id: string) {
-    return this.delete<any>(`/students/documents/${id}`)
-  }
 
   async createOnlineAdmission(data: any) {
     if (data instanceof FormData) {
@@ -872,11 +885,6 @@ class ApiService {
   }
 
   // Student Attendance methods
-  async getStudentAttendance(studentId: string, startDate: string, endDate: string) {
-    return this.get<any[]>(`/students/attendance/student/${studentId}`, {
-      params: { startDate, endDate }
-    });
-  }
 
   async markStudentAttendance(data: any) {
     return this.post<any>('/students/attendance/mark', data)
@@ -904,13 +912,6 @@ class ApiService {
   }
 
   // Examination Student API
-  async getStudentExamDashboard(studentId: string) {
-    return this.get<any>(`/examination/student/${studentId}/dashboard`)
-  }
-
-  async verifyStudentResult(studentId: string, data: { code: string; pin: string; examGroupId: string }) {
-    return this.post<any>(`/examination/student/${studentId}/verify-result`, data)
-  }
 
   async getStudentAdmitCard(studentId: string, examGroupId: string) {
     return this.get<any>(`/examination/student/${studentId}/admit-card`, { params: { examGroupId } })
@@ -955,9 +956,31 @@ class ApiService {
     return this.get<any[]>('/communication/logs', { params })
   }
 
+  async getStudentProfile() {
+    return this.get<any>('/students/profile/me')
+  }
+
+  async getStudentExamDashboard(studentId: string) {
+    return this.get<any>(`/examination/results/student/${studentId}/dashboard`)
+  }
+
+  async verifyStudentResult(studentId: string, data: any) {
+    return this.post<any>(`/examination/student/${studentId}/verify-result`, data)
+  }
+
+  async deleteStudentDocument(docId: string) {
+    return this.delete<any>(`/students/documents/${docId}`)
+  }
+
   async getCommunicationLogsByStudent(studentId: string) {
     return this.get<any[]>(`/communication/logs/student/${studentId}`)
   }
+
+  async getStudentAttendance(studentId: string, startDate: string, endDate: string) {
+    return this.get<any[]>(`/hr/attendance/student/${studentId}`, { params: { startDate, endDate } })
+  }
+
+
 
   // Noticeboard
   async getNotices(params?: { audience?: string, schoolSectionId?: string }) {
