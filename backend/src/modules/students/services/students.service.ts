@@ -243,7 +243,7 @@ export class StudentsService {
         }
 
         // --- Simplified Fee Allocation for MVP ---
-        if (feeGroupIds && Array.isArray(feeGroupIds) && feeGroupIds.length > 0) {
+        if (Array.isArray(feeGroupIds)) {
             await this.feesService.assignFeesToStudent(savedStudent.id, feeGroupIds, tenantId, feeExclusions);
         }
 
@@ -430,6 +430,14 @@ export class StudentsService {
             }
         });
         (student as any).feeExclusions = exclusions;
+        (student as any).assignedFeeGroups = assignments
+            .filter((a: any) => a.feeGroup)
+            .map((a: any) => ({
+                ...a.feeGroup,
+                excludedHeadIds: a.excludedHeadIds || [],
+            }));
+        (student as any).feeAssignmentProtection = await this.feesService.getFeeAssignmentProtection(student.id, tenantId);
+        (student as any).previousFeeAssignmentSuggestion = await this.feesService.getPreviousSessionFeeAssignmentSuggestion(student.id, tenantId);
 
         return student;
     }
@@ -538,7 +546,7 @@ export class StudentsService {
         }
 
         // --- Simplified Fee Allocation for MVP ---
-        if (feeGroupIds && Array.isArray(feeGroupIds) && feeGroupIds.length > 0) {
+        if (Array.isArray(feeGroupIds)) {
             await this.feesService.assignFeesToStudent(id, feeGroupIds, tenantId, feeExclusions);
         }
 

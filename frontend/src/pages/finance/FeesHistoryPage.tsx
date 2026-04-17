@@ -25,7 +25,6 @@ import {
 import { ReceiptTemplate } from './components/ReceiptTemplate';
 import { TransactionPreview } from './components/TransactionPreview';
 import StudentFinancePage from './StudentFinancePage';
-import ReactDOM from 'react-dom/client';
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { clsx } from 'clsx';
@@ -33,6 +32,7 @@ import { formatCurrency, CURRENCY_SYMBOL } from '../../utils/currency';
 import { useSystem } from '../../context/SystemContext';
 import { useAuthStore } from '../../stores/authStore';
 import { formatDateLocal, formatTimeLocal } from '../../utils/date';
+import { printReceipt } from './utils/printReceipt';
 
 interface Transaction {
   id: string;
@@ -55,6 +55,16 @@ interface Transaction {
       headId: string;
       name: string;
       amount: string;
+      status: 'FULL' | 'PARTIAL' | 'NOT_PAID';
+    }>;
+    bulkAllocations?: Array<{
+      id: string;
+      name: string;
+      studentId: string;
+      studentName: string;
+      amount: string;
+      totalDue: string;
+      balance: string;
       status: 'FULL' | 'PARTIAL' | 'NOT_PAID';
     }>;
   };
@@ -186,41 +196,11 @@ export default function FeesHistoryPage() {
   };
 
   const handlePrintReceipt = (tx: Transaction) => {
-    // Open a new window
-    const printWindow = window.open('', '', 'width=800,height=600');
-    if (!printWindow) {
-      showError('Popup blocked. Please allow popups to print receipts.');
-      return;
-    }
-
-    // Write basic HTML structure
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Print Receipt - ${tx.id}</title>
-          <script src="https://cdn.tailwindcss.com"></script>
-        </head>
-        <body>
-          <div id="print-root"></div>
-          <script>
-            setTimeout(() => {
-              window.print();
-              window.close();
-            }, 1000);
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-
-    // Render the receipt component into the new window
-    const root = ReactDOM.createRoot(printWindow.document.getElementById('print-root') as HTMLElement);
-    root.render(
-      <ReceiptTemplate
-        transaction={tx}
-        schoolInfo={getSchoolInfo()}
-      />
-    );
+    printReceipt({
+      transaction: tx,
+      schoolInfo: getSchoolInfo(),
+      onPopupBlocked: () => showError('Popup blocked. Please allow popups to print receipts.'),
+    });
   };
 
   return (
@@ -233,13 +213,13 @@ export default function FeesHistoryPage() {
         </div>
         <div className="flex items-center gap-3">
           {isStudent && (
-              <button
-                onClick={() => navigate(`/students/profile/${user?.id}`)}
-                className="flex items-center gap-2 px-4 py-2 bg-primary-600 border border-primary-600 rounded-xl text-sm font-semibold text-white hover:bg-primary-700 transition-all shadow-sm"
-              >
-                <CreditCard size={18} />
-                Make Payment
-              </button>
+            <button
+              onClick={() => navigate(`/students/profile/${user?.id}`)}
+              className="flex items-center gap-2 px-4 py-2 bg-primary-600 border border-primary-600 rounded-xl text-sm font-semibold text-white hover:bg-primary-700 transition-all shadow-sm"
+            >
+              <CreditCard size={18} />
+              Make Payment
+            </button>
           )}
           <button
             onClick={handleExportCSV}
@@ -442,8 +422,8 @@ export default function FeesHistoryPage() {
                   </td>
                   <td className="px-3 py-3 border-b border-gray-50 dark:border-gray-800">
                     <div className="flex flex-col gap-1">
-                      {tx.meta?.allocations && tx.meta.allocations.length > 0 ? (
-                        tx.meta.allocations.map((a: any, idx: number) => (
+                      {(tx.meta?.allocations || tx.meta?.bulkAllocations) && (tx.meta.allocations || tx.meta.bulkAllocations)!.length > 0 ? (
+                        (tx.meta.allocations || tx.meta.bulkAllocations)!.map((a: any, idx: number) => (
                           <div key={idx} className="flex items-center gap-1.5">
                             <div className="w-1 h-1 rounded-full bg-primary-500"></div>
                             <span className="text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-tight">{a.name}</span>
@@ -471,14 +451,14 @@ export default function FeesHistoryPage() {
                   </td>
                   <td className="px-3 py-3 text-center border-b border-gray-50 dark:border-gray-800">
                     <div className={clsx(
-                       "inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[9px] font-bold uppercase tracking-widest",
+                      "inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[9px] font-bold uppercase tracking-widest",
                       tx.type === 'REFUND'
                         ? "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-100 dark:border-red-800"
                         : tx.type === 'WAIVER'
                           ? "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800"
                           : tx.type === 'CARRY_FORWARD'
                             ? "bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800"
-                            : tx.meta?.allocations?.some((a: any) => a.status === 'PARTIAL')
+                            : (tx.meta?.allocations || tx.meta?.bulkAllocations)?.some((a: any) => a.status === 'PARTIAL')
                               ? "bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 border-primary-200 dark:border-primary-800"
                               : "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800"
                     )}>
@@ -488,7 +468,7 @@ export default function FeesHistoryPage() {
                           ? 'WAIVED'
                           : tx.type === 'CARRY_FORWARD'
                             ? 'TRANSFERRED'
-                            : tx.meta?.allocations?.some((a: any) => a.status === 'PARTIAL')
+                            : (tx.meta?.allocations || tx.meta?.bulkAllocations)?.some((a: any) => a.status === 'PARTIAL')
                               ? 'PARTIAL'
                               : 'PAID'}
                     </div>
@@ -688,14 +668,14 @@ export default function FeesHistoryPage() {
 
       {/* Transaction Preview Modal */}
       {showPreview && selectedTx && (
-          <TransactionPreview
-              transaction={selectedTx}
-              onClose={() => setShowPreview(false)}
-              onPrint={() => {
-                  setShowPreview(false);
-                  setShowReceipt(true);
-              }}
-          />
+        <TransactionPreview
+          transaction={selectedTx}
+          onClose={() => setShowPreview(false)}
+          onPrint={() => {
+            setShowPreview(false);
+            setShowReceipt(true);
+          }}
+        />
       )}
 
 

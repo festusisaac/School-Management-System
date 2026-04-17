@@ -123,11 +123,19 @@ const UsersPage = () => {
                 </div>
                 <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                     <p className="text-sm text-gray-500 dark:text-gray-400">Active Admins</p>
-                    <p className="text-2xl font-bold text-primary-600">{users.filter(u => (u.role === 'Admin' || u.roleId === roles.find(r => r.name === 'Admin')?.id) && u.isActive).length}</p>
+                    <p className="text-2xl font-bold text-primary-600">{users.filter(u => {
+                        const roleName = roles.find(r => r.id === u.roleId)?.name || u.role;
+                        const adminRoles = ['super administrator', 'administrator'];
+                        return !adminRoles.includes(roleName?.toLowerCase()) && u.isActive;
+                    }).length}</p>
                 </div>
                 <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                     <p className="text-sm text-gray-500 dark:text-gray-400">Active Staff</p>
-                    <p className="text-2xl font-bold text-green-600">{users.filter(u => u.role !== 'Admin' && u.isActive).length}</p>
+                    <p className="text-2xl font-bold text-green-600">{users.filter(u => {
+                        const roleName = roles.find(r => r.id === u.roleId)?.name || u.role;
+                        const adminRoles = ['super administrator', 'administrator'];
+                        return !adminRoles.includes(roleName?.toLowerCase()) && u.isActive;
+                    }).length}</p>
                 </div>
                 <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                     <p className="text-sm text-gray-500 dark:text-gray-400">Inactive Accounts</p>
@@ -205,9 +213,13 @@ const UsersPage = () => {
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 w-fit ${
-                                                user.role === 'Admin' || roles.find(r => r.id === user.roleId)?.name === 'Admin'
-                                                ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
-                                                : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                                                (() => {
+                                                    const roleName = roles.find(r => r.id === user.roleId)?.name || user.role;
+                                                    const adminRoles = ['super administrator', 'administrator', 'admin'];
+                                                    return adminRoles.includes(roleName?.toLowerCase())
+                                                        ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                                                        : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+                                                })()
                                             }`}>
                                                 <Shield size={12} />
                                                 {roles.find(r => r.id === user.roleId)?.name || user.role}

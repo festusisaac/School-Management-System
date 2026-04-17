@@ -1,17 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   CreditCard,
-  ChevronRight,
   ShieldCheck,
   AlertCircle,
   ArrowRight,
-  TrendingUp,
-  Download,
   History,
   Info,
   ChevronDown,
   Printer,
-  Calendar,
   Wallet,
   CheckCircle2,
   FileText,
@@ -23,6 +19,7 @@ import { useToast } from '../../context/ToastContext';
 import { useAuthStore } from '../../stores/authStore';
 import { useSystem } from '../../context/SystemContext';
 import { PaymentModal } from '../students/components/PaymentModal';
+import { FamilyAllocationModal, ParentPaymentAllocationLine } from './components/FamilyAllocationModal';
 import { clsx } from 'clsx';
 import { format } from 'date-fns';
 
@@ -35,9 +32,11 @@ export default function ParentBilling() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentMode, setPaymentMode] = useState<'SINGLE' | 'BULK'>('BULK');
+  const [showAllocationModal, setShowAllocationModal] = useState(false);
+  const [allocationContext, setAllocationContext] = useState<{ scope: 'FAMILY' | 'CHILD'; studentId?: string } | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [selectedFeeHead, setSelectedFeeHead] = useState<any>(null);
+  const [selectedAllocations, setSelectedAllocations] = useState<ParentPaymentAllocationLine[]>([]);
   const [expandedChild, setExpandedChild] = useState<string | null>(null);
 
   const fetchFamilyData = useCallback(async () => {
@@ -63,17 +62,75 @@ export default function ParentBilling() {
     fetchFamilyData();
   }, [fetchFamilyData]);
 
+  const getAllocationLines = useCallback((scope: { scope: 'FAMILY' | 'CHILD'; studentId?: string } | null) => {
+    if (!scope || !data?.siblings) return [];
+
+    const siblings = scope.scope === 'CHILD'
+      ? data.siblings.filter((s: any) => s.student.id === scope.studentId)
+      : data.siblings;
+
+    return siblings.flatMap((childData: any) => {
+      const childName = `${childData.student.firstName} ${childData.student.lastName}`;
+      const assignedHeadLines = (childData.assignedHeads || [])
+        .filter((head: any) => parseFloat(head.balance || '0') > 0)
+        .map((head: any) => ({
+          studentId: childData.student.id,
+          studentName: childName,
+          admissionNo: childData.student.admissionNo,
+          className: childData.student.class?.name || 'N/A',
+          id: head.id,
+          feeHeadId: head.id,
+          feeHeadName: head.name,
+          amountDue: parseFloat(head.balance || '0').toFixed(2),
+          amount: parseFloat(head.balance || '0').toFixed(2),
+          balance: '0.00',
+          sourceType: 'FEE_HEAD' as const,
+        }));
+
+      const carryForwardLines = (childData.carryForwards || [])
+        .filter((carry: any) => parseFloat(carry.balance || '0') > 0)
+        .map((carry: any) => ({
+          studentId: childData.student.id,
+          studentName: childName,
+          admissionNo: childData.student.admissionNo,
+          className: childData.student.class?.name || 'N/A',
+          id: carry.id,
+          feeHeadId: carry.feeHeadId || carry.id,
+          feeHeadName: carry.name,
+          amountDue: parseFloat(carry.balance || '0').toFixed(2),
+          amount: parseFloat(carry.balance || '0').toFixed(2),
+          balance: '0.00',
+          sourceType: 'CARRY_FORWARD' as const,
+        }));
+
+      return [...assignedHeadLines, ...carryForwardLines];
+    });
+  }, [data]);
+
+  const allocationLines = getAllocationLines(allocationContext);
+
   const handlePayAll = () => {
-    setPaymentMode('BULK');
-    if (data?.siblings?.length > 0) {
-        setSelectedStudent(data.siblings[0].student);
-        setSelectedFeeHead({
-            id: 'BULK',
-            name: 'Family Outstanding Balance',
-            balance: data.familyBalance.toString()
-        });
-        setShowPaymentModal(true);
+    setAllocationContext({ scope: 'FAMILY' });
+    setShowAllocationModal(true);
+  };
+
+  const handleAllocationConfirmed = (allocations: ParentPaymentAllocationLine[]) => {
+    const total = allocations.reduce((sum, line) => sum + (parseFloat(line.amount || '0') || 0), 0);
+    if (total <= 0) {
+      showError('Please allocate an amount before proceeding.');
+      return;
     }
+
+    const firstStudent = data?.siblings?.find((s: any) => s.student.id === allocations[0].studentId)?.student;
+    setSelectedAllocations(allocations);
+    setSelectedStudent(firstStudent || data?.siblings?.[0]?.student || null);
+    setSelectedFeeHead({
+      id: allocationContext?.scope === 'CHILD' ? 'ALLOCATED_CHILD_PAYMENT' : 'ALLOCATED_FAMILY_PAYMENT',
+      name: allocationContext?.scope === 'CHILD' ? 'Allocated Child Payment' : 'Allocated Family Payment',
+      balance: total.toFixed(2),
+    });
+    setShowAllocationModal(false);
+    setShowPaymentModal(true);
   };
 
   if (loading) {
@@ -83,15 +140,6 @@ export default function ParentBilling() {
           </div>
       );
   }
-
-  const bulkAllocations = data?.siblings?.map((s: any) => ({
-      studentId: s.student.id,
-      amount: s.balance,
-      totalDue: s.balance,
-      balance: '0',
-      status: 'PAID',
-      name: `${s.student.firstName} ${s.student.lastName}`
-  })).filter((a: any) => parseFloat(a.amount) > 0) || [];
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-20">
@@ -303,10 +351,8 @@ export default function ParentBilling() {
                                         <button 
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                setPaymentMode('SINGLE');
-                                                setSelectedStudent(child);
-                                                setSelectedFeeHead({ id: 'TOTAL', name: `Balance for ${child.firstName}`, balance: childData.balance });
-                                                setShowPaymentModal(true);
+                                                setAllocationContext({ scope: 'CHILD', studentId: child.id });
+                                                setShowAllocationModal(true);
                                             }}
                                             className="px-6 py-2 bg-gray-900 dark:bg-gray-700 text-white text-xs font-bold rounded-lg hover:bg-black transition-all"
                                         >
@@ -364,14 +410,32 @@ export default function ParentBilling() {
                 setShowPaymentModal(false);
                 setSelectedStudent(null);
                 setSelectedFeeHead(null);
+                setSelectedAllocations([]);
             }}
             student={selectedStudent}
             feeHead={selectedFeeHead}
             onSuccess={() => fetchFamilyData()}
-            isBulk={paymentMode === 'BULK'}
-            bulkAllocations={paymentMode === 'BULK' ? bulkAllocations : []}
+            isBulk={selectedAllocations.length > 0}
+            bulkAllocations={selectedAllocations}
           />
       )}
+
+      <FamilyAllocationModal
+        isOpen={showAllocationModal}
+        title={allocationContext?.scope === 'CHILD' ? 'Allocate Child Payment' : 'Allocate Family Payment'}
+        description={
+          allocationContext?.scope === 'CHILD'
+            ? 'Assign this payment to the exact fee heads you want to settle for this child.'
+            : 'Assign this payment to the exact child and fee-head lines before checkout.'
+        }
+        lines={allocationLines}
+        formatCurrency={formatCurrency}
+        onClose={() => {
+          setShowAllocationModal(false);
+          setAllocationContext(null);
+        }}
+        onConfirm={handleAllocationConfirmed}
+      />
     </div>
   );
 }

@@ -17,9 +17,8 @@ import { useToast } from '../../context/ToastContext';
 
 import { formatCurrency, CURRENCY_SYMBOL } from '../../utils/currency';
 import { clsx } from 'clsx';
-import { createRoot } from 'react-dom/client';
-import { ReceiptTemplate } from './components/ReceiptTemplate';
 import { useSystem } from '../../context/SystemContext';
+import { printReceipt } from './utils/printReceipt';
 
 const scrollbarHideStyle = `
   .scrollbar-none::-webkit-scrollbar {
@@ -253,52 +252,11 @@ export default function RecordPaymentPage() {
 
 
     const handlePrintReceipt = (transaction: any) => {
-        // Get school info
-        const schoolInfo = getSchoolInfo();
-
-        const receiptDiv = document.createElement('div');
-        receiptDiv.style.display = 'none';
-        document.body.appendChild(receiptDiv);
-
-        const root = createRoot(receiptDiv);
-        root.render(<ReceiptTemplate transaction={transaction} schoolInfo={schoolInfo} />);
-
-        // Wait for render to commit to DOM
-        setTimeout(() => {
-            const html = receiptDiv.innerHTML;
-            root.unmount();
-            document.body.removeChild(receiptDiv);
-
-            if (!html || html.length < 100) {
-                showError('Failed to generate receipt');
-                return;
-            }
-
-            const printWindow = window.open('', '', 'width=800,height=600');
-            if (!printWindow) {
-                showError('Popup blocked');
-                return;
-            }
-
-            printWindow.document.write(`
-                <html>
-                    <head>
-                        <title>Receipt - ${transaction.id}</title>
-                        <script src="https://cdn.tailwindcss.com"></script>
-                    </head>
-                    <body>
-                        ${html}
-                        <script>
-                            window.onload = () => {
-                                window.print();
-                                window.close();
-                            };
-                        </script>
-                    </body>
-                </html>
-            `);
-            printWindow.document.close();
-        }, 500);
+        printReceipt({
+            transaction,
+            schoolInfo: getSchoolInfo(),
+            onPopupBlocked: () => showError('Popup blocked'),
+        });
     };
 
     return (

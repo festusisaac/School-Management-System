@@ -76,7 +76,8 @@ function AppRoutes() {
   };
 
   const userRole = getUserRole();
-  const isMaintenanceMode = settings?.isMaintenanceMode && userRole !== 'Admin';
+  const adminRoles = ['super administrator', 'administrator', 'admin'];
+  const isMaintenanceMode = settings?.isMaintenanceMode && !adminRoles.includes(userRole?.toLowerCase() || '');
 
   return (
     <Router future={{ v7_relativeSplatPath: true }}>

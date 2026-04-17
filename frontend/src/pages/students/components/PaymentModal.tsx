@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { CreditCard, X, ShieldCheck, Loader2, ArrowRight } from 'lucide-react';
+import { CreditCard, X, ShieldCheck, Loader2, ArrowRight, Printer } from 'lucide-react';
 import api from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
 import { usePaystackPayment } from 'react-paystack';
 import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
 import { useSystem } from '../../../context/SystemContext';
+import { printReceipt } from '../../finance/utils/printReceipt';
 
 interface PaymentModalProps {
     isOpen: boolean;
@@ -18,11 +19,33 @@ interface PaymentModalProps {
 
 export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess, isBulk, bulkAllocations }: PaymentModalProps) {
     const { showError, showSuccess } = useToast();
-    const { settings, formatCurrency } = useSystem();
+    const { settings, formatCurrency, getSchoolInfo } = useSystem();
     
     const [amount, setAmount] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [step, setStep] = useState<'DETAILS' | 'GATEWAY_SELECTION' | 'SUCCESS'>('DETAILS');
+    const [lastTransaction, setLastTransaction] = useState<any>(null);
+    const distinctStudentsInBulk = useMemo(() => new Set((bulkAllocations || []).map((alloc: any) => alloc.studentId)).size, [bulkAllocations]);
+    const isAllocatedFlow = !!isBulk && Array.isArray(bulkAllocations) && bulkAllocations.length > 0;
+    const normalizedBulkAllocations = useMemo(() => {
+        if (!isAllocatedFlow) return [];
+
+        return (bulkAllocations || []).map((alloc: any) => {
+            const amount = parseFloat(alloc.amount || '0') || 0;
+            const totalDue = parseFloat(alloc.totalDue || alloc.amountDue || '0') || 0;
+
+            return {
+                ...alloc,
+                name: alloc.name || alloc.feeHeadName || 'Fee Payment',
+                feeHeadName: alloc.feeHeadName || alloc.name || 'Fee Payment',
+                amount: amount.toFixed(2),
+                totalDue: totalDue.toFixed(2),
+                amountDue: totalDue.toFixed(2),
+                balance: Math.max(0, totalDue - amount).toFixed(2),
+                status: amount >= totalDue ? 'PAID' : 'PARTIAL',
+            };
+        });
+    }, [bulkAllocations, isAllocatedFlow]);
 
     // Generate a stable reference for each payment session
     const stableRef = useMemo(() => {
@@ -58,10 +81,14 @@ export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess, isB
     };
 
     const paymentMeta = useMemo(() => ({
-        note: isBulk ? 'Bulk family fee payment settlement' : `Online payment for ${feeHead?.name || 'Fees'}`,
+        note: isAllocatedFlow
+            ? distinctStudentsInBulk > 1
+                ? 'Allocated family fee payment settlement'
+                : `Allocated online payment for ${student?.firstName || 'student'}`
+            : `Online payment for ${feeHead?.name || 'Fees'}`,
         isBulk: !!isBulk,
-        bulkAllocations: isBulk ? bulkAllocations : undefined,
-        allocations: isBulk ? bulkAllocations : [{
+        bulkAllocations: isBulk ? normalizedBulkAllocations : undefined,
+        allocations: isBulk ? undefined : [{
             id: feeHead?.id,
             name: feeHead?.name,
             amount: payAmountNum.toString(),
@@ -69,7 +96,7 @@ export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess, isB
             balance: Math.max(0, maxAmount - payAmountNum).toString(),
             status: payAmountNum >= maxAmount ? 'PAID' : 'PARTIAL'
         }]
-    }), [isBulk, bulkAllocations, feeHead, payAmountNum, maxAmount]);
+    }), [isBulk, normalizedBulkAllocations, feeHead, payAmountNum, maxAmount, isAllocatedFlow, distinctStudentsInBulk, student?.firstName]);
 
     // Paystack Configuration
     const paystackConfig = useMemo(() => ({
@@ -97,6 +124,19 @@ export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess, isB
                 studentId: student.id,
             });
             showSuccess('Payment verified successfully!');
+            setLastTransaction({
+                id: reference.reference,
+                reference: reference.reference,
+                amount: payAmountNum.toFixed(2),
+                paymentMethod: 'ONLINE',
+                createdAt: new Date().toISOString(),
+                student,
+                meta: {
+                    ...paymentMeta,
+                    gateway: 'PAYSTACK',
+                    allocations: isAllocatedFlow ? normalizedBulkAllocations : paymentMeta.allocations,
+                },
+            });
             setStep('SUCCESS');
         } catch (error: any) {
             showError(error.response?.data?.message || 'Payment verification failed.');
@@ -139,6 +179,8 @@ export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess, isB
         meta: {
             studentId: student?.id,
             tenantId: student?.tenantId,
+            isBulk: paymentMeta.isBulk,
+            bulkAllocations: JSON.stringify(paymentMeta.bulkAllocations || []),
             allocations: JSON.stringify(paymentMeta.allocations),
             note: paymentMeta.note
         }
@@ -162,6 +204,19 @@ export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess, isB
                                 txRef: flutterwaveConfig.tx_ref,
                             });
                             showSuccess('Payment verified successfully!');
+                            setLastTransaction({
+                                id: flutterwaveConfig.tx_ref,
+                                reference: flutterwaveConfig.tx_ref,
+                                amount: payAmountNum.toFixed(2),
+                                paymentMethod: 'ONLINE',
+                                createdAt: new Date().toISOString(),
+                                student,
+                                meta: {
+                                    ...paymentMeta,
+                                    gateway: 'FLUTTERWAVE',
+                                    allocations: isAllocatedFlow ? normalizedBulkAllocations : paymentMeta.allocations,
+                                },
+                            });
                             setStep('SUCCESS');
                         } catch (error: any) {
                             showError(error.response?.data?.message || 'Payment verification failed.');
@@ -226,6 +281,13 @@ export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess, isB
                                     <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Outstanding Due</span>
                                     <span className="text-sm font-black text-red-600">{formatCurrency(parseFloat(feeHead.balance))}</span>
                                 </div>
+
+                                {isAllocatedFlow && (
+                                    <div className="flex justify-between items-center pb-4 border-b border-gray-50 dark:border-gray-700">
+                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Allocation Lines</span>
+                                        <span className="text-sm font-black text-primary-600">{bulkAllocations?.length || 0}</span>
+                                    </div>
+                                )}
                                 
                                 <div>
                                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Amount to Pay</label>
@@ -241,8 +303,14 @@ export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess, isB
                                             onChange={handleAmountChange}
                                             placeholder="0.00"
                                             max={maxAmount}
+                                            readOnly={isAllocatedFlow}
                                         />
                                     </div>
+                                    {isAllocatedFlow && (
+                                        <p className="mt-2 text-[11px] font-medium text-gray-400">
+                                            This amount is locked to the total of your selected allocations.
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 
@@ -326,13 +394,28 @@ export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess, isB
                             <h3 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tighter">Payment Successful!</h3>
                             <p className="text-sm font-medium text-gray-500">Your payment of <span className="font-bold text-gray-900 dark:text-white">{formatCurrency(parseFloat(amount))}</span> has been received and your ledger updated.</p>
                         </div>
-                        
-                        <button
-                            onClick={handleClose}
-                            className="w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-sm font-black uppercase tracking-widest shadow-lg hover:bg-black dark:hover:bg-gray-100 transition-all mt-6"
-                        >
-                            Done
-                        </button>
+
+                        <div className="flex flex-col gap-3 mt-6">
+                            {lastTransaction && (
+                                <button
+                                    onClick={() => printReceipt({
+                                        transaction: lastTransaction,
+                                        schoolInfo: getSchoolInfo(),
+                                        onPopupBlocked: () => showError('Popup blocked. Please allow popups to print.'),
+                                    })}
+                                    className="w-full py-4 bg-gray-900 dark:bg-primary-600 text-white rounded-xl text-sm font-black uppercase tracking-widest shadow-lg hover:bg-black dark:hover:bg-primary-700 transition-all flex items-center justify-center gap-2"
+                                >
+                                    <Printer size={18} />
+                                    Print Receipt
+                                </button>
+                            )}
+                            <button
+                                onClick={handleClose}
+                                className="w-full py-4 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-white rounded-xl text-sm font-black uppercase tracking-widest hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
+                            >
+                                Done
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>

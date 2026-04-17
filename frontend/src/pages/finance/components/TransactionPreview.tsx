@@ -14,14 +14,59 @@ interface TransactionPreviewProps {
 export function TransactionPreview({ transaction, onClose, onPrint }: TransactionPreviewProps) {
     if (!transaction) return null;
 
-    const { student, amount, type, reference, createdAt, meta, paymentMethod } = transaction;
-    const allocations = meta?.allocations || [];
+    const { student, amount, type, reference, createdAt, paymentMethod } = transaction;
 
-    // Extract potential metadata from gateway
-    const device = meta?.device || meta?.ip_address || 'Unknown Device/IP';
-    const location = meta?.location || 'Not Captured';
-    const bank = meta?.bank || meta?.authorization?.bank || meta?.authorization?.card_type || 'N/A';
-    const channel = meta?.channel || meta?.authorization?.channel || paymentMethod;
+    // Robust parsing for meta
+    let meta = transaction.meta;
+    try {
+        if (typeof meta === 'string') meta = JSON.parse(meta);
+    } catch (e) {
+        meta = {};
+    }
+    meta = meta || {};
+
+    // Robust parsing for allocations
+    let rawAllocations = meta?.allocations || meta?.bulkAllocations || [];
+    try {
+        if (typeof rawAllocations === 'string') rawAllocations = JSON.parse(rawAllocations);
+    } catch (e) {
+        rawAllocations = [];
+    }
+    const allocations = Array.isArray(rawAllocations) ? rawAllocations : [];
+
+    const paystackData = meta?.paystackData || {};
+    const flutterwaveData = meta?.flutterwaveData || {};
+    const flutterwaveCustomer = flutterwaveData?.customer || {};
+
+    // Extract potential metadata from stored gateway payloads first, then older top-level fields
+    const device =
+        paystackData?.ip_address ||
+        flutterwaveData?.ip ||
+        meta?.device ||
+        meta?.ip_address ||
+        'Unknown Device/IP';
+
+    const location =
+        paystackData?.customer?.country_code ||
+        flutterwaveCustomer?.country ||
+        meta?.location ||
+        'Not Captured';
+
+    const bank =
+        paystackData?.authorization?.bank ||
+        flutterwaveData?.processor_response ||
+        flutterwaveData?.payment_type ||
+        meta?.bank ||
+        meta?.authorization?.bank ||
+        meta?.authorization?.card_type ||
+        'N/A';
+
+    const channel =
+        paystackData?.channel ||
+        flutterwaveData?.payment_type ||
+        meta?.channel ||
+        meta?.authorization?.channel ||
+        paymentMethod;
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
@@ -132,7 +177,7 @@ export function TransactionPreview({ transaction, onClose, onPrint }: Transactio
                         </div>
 
                         {/* Technical Details (If online payment) */}
-                        {meta && (meta.authorization || meta.ip_address || paymentMethod === 'ONLINE') && (
+                        {(paymentMethod === 'ONLINE' || paystackData?.channel || flutterwaveData?.payment_type || meta?.authorization || meta?.ip_address) && (
                             <div className="col-span-1 md:col-span-2 bg-gray-50 dark:bg-gray-900/30 p-5 rounded-2xl border border-gray-100 dark:border-gray-800">
                                 <h4 className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest flex items-center gap-2 mb-4">
                                     <Smartphone size={14} /> Gateway Metadata
@@ -178,6 +223,7 @@ export function TransactionPreview({ transaction, onClose, onPrint }: Transactio
                                             <tr key={idx}>
                                                 <td className="px-4 py-3 text-sm font-bold text-gray-900 dark:text-white">
                                                     {alloc.name}
+                                                    {alloc.studentName && <span className="ml-1 text-[10px] text-gray-500 font-normal tracking-wide">({alloc.studentName})</span>}
                                                     {alloc.status && <span className="ml-2 text-[9px] font-black uppercase text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">{alloc.status}</span>}
                                                 </td>
                                                 <td className="px-4 py-3 text-sm font-black text-gray-900 dark:text-white text-right">

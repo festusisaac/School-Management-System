@@ -1,17 +1,14 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   CreditCard,
   DollarSign,
   Printer,
-  Calendar,
   Clock,
   CheckCircle2,
-  FileText,
   AlertCircle,
   Download,
   Mail,
   Search,
-  Filter,
   ChevronLeft,
   ChevronRight,
   BarChart3,
@@ -30,6 +27,7 @@ import ReactDOM from 'react-dom/client';
 import { useSystem } from '../../context/SystemContext';
 import { downloadReceiptPDF } from '../../utils/pdfGenerator';
 import { exportPaymentHistory, exportFinancialStatement } from '../../utils/excelExport';
+import { printReceipt } from './utils/printReceipt';
 
 export default function StudentFinancePage() {
   const { user, selectedChildId } = useAuthStore();
@@ -52,8 +50,6 @@ export default function StudentFinancePage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [showInsights, setShowInsights] = useState(false);
-
-  const receiptRef = useRef<HTMLDivElement>(null);
 
   const studentId = isParent ? selectedChildId : user?.id;
 
@@ -124,61 +120,11 @@ export default function StudentFinancePage() {
 
   const handlePrintReceipt = async (tx: any) => {
     try {
-      // Create a temporary container
-      const container = document.createElement('div');
-      container.style.position = 'absolute';
-      container.style.left = '-9999px';
-      document.body.appendChild(container);
-
-      // Render receipt to container
-      const root = ReactDOM.createRoot(container);
-      root.render(
-        <ReceiptTemplate
-          transaction={tx}
-          schoolInfo={getSchoolInfo()}
-        />
-      );
-
-      // Wait for render
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Generate PDF blob (same as download)
-      const receiptElement = container.querySelector('div') as HTMLElement;
-      if (!receiptElement) {
-        throw new Error('Receipt element not found');
-      }
-
-      // Import the PDF generation function
-      const { generateReceiptPDF } = await import('../../utils/pdfGenerator');
-      const pdfBlob = await generateReceiptPDF(receiptElement, tx.id);
-
-      // Create object URL for the PDF
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-
-      // Open PDF in new window for printing
-      const printWindow = window.open(pdfUrl, '_blank');
-      if (!printWindow) {
-        showError('Popup blocked. Please allow popups to print receipts.');
-        URL.revokeObjectURL(pdfUrl);
-        root.unmount();
-        document.body.removeChild(container);
-        return;
-      }
-
-      // Wait for PDF to load, then trigger print
-      printWindow.onload = () => {
-        setTimeout(() => {
-          printWindow.print();
-        }, 500);
-      };
-
-      // Cleanup after a delay
-      setTimeout(() => {
-        URL.revokeObjectURL(pdfUrl);
-        root.unmount();
-        document.body.removeChild(container);
-      }, 2000);
-
+      printReceipt({
+        transaction: tx,
+        schoolInfo: getSchoolInfo(),
+        onPopupBlocked: () => showError('Popup blocked. Please allow popups to print receipts.'),
+      });
     } catch (error) {
       console.error('Error printing receipt:', error);
       showError('Failed to print receipt');
