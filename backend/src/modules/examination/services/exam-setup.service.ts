@@ -77,7 +77,11 @@ export class ExamSetupService {
     }
 
     async getAssessmentTypes(examGroupId: string, tenantId: string) {
-        return this.assessmentTypeRepo.find({ where: { examGroupId, tenantId } });
+        const where: any = { tenantId };
+        if (examGroupId && examGroupId.trim() !== '') {
+            where.examGroupId = examGroupId;
+        }
+        return this.assessmentTypeRepo.find({ where });
     }
 
     async updateAssessmentType(id: string, dto: Partial<CreateAssessmentTypeDto>, tenantId: string) {
@@ -121,7 +125,10 @@ export class ExamSetupService {
 
     async getExams(examGroupId: string, tenantId: string) {
         const sessionId = await this.systemSettingsService.getActiveSessionId();
-        const where: any = { examGroupId, tenantId };
+        const where: any = { tenantId };
+        if (examGroupId && examGroupId.trim() !== '') {
+            where.examGroupId = examGroupId;
+        }
         if (sessionId) where.sessionId = sessionId;
 
         return this.examRepo.find({
@@ -146,9 +153,14 @@ export class ExamSetupService {
     }
 
     async getSchedule(examGroupId: string, tenantId: string) {
+        const where: any = { tenantId };
+        if (examGroupId && examGroupId.trim() !== '') {
+            where.exam = { examGroupId };
+        }
+        
         return this.examScheduleRepo.find({
-            where: { exam: { examGroupId }, tenantId },
-            relations: ['exam', 'exam.subject', 'exam.class'],
+            where,
+            relations: ['exam', 'exam.subject', 'exam.class', 'exam.examGroup'],
             order: { date: 'ASC', startTime: 'ASC' },
         });
     }
@@ -156,7 +168,7 @@ export class ExamSetupService {
     async getScheduleForClass(classId: string, tenantId: string) {
         return this.examScheduleRepo.find({
             where: { exam: { classId }, tenantId },
-            relations: ['exam', 'exam.subject', 'exam.class'],
+            relations: ['exam', 'exam.subject', 'exam.class', 'exam.examGroup'],
             order: { date: 'ASC', startTime: 'ASC' },
         });
     }
@@ -174,7 +186,7 @@ export class ExamSetupService {
 
     async updateSchedule(id: string, dto: Partial<CreateExamScheduleDto>, tenantId: string) {
         await this.examScheduleRepo.update({ id, tenantId }, dto);
-        return this.examScheduleRepo.findOne({ where: { id, tenantId }, relations: ['exam', 'exam.subject', 'exam.class'] });
+        return this.examScheduleRepo.findOne({ where: { id, tenantId }, relations: ['exam', 'exam.subject', 'exam.class', 'exam.examGroup'] });
     }
 
     async deleteSchedule(id: string, tenantId: string) {
@@ -188,7 +200,11 @@ export class ExamSetupService {
     }
 
     async getAdmitCardTemplates(examGroupId: string, tenantId: string) {
-        return this.admitCardRepo.find({ where: { examGroupId, tenantId } });
+        const where: any = { tenantId };
+        if (examGroupId && examGroupId.trim() !== '') {
+            where.examGroupId = examGroupId;
+        }
+        return this.admitCardRepo.find({ where });
     }
 
     async updateAdmitCardTemplate(id: string, dto: any, tenantId: string) {

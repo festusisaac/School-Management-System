@@ -12,7 +12,9 @@ import { ResultProcessingController } from './controllers/result-processing.cont
 import { ResultControlController } from './controllers/result-control.controller';
 import { StudentExamController } from './controllers/student-exam.controller';
 import { CbtSyncController } from './controllers/cbt-sync.controller';
+import { CbtQuestionController } from './controllers/cbt-question.controller';
 import { CbtManifestService } from './services/cbt-manifest.service';
+import { CbtQuestionService } from './services/cbt-question.service';
 import { Student } from '../students/entities/student.entity';
 import { StudentAttendance } from '../students/entities/student-attendance.entity';
 import { ExamGroup } from './entities/exam-group.entity';
@@ -77,6 +79,7 @@ import { SystemModule } from '../system/system.module';
         ResultControlController,
         StudentExamController,
         CbtSyncController,
+        CbtQuestionController,
     ],
     providers: [
         ExamSetupService,
@@ -84,6 +87,7 @@ import { SystemModule } from '../system/system.module';
         ResultProcessingService,
         ResultControlService,
         CbtManifestService,
+        CbtQuestionService,
         ScoreImportProcessor
     ],
     exports: [

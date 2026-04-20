@@ -254,6 +254,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 { label: 'Grading System', path: '/examination/setup/grading', permission: 'exams:manage_setup' },
                 { label: 'Exam Schedules', path: '/examination/setup/schedules', permission: 'exams:manage_schedule' },
                 { label: 'Admit Cards', path: '/examination/setup/admit-cards', permission: 'exams:manage_admit_cards' },
+                { label: 'CBT Manager', path: '/examination/setup/cbt', permission: 'exams:manage_setup' },
 
                 // Entry
                 { type: 'header', label: 'Score Entry', permission: 'exams:enter_marks' },

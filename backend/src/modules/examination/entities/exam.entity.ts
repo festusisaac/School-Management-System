@@ -63,6 +63,9 @@ export class Exam {
     @Column({ nullable: true, unique: true })
     syncKey?: string;
 
+    @Column({ nullable: true })
+    cbtAssessmentTypeId?: string;
+
     @ManyToOne(() => AcademicSession)
     @JoinColumn({ name: 'sessionId' })
     session?: AcademicSession;

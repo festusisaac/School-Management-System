@@ -43,7 +43,7 @@ const ExamSchedulePage = () => {
         if (!selectedTerm && settings?.activeTermName) {
             setSelectedTerm(settings.activeTermName);
         }
-    }, [settings?.activeTermName, selectedTerm]);
+    }, [settings?.activeTermName]);
 
     // Modal Form State
     const [formData, setFormData] = useState({

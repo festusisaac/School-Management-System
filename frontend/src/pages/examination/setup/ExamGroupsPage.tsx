@@ -18,7 +18,14 @@ const ExamGroupsPage = () => {
     const { showSuccess, showError } = useToast();
     const { settings } = useSystem();
     const [terms, setTerms] = useState<AcademicTerm[]>([]);
-    const [selectedTerm, setSelectedTerm] = useState<string>(settings?.activeTermName || '');
+    const [selectedTerm, setSelectedTerm] = useState<string>('');
+
+    // Initialize selectedTerm when settings load
+    useEffect(() => {
+        if (!selectedTerm && settings?.activeTermName) {
+            setSelectedTerm(settings.activeTermName);
+        }
+    }, [settings?.activeTermName]);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -42,17 +49,6 @@ const ExamGroupsPage = () => {
         }
     };
 
-    const fetchDropdownData = async () => {
-        try {
-            const [t] = await Promise.all([
-                systemService.getTerms()
-            ]);
-            setTerms(t || []);
-        } catch (error) {
-            console.error('Failed to fetch dropdown data', error);
-        }
-    };
-
     useEffect(() => {
         fetchGroups();
     }, []);
@@ -70,28 +66,20 @@ const ExamGroupsPage = () => {
         fetchSessionTerms();
     }, [settings?.currentSessionId]);
 
+    // Update form defaults when selectedTerm or settings change
     useEffect(() => {
-        if (!selectedTerm && settings?.activeTermName) {
-            setSelectedTerm(settings.activeTermName);
-        }
-        
-        setFormData(prev => {
-            const updates: any = {};
-            if (!prev.term && settings?.activeTermName) updates.term = settings.activeTermName;
-            if (!prev.academicYear && settings?.activeSessionName) updates.academicYear = settings.activeSessionName;
-            
-            if (Object.keys(updates).length > 0) {
-                return { ...prev, ...updates };
-            }
-            return prev;
-        });
-    }, [settings, selectedTerm]);
+        setFormData(prev => ({
+            ...prev,
+            term: selectedTerm || settings?.activeTermName || '',
+            academicYear: settings?.activeSessionName || ''
+        }));
+    }, [selectedTerm, settings]);
 
     const resetForm = () => {
         setFormData({ 
             name: '', 
             academicYear: settings?.activeSessionName || '', 
-            term: settings?.activeTermName || '', 
+            term: selectedTerm || settings?.activeTermName || '', 
             startDate: '', 
             endDate: '', 
             description: '' 

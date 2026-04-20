@@ -39,11 +39,15 @@ export const initDb = async () => {
         )
     `);
 
+    // Enable High-Concurrency WAL Mode
+    await run(`PRAGMA journal_mode = WAL`);
+
     await run(`
         CREATE TABLE IF NOT EXISTS students (
             id TEXT PRIMARY KEY,
             admissionNo TEXT UNIQUE,
-            fullName TEXT
+            fullName TEXT,
+            photoUrl TEXT
         )
     `);
 
@@ -61,10 +65,42 @@ export const initDb = async () => {
             studentId TEXT PRIMARY KEY,
             startTime TEXT,
             endTime TEXT,
+            updatedAt TEXT,
             isSubmitted INTEGER DEFAULT 0,
+            extraTimeMinutes INTEGER DEFAULT 0,
+            lastQuestionIndex INTEGER DEFAULT 0,
+            answerTimeline TEXT DEFAULT '{}',
             answers TEXT -- JSON stringified object { [questionId]: optionId }
         )
     `);
+
+    await run(`
+        CREATE TABLE IF NOT EXISTS admin_audit_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            action TEXT NOT NULL,
+            actor TEXT NOT NULL,
+            clientId TEXT,
+            details TEXT,
+            createdAt TEXT NOT NULL
+        )
+    `);
+
+    // Migration for existing DBs
+    try {
+        await run(`ALTER TABLE exam_sessions ADD COLUMN extraTimeMinutes INTEGER DEFAULT 0`);
+    } catch (e) { /* ignore if already exists */ }
+
+    try {
+        await run(`ALTER TABLE exam_sessions ADD COLUMN lastQuestionIndex INTEGER DEFAULT 0`);
+    } catch (e) { /* ignore if already exists */ }
+
+    try {
+        await run(`ALTER TABLE exam_sessions ADD COLUMN answerTimeline TEXT DEFAULT '{}'`);
+    } catch (e) { /* ignore if already exists */ }
+
+    try {
+        await run(`ALTER TABLE students ADD COLUMN photoUrl TEXT`);
+    } catch (e) { /* ignore if already exists */ }
     
     console.log('Local Database initialized.');
 };

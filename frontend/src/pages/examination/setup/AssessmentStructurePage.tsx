@@ -20,7 +20,14 @@ const AssessmentStructurePage = () => {
     const { showSuccess, showError } = useToast();
     const { settings } = useSystem();
     const [terms, setTerms] = useState<AcademicTerm[]>([]);
-    const [selectedTerm, setSelectedTerm] = useState<string>(settings?.activeTermName || '');
+    const [selectedTerm, setSelectedTerm] = useState<string>('');
+
+    // Initialize selectedTerm when settings load
+    useEffect(() => {
+        if (!selectedTerm && settings?.activeTermName) {
+            setSelectedTerm(settings.activeTermName);
+        }
+    }, [settings?.activeTermName]);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -34,25 +41,12 @@ const AssessmentStructurePage = () => {
             try {
                 const [g, t] = await Promise.all([
                     examinationService.getExamGroups(),
-                    systemService.getTerms()
+                    settings?.currentSessionId 
+                        ? systemService.getTermsBySession(settings.currentSessionId) 
+                        : systemService.getTerms()
                 ]);
                 setGroups(g || []);
                 setTerms(t || []);
-
-                const sessionToUse = settings?.activeSessionName;
-                const termToUse = selectedTerm || settings?.activeTermName;
-
-                if (g?.length > 0) {
-                    const filtered = g.filter(group =>
-                        (!sessionToUse || group.academicYear === sessionToUse) &&
-                        (!termToUse || group.term === termToUse)
-                    );
-                    if (filtered.length > 0) {
-                        setSelectedGroup(filtered[0].id);
-                    } else if (!selectedGroup) {
-                        setSelectedGroup(g[0].id);
-                    }
-                }
             } catch (error) {
                 showError('Failed to load initial data');
             }
@@ -60,11 +54,24 @@ const AssessmentStructurePage = () => {
         init();
     }, []);
 
+    // Auto-select first group when filtered groups change
     useEffect(() => {
-        if (!selectedTerm && settings?.activeTermName) {
-            setSelectedTerm(settings.activeTermName);
+        // Filtered Groups for Selection
+        const currentFilteredGroups = groups.filter(g =>
+            (g.academicYear === settings?.activeSessionName) &&
+            (!selectedTerm || g.term === selectedTerm)
+        );
+
+        if (currentFilteredGroups.length > 0) {
+            // Only auto-select if current selected group is not in the filtered list
+            const isStillValid = currentFilteredGroups.some(g => g.id === selectedGroup);
+            if (!isStillValid) {
+                setSelectedGroup(currentFilteredGroups[0].id);
+            }
+        } else {
+            setSelectedGroup('');
         }
-    }, [settings?.activeTermName, selectedTerm]);
+    }, [groups, selectedTerm, settings?.activeSessionName]);
 
     useEffect(() => {
         if (selectedGroup) {

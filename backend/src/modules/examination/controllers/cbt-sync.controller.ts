@@ -13,9 +13,15 @@ export class CbtSyncController {
 
     @UseGuards(JwtAuthGuard)
     @Post('generate-key')
-    async generateKey(@Body() body: { examId: string }, @Request() req: any) {
-        const syncKey = await this.manifestService.generateSyncKey(body.examId, req.user.tenantId);
+    async generateKey(@Body() body: { examId: string, assessmentTypeId?: string }, @Request() req: any) {
+        const syncKey = await this.manifestService.generateSyncKey(body.examId, req.user.tenantId, body.assessmentTypeId);
         return { syncKey };
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('validate-totals')
+    async validateTotals(@Body() body: { examId: string, assessmentTypeId?: string }, @Request() req: any) {
+        return this.manifestService.getMarksValidation(body.examId, req.user.tenantId, body.assessmentTypeId);
     }
 
     // Public endpoint for the Local Node to fetch the manifest
@@ -31,11 +37,12 @@ export class CbtSyncController {
         @Param('syncKey') syncKey: string,
         @Body() body: { data: any[], assessmentTypeId?: string }
     ) {
-        // Validate syncKey and get tenant tracking
+        // Fetch manifest and grade the raw CBT answers
         const manifest = await this.manifestService.getManifest(syncKey);
+        const gradedData = await this.manifestService.gradeCbtPayload(syncKey, body.data);
         
         const job = await this.scoreImportQueue.add('import-scores', {
-            data: body.data,
+            data: gradedData,
             examId: manifest.exam.id,
             assessmentTypeId: body.assessmentTypeId,
             tenantId: manifest.exam.tenantId || 'default', // Ideally extracted from manifest

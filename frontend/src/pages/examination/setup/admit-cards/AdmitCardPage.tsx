@@ -47,38 +47,51 @@ const AdmitCardPage = () => {
 
     const { showSuccess, showError } = useToast();
 
+    // Header & Initialization Logic standardized with other pages 🚀
     useEffect(() => {
         const init = async () => {
             try {
-                const [g, c, t] = await Promise.all([
+                // Fetch groups and terms (filtered by active session)
+                const [g, t, c] = await Promise.all([
                     examinationService.getExamGroups(),
-                    api.getClasses(),
-                    systemService.getTerms()
+                    settings?.currentSessionId 
+                        ? systemService.getTermsBySession(settings.currentSessionId) 
+                        : systemService.getTerms(),
+                    api.getClasses()
                 ]);
+                
                 setGroups(g || []);
-                setClasses(c || []);
                 setTerms(t || []);
+                setClasses(c || []);
 
-                const sessionToUse = settings?.activeSessionName;
-                const termToUse = selectedTerm || settings?.activeTermName;
-
-                if (g?.length > 0) {
-                    const filtered = g.filter(group =>
-                        (!sessionToUse || group.academicYear === sessionToUse) &&
-                        (!termToUse || group.term === termToUse)
-                    );
-                    if (filtered.length > 0) {
-                        setSelectedGroup(filtered[0].id);
-                    } else if (!selectedGroup) {
-                        setSelectedGroup(g[0].id);
-                    }
+                // Default to active term if not already selected
+                if (!selectedTerm && settings?.activeTermName) {
+                    setSelectedTerm(settings.activeTermName);
                 }
             } catch (error) {
+                console.error('Failed to load initial data', error);
                 showError('Failed to load initial data');
             }
         };
         init();
-    }, []);
+    }, [settings?.activeTermName]);
+
+    // Handle initial group selection when groups or selectedTerm change
+    useEffect(() => {
+        if (groups.length > 0 && !selectedGroup) {
+            const sessionToUse = settings?.activeSessionName;
+            const termToUse = selectedTerm || settings?.activeTermName;
+
+            const filtered = groups.filter(group =>
+                (!sessionToUse || group.academicYear === sessionToUse) &&
+                (!termToUse || group.term === termToUse)
+            );
+
+            if (filtered.length > 0) {
+                setSelectedGroup(filtered[0].id);
+            }
+        }
+    }, [groups, selectedTerm, settings]);
 
     useEffect(() => {
         if (!selectedTerm && settings?.activeTermName) {
@@ -105,9 +118,9 @@ const AdmitCardPage = () => {
         }
     }, [selectedClass]);
 
-    // Filtered Groups for Selection
+    // Filtered Groups for Selection based on term and session
     const filteredGroups = groups.filter(g =>
-        (g.academicYear === settings?.activeSessionName) &&
+        (!settings?.activeSessionName || g.academicYear === settings.activeSessionName) &&
         (!selectedTerm || g.term === selectedTerm)
     );
 
@@ -149,7 +162,7 @@ const AdmitCardPage = () => {
         setEditingId(null);
         setTemplateName('New Template');
         setSections([
-            { id: '1', type: 'header', settings: { heading: 'SCHOOL NAME', subHeading: 'EXAMINATION 2026' } },
+            { id: '1', type: 'header', settings: { heading: settings?.schoolName || 'YOUR SCHOOL NAME', subHeading: `${selectedTerm} ${settings?.activeSessionName} Examination` } },
             { id: '2', type: 'studentInfo', settings: { fields: { rollNumber: true, admissionNo: true, photo: true } } },
             { id: '3', type: 'timetable', settings: { showVenue: true } },
             { id: '4', type: 'footer', settings: { footerText: 'Rules & Regulations...', showQrCode: true } }
@@ -293,35 +306,24 @@ const AdmitCardPage = () => {
 
     return (
         <div className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
-            {/* Top Toolbar */}
+            {/* Standardized Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Admit Card System</h1>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">Professional admit card generation</p>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Admit Card Designer</h1>
+                    <p className="text-base text-gray-500 dark:text-gray-400">Manage Examination Hall Tickets and Templates</p>
                 </div>
 
-                <div className="flex items-center gap-3">
-
-
-                    <div className="flex flex-col">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 ml-1">Term</label>
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
                         <select
-                            className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 shadow-sm min-w-[150px]"
+                            className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                             value={selectedTerm}
                             onChange={(e) => {
                                 const term = e.target.value;
                                 setSelectedTerm(term);
                                 
-                                // Auto-select the first group of the new term
-                                const termGroups = groups.filter(g => 
-                                    (g.academicYear === settings?.activeSessionName) && 
-                                    (!term || g.term === term)
-                                );
-                                if (termGroups.length > 0) {
-                                    setSelectedGroup(termGroups[0].id);
-                                } else {
-                                    setSelectedGroup('');
-                                }
+                                // Reset group selection when term changes to force filter update
+                                setSelectedGroup('');
                             }}
                         >
                             <option value="">All Terms</option>
@@ -329,47 +331,49 @@ const AdmitCardPage = () => {
                                 <option key={t.id} value={t.name}>{t.name}</option>
                             ))}
                         </select>
-                    </div>
-
-                    <div className="flex flex-col">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 ml-1">Exam Group</label>
                         <select
-                            className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 shadow-sm min-w-[200px]"
+                            className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 min-w-[180px]"
                             value={selectedGroup}
                             onChange={(e) => setSelectedGroup(e.target.value)}
                         >
-                            <option value="">Select Group</option>
+                            <option value="">Select Exam Group</option>
                             {filteredGroups.map(g => (
                                 <option key={g.id} value={g.id}>{g.name}</option>
                             ))}
                         </select>
                     </div>
 
-                    <div className="flex items-end gap-3 h-full pb-0.5">
+                    <div className="flex p-1 bg-gray-200 dark:bg-gray-700/50 rounded-lg shadow-inner">
                         <button
-                            onClick={handleCreateNew}
-                            disabled={!selectedGroup}
-                            className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-all disabled:opacity-50 shadow-sm h-[38px]"
+                            onClick={() => setActiveTab('design')}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-200 ${
+                                activeTab === 'design' 
+                                ? 'bg-white dark:bg-gray-600 text-primary-600 dark:text-primary-400 shadow-md' 
+                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+                            }`}
                         >
-                            <Plus className="w-4 h-4" />
-                            Create Template
+                            <Layout className="w-4 h-4" /> Design
                         </button>
-
-                        <div className="flex p-1 bg-gray-100 dark:bg-gray-800 rounded-lg h-[38px] items-center">
-                            <button
-                                onClick={() => setActiveTab('design')}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${activeTab === 'design' ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-500'}`}
-                            >
-                                <Layout className="w-3.5 h-3.5" /> Design
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('print')}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${activeTab === 'print' ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-500'}`}
-                            >
-                                <Printer className="w-3.5 h-3.5" /> Print
-                            </button>
-                        </div>
+                        <button
+                            onClick={() => setActiveTab('print')}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-200 ${
+                                activeTab === 'print' 
+                                ? 'bg-white dark:bg-gray-600 text-primary-600 dark:text-primary-400 shadow-md' 
+                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+                            }`}
+                        >
+                            <Printer className="w-4 h-4" /> Print
+                        </button>
                     </div>
+
+                    <button
+                        onClick={handleCreateNew}
+                        disabled={!selectedGroup}
+                        className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-all disabled:opacity-50 shadow-md"
+                    >
+                        <Plus className="w-4 h-4" />
+                        New Template
+                    </button>
                 </div>
             </div>
 

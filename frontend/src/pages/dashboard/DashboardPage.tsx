@@ -521,7 +521,7 @@ const DashboardPage: React.FC = () => {
               <MoreHorizontal className="w-5 h-5 text-gray-400" />
             </button>
           </div>
-          <div className="h-80 w-full">
+          <div className="h-80 w-full min-h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={enrollmentData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
@@ -543,7 +543,7 @@ const DashboardPage: React.FC = () => {
             <h2 className="text-lg font-bold text-gray-900 dark:text-white">Gender Distribution</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">Student composition by gender</p>
           </div>
-          <div className="h-64 w-full relative">
+          <div className="h-64 w-full relative min-h-[256px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie

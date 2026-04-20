@@ -4,6 +4,7 @@ export { default as AssessmentStructurePage } from './setup/AssessmentStructureP
 export { default as GradingSystemPage } from './setup/GradingSystemPage';
 export { default as ExamSchedulePage } from './setup/ExamSchedulePage';
 export { default as AdmitCardPage } from './setup/admit-cards/AdmitCardPage';
+export { default as CbtManagerPage } from './setup/CbtManager';
 
 // Control
 export { default as ResultManagementPage } from './control/ResultManagementPage';

@@ -216,6 +216,7 @@ function AppRoutes() {
                 <Route path="setup/grading" element={<Examination.GradingSystemPage />} />
                 <Route path="setup/schedules" element={<Examination.ExamSchedulePage />} />
                 <Route path="setup/admit-cards" element={<Examination.AdmitCardPage />} />
+                <Route path="setup/cbt" element={<Examination.CbtManagerPage />} />
 
                 {/* Control */}
                 <Route path="control/results" element={<Examination.ResultManagementPage />} />
