@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "ts-node src/index.ts",
     "start:dev": "ts-node src/index.ts",
+    "load:test": "node scripts/load-test.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

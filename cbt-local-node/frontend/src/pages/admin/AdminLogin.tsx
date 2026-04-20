@@ -2,6 +2,7 @@ import { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { ShieldAlert, KeyRound, ArrowRight, ShieldCheck } from 'lucide-react';
+import { applyAdminAuthDefaults, setAdminToken } from '../../utils/adminAuth';
 
 const API_BASE = '/api';
 
@@ -18,7 +19,8 @@ export default function AdminLogin() {
 
         try {
             const res = await axios.post(`${API_BASE}/auth/admin`, { passcode });
-            sessionStorage.setItem('admin_token', res.data.token);
+            setAdminToken(res.data.token);
+            applyAdminAuthDefaults();
             navigate('/admin/pull');
         } catch (err: any) {
             setError(err.response?.data?.error || 'Invalid passcode');

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { RefreshCw, CheckCircle2, AlertTriangle, ShieldCheck, Trash2 } from 'lucide-react';
+import { getAdminAuthConfig } from '../../utils/adminAuth';
 
 const API_BASE = '/api';
 
@@ -15,29 +16,96 @@ export default function PushResultsPage() {
         missingStudents: Array<{ admissionNo: string; fullName: string }>;
     } | null>(null);
     const [allowForcePush, setAllowForcePush] = useState(false);
+    const [pushJob, setPushJob] = useState<{
+        jobId: string;
+        state: string;
+        progress: number;
+        failedReason: string | null;
+        assessmentTypeId: string | null;
+        assessmentTypeLabel: string | null;
+    } | null>(null);
 
     const isSuccess = message.startsWith('Success');
     const blockPush = !!summary && summary.missingCount > 0 && !allowForcePush;
 
     const loadSummary = async () => {
         try {
-            const res = await axios.get(`${API_BASE}/push/summary`);
+            const res = await axios.get(`${API_BASE}/push/summary`, getAdminAuthConfig());
             setSummary(res.data);
         } catch {
             // ignore
         }
     };
 
+    const loadPushStatus = async (jobId?: string) => {
+        try {
+            const url = jobId ? `${API_BASE}/push/status?jobId=${encodeURIComponent(jobId)}` : `${API_BASE}/push/status`;
+            const res = await axios.get(url, getAdminAuthConfig());
+            setPushJob({
+                jobId: String(res.data.jobId || ''),
+                state: String(res.data.state || 'unknown'),
+                progress: Number(res.data.progress || 0),
+                failedReason: res.data.failedReason || null,
+                assessmentTypeId: res.data.assessmentTypeId ? String(res.data.assessmentTypeId) : null,
+                assessmentTypeLabel: res.data.assessmentTypeLabel ? String(res.data.assessmentTypeLabel) : null
+            });
+        } catch {
+            if (jobId) {
+                setPushJob({
+                    jobId,
+                    state: 'tracking_unavailable',
+                    progress: 0,
+                    failedReason: 'Job tracking endpoint is not reachable. Restart cloud and CBT backends.',
+                    assessmentTypeId: null,
+                    assessmentTypeLabel: null
+                });
+            }
+        }
+    };
+
     useEffect(() => {
         loadSummary();
+        loadPushStatus();
     }, []);
+
+    useEffect(() => {
+        if (!pushJob?.jobId) return;
+        const state = pushJob.state.toLowerCase();
+        if (state === 'completed' || state === 'failed' || state === 'not_found' || state === 'forbidden') return;
+
+        const interval = setInterval(() => {
+            loadPushStatus(pushJob.jobId);
+        }, 2500);
+        return () => clearInterval(interval);
+    }, [pushJob?.jobId, pushJob?.state]);
 
     const handlePush = async () => {
         setLoading(true);
         setMessage('');
         try {
-            const res = await axios.post(`${API_BASE}/push`, { force: allowForcePush });
-            setMessage(`Success! Pushed ${res.data.count} candidate records to cloud grading.`);
+            const res = await axios.post(`${API_BASE}/push`, { force: allowForcePush }, getAdminAuthConfig());
+            const jobId = res.data?.jobId ? String(res.data.jobId) : '';
+            const assessmentTypeId = res.data?.assessmentTypeId ? String(res.data.assessmentTypeId) : null;
+            const assessmentTypeLabel = res.data?.assessmentTypeLabel ? String(res.data.assessmentTypeLabel) : null;
+            setMessage(
+                `Success! Pushed ${res.data.count} candidate records to cloud grading.` +
+                (jobId
+                    ? ` Job ID: ${jobId}`
+                    : ' Cloud did not return a job ID, so live tracking is unavailable for this push.')
+            );
+            if (jobId) {
+                setPushJob({ jobId, state: 'queued', progress: 0, failedReason: null, assessmentTypeId, assessmentTypeLabel });
+                loadPushStatus(jobId);
+            } else {
+                setPushJob({
+                    jobId: 'N/A',
+                    state: 'tracking_unavailable',
+                    progress: 0,
+                    failedReason: 'No job ID returned by cloud. Ensure cloud backend has upload-status endpoint and restart services.',
+                    assessmentTypeId,
+                    assessmentTypeLabel
+                });
+            }
             loadSummary();
         } catch (error: any) {
             setMessage(`Sync failed: ${error.response?.data?.error || error.message}`);
@@ -49,7 +117,7 @@ export default function PushResultsPage() {
     const handleResetNode = async () => {
         if (!window.confirm('This will permanently clear local students and questions. Continue?')) return;
         try {
-            await axios.post(`${API_BASE}/admin/reset`);
+            await axios.post(`${API_BASE}/admin/reset`, {}, getAdminAuthConfig());
             setMessage('Success! Local registry has been reset for a new provisioning cycle.');
             loadSummary();
         } catch (error: any) {
@@ -75,6 +143,30 @@ export default function PushResultsPage() {
 
             <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
                 <div className="bg-white border border-gray-200 rounded p-5 space-y-4">
+                    {pushJob && (
+                        <div className="border border-gray-200 rounded p-4 bg-gray-50 space-y-1">
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Cloud Import Job</p>
+                            <p className="text-sm text-gray-700">Job ID: <span className="font-mono">{pushJob.jobId}</span></p>
+                            <p className="text-sm text-gray-700">Assessment Type: <span className="font-semibold">{pushJob.assessmentTypeLabel || 'Not provided by cloud'}</span></p>
+                            <p className="text-sm text-gray-700">
+                                State:{' '}
+                                <span className={`font-semibold ${
+                                    pushJob.state.toLowerCase() === 'completed'
+                                        ? 'text-emerald-700'
+                                        : pushJob.state.toLowerCase() === 'failed'
+                                          ? 'text-rose-700'
+                                          : 'text-blue-700'
+                                }`}>
+                                    {pushJob.state}
+                                </span>
+                            </p>
+                            <p className="text-sm text-gray-700">Progress: <span className="font-semibold">{pushJob.progress}%</span></p>
+                            {pushJob.failedReason && (
+                                <p className="text-xs text-rose-700">Reason: {pushJob.failedReason}</p>
+                            )}
+                        </div>
+                    )}
+
                     {summary && (
                         <div className="border border-gray-200 rounded p-4 bg-gray-50 space-y-2">
                             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Pre-Push Verification</p>

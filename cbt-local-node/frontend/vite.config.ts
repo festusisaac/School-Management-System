@@ -7,7 +7,8 @@ export default defineConfig({
   server: {
     port: 4001,
     proxy: {
-      '/api': 'http://localhost:4000'
+      '/api': 'http://localhost:4000',
+      '/student-photos': 'http://localhost:4000'
     }
   }
 })

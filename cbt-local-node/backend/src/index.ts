@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import axios from 'axios';
 import path from 'path';
+import { promises as fs } from 'fs';
+import os from 'os';
 import { initDb, run, get, all } from './database';
 
 const app = express();
@@ -10,8 +12,10 @@ app.use(express.json());
 
 const frontendPath = path.join(__dirname, '../../frontend/dist');
 app.use(express.static(frontendPath));
+const studentPhotosPath = path.join(__dirname, '../student-photos');
+app.use('/student-photos', express.static(studentPhotosPath));
 
-const ADMIN_PASSCODE = process.env.ADMIN_PASSCODE || 'admin123';
+const ADMIN_PASSCODE = (process.env.ADMIN_PASSCODE || 'admin123').trim();
 
 const getClientId = (req: express.Request) => {
     const explicit = req.headers['x-client-id'];
@@ -37,9 +41,136 @@ const pickStudentPhotoUrl = (student: any): string => {
         student?.profilePhoto,
         student?.profileImage,
         student?.photo,
+        student?.passport,
+        student?.picture,
+        student?.image,
+        student?.avatar,
+        student?.studentPhoto,
+        student?.studentPassport,
+        student?.user?.photoUrl,
+        student?.user?.passportUrl,
+        student?.user?.profilePhoto,
+        student?.user?.profileImage,
+        student?.user?.photo,
+        student?.user?.passport,
+        student?.user?.avatarUrl,
+        student?.user?.avatar,
+        student?.user?.imageUrl,
+        student?.user?.image,
     ];
-    const picked = candidates.find((v) => typeof v === 'string' && v.trim().length > 0);
-    return picked ? picked.trim() : '';
+    const directString = candidates.find((v) => typeof v === 'string' && v.trim().length > 0);
+    if (directString) return directString.trim();
+
+    // Some cloud payloads nest passport/photo inside objects. Find first likely image string by key.
+    const seen = new Set<any>();
+    const queue: Array<{ node: any; keyPath: string }> = [{ node: student, keyPath: 'student' }];
+    const imageKeyRegex = /(photo|passport|image|avatar|picture|profile)/i;
+    const urlKeyRegex = /^(url|src|path|link)$/i;
+    const genericUrls: string[] = [];
+
+    while (queue.length > 0) {
+        const current = queue.shift();
+        if (!current) continue;
+        const { node, keyPath } = current;
+        if (!node || typeof node !== 'object') continue;
+        if (seen.has(node)) continue;
+        seen.add(node);
+
+        if (Array.isArray(node)) {
+            for (let i = 0; i < node.length; i++) {
+                const value = node[i];
+                if (typeof value === 'string' && value.trim()) {
+                    genericUrls.push(value.trim());
+                } else if (value && typeof value === 'object') {
+                    queue.push({ node: value, keyPath: `${keyPath}[${i}]` });
+                }
+            }
+            continue;
+        }
+
+        for (const [key, value] of Object.entries(node)) {
+            const fullKey = `${keyPath}.${key}`;
+            if (typeof value === 'string' && value.trim()) {
+                const trimmed = value.trim();
+                if (imageKeyRegex.test(fullKey) || urlKeyRegex.test(key)) {
+                    return trimmed;
+                }
+                genericUrls.push(trimmed);
+            } else if (value && typeof value === 'object') {
+                queue.push({ node: value, keyPath: fullKey });
+            }
+        }
+    }
+
+    const fallbackUrl = genericUrls.find((value) => /^https?:\/\//i.test(value) || value.startsWith('/'));
+    return fallbackUrl || '';
+};
+
+const buildCloudMediaBaseUrl = (cloudApiUrl: string) => {
+    try {
+        const u = new URL(cloudApiUrl);
+        u.pathname = '/';
+        u.search = '';
+        u.hash = '';
+        return u.toString();
+    } catch {
+        return cloudApiUrl;
+    }
+};
+
+const resolvePhotoUrl = (rawUrl: string, cloudApiUrl: string) => {
+    const photo = (rawUrl || '').trim();
+    if (!photo) return '';
+    if (/^https?:\/\//i.test(photo)) return photo;
+
+    const cloudMediaBase = buildCloudMediaBaseUrl(cloudApiUrl);
+    try {
+        return new URL(photo, cloudMediaBase).toString();
+    } catch {
+        return photo;
+    }
+};
+
+const inferPhotoExtension = (sourceUrl: string, contentType?: string) => {
+    const normalizedType = String(contentType || '').toLowerCase();
+    if (normalizedType.includes('image/png')) return '.png';
+    if (normalizedType.includes('image/webp')) return '.webp';
+    if (normalizedType.includes('image/gif')) return '.gif';
+    if (normalizedType.includes('image/svg')) return '.svg';
+    if (normalizedType.includes('image/jpeg') || normalizedType.includes('image/jpg')) return '.jpg';
+
+    try {
+        const pathname = new URL(sourceUrl).pathname.toLowerCase();
+        const ext = path.extname(pathname);
+        if (ext && ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg'].includes(ext)) {
+            return ext === '.jpeg' ? '.jpg' : ext;
+        }
+    } catch {
+        // ignore
+    }
+    return '.jpg';
+};
+
+const sanitizeFilePart = (value: string) => value.replace(/[^a-zA-Z0-9_-]/g, '_');
+
+const cacheStudentPhoto = async (rawPhotoUrl: string, cloudApiUrl: string, studentId: string) => {
+    const resolvedUrl = resolvePhotoUrl(rawPhotoUrl, cloudApiUrl);
+    if (!resolvedUrl) return '';
+
+    try {
+        const response = await axios.get<ArrayBuffer>(resolvedUrl, {
+            timeout: 15000,
+            responseType: 'arraybuffer',
+        });
+
+        const extension = inferPhotoExtension(resolvedUrl, response.headers['content-type']);
+        const filename = `${sanitizeFilePart(studentId)}${extension}`;
+        const absolutePath = path.join(studentPhotosPath, filename);
+        await fs.writeFile(absolutePath, Buffer.from(response.data));
+        return `/student-photos/${filename}`;
+    } catch {
+        return resolvedUrl;
+    }
 };
 
 const toBool = (value: any, fallback = false) => {
@@ -50,6 +181,28 @@ const toBool = (value: any, fallback = false) => {
     return fallback;
 };
 
+const firstNonEmptyString = (...values: any[]): string | null => {
+    for (const value of values) {
+        if (typeof value === 'string' && value.trim()) {
+            return value.trim();
+        }
+    }
+    return null;
+};
+
+const resolveAssessmentTypeLabel = (examDetails: any, cloudStatus?: any): string | null => {
+    const cloudType = cloudStatus?.assessmentType;
+    const examType = examDetails?.assessmentType;
+    return firstNonEmptyString(
+        cloudStatus?.assessmentTypeName,
+        cloudType?.name,
+        typeof cloudType === 'string' ? cloudType : null,
+        examDetails?.assessmentTypeName,
+        examType?.name,
+        typeof examType === 'string' ? examType : null
+    );
+};
+
 const setManifestValue = async (key: string, value: string) => {
     await run(`INSERT OR REPLACE INTO manifest (key, value) VALUES (?, ?)`, [key, value]);
 };
@@ -58,11 +211,68 @@ const getManifestValue = async (key: string) => {
     return get<{ value?: string }>(`SELECT value FROM manifest WHERE key = ?`, [key]);
 };
 
+const getDirectorySizeBytes = async (dirPath: string): Promise<number> => {
+    try {
+        const entries = await fs.readdir(dirPath, { withFileTypes: true });
+        let total = 0;
+        for (const entry of entries) {
+            const fullPath = path.join(dirPath, entry.name);
+            if (entry.isDirectory()) {
+                total += await getDirectorySizeBytes(fullPath);
+            } else if (entry.isFile()) {
+                const stat = await fs.stat(fullPath);
+                total += stat.size;
+            }
+        }
+        return total;
+    } catch {
+        return 0;
+    }
+};
+
+const getCloudPushJobStatus = async (cloudUrl: string, syncKey: string, jobId: string) => {
+    if (!cloudUrl || !syncKey || !jobId) {
+        throw new Error('cloudUrl, syncKey and jobId are required');
+    }
+    const statusUrl = cloudUrl.includes('/api/v')
+        ? `${cloudUrl}/examination/cbt/sync/upload-status/${syncKey}/${jobId}`
+        : `${cloudUrl}/api/v1/examination/cbt/sync/upload-status/${syncKey}/${jobId}`;
+    const response = await axios.get(statusUrl, { timeout: 15000 });
+    const payload = response.data || {};
+    return payload?.data && typeof payload.data === 'object' ? payload.data : payload;
+};
+
+const getCpuUsagePercent = async (sampleMs = 200) => {
+    const take = () => os.cpus().map((cpu) => ({ ...cpu.times }));
+    const a = take();
+    await new Promise((resolve) => setTimeout(resolve, sampleMs));
+    const b = take();
+
+    let idleDiff = 0;
+    let totalDiff = 0;
+    for (let i = 0; i < Math.min(a.length, b.length); i++) {
+        const prev = a[i];
+        const next = b[i];
+        const prevTotal = prev.user + prev.nice + prev.sys + prev.idle + prev.irq;
+        const nextTotal = next.user + next.nice + next.sys + next.idle + next.irq;
+        idleDiff += Math.max(0, next.idle - prev.idle);
+        totalDiff += Math.max(0, nextTotal - prevTotal);
+    }
+
+    if (totalDiff <= 0) return 0;
+    return Math.max(0, Math.min(100, Number((((totalDiff - idleDiff) / totalDiff) * 100).toFixed(1))));
+};
+
 const adminAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const token = req.headers['authorization'];
-    const queryToken = req.query.authorization;
-    const queryIsValid = typeof queryToken === 'string' && queryToken === ADMIN_PASSCODE;
-    if (token === `Bearer ${ADMIN_PASSCODE}` || queryIsValid) {
+    const authHeader = req.headers['authorization'];
+    const bearerToken = typeof authHeader === 'string'
+        ? authHeader.replace(/^Bearer\s+/i, '').trim()
+        : '';
+    const queryToken = typeof req.query.authorization === 'string'
+        ? req.query.authorization.trim()
+        : '';
+    const queryIsValid = queryToken === ADMIN_PASSCODE;
+    if (bearerToken === ADMIN_PASSCODE || queryIsValid) {
         next();
     } else {
         res.status(401).json({ error: 'Unauthorized. Invalid Admin Passcode.' });
@@ -101,7 +311,7 @@ const seededShuffle = (array: any[], seed: string) => {
 };
 
 app.post('/api/auth/admin', async (req, res) => {
-    const { passcode } = req.body;
+    const passcode = typeof req.body?.passcode === 'string' ? req.body.passcode.trim() : '';
     if (passcode === ADMIN_PASSCODE) {
         await logAudit(req, 'admin.login.success', { hostname: getClientId(req) });
         res.json({ token: ADMIN_PASSCODE });
@@ -137,6 +347,8 @@ app.post('/api/sync', adminAuth, async (req, res) => {
         await run(`DELETE FROM questions`);
         await run(`DELETE FROM exam_sessions`);
         await run(`DELETE FROM manifest`);
+        await fs.rm(studentPhotosPath, { recursive: true, force: true });
+        await fs.mkdir(studentPhotosPath, { recursive: true });
 
         await setManifestValue('exam_details', JSON.stringify(manifest.exam || {}));
         await setManifestValue('syncKey', syncKey);
@@ -146,11 +358,13 @@ app.post('/api/sync', adminAuth, async (req, res) => {
         await setManifestValue('randomizeOptions', '1');
 
         for (const student of manifest.students) {
+            const rawPhoto = pickStudentPhotoUrl(student);
+            const cachedPhotoUrl = await cacheStudentPhoto(rawPhoto, cloudUrl, String(student.id));
             await run(`INSERT INTO students (id, admissionNo, fullName, photoUrl) VALUES (?, ?, ?, ?)`, [
                 student.id,
                 student.admissionNo,
                 student.fullName,
-                pickStudentPhotoUrl(student),
+                cachedPhotoUrl,
             ]);
         }
 
@@ -422,20 +636,117 @@ app.post('/api/push', adminAuth, async (req, res) => {
             ? `${cloudUrl}/examination/cbt/sync/upload-scores/${syncKey}`
             : `${cloudUrl}/api/v1/examination/cbt/sync/upload-scores/${syncKey}`;
 
-        await axios.post(uploadUrl, {
+        const pushRes = await axios.post(uploadUrl, {
             data: payload,
             assessmentTypeId: examDetails.assessmentTypeId
         });
+        const pushPayload = pushRes?.data || {};
+        const pushData = pushPayload?.data && typeof pushPayload.data === 'object' ? pushPayload.data : pushPayload;
+        const jobId = pushData?.jobId ? String(pushData.jobId) : null;
+        const assessmentTypeId = examDetails?.assessmentTypeId ? String(examDetails.assessmentTypeId) : null;
+        const assessmentTypeLabel = resolveAssessmentTypeLabel(examDetails);
+        if (jobId) {
+            await setManifestValue('lastPushJob', JSON.stringify({
+                jobId,
+                syncKey,
+                cloudUrl,
+                assessmentTypeId,
+                assessmentTypeLabel,
+                createdAt: new Date().toISOString()
+            }));
+        }
 
         await logAudit(req, 'sync.push', {
             pushedCount: payload.length,
             missingCount,
-            forced: force
+            forced: force,
+            jobId,
+            assessmentTypeId,
+            assessmentTypeLabel
         });
 
-        res.json({ success: true, count: payload.length });
+        res.json({ success: true, count: payload.length, jobId, assessmentTypeId, assessmentTypeLabel });
     } catch (error: any) {
         await logAudit(req, 'sync.push.failed', { reason: error.message });
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/push/status', adminAuth, async (req, res) => {
+    try {
+        const queryJobId = typeof req.query.jobId === 'string' ? req.query.jobId.trim() : '';
+
+        let cloudUrl = '';
+        let syncKey = '';
+        let jobId = queryJobId;
+
+        let assessmentTypeId: string | null = null;
+        let assessmentTypeLabel: string | null = null;
+        let examDetails: any = null;
+
+        if (!jobId) {
+            const stored = await getManifestValue('lastPushJob');
+            const parsed = safeJson(stored?.value, {});
+            cloudUrl = String(parsed?.cloudUrl || '');
+            syncKey = String(parsed?.syncKey || '');
+            jobId = String(parsed?.jobId || '');
+            assessmentTypeId = parsed?.assessmentTypeId ? String(parsed.assessmentTypeId) : null;
+            assessmentTypeLabel = parsed?.assessmentTypeLabel ? String(parsed.assessmentTypeLabel) : null;
+        }
+
+        if (!cloudUrl) {
+            cloudUrl = String((await getManifestValue('cloudUrl'))?.value || '');
+        }
+        if (!syncKey) {
+            syncKey = String((await getManifestValue('syncKey'))?.value || '');
+        }
+
+        if (!jobId) {
+            return res.status(404).json({ error: 'No tracked push job found yet.' });
+        }
+        if (!cloudUrl || !syncKey) {
+            return res.status(400).json({ error: 'Missing cloudUrl/syncKey for job tracking.' });
+        }
+
+        examDetails = safeJson((await getManifestValue('exam_details'))?.value, {});
+        const cloudStatus = await getCloudPushJobStatus(cloudUrl, syncKey, jobId);
+        const cloudAssessmentTypeId = cloudStatus?.assessmentTypeId ? String(cloudStatus.assessmentTypeId) : null;
+        if (!assessmentTypeId && cloudAssessmentTypeId) {
+            assessmentTypeId = cloudAssessmentTypeId;
+        }
+        if (!assessmentTypeId) {
+            assessmentTypeId = examDetails?.assessmentTypeId ? String(examDetails.assessmentTypeId) : null;
+        }
+        if (!assessmentTypeLabel) {
+            assessmentTypeLabel = resolveAssessmentTypeLabel(examDetails, cloudStatus);
+        }
+        const state = String(cloudStatus?.state || '').toLowerCase();
+        const done = state === 'completed' || state === 'failed';
+
+        if (done) {
+            await setManifestValue('lastPushJobResult', JSON.stringify({
+                jobId,
+                state: cloudStatus?.state,
+                progress: cloudStatus?.progress,
+                failedReason: cloudStatus?.failedReason || null,
+                result: cloudStatus?.result || null,
+                assessmentTypeId,
+                assessmentTypeLabel,
+                checkedAt: new Date().toISOString()
+            }));
+        }
+
+        res.json({
+            jobId,
+            state: cloudStatus?.state || 'unknown',
+            progress: cloudStatus?.progress ?? 0,
+            result: cloudStatus?.result || null,
+            failedReason: cloudStatus?.failedReason || null,
+            assessmentTypeId,
+            assessmentTypeLabel,
+            checkedAt: new Date().toISOString()
+        });
+    } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
 });
@@ -456,10 +767,89 @@ app.get('/api/monitor', adminAuth, async (req, res) => {
     }
 });
 
+app.get('/api/admin/health', adminAuth, async (req, res) => {
+    try {
+        const dbPath = path.join(__dirname, '../cbt-local.db');
+        const dbStat = await fs.stat(dbPath).catch(() => null);
+        const photoCacheSizeBytes = await getDirectorySizeBytes(studentPhotosPath);
+
+        const cloudUrl = String((await getManifestValue('cloudUrl'))?.value || '');
+        const syncKey = String((await getManifestValue('syncKey'))?.value || '');
+        let cloudReachable = false;
+        let cloudLatencyMs: number | null = null;
+        let cloudError = '';
+
+        if (cloudUrl) {
+            const checkUrl = syncKey
+                ? `${cloudUrl.replace(/\/$/, '')}/examination/cbt/sync/${syncKey}`
+                : cloudUrl;
+            const started = Date.now();
+            try {
+                await axios.get(checkUrl, { timeout: 5000 });
+                cloudReachable = true;
+                cloudLatencyMs = Date.now() - started;
+            } catch (error: any) {
+                if (error?.response) {
+                    // Server reachable but returned an HTTP error; still counts as reachable.
+                    cloudReachable = true;
+                    cloudLatencyMs = Date.now() - started;
+                    cloudError = `HTTP ${error.response.status}`;
+                } else {
+                    cloudReachable = false;
+                    cloudError = error?.message || 'Cloud unreachable';
+                }
+            }
+        }
+
+        const cpuSpikePercent = await getCpuUsagePercent();
+
+        res.json({
+            node: {
+                uptimeSec: Math.floor(process.uptime()),
+                hostname: os.hostname(),
+                platform: process.platform,
+                cpuCores: os.cpus().length,
+                cpuSpikePercent,
+                loadAvg: os.loadavg(),
+                totalMemMb: Math.round(os.totalmem() / 1024 / 1024),
+                freeMemMb: Math.round(os.freemem() / 1024 / 1024),
+                usedMemMb: Math.round((os.totalmem() - os.freemem()) / 1024 / 1024),
+            },
+            storage: {
+                dbSizeBytes: dbStat?.size || 0,
+                photoCacheSizeBytes,
+            },
+            cloud: {
+                configured: !!cloudUrl,
+                cloudUrl: cloudUrl || null,
+                syncKey: syncKey || null,
+                reachable: cloudReachable,
+                latencyMs: cloudLatencyMs,
+                error: cloudError || null,
+            }
+        });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.get('/api/session/status', async (req, res) => {
     try {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
         const isPausedRaw = await getManifestValue('isPaused');
-        res.json({ isPaused: toBool(isPausedRaw?.value) });
+        const studentId = typeof req.query.studentId === 'string' ? req.query.studentId : '';
+        if (!studentId) {
+            return res.json({ isPaused: toBool(isPausedRaw?.value) });
+        }
+
+        const session = await get<any>(`SELECT extraTimeMinutes, isSubmitted FROM exam_sessions WHERE studentId = ?`, [studentId]);
+        res.json({
+            isPaused: toBool(isPausedRaw?.value),
+            extraTimeMinutes: Number(session?.extraTimeMinutes || 0),
+            isSubmitted: Number(session?.isSubmitted || 0) === 1
+        });
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
@@ -680,6 +1070,133 @@ app.get('/api/admin/analytics', adminAuth, async (req, res) => {
             mostMissed,
             slowestQuestions,
             questionStats
+        });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/admin/results-summary', adminAuth, async (req, res) => {
+    try {
+        const students = await all<any>(`SELECT id, admissionNo, fullName FROM students`);
+        const sessions = await all<any>(`SELECT * FROM exam_sessions`);
+        const questions = await all<any>(`SELECT id, marks, options FROM questions`);
+
+        const questionMarkMap = new Map<string, number>();
+        const questionCorrectOptionMap = new Map<string, string>();
+        let maxScore = 0;
+
+        for (const q of questions) {
+            const qMarks = Number(q.marks || 0);
+            questionMarkMap.set(String(q.id), qMarks);
+            maxScore += qMarks;
+
+            const opts = safeJson(q.options, []);
+            const correct = Array.isArray(opts)
+                ? opts.find((opt: any) => opt?.isCorrect === true || opt?.correct === true)
+                : null;
+            if (correct?.id) {
+                questionCorrectOptionMap.set(String(q.id), String(correct.id));
+            }
+        }
+
+        const sessionByStudent = new Map<string, any>();
+        for (const s of sessions) {
+            sessionByStudent.set(String(s.studentId), s);
+        }
+
+        const hasAnswerKeys = questionCorrectOptionMap.size > 0;
+
+        const candidates = students.map((student) => {
+            const session = sessionByStudent.get(String(student.id));
+            const hasSession = !!session;
+            const submitted = session?.isSubmitted === 1;
+            const answers = safeJson(session?.answers, {});
+            const answeredCount = answers && typeof answers === 'object' ? Object.keys(answers).length : 0;
+
+            let score: number | null = null;
+            if (submitted && hasAnswerKeys) {
+                score = 0;
+                for (const [questionId, selectedOptionId] of Object.entries(answers || {})) {
+                    const correctOptionId = questionCorrectOptionMap.get(String(questionId));
+                    if (correctOptionId && String(selectedOptionId) === correctOptionId) {
+                        score += Number(questionMarkMap.get(String(questionId)) || 0);
+                    }
+                }
+            }
+
+            const percentage = score !== null && maxScore > 0 ? (score / maxScore) * 100 : null;
+
+            return {
+                studentId: student.id,
+                admissionNo: student.admissionNo,
+                fullName: student.fullName,
+                status: submitted ? 'Submitted' : hasSession ? 'In Progress' : 'Not Started',
+                score,
+                maxScore,
+                percentage,
+                answeredCount,
+                submittedAt: session?.endTime || null,
+            };
+        });
+
+        const submittedOnly = candidates.filter((c) => c.status === 'Submitted');
+        const gradedSubmitted = submittedOnly.filter((c) => c.score !== null);
+        const ungradedSubmittedCount = submittedOnly.length - gradedSubmitted.length;
+        const totalCandidates = candidates.length;
+        const submittedCount = submittedOnly.length;
+        const pendingCount = totalCandidates - submittedCount;
+        const averageScore = gradedSubmitted.length > 0
+            ? gradedSubmitted.reduce((acc, c) => acc + Number(c.score || 0), 0) / gradedSubmitted.length
+            : null;
+        const highestScore = gradedSubmitted.length > 0
+            ? Math.max(...gradedSubmitted.map((c) => Number(c.score || 0)))
+            : null;
+        const lowestScore = gradedSubmitted.length > 0
+            ? Math.min(...gradedSubmitted.map((c) => Number(c.score || 0)))
+            : null;
+
+        const bands = [
+            { key: '0-39', min: 0, max: 39.999 },
+            { key: '40-49', min: 40, max: 49.999 },
+            { key: '50-59', min: 50, max: 59.999 },
+            { key: '60-69', min: 60, max: 69.999 },
+            { key: '70-100', min: 70, max: 100.001 },
+        ];
+
+        const distribution = bands.map((band) => ({
+            band: band.key,
+            count: gradedSubmitted.filter((c) => {
+                const pct = Number(c.percentage);
+                return Number.isFinite(pct) && pct >= band.min && pct <= band.max;
+            }).length,
+        }));
+        distribution.push({ band: 'Ungraded', count: ungradedSubmittedCount });
+
+        const sortedCandidates = [...candidates].sort((a, b) => {
+            if (a.status === 'Submitted' && b.status !== 'Submitted') return -1;
+            if (a.status !== 'Submitted' && b.status === 'Submitted') return 1;
+            const aScore = Number(a.score ?? -1);
+            const bScore = Number(b.score ?? -1);
+            if (bScore !== aScore) return bScore - aScore;
+            return String(a.fullName).localeCompare(String(b.fullName));
+        });
+
+        res.json({
+            summary: {
+                totalCandidates,
+                submittedCount,
+                pendingCount,
+                averageScore,
+                highestScore,
+                lowestScore,
+                maxScore,
+                hasAnswerKeys,
+                gradedCount: gradedSubmitted.length,
+                ungradedSubmittedCount,
+            },
+            distribution,
+            candidates: sortedCandidates,
         });
     } catch (error: any) {
         res.status(500).json({ error: error.message });

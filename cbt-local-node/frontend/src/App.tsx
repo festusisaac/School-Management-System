@@ -11,6 +11,7 @@ import AdminLayout from './components/AdminLayout';
 import PullExamPage from './pages/admin/PullExamPage';
 import LiveMonitorPage from './pages/admin/LiveMonitorPage';
 import PushResultsPage from './pages/admin/PushResultsPage';
+import ResultSummaryPage from './pages/admin/ResultSummaryPage';
 import AnalyticsPage from './pages/admin/AnalyticsPage';
 import AuditLogsPage from './pages/admin/AuditLogsPage';
 
@@ -32,6 +33,7 @@ function App() {
             <Route path="pull" element={<PullExamPage />} />
             <Route path="monitor" element={<LiveMonitorPage />} />
             <Route path="push" element={<PushResultsPage />} />
+            <Route path="results" element={<ResultSummaryPage />} />
             <Route path="analytics" element={<AnalyticsPage />} />
             <Route path="audit" element={<AuditLogsPage />} />
         </Route>

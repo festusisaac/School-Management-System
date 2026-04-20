@@ -99,6 +99,10 @@ export const initDb = async () => {
     } catch (e) { /* ignore if already exists */ }
 
     try {
+        await run(`ALTER TABLE exam_sessions ADD COLUMN updatedAt TEXT`);
+    } catch (e) { /* ignore if already exists */ }
+
+    try {
         await run(`ALTER TABLE students ADD COLUMN photoUrl TEXT`);
     } catch (e) { /* ignore if already exists */ }
     

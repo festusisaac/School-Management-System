@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { DownloadCloud, RefreshCw, Server, Wifi, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { getAdminAuthConfig } from '../../utils/adminAuth';
 
 const API_BASE = '/api';
 
@@ -15,7 +16,7 @@ export default function PullExamPage() {
 
     const loadRandomization = async () => {
         try {
-            const res = await axios.get(`${API_BASE}/admin/randomization`);
+            const res = await axios.get(`${API_BASE}/admin/randomization`, getAdminAuthConfig());
             setRandomizeQuestions(!!res.data.randomizeQuestions);
             setRandomizeOptions(!!res.data.randomizeOptions);
         } catch {
@@ -33,7 +34,7 @@ export default function PullExamPage() {
             await axios.post(`${API_BASE}/admin/randomization`, {
                 randomizeQuestions,
                 randomizeOptions,
-            });
+            }, getAdminAuthConfig());
             setStatus({ type: 'success', message: 'Randomization settings saved.' });
         } catch (error: any) {
             setStatus({ type: 'error', message: error.response?.data?.error || 'Failed to save randomization settings.' });
@@ -46,7 +47,7 @@ export default function PullExamPage() {
         setLoading(true);
         setStatus({ type: 'idle', message: '' });
         try {
-            const res = await axios.post(`${API_BASE}/sync`, { cloudUrl, syncKey });
+            const res = await axios.post(`${API_BASE}/sync`, { cloudUrl, syncKey }, getAdminAuthConfig());
             setStatus({
                 type: 'success',
                 message: `${res.data.studentCount} candidates and ${res.data.questionCount} questions synced successfully.`,

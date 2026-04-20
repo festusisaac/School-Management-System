@@ -15,7 +15,8 @@ export class ScoreImportProcessor {
     examId: string;
     assessmentTypeId: string;
     tenantId: string; 
-    userEmail: string 
+    userEmail: string;
+    syncKey?: string;
   }>) {
     const { data, examId, assessmentTypeId, tenantId } = job.data;
     const total = data.length;

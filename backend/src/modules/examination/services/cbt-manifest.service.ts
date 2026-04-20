@@ -118,7 +118,7 @@ export class CbtManifestService {
         // Get active students for that class
         const students = await this.studentRepository.find({
             where: { classId: exam.classId, isActive: true, tenantId: exam.tenantId },
-            select: ['id', 'admissionNo', 'firstName', 'lastName', 'middleName', 'gender']
+            select: ['id', 'admissionNo', 'firstName', 'lastName', 'middleName', 'gender', 'studentPhoto']
         });
 
         // Get Questions
@@ -140,6 +140,13 @@ export class CbtManifestService {
 
         // Use the explicitly mapped assessment type if available
         const assessmentTypeId = exam.cbtAssessmentTypeId || undefined;
+        let assessmentTypeName: string | undefined;
+        if (assessmentTypeId) {
+            const assessment = await this.assessmentTypeRepository.findOne({
+                where: { id: assessmentTypeId, tenantId: exam.tenantId }
+            });
+            assessmentTypeName = assessment?.name || undefined;
+        }
 
         return {
             exam: {
@@ -153,12 +160,14 @@ export class CbtManifestService {
                 endTime: schedule?.endTime,
                 examDate: schedule?.date,
                 tenantId: exam.tenantId,
-                assessmentTypeId: assessmentTypeId
+                assessmentTypeId: assessmentTypeId,
+                assessmentTypeName
             },
             students: students.map(s => ({
                 id: s.id,
                 admissionNo: s.admissionNo,
                 fullName: `${s.firstName} ${s.middleName ? s.middleName + ' ' : ''}${s.lastName}`.trim(),
+                photoUrl: s.studentPhoto || '',
             })),
             questions: secureQuestions
         };

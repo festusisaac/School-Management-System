@@ -1,12 +1,14 @@
-import { useEffect, useState } from 'react';
-import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import axios from 'axios';
-import { DownloadCloud, Users, UploadCloud, LogOut, Menu, BarChart3, ClipboardList } from 'lucide-react';
+import { Outlet, useNavigate, Link, useLocation, Navigate } from 'react-router-dom';
+import { DownloadCloud, Users, UploadCloud, LogOut, Menu, BarChart3, ClipboardList, FileBarChart2 } from 'lucide-react';
+import { applyAdminAuthDefaults, clearAdminAuthDefaults, clearAdminToken, getAdminAuthConfig, getAdminToken } from '../utils/adminAuth';
 
 const navItems = [
     { path: '/admin/pull', label: 'Provision Node', icon: DownloadCloud },
     { path: '/admin/monitor', label: 'Live Monitor', icon: Users },
     { path: '/admin/push', label: 'Push Results', icon: UploadCloud },
+    { path: '/admin/results', label: 'Result Summary', icon: FileBarChart2 },
     { path: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
     { path: '/admin/audit', label: 'Audit Logs', icon: ClipboardList },
 ];
@@ -15,27 +17,42 @@ export default function AdminLayout() {
     const navigate = useNavigate();
     const location = useLocation();
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const token = getAdminToken();
+
+    useLayoutEffect(() => {
+        if (!token) return;
+        applyAdminAuthDefaults();
+    }, [token]);
 
     useEffect(() => {
-        const token = sessionStorage.getItem('admin_token');
-        if (!token) {
-            navigate('/admin/login');
-            return;
-        }
+        if (!token) clearAdminAuthDefaults();
+    }, [token]);
 
-        const interceptor = axios.interceptors.request.use((config) => {
-            config.headers.Authorization = `Bearer ${token}`;
-            config.headers['x-client-id'] = window.location.hostname;
-            return config;
-        });
-
-        return () => axios.interceptors.request.eject(interceptor);
-    }, [navigate]);
+    useEffect(() => {
+        if (!token) return;
+        const verifySession = async () => {
+            try {
+                await axios.get('/api/admin/randomization', getAdminAuthConfig());
+            } catch (error: any) {
+                if (error?.response?.status === 401) {
+                    clearAdminToken();
+                    clearAdminAuthDefaults();
+                    navigate('/admin/login', { replace: true });
+                }
+            }
+        };
+        verifySession();
+    }, [navigate, token]);
 
     const handleLogout = () => {
-        sessionStorage.removeItem('admin_token');
+        clearAdminToken();
+        clearAdminAuthDefaults();
         navigate('/admin/login');
     };
+
+    if (!token) {
+        return <Navigate to="/admin/login" replace />;
+    }
 
     return (
         <div className="h-screen bg-gray-100 flex flex-col font-sans overflow-hidden">

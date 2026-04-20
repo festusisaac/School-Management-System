@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { RefreshCw } from 'lucide-react';
+import { getAdminAuthConfig } from '../../utils/adminAuth';
 
 const API_BASE = '/api';
 
@@ -41,7 +42,7 @@ export default function AnalyticsPage() {
         setLoading(true);
         setError('');
         try {
-            const res = await axios.get(`${API_BASE}/admin/analytics`);
+            const res = await axios.get(`${API_BASE}/admin/analytics`, getAdminAuthConfig());
             const payload = res.data || {};
             setData({
                 summary: {

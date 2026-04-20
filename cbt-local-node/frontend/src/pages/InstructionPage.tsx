@@ -1,17 +1,76 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PlayCircle, ShieldAlert, User, Clock } from 'lucide-react';
+import axios from 'axios';
+import { PlayCircle, ShieldAlert, User, Clock, ListChecks } from 'lucide-react';
+
+const API_BASE = '/api';
 
 export default function InstructionPage() {
     const navigate = useNavigate();
     const sessionData = JSON.parse(localStorage.getItem('cbt_session') || '{}');
     const { student, examDetails } = sessionData;
     const photoUrl = student?.photoUrl || '';
+    const [questionCount, setQuestionCount] = useState<number | null>(null);
+
+    const examTimeText = useMemo(() => {
+        const start = examDetails?.startTime;
+        const end = examDetails?.endTime;
+        if (!start || !end) return 'Not specified';
+
+        const examDate = new Date(examDetails?.examDate || new Date().toISOString());
+        const [sh, sm, ss] = String(start).split(':');
+        const [eh, em, es] = String(end).split(':');
+
+        const startAt = new Date(examDate);
+        startAt.setHours(Number(sh || 0), Number(sm || 0), Number(ss || 0), 0);
+
+        const endAt = new Date(examDate);
+        endAt.setHours(Number(eh || 0), Number(em || 0), Number(es || 0), 0);
+
+        return `${startAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${endAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    }, [examDetails?.startTime, examDetails?.endTime, examDetails?.examDate]);
+
+    const calculatedDurationMinutes = useMemo(() => {
+        const start = examDetails?.startTime;
+        const end = examDetails?.endTime;
+        if (!start || !end) return Number(examDetails?.durationMinutes || 60);
+
+        const examDate = new Date(examDetails?.examDate || new Date().toISOString());
+        const [sh, sm, ss] = String(start).split(':');
+        const [eh, em, es] = String(end).split(':');
+
+        const startAt = new Date(examDate);
+        startAt.setHours(Number(sh || 0), Number(sm || 0), Number(ss || 0), 0);
+
+        const endAt = new Date(examDate);
+        endAt.setHours(Number(eh || 0), Number(em || 0), Number(es || 0), 0);
+
+        // Handle schedules that cross midnight.
+        if (endAt.getTime() <= startAt.getTime()) {
+            endAt.setDate(endAt.getDate() + 1);
+        }
+
+        const diffMinutes = Math.round((endAt.getTime() - startAt.getTime()) / 60000);
+        return diffMinutes > 0 ? diffMinutes : Number(examDetails?.durationMinutes || 60);
+    }, [examDetails?.startTime, examDetails?.endTime, examDetails?.examDate, examDetails?.durationMinutes]);
 
     useEffect(() => {
         if (!student) {
             navigate('/');
+            return;
         }
+
+        const loadQuestionCount = async () => {
+            try {
+                const res = await axios.get(`${API_BASE}/questions?studentId=${student.id}`);
+                const count = Array.isArray(res.data) ? res.data.length : 0;
+                setQuestionCount(count);
+            } catch {
+                setQuestionCount(null);
+            }
+        };
+
+        loadQuestionCount();
     }, [student, navigate]);
 
     if (!student) return <div />;
@@ -66,7 +125,19 @@ export default function InstructionPage() {
                                     <div>
                                         <p className="text-xs text-gray-400 uppercase">Duration</p>
                                         <p className="text-sm font-bold text-gray-800 flex items-center">
-                                            <Clock className="w-4 h-4 mr-1 text-gray-500" /> {examDetails?.durationMinutes || 60} Minutes
+                                            <Clock className="w-4 h-4 mr-1 text-gray-500" /> {calculatedDurationMinutes} Minutes
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-400 uppercase">Exam Time</p>
+                                        <p className="text-sm font-bold text-gray-800 flex items-center">
+                                            <Clock className="w-4 h-4 mr-1 text-gray-500" /> {examTimeText}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-400 uppercase">Total Questions</p>
+                                        <p className="text-sm font-bold text-gray-800 flex items-center">
+                                            <ListChecks className="w-4 h-4 mr-1 text-gray-500" /> {questionCount === null ? 'Loading...' : questionCount}
                                         </p>
                                     </div>
                                 </div>

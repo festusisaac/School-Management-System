@@ -1,8 +1,47 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { RefreshCw, Download, Lock, Unlock, PlusCircle, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { RefreshCw, Download, Lock, Unlock, PlusCircle, CheckCircle2, AlertTriangle, Search } from 'lucide-react';
+import { getAdminAuthConfig, getAdminToken } from '../../utils/adminAuth';
 
 const API_BASE = '/api';
+
+const actionLabelMap: Record<string, string> = {
+    'admin.login.success': 'Admin login successful',
+    'admin.login.failed': 'Failed admin login attempt',
+    'sync.pull': 'Exam package downloaded',
+    'sync.pull.failed': 'Exam package download failed',
+    'sync.push': 'Results uploaded to cloud',
+    'sync.push.failed': 'Results upload failed',
+    'session.force_submit': 'Candidate session force-submitted',
+    'hall.pause_toggle': 'Exam hall status changed',
+    'session.add_time': 'Extra time added to candidate',
+    'node.reset': 'Local node reset',
+    'node.export': 'Backup exported',
+    'settings.randomization': 'Randomization settings updated',
+};
+
+const friendlyAction = (action: string) => actionLabelMap[action] || 'Administrative action recorded';
+
+const friendlyLogDetails = (log: any) => {
+    const details = log?.details || {};
+    switch (log?.action) {
+        case 'session.add_time':
+            return `${details.minutes ?? 0} minute(s) added to candidate ${details.studentId || 'unknown'}.`;
+        case 'hall.pause_toggle':
+            return details.isPaused ? 'All terminals paused.' : 'All terminals resumed.';
+        case 'sync.pull':
+            return `${details.studentCount ?? 0} candidates and ${details.questionCount ?? 0} questions synced.`;
+        case 'sync.push':
+            return `${details.pushedCount ?? 0} result record(s) uploaded.`;
+        case 'sync.pull.failed':
+        case 'sync.push.failed':
+            return `Reason: ${details.reason || 'Unknown error.'}`;
+        case 'admin.login.failed':
+            return 'Wrong passcode was entered.';
+        default:
+            return '';
+    }
+};
 
 export default function LiveMonitorPage() {
     const [students, setStudents] = useState<any[]>([]);
@@ -10,9 +49,10 @@ export default function LiveMonitorPage() {
     const [loading, setLoading] = useState(false);
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [recentLogs, setRecentLogs] = useState<any[]>([]);
+    const [searchTerm, setSearchTerm] = useState('');
 
-    const adminToken = sessionStorage.getItem('admin_token');
-    const authHeader = { headers: { Authorization: `Bearer ${adminToken}` } };
+    const adminToken = getAdminToken();
+    const authHeader = getAdminAuthConfig();
 
     useEffect(() => {
         fetchMonitorData();
@@ -75,6 +115,15 @@ export default function LiveMonitorPage() {
     const activeCount = students.filter((student) => student.session && !student.session.isSubmitted).length;
     const submittedCount = students.filter((student) => student.session?.isSubmitted).length;
     const idleCount = students.filter((student) => !student.session).length;
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+    const filteredStudents = students.filter((student) => {
+        if (!normalizedSearch) return true;
+        return (
+            String(student?.fullName || '').toLowerCase().includes(normalizedSearch) ||
+            String(student?.admissionNo || '').toLowerCase().includes(normalizedSearch) ||
+            String(student?.id || '').toLowerCase().includes(normalizedSearch)
+        );
+    });
 
     return (
         <div className="space-y-4">
@@ -123,6 +172,17 @@ export default function LiveMonitorPage() {
             </div>
 
             <div className="bg-white border border-gray-200 rounded overflow-x-auto">
+                <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+                    <div className="relative max-w-md">
+                        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
+                        <input
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder="Search by candidate name or admission number"
+                            className="w-full rounded border border-gray-300 bg-white text-sm text-gray-700 pl-9 pr-3 py-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                    </div>
+                </div>
                 <table className="min-w-full">
                     <thead className="bg-gray-50 border-b border-gray-200">
                         <tr>
@@ -134,9 +194,17 @@ export default function LiveMonitorPage() {
                         </tr>
                     </thead>
                     <tbody>
-                        {students.map((student) => {
+                        {filteredStudents.length === 0 && (
+                            <tr>
+                                <td colSpan={5} className="px-4 py-6 text-sm text-gray-500 text-center">
+                                    No candidate matches your search.
+                                </td>
+                            </tr>
+                        )}
+                        {filteredStudents.map((student) => {
                             const isActive = student.session && !student.session.isSubmitted;
                             const isSubmitted = student.session?.isSubmitted === 1;
+                            const grantedTime = Number(student.session?.extraTimeMinutes || 0);
 
                             let stateEl = <span className="text-xs text-gray-500">Idle</span>;
                             if (isActive) stateEl = <span className="text-xs text-blue-700 font-semibold">{isPaused ? 'Paused' : 'Active'}</span>;
@@ -161,16 +229,19 @@ export default function LiveMonitorPage() {
                                     <td className="px-4 py-3 text-center">{stateEl}</td>
                                     <td className="px-4 py-3 text-center">
                                         {isActive ? (
-                                            <div className="inline-flex gap-1">
-                                                <button onClick={() => addTime(student.id, 5)} className="px-2 py-1 rounded border border-blue-200 text-blue-700 text-xs">
-                                                    <span className="inline-flex items-center gap-1"><PlusCircle className="w-3 h-3" />5m</span>
-                                                </button>
-                                                <button onClick={() => addTime(student.id, 10)} className="px-2 py-1 rounded border border-blue-200 text-blue-700 text-xs">
-                                                    <span className="inline-flex items-center gap-1"><PlusCircle className="w-3 h-3" />10m</span>
-                                                </button>
+                                            <div className="inline-flex flex-col items-center gap-1">
+                                                <span className="text-[11px] font-semibold text-blue-700">{grantedTime}m granted</span>
+                                                <div className="inline-flex gap-1">
+                                                    <button onClick={() => addTime(student.id, 5)} className="px-2 py-1 rounded border border-blue-200 text-blue-700 text-xs">
+                                                        <span className="inline-flex items-center gap-1"><PlusCircle className="w-3 h-3" />5m</span>
+                                                    </button>
+                                                    <button onClick={() => addTime(student.id, 10)} className="px-2 py-1 rounded border border-blue-200 text-blue-700 text-xs">
+                                                        <span className="inline-flex items-center gap-1"><PlusCircle className="w-3 h-3" />10m</span>
+                                                    </button>
+                                                </div>
                                             </div>
                                         ) : (
-                                            <span className="text-gray-400">-</span>
+                                            <span className="text-gray-400">{grantedTime > 0 ? `${grantedTime}m granted` : '-'}</span>
                                         )}
                                     </td>
                                     <td className="px-4 py-3 text-center text-sm font-semibold text-gray-700">{answered}</td>
@@ -208,8 +279,8 @@ export default function LiveMonitorPage() {
                         {recentLogs.map((log) => (
                             <li key={log.id} className="flex flex-col md:flex-row md:items-center md:justify-between border border-gray-100 rounded p-2.5 bg-gray-50">
                                 <div>
-                                    <p className="text-sm font-semibold text-gray-800">{log.action}</p>
-                                    <p className="text-xs text-gray-500">{log.clientId || 'unknown-client'}</p>
+                                    <p className="text-sm font-semibold text-gray-800">{friendlyAction(log.action)}</p>
+                                    <p className="text-xs text-gray-500">{friendlyLogDetails(log) || (log.clientId || 'unknown-client')}</p>
                                 </div>
                                 <span className="text-xs text-gray-500 mt-1 md:mt-0">{new Date(log.createdAt).toLocaleString()}</span>
                             </li>

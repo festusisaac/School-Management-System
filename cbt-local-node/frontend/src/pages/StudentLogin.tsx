@@ -5,6 +5,29 @@ import { UserCircle, Shield, ArrowRight } from 'lucide-react';
 
 const API_BASE = '/api';
 
+const getFriendlyLoginError = (error: any) => {
+    const rawMessage = String(error?.response?.data?.error || error?.message || '').trim();
+    if (!rawMessage) {
+        return 'We could not sign you in right now. Please try again or contact the invigilator.';
+    }
+
+    const lowerMessage = rawMessage.toLowerCase();
+
+    if (lowerMessage.includes('sqlite_error') || lowerMessage.includes('no column named') || lowerMessage.includes('no such column')) {
+        return 'This exam computer needs a quick setup update before students can log in. Please inform the invigilator or administrator.';
+    }
+
+    if (lowerMessage.includes('network error') || lowerMessage.includes('failed to fetch')) {
+        return 'The exam server could not be reached. Please check the connection and inform the invigilator.';
+    }
+
+    if (lowerMessage.includes('timeout')) {
+        return 'The login request took too long. Please try again, and if it continues, inform the invigilator.';
+    }
+
+    return rawMessage;
+};
+
 export default function StudentLogin() {
     const [admissionNo, setAdmissionNo] = useState('');
     const [error, setError] = useState('');
@@ -76,7 +99,7 @@ export default function StudentLogin() {
             const hasProgress = (session?.lastQuestionIndex || 0) > 0 || Object.keys(parsedAnswers).length > 0;
             navigate(hasProgress ? '/exam' : '/verify');
         } catch (error: any) {
-            setError(error.response?.data?.error || 'System error. Contact Invigilator.');
+            setError(getFriendlyLoginError(error));
         } finally {
             setLoading(false);
         }
