@@ -65,6 +65,26 @@ export class FeesService {
     private readonly sessionRepo: Repository<AcademicSession>,
   ) { }
 
+  private dedupeAssignments(assignments: FeeAssignment[]) {
+    const latestByGroup = new Map<string, FeeAssignment>();
+
+    assignments.forEach((assignment) => {
+      const existing = latestByGroup.get(assignment.feeGroupId);
+      if (!existing) {
+        latestByGroup.set(assignment.feeGroupId, assignment);
+        return;
+      }
+
+      const existingTime = new Date(existing.updatedAt || existing.createdAt || 0).getTime();
+      const nextTime = new Date(assignment.updatedAt || assignment.createdAt || 0).getTime();
+      if (nextTime >= existingTime) {
+        latestByGroup.set(assignment.feeGroupId, assignment);
+      }
+    });
+
+    return Array.from(latestByGroup.values());
+  }
+
   private normalizeBulkAllocations(bulkAllocations: any[]) {
     bulkAllocations = this.parseBulkAllocations(bulkAllocations);
 
@@ -506,10 +526,10 @@ export class FeesService {
     const asWhere: any = { studentId: resolvedStudentId, isActive: true, tenantId };
     if (sessionId) asWhere.sessionId = sessionId;
 
-    const assignments = await this.assignmentRepo.find({
+    const assignments = this.dedupeAssignments(await this.assignmentRepo.find({
       where: asWhere,
       relations: ['feeGroup', 'feeGroup.heads'],
-    });
+    }));
 
     // Map to track payments per head
     const paidByHead: Record<string, number> = {};
@@ -604,10 +624,10 @@ export class FeesService {
     // 3. Assignments
     const asWhere: any = { studentId, isActive: true, tenantId };
     if (sessionId) asWhere.sessionId = sessionId;
-    const assignments = await this.assignmentRepo.find({
+    const assignments = this.dedupeAssignments(await this.assignmentRepo.find({
       where: asWhere,
       relations: ['feeGroup', 'feeGroup.heads'],
-    });
+    }));
 
     // 4. Sum up
     const totalPaid = transactions.reduce((acc, curr) => acc + parseFloat(curr.amount || '0'), 0);
@@ -631,10 +651,10 @@ export class FeesService {
     const transactions = allSessionTx.filter(tx => (tx.type as string) !== TransactionType.CARRY_FORWARD);
 
     // 2. Assignments for that session
-    const assignments = await this.assignmentRepo.find({
+    const assignments = this.dedupeAssignments(await this.assignmentRepo.find({
       where: { studentId, sessionId, tenantId },
       relations: ['feeGroup', 'feeGroup.heads'],
-    });
+    }));
 
     // 3. Carry Forwards for that session
     const carryForwards = await this.carryRepo.find({

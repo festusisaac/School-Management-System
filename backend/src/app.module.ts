@@ -28,6 +28,7 @@ import { ExaminationModule } from '@modules/examination/examination.module';
 import { OnlineClassesModule } from '@modules/online-classes/online-classes.module';
 import { HomeworkModule } from '@modules/homework/homework.module';
 import { FrontCmsModule } from '@modules/front-cms/front-cms.module';
+import { ExpensesModule } from '@modules/expenses/expenses.module';
 
 @Module({
   imports: [
@@ -88,6 +89,7 @@ import { FrontCmsModule } from '@modules/front-cms/front-cms.module';
     forwardRef(() => OnlineClassesModule),
     forwardRef(() => HomeworkModule),
     forwardRef(() => FrontCmsModule),
+    forwardRef(() => ExpensesModule),
   ],
   controllers: [AppController],
   providers: [

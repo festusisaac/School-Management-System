@@ -13,11 +13,14 @@ import { Subject } from '../academics/entities/subject.entity';
 import { FeeAssignment } from '../finance/entities/fee-assignment.entity';
 import { ExamResult } from '../examination/entities/exam-result.entity';
 import { ExamGroup } from '../examination/entities/exam-group.entity';
+import { StudentTermResult } from '../examination/entities/student-term-result.entity';
 import { StaffAttendance } from '../hr/entities/staff-attendance.entity';
 import { Payroll } from '../hr/entities/payroll.entity';
 import { StudentAttendance } from '../students/entities/student-attendance.entity';
 import { ActivityLog } from '../system/entities/activity-log.entity';
 import { CommunicationLog } from '../communication/entities/communication-log.entity';
+import { CarryForward } from '../finance/entities/carry-forward.entity';
+import { AcademicSession } from '../system/entities/academic-session.entity';
 
 @Module({
   imports: [
@@ -30,9 +33,12 @@ import { CommunicationLog } from '../communication/entities/communication-log.en
       FeeAssignment,
       ExamResult,
       ExamGroup,
+      StudentTermResult,
       StaffAttendance,
       Payroll,
       StudentAttendance,
+      CarryForward,
+      AcademicSession,
       ActivityLog,
       CommunicationLog,
     ]),

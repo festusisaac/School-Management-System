@@ -40,6 +40,11 @@ const permissionsData = [
   { slug: 'finance:collect_fees', name: 'Record Payments', module: 'Finance' },
   { slug: 'finance:view_reports', name: 'View Financial Reports & Debtors', module: 'Finance' },
   { slug: 'finance:manage_reminders', name: 'Send Payment Reminders', module: 'Finance' },
+  { slug: 'expenses:view', name: 'View Expenses', module: 'Expenses' },
+  { slug: 'expenses:manage_categories', name: 'Manage Expense Categories', module: 'Expenses' },
+  { slug: 'expenses:manage_vendors', name: 'Manage Expense Vendors', module: 'Expenses' },
+  { slug: 'expenses:manage_records', name: 'Manage Expense Records', module: 'Expenses' },
+  { slug: 'expenses:view_reports', name: 'View Expense Reports', module: 'Expenses' },
 
   // ── HR ────────────────────────────────────
   { slug: 'hr:manage_staff', name: 'Manage Staff Directory', module: 'HR' },

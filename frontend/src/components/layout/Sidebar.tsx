@@ -4,6 +4,7 @@ import {
     Users,
     GraduationCap,
     CreditCard,
+    Wallet,
     Settings,
     X,
     School,
@@ -216,6 +217,17 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 { label: 'Discounts', path: '/finance/discounts', permission: 'finance:manage_fee_structure' },
                 { label: 'Payment Reminders', path: '/finance/reminders', permission: 'finance:manage_reminders' },
                 { label: 'Balance Carry-Forward', path: '/finance/carry-forward', permission: 'finance:manage_fee_structure' },
+            ]
+        },
+        {
+            label: 'Expenses',
+            icon: Wallet,
+            path: '/expenses',
+            children: [
+                { label: 'Expense Dashboard', path: '/expenses', permission: 'expenses:view_reports' },
+                { label: 'Expense Records', path: '/expenses/records', permission: 'expenses:view' },
+                { label: 'Expense Categories', path: '/expenses/categories', permission: 'expenses:manage_categories' },
+                { label: 'Expense Vendors', path: '/expenses/vendors', permission: 'expenses:manage_vendors' },
             ]
         },
         {
@@ -487,6 +499,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                                                     <NavLink
                                                         key={child.path}
                                                         to={child.path}
+                                                        end
                                                         onClick={handleNavClick}
                                                         className={({ isActive }) => clsx(
                                                             "flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg transition-colors",
@@ -495,8 +508,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                                                                 : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/60 font-medium"
                                                         )}
                                                     >
-                                                        <span className={clsx("w-1.5 h-1.5 rounded-full flex-shrink-0", window.location.pathname === child.path ? "bg-primary-600" : "bg-gray-300 dark:bg-gray-600")} />
-                                                        {child.label}
+                                                        {({ isActive }) => (
+                                                            <>
+                                                                <span className={clsx("w-1.5 h-1.5 rounded-full flex-shrink-0", isActive ? "bg-primary-600" : "bg-gray-300 dark:bg-gray-600")} />
+                                                                {child.label}
+                                                            </>
+                                                        )}
                                                     </NavLink>
                                                 )
                                             ))}

@@ -3,6 +3,7 @@ import { Activity, Globe, Layout, RefreshCcw, Search, Shield, User, Users } from
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { formatDateLocal, formatTimeLocal } from '../../utils/date';
+import { getFriendlyAction, getFriendlyDetails } from '../../utils/auditFormatter';
 
 const PORTALS = [
   { id: 'ADMIN', name: 'Admin Portal', icon: Shield, color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' },
@@ -158,13 +159,13 @@ export default function ActivityLogsPage() {
                   </td>
                   <td className="px-6 py-4">
                     <span className={`inline-block rounded-md px-2 py-0.5 text-xs font-bold ${getMethodColor(log.method)}`}>
-                      {log.label}
+                      {getFriendlyAction(log.method || '', log.path || '', log.action || log.label || 'Activity')}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800 dark:text-gray-200">{log.userEmail}</td>
                   <td className="px-6 py-4">
                     <p className="text-sm text-gray-600 dark:text-gray-300 max-w-md break-words">
-                      {log.details || '-'}
+                      {getFriendlyDetails(log.details)}
                     </p>
                   </td>
                   <td className="px-6 py-4">

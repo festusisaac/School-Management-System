@@ -209,6 +209,59 @@ class ApiService {
     return this.get<any>(`/finance/carry-forward/job/${jobId}`)
   }
 
+  // Expense API methods
+  async getExpenseDashboard(params?: any) {
+    return this.get<any>('/expenses/dashboard', { params })
+  }
+
+  async getExpenses(params?: any) {
+    return this.get<any>('/expenses', { params })
+  }
+
+  async createExpense(data: any) {
+    return this.post<any>('/expenses', data)
+  }
+
+  async updateExpense(id: string, data: any) {
+    return this.patch<any>(`/expenses/${id}`, data)
+  }
+
+  async deleteExpense(id: string) {
+    return this.delete<any>(`/expenses/${id}`)
+  }
+
+  async getExpenseCategories() {
+    return this.get<any[]>('/expenses/categories')
+  }
+
+  async createExpenseCategory(data: any) {
+    return this.post<any>('/expenses/categories', data)
+  }
+
+  async updateExpenseCategory(id: string, data: any) {
+    return this.patch<any>(`/expenses/categories/${id}`, data)
+  }
+
+  async deleteExpenseCategory(id: string) {
+    return this.delete<any>(`/expenses/categories/${id}`)
+  }
+
+  async getExpenseVendors() {
+    return this.get<any[]>('/expenses/vendors')
+  }
+
+  async createExpenseVendor(data: any) {
+    return this.post<any>('/expenses/vendors', data)
+  }
+
+  async updateExpenseVendor(id: string, data: any) {
+    return this.patch<any>(`/expenses/vendors/${id}`, data)
+  }
+
+  async deleteExpenseVendor(id: string) {
+    return this.delete<any>(`/expenses/vendors/${id}`)
+  }
+
   // Dashboard API methods
   async getAdminStats(params: { sectionId?: string; sessionId?: string; termId?: string } = {}) {
     return this.get<any>('/reporting/dashboard/admin/stats', { params })

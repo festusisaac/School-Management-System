@@ -26,7 +26,7 @@ import image18 from '@assets/herobg/image18.jpeg';
 import image20 from '@assets/herobg/image20.jpeg';
 import image24 from '@assets/herobg/image24.jpeg';
 import image43 from '@assets/herobg/image43.jpeg';
-import aboutImg from '@assets/About.jpeg';
+import aboutImg from '@assets/About.png';
 import catherineImg from '@assets/Catherine-Kasper.jpg';
 import nurseryImg from '@assets/phjcschool/image4.jpeg';
 import primaryImg from '@assets/phjcschool/image11.jpeg';

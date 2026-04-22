@@ -30,6 +30,12 @@ const ACTION_MAPPING: Record<string, string> = {
   'POST /api/v1/finance/paystack/verify': 'Online Payment Verified (Paystack)',
   'POST /api/v1/finance/flutterwave/verify': 'Online Payment Verified (Flutterwave)',
   'POST /api/v1/finance/payments/': 'Refund Processed',
+  'POST /api/v1/expenses': 'Expense Recorded',
+  'PATCH /api/v1/expenses/': 'Expense Updated',
+  'POST /api/v1/expenses/categories': 'Expense Category Created',
+  'PATCH /api/v1/expenses/categories/': 'Expense Category Updated',
+  'POST /api/v1/expenses/vendors': 'Expense Vendor Created',
+  'PATCH /api/v1/expenses/vendors/': 'Expense Vendor Updated',
 
   // HR
   'POST /api/v1/hr/staff': 'New Staff Recruited',
@@ -92,7 +98,27 @@ export function getFriendlyDetails(details: any): string {
       // Clean up stringified escape chars if any
       data = JSON.parse(details.replace(/\\"/g, '"'));
     } catch (e) {
-      return details; // Return as is if not valid JSON
+      // If this is plain text, sanitize technical noise and return a friendly sentence.
+      const chunks = String(details)
+        .split('•')
+        .map((part) => part.trim())
+        .filter(Boolean)
+        .filter((part) => !/id\s*:/i.test(part))
+        .filter((part) => !/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.test(part));
+
+      const normalized = chunks
+        .map((part) =>
+          part
+            .replace(/\bIs Active\s*:\s*true\b/gi, 'Status: Active')
+            .replace(/\bIs Active\s*:\s*false\b/gi, 'Status: Inactive')
+            .replace(/\bClass Level\b/gi, 'Class')
+            .replace(/\bAssessment Type\b/gi, 'Assessment')
+        )
+        .join(' • ')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+
+      return normalized || 'Action completed successfully';
     }
   }
 
@@ -104,7 +130,7 @@ export function getFriendlyDetails(details: any): string {
   const skipKeys = ['tenantId', 'password', 'id', 'userId', 'roleId', 'sessionId', 'termId', 'createdAt', 'updatedAt'];
   
   const entries = Object.entries(data)
-    .filter(([key]) => !skipKeys.includes(key))
+    .filter(([key]) => !skipKeys.includes(key) && !/id$/i.test(key))
     .map(([key, value]) => {
       const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
       let valDisplay = '';
@@ -112,11 +138,21 @@ export function getFriendlyDetails(details: any): string {
       if (typeof value === 'object' && value !== null) {
         valDisplay = '[Complex Data]';
       } else {
-        valDisplay = String(value);
+        if (typeof value === 'boolean') {
+          valDisplay = value ? 'Yes' : 'No';
+        } else {
+          const textValue = String(value);
+          // Hide UUID-like values and long technical hashes
+          if (/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.test(textValue) || textValue.length > 80) {
+            return null;
+          }
+          valDisplay = textValue;
+        }
       }
       
       return `${label}: ${valDisplay}`;
-    });
+    })
+    .filter((entry): entry is string => Boolean(entry));
 
   if (entries.length === 0) return 'Action completed successfully';
   

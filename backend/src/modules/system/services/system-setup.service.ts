@@ -92,7 +92,9 @@ export class SystemSetupService {
           description: 'Financial officer responsible for fee collection and payroll.',
           permissions: [
             'finance:collect_fees', 'finance:view_payments', 'finance:view_reports',
-            'finance:manage_fee_structure', 'hr:manage_payroll'
+            'finance:manage_fee_structure', 'hr:manage_payroll',
+            'expenses:view', 'expenses:view_reports', 'expenses:manage_categories',
+            'expenses:manage_vendors', 'expenses:manage_records'
           ]
         },
         {
@@ -125,6 +127,8 @@ export class SystemSetupService {
             'online_classes:manage', 'online_classes:history', 'library:view_books', 'library:manage_books',
             'library:issue_return', 'library:view_reports', 'finance:collect_fees', 'finance:view_payments',
             'finance:view_reports', 'finance:manage_fee_structure', 'finance:manage_reminders',
+            'expenses:view', 'expenses:view_reports', 'expenses:manage_categories',
+            'expenses:manage_vendors', 'expenses:manage_records',
             'exams:manage_setup', 'exams:manage_schedule', 'exams:manage_admit_cards', 'exams:enter_marks',
             'exams:manage_domains', 'exams:view_reports', 'exams:process_results',
             'audit_reports:view',

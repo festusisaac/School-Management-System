@@ -206,6 +206,17 @@ function AppRoutes() {
                 <Route path="reminders" element={<Finance.PaymentRemindersPage />} />
                 <Route path="carry-forward" element={<Finance.CarryForwardPage />} />
                 <Route path="carry-forward/history" element={<Finance.CarryForwardHistoryPage />} />
+                <Route path="expenses" element={<Navigate to="/expenses" replace />} />
+                <Route path="expenses/records" element={<Navigate to="/expenses/records" replace />} />
+                <Route path="expenses/categories" element={<Navigate to="/expenses/categories" replace />} />
+                <Route path="expenses/vendors" element={<Navigate to="/expenses/vendors" replace />} />
+              </Route>
+
+              <Route path="expenses">
+                <Route index element={<Finance.ExpensesDashboardPage />} />
+                <Route path="records" element={<Finance.ExpenseRecordsPage />} />
+                <Route path="categories" element={<Finance.ExpenseCategoriesPage />} />
+                <Route path="vendors" element={<Finance.ExpenseVendorsPage />} />
               </Route>
 
               {/* Examination Routes */}

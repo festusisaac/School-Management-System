@@ -3,6 +3,8 @@ import {
     Settings, 
     ShieldCheck, 
     KeyRound, 
+    Copy,
+    Check,
     Plus, 
     FileSpreadsheet, 
     ChevronRight,
@@ -21,6 +23,7 @@ import { examinationService } from '../../../services/examinationService';
 import QuestionBankTable from '../cbt/QuestionBankTable';
 import QuestionEditorModal from '../cbt/QuestionEditorModal';
 import BulkQuestionImport from '../cbt/BulkQuestionImport';
+import { Modal } from '../../../components/ui/modal';
 
 export default function CbtManager() {
     const { showSuccess, showError, showLoading, hideLoading } = useToast();
@@ -34,6 +37,8 @@ export default function CbtManager() {
     const [assessmentTypes, setAssessmentTypes] = useState<any[]>([]);
     const [selectedAssessmentTypeId, setSelectedAssessmentTypeId] = useState('');
     const [syncKey, setSyncKey] = useState<string | null>(null);
+    const [isSyncKeyModalOpen, setIsSyncKeyModalOpen] = useState(false);
+    const [copied, setCopied] = useState(false);
     const [loading, setLoading] = useState(false);
     
     // Question Bank State
@@ -80,6 +85,8 @@ export default function CbtManager() {
             fetchQuestions();
             fetchAssessmentTypes();
             setSyncKey(null); // Clear sync key when exam changes
+            setIsSyncKeyModalOpen(false);
+            setCopied(false);
         } else {
             setQuestions([]);
             setAssessmentTypes([]);
@@ -147,11 +154,25 @@ export default function CbtManager() {
                 assessmentTypeId: selectedAssessmentTypeId
             });
             setSyncKey(res.syncKey);
+            setCopied(false);
+            setIsSyncKeyModalOpen(true);
             showSuccess('Sync Key generated successfully!');
         } catch (error: any) {
             showError(error.response?.data?.message || 'Failed to generate sync key');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleCopySyncKey = async () => {
+        if (!syncKey) return;
+        try {
+            await navigator.clipboard.writeText(syncKey);
+            setCopied(true);
+            showSuccess('Sync key copied');
+            setTimeout(() => setCopied(false), 1800);
+        } catch {
+            showError('Failed to copy sync key. Please copy manually.');
         }
     };
 
@@ -347,14 +368,6 @@ export default function CbtManager() {
                                     )}
                                 </div>
 
-                                {syncKey && (
-                                    <div className="p-4 bg-gray-900 rounded-lg border border-primary-500/30 animate-in zoom-in duration-300 shadow-inner">
-                                        <label className="block text-[10px] font-bold text-primary-400 uppercase mb-1">Active Sync Key</label>
-                                        <div className="text-xl font-mono text-white tracking-widest text-center select-all">
-                                            {syncKey}
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         )}
                     </div>
@@ -438,6 +451,42 @@ export default function CbtManager() {
                 onClose={() => setIsBulkOpen(false)}
                 onImport={handleBulkImport}
             />
+
+            <Modal
+                isOpen={isSyncKeyModalOpen}
+                onClose={() => setIsSyncKeyModalOpen(false)}
+                title="Generated Sync Key"
+                size="sm"
+            >
+                <div className="space-y-4">
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                        Share this key with the offline CBT node and keep it private.
+                    </p>
+                    <div className="rounded-xl border border-primary-200 dark:border-primary-900/40 bg-gray-900 px-4 py-3">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary-300 mb-2">Sync Key</p>
+                        <p className="font-mono text-lg tracking-widest text-white break-all select-all">
+                            {syncKey || '-'}
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={handleCopySyncKey}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-primary-700 transition"
+                        >
+                            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                            {copied ? 'Copied' : 'Copy Key'}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setIsSyncKeyModalOpen(false)}
+                            className="inline-flex items-center justify-center rounded-xl border border-gray-300 dark:border-gray-600 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 }

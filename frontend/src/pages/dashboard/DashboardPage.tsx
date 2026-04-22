@@ -38,6 +38,7 @@ interface DashboardStats {
   academics: { totalClasses: number; totalSubjects: number }
   feesOverview: { unpaid: number; partial: number; paid: number }
   academicHealth: {
+    staffPresentToday: number
     teachersYetToSubmit: number
     topPerformingSubject: string
     publishedResultsCount: number
@@ -45,7 +46,7 @@ interface DashboardStats {
     lowAttendanceClasses: string[]
   }
   studentPerformance: {
-    schoolWideAverage: number
+    schoolWideAverage: number | string
     topPerformingClasses: string[]
     bottomPerformingClasses: string[]
     studentsAtRisk: number
@@ -168,6 +169,14 @@ const DashboardPage: React.FC = () => {
     { id: 3, label: 'Onboard your first Staff member', path: '/hr/staff', completed: (stats?.staff?.total ?? 0) > 1 },
     { id: 4, label: 'Admit your first Student', path: '/students/admission', completed: (stats?.students?.total ?? 0) > 0 },
   ];
+  const staffPresentToday = stats?.academicHealth?.staffPresentToday || 0;
+  const topSubject = stats?.academicHealth?.topPerformingSubject || 'No subject data yet';
+  const publishedResults = stats?.academicHealth?.publishedResultsCount || 0;
+  const unpublishedResults = stats?.academicHealth?.unpublishedResultsCount || 0;
+  const totalClasses = stats?.academics?.totalClasses || (publishedResults + unpublishedResults);
+  const lowAttendanceClasses = stats?.academicHealth?.lowAttendanceClasses || [];
+  const netBalance = stats?.accounting?.netBalance || 0;
+  const isNetBalanceNegative = netBalance < 0;
 
   return (
     <div className="space-y-6 overflow-x-hidden p-4 sm:p-6 lg:p-8">
@@ -178,7 +187,7 @@ const DashboardPage: React.FC = () => {
           <div className="flex flex-col md:flex-row gap-6 items-center">
             <div className="flex-1">
               <h2 className="text-2xl font-bold flex items-center gap-2">
-                <div className="p-2 bg-white/20 rounded-lg">🚀</div>
+                <div className="p-2 bg-white/20 rounded-lg">ðŸš€</div>
                 Welcome, {user?.firstName}! Let's get started.
               </h2>
               <p className="text-primary-100 mt-1">Complete these essential steps to get your school running smoothly.</p>
@@ -197,7 +206,7 @@ const DashboardPage: React.FC = () => {
                     <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                       item.completed ? 'bg-green-500 text-white' : 'bg-primary-100'
                     }`}>
-                      {item.completed ? '✓' : item.id}
+                      {item.completed ? 'âœ“' : item.id}
                     </div>
                     <span className="text-sm font-semibold">{item.label}</span>
                   </Link>
@@ -268,7 +277,7 @@ const DashboardPage: React.FC = () => {
               <TrendingUp className="w-4 h-4 mr-1" />
               Active
             </span>
-            <span className="text-gray-400 mx-2">•</span>
+            <span className="text-gray-400 mx-2">â€¢</span>
             <span className="text-gray-500 dark:text-gray-400">{stats?.students?.inactive || 0} Inactive</span>
           </div>
         </div>
@@ -389,49 +398,35 @@ const DashboardPage: React.FC = () => {
             </div>
           </div>
         </div>
-
         {/* Academic Health */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
           <h3 className="text-gray-500 dark:text-gray-400 text-sm font-bold uppercase mb-4">Academic Health</h3>
-          <div className="space-y-4">
-            {/* Teachers Yet to Submit */}
-            <div className="flex items-center justify-between p-2 border border-dashed border-gray-200 dark:border-gray-700 rounded-lg">
-              <span className="text-sm text-gray-600 dark:text-gray-300">Teachers Yet to Submit</span>
-              <span className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 px-2 py-0.5 rounded-full text-xs font-bold">
-                {stats?.academicHealth?.teachersYetToSubmit || 0}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between rounded-lg bg-gray-50 dark:bg-gray-900/30 px-3 py-2.5">
+              <p className="text-sm text-gray-700 dark:text-gray-300">Staff present</p>
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+                {staffPresentToday}
               </span>
             </div>
 
-            {/* Top Performing Subject */}
-            <div className="flex items-center justify-between p-2 border border-dashed border-gray-200 dark:border-gray-700 rounded-lg">
-              <span className="text-sm text-gray-600 dark:text-gray-300">Top Subject</span>
-              <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full text-xs font-bold">
-                {stats?.academicHealth?.topPerformingSubject || 'N/A'}
-              </span>
+            <div className="flex items-center justify-between rounded-lg bg-gray-50 dark:bg-gray-900/30 px-3 py-2.5 gap-3">
+              <p className="text-sm text-gray-700 dark:text-gray-300 shrink-0">Top subject</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white text-right truncate">{topSubject}</p>
             </div>
 
-            {/* Low Attendance Alert (Retained as health indicator) */}
-            {(stats?.academicHealth?.lowAttendanceClasses?.length ?? 0) > 0 && (
-              <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-900/30">
-                <p className="text-xs font-bold text-red-600 dark:text-red-400 uppercase mb-1 flex items-center">
-                  ⚠ Low Attendance
-                </p>
-                <p className="text-xs text-gray-800 dark:text-gray-200">
-                  Classes: {stats?.academicHealth?.lowAttendanceClasses?.join(', ')}
-                </p>
-              </div>
-            )}
+            <div className="flex items-center justify-between rounded-lg bg-gray-50 dark:bg-gray-900/30 px-3 py-2.5">
+              <p className="text-sm text-gray-700 dark:text-gray-300">Published classes</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                {publishedResults} / {totalClasses}
+              </p>
+            </div>
 
-            {/* Published vs Unpublished */}
-            <div className="grid grid-cols-2 gap-2 mt-2">
-              <div className="p-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg text-center">
-                <p className="text-xs text-primary-600 dark:text-primary-400 uppercase font-bold mb-1">Published</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-white">{stats?.academicHealth?.publishedResultsCount || 0}</p>
-              </div>
-              <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-center">
-                <p className="text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-1">Unpublished</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-white">{stats?.academicHealth?.unpublishedResultsCount || 0}</p>
-              </div>
+            <div className={`rounded-lg px-3 py-2.5 ${lowAttendanceClasses.length > 0 ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300' : 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300'}`}>
+              <p className="text-xs font-semibold">
+                {lowAttendanceClasses.length > 0
+                  ? `Attendance watchlist: ${lowAttendanceClasses.slice(0, 1).join(', ')}${lowAttendanceClasses.length > 1 ? ` +${lowAttendanceClasses.length - 1} more` : ''}`
+                  : 'Attendance is stable across classes'}
+              </p>
             </div>
           </div>
         </div>
@@ -443,24 +438,24 @@ const DashboardPage: React.FC = () => {
           <div className="space-y-4">
             <div className="flex justify-between items-center text-sm p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
               <span className="text-gray-700 dark:text-gray-300 font-medium">School-wide Avg</span>
-              <span className="text-gray-900 dark:text-white font-bold text-lg">{stats?.studentPerformance?.schoolWideAverage || 0}%</span>
+              <span className="text-gray-900 dark:text-white font-bold text-lg">{stats?.studentPerformance?.schoolWideAverage || '0.0'}%</span>
             </div>
 
             <div className="text-sm">
               <p className="text-gray-500 dark:text-gray-400 mb-1 flex items-center"><TrendingUp className="w-3 h-3 text-green-500 mr-1" /> Top Classes</p>
-              <div className="flex gap-2">
-                {stats?.studentPerformance?.topPerformingClasses?.map((cls, idx) => (
+              <div className="flex flex-wrap gap-2">
+                {stats?.studentPerformance?.topPerformingClasses?.length ? stats.studentPerformance.topPerformingClasses.map((cls, idx) => (
                   <span key={idx} className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-1 rounded text-xs font-bold">{cls}</span>
-                ))}
+                )) : <span className="text-xs text-gray-400 dark:text-gray-500">No published class results yet</span>}
               </div>
             </div>
 
             <div className="text-sm">
               <p className="text-gray-500 dark:text-gray-400 mb-1 flex items-center"><TrendingUp className="w-3 h-3 text-red-500 mr-1 transform rotate-180" /> Needs Improvement</p>
-              <div className="flex gap-2">
-                {stats?.studentPerformance?.bottomPerformingClasses?.map((cls, idx) => (
+              <div className="flex flex-wrap gap-2">
+                {stats?.studentPerformance?.bottomPerformingClasses?.length ? stats.studentPerformance.bottomPerformingClasses.map((cls, idx) => (
                   <span key={idx} className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 px-2 py-1 rounded text-xs font-bold">{cls}</span>
-                ))}
+                )) : <span className="text-xs text-gray-400 dark:text-gray-500">Not enough published class data yet</span>}
               </div>
             </div>
 
@@ -482,12 +477,14 @@ const DashboardPage: React.FC = () => {
           <div className="space-y-4">
             <div className="flex flex-wrap justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg gap-2">
               <span className="text-gray-700 dark:text-gray-300 font-medium shrink-0">Net Balance</span>
-              <span className="text-green-600 dark:text-green-400 font-bold text-lg ml-auto">{formatCurrency(stats?.accounting?.netBalance)}</span>
+              <span className={`font-bold text-lg ml-auto ${isNetBalanceNegative ? 'text-red-500 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                {formatCurrency(netBalance)}
+              </span>
             </div>
 
             <div className="flex flex-wrap justify-between items-center text-sm gap-2">
               <span className="text-gray-600 dark:text-gray-400 shrink-0">Total Expenses</span>
-              <span className="font-bold text-red-500 dark:text-red-400 ml-auto">-{formatCurrency(stats?.accounting?.totalExpenses)}</span>
+              <span className="font-bold text-red-500 dark:text-red-400 ml-auto">{formatCurrency(stats?.accounting?.totalExpenses)}</span>
             </div>
 
             <div className="flex items-center justify-between p-2 border border-dashed border-gray-200 dark:border-gray-700 rounded-lg">
@@ -501,7 +498,7 @@ const DashboardPage: React.FC = () => {
               <p className="font-bold text-gray-700 dark:text-gray-300 mb-1">Latest Expense:</p>
               <div className="flex justify-between">
                 <span>{stats?.accounting?.latestExpense?.category || 'N/A'}</span>
-                <span className="font-medium">-{formatCurrency(stats?.accounting?.latestExpense?.amount)}</span>
+                <span className="font-medium">{formatCurrency(stats?.accounting?.latestExpense?.amount)}</span>
               </div>
             </div>
           </div>
@@ -590,12 +587,20 @@ const DashboardPage: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700 xl:col-span-2">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-lg font-bold text-gray-900 dark:text-white">Recent Activities</h2>
-            <Link to="/activity-log" className="text-sm text-primary-600 font-medium hover:text-primary-700">View All</Link>
+            <Link to="/audit-reports/activity" className="text-sm text-primary-600 font-medium hover:text-primary-700">View All</Link>
           </div>
 
           <div className="space-y-6">
             {/* Enrollments */}
-            {activities?.recentEnrollments.map((student: any) => (
+            {activities?.recentEnrollments.map((student: any) => {
+              const enrolledClass =
+                student?.class?.name ||
+                student?.className ||
+                student?.classLevel ||
+                student?.currentClass?.name ||
+                'Class not assigned yet';
+
+              return (
               <div key={`enroll-${student.id}`} className="flex items-start">
                 <div className="flex-shrink-0">
                   <div className="h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
@@ -610,11 +615,12 @@ const DashboardPage: React.FC = () => {
                     <span className="text-xs text-gray-500 dark:text-gray-400">{new Date(student.createdAt).toLocaleDateString()}</span>
                   </div>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    Admitted to Class: {student.classLevel}
+                    Admitted to Class: {enrolledClass}
                   </p>
                 </div>
               </div>
-            ))}
+              );
+            })}
 
             {/* Payments */}
             {activities?.recentPayments.map((payment: any) => (
@@ -632,7 +638,7 @@ const DashboardPage: React.FC = () => {
                     <span className="text-xs text-gray-500 dark:text-gray-400">{new Date(payment.createdAt).toLocaleDateString()}</span>
                   </div>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 capitalize">
-                    {payment.type.replace('_', ' ')}
+                    {(payment?.type || 'fee_payment').replace(/_/g, ' ')}
                   </p>
                 </div>
               </div>
@@ -648,7 +654,7 @@ const DashboardPage: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Quick Actions</h2>
           <div className="space-y-3">
-            <Link to="/students/register" className="flex items-center p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group">
+            <Link to="/students/admission" className="flex items-center p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group">
               <div className="p-2 bg-primary-50 dark:bg-primary-900/30 rounded-lg group-hover:bg-primary-100 dark:group-hover:bg-primary-900/50 transition-colors">
                 <UserPlus className="w-5 h-5 text-primary-600 dark:text-primary-400" />
               </div>
@@ -668,7 +674,7 @@ const DashboardPage: React.FC = () => {
               </div>
             </Link>
 
-            <Link to="/staff/add" className="flex items-center p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group">
+            <Link to="/hr/staff" className="flex items-center p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group">
               <div className="p-2 bg-secondary-50 dark:bg-secondary-900/30 rounded-lg group-hover:bg-secondary-100 dark:group-hover:bg-secondary-900/50 transition-colors">
                 <Users className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
               </div>

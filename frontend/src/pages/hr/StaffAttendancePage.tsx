@@ -3,14 +3,17 @@ import { Calendar, Search, Save, CheckCircle2, XCircle, Clock, AlertCircle } fro
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { useSystem } from '../../context/SystemContext';
+import { systemService, Role } from '../../services/systemService';
 
 interface Staff {
     id: string;
     employeeId: string;
     firstName: string;
     lastName: string;
-    department: { name: string };
-    designation: { title: string };
+    role?: string | { name?: string } | null;
+    roleId?: string;
+    roleName?: string;
+    department?: { name?: string } | null;
 }
 
 interface AttendanceRecord {
@@ -29,6 +32,7 @@ const StaffAttendancePage = () => {
     const [saving, setSaving] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [summary, setSummary] = useState({ present: 0, absent: 0, late: 0, halfDay: 0, onLeave: 0 });
+    const [roles, setRoles] = useState<Role[]>([]);
     const toast = useToast();
 
     const { activeSectionId } = useSystem();
@@ -40,14 +44,16 @@ const StaffAttendancePage = () => {
     const fetchInitialData = async () => {
         try {
             setLoading(true);
-            const [staffData, attendanceData, summaryData] = await Promise.all([
+            const [staffData, attendanceData, summaryData, rolesData] = await Promise.all([
                 api.getStaff({ sectionId: activeSectionId }),
                 api.getDailyAttendance(date, activeSectionId),
-                api.getAttendanceSummary(date, activeSectionId)
+                api.getAttendanceSummary(date, activeSectionId),
+                systemService.getRoles().catch(() => [])
             ]);
 
             setStaffList(staffData);
             setSummary(summaryData);
+            setRoles(rolesData || []);
 
             // Initialize attendance state from fetched data
             const attendanceMap: Record<string, AttendanceRecord> = {};
@@ -106,6 +112,34 @@ const StaffAttendancePage = () => {
         `${s.firstName} ${s.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
         s.employeeId.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    const formatRoleLabel = (role?: string) => {
+        if (!role) return 'No role assigned';
+        return role
+            .replace(/[_-]+/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .replace(/\b\w/g, (char) => char.toUpperCase());
+    };
+
+    const getStaffRole = (staff: Staff) => {
+        if (typeof staff.role === 'string' && staff.role.trim()) return formatRoleLabel(staff.role);
+        if (staff.role && typeof staff.role === 'object' && staff.role.name) return formatRoleLabel(staff.role.name);
+        if (staff.roleName) return formatRoleLabel(staff.roleName);
+        if (staff.roleId) {
+            const matchedRole = roles.find((role) => role.id === staff.roleId);
+            if (matchedRole?.name) return formatRoleLabel(matchedRole.name);
+        }
+        return 'No role assigned';
+    };
+
+    const statusOptions = [
+        { value: 'Present', label: 'P' },
+        { value: 'Absent', label: 'A' },
+        { value: 'Late', label: 'L' },
+        { value: 'Half-Day', label: 'HD' },
+        { value: 'On Leave', label: 'OL' }
+    ];
 
     return (
         <div className="p-6 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
@@ -175,14 +209,14 @@ const StaffAttendancePage = () => {
                 </div>
 
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left">
+                    <table className="w-full min-w-[1100px] text-left">
                         <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-widest">
                             <tr>
-                                <th className="px-6 py-4 border-b dark:border-gray-700">Staff Member</th>
-                                <th className="px-6 py-4 border-b dark:border-gray-700">ID</th>
-                                <th className="px-6 py-4 border-b dark:border-gray-700">Role</th>
-                                <th className="px-6 py-4 border-b dark:border-gray-700">Status</th>
-                                <th className="px-6 py-4 border-b dark:border-gray-700">Remarks</th>
+                                <th className="px-6 py-4 border-b dark:border-gray-700 whitespace-nowrap">Staff Member</th>
+                                <th className="px-6 py-4 border-b dark:border-gray-700 whitespace-nowrap">ID</th>
+                                <th className="px-6 py-4 border-b dark:border-gray-700 whitespace-nowrap">Staff Role</th>
+                                <th className="px-6 py-4 border-b dark:border-gray-700 whitespace-nowrap">Status</th>
+                                <th className="px-6 py-4 border-b dark:border-gray-700 whitespace-nowrap">Remarks</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -193,44 +227,47 @@ const StaffAttendancePage = () => {
                             ) : (
                                 filteredStaff.map((staff) => (
                                     <tr key={staff.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-colors">
-                                        <td className="px-6 py-4">
+                                        <td className="px-6 py-5 min-w-[260px]">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center text-xs font-bold text-gray-600 dark:text-gray-400">
-                                                    {staff.firstName[0]}{staff.lastName[0]}
+                                                    {(staff.firstName?.[0] || '').toUpperCase()}{(staff.lastName?.[0] || '').toUpperCase()}
                                                 </div>
                                                 <div>
                                                     <div className="font-bold text-gray-900 dark:text-white">{staff.firstName} {staff.lastName}</div>
-                                                    <div className="text-[10px] text-gray-400 dark:text-gray-500">{staff.department.name}</div>
+                                                    <div className="text-[10px] text-gray-400 dark:text-gray-500">{staff.department?.name || 'No department'}</div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-sm font-mono text-gray-500 dark:text-gray-400">{staff.employeeId}</td>
-                                        <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{staff.designation.title}</td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex gap-2">
-                                                {['Present', 'Absent', 'Late', 'Half-Day', 'On Leave'].map((status) => (
+                                        <td className="px-6 py-5 text-sm font-mono whitespace-nowrap text-gray-500 dark:text-gray-400">{staff.employeeId}</td>
+                                        <td className="px-6 py-5 text-sm whitespace-nowrap text-gray-600 dark:text-gray-400">
+                                            {getStaffRole(staff)}
+                                        </td>
+                                        <td className="px-6 py-5 min-w-[220px]">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                {statusOptions.map((status) => (
                                                     <button
-                                                        key={status}
-                                                        onClick={() => handleStatusChange(staff.id, status)}
-                                                        className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all border ${attendance[staff.id]?.status === status
-                                                            ? status === 'Present' ? 'bg-green-600 border-green-600 text-white shadow-lg shadow-green-500/30' :
-                                                                status === 'Absent' ? 'bg-red-600 border-red-600 text-white shadow-lg shadow-red-500/30' :
-                                                                    status === 'Late' ? 'bg-yellow-500 border-yellow-500 text-white shadow-lg shadow-yellow-500/30' :
-                                                                        status === 'Half-Day' ? 'bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-500/30' :
-                                                                            'bg-primary-600 border-primary-600 text-white shadow-lg shadow-primary-500/30'
-                                                            : 'bg-white dark:bg-gray-700 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                                                        key={status.value}
+                                                        title={status.value}
+                                                        onClick={() => handleStatusChange(staff.id, status.value)}
+                                                        className={`h-8 min-w-[2.75rem] px-2 rounded-md text-xs leading-none font-bold transition-all border ${attendance[staff.id]?.status === status.value
+                                                            ? status.value === 'Present' ? 'bg-green-600 border-green-600 text-white shadow-sm' :
+                                                                status.value === 'Absent' ? 'bg-red-600 border-red-600 text-white shadow-sm' :
+                                                                    status.value === 'Late' ? 'bg-yellow-500 border-yellow-500 text-white shadow-sm' :
+                                                                        status.value === 'Half-Day' ? 'bg-orange-500 border-orange-500 text-white shadow-sm' :
+                                                                            'bg-primary-600 border-primary-600 text-white shadow-sm'
+                                                            : 'bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
                                                             }`}
                                                     >
-                                                        {status}
+                                                        {status.label}
                                                     </button>
                                                 ))}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-6 py-5 min-w-[240px]">
                                             <input
                                                 type="text"
                                                 placeholder="Add remarks..."
-                                                className="w-full text-xs p-2 border border-transparent hover:border-gray-200 dark:hover:border-gray-600 focus:border-primary-500 dark:focus:border-primary-500 rounded outline-none bg-transparent text-gray-900 dark:text-white transition-colors"
+                                                className="w-full text-sm p-2.5 border border-transparent hover:border-gray-200 dark:hover:border-gray-600 focus:border-primary-500 dark:focus:border-primary-500 rounded outline-none bg-transparent text-gray-900 dark:text-white transition-colors"
                                                 value={attendance[staff.id]?.remarks || ''}
                                                 onChange={(e) => handleRemarksChange(staff.id, e.target.value)}
                                             />

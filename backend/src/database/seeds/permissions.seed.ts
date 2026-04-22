@@ -61,6 +61,13 @@ export const seedPermissions = async (dataSource: DataSource) => {
     { slug: 'finance:manage_fee_structure', name: 'Manage Fees Structure', module: 'Finance', description: 'Setup fee groups and discounts' },
     { slug: 'finance:manage_reminders', name: 'Payment Reminders', module: 'Finance', description: 'Send fee alerts via SMS/Email' },
 
+    // Expenses
+    { slug: 'expenses:view', name: 'View Expenses', module: 'Expenses', description: 'Browse expense records, vendors, and categories' },
+    { slug: 'expenses:manage_categories', name: 'Manage Expense Categories', module: 'Expenses', description: 'Create and update expense category setup' },
+    { slug: 'expenses:manage_vendors', name: 'Manage Expense Vendors', module: 'Expenses', description: 'Create and update payees and vendors' },
+    { slug: 'expenses:manage_records', name: 'Manage Expense Records', module: 'Expenses', description: 'Record, edit, approve, and archive expenses' },
+    { slug: 'expenses:view_reports', name: 'Expense Reports', module: 'Expenses', description: 'View expense analytics and dashboards' },
+
     // Examination
     { slug: 'exams:manage_setup', name: 'Manage Exam Setup', module: 'Examination', description: 'Exam groups and assessment structures' },
     { slug: 'exams:manage_schedule', name: 'Manage Exam Schedules', module: 'Examination', description: 'Setup exam periods and dates' },
