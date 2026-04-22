@@ -51,7 +51,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const rawRole = (user?.role || user?.roleObject?.name || '').toLowerCase().trim();
+    const rawRole = (user?.roleObject?.name || user?.role || '').toLowerCase().trim();
     const isSuperAdmin = rawRole === 'super administrator' || rawRole === 'super admin';
 
     return (
@@ -115,8 +115,8 @@ export function TopBar({ onMenuClick }: TopBarProps) {
                     </div>
                 )}
 
-                {/* Parent Child Switcher */}
-                {rawRole === 'parent' && childrenList && childrenList.length > 0 && (
+                {/* Parent/Staff-Parent Child Switcher */}
+                {childrenList && childrenList.length > 0 && (
                     <div className="hidden sm:flex items-center px-3 py-1.5 bg-primary-50 dark:bg-primary-900/30 border border-primary-100 dark:border-primary-800 rounded-lg mr-2 transition-all">
                         <UserIcon className="w-4 h-4 text-primary-600 dark:text-primary-400 mr-2" />
                         <span className="text-xs text-primary-700 dark:text-primary-300 font-medium mr-2 whitespace-nowrap">Viewing:</span>
@@ -125,9 +125,13 @@ export function TopBar({ onMenuClick }: TopBarProps) {
                             onChange={(e) => setSelectedChildId(e.target.value)}
                             className="bg-transparent border-none text-sm font-bold text-primary-800 dark:text-primary-200 focus:ring-0 cursor-pointer outline-none pl-0 pr-6 hover:text-primary-900 transition-colors w-full max-w-[150px] truncate"
                         >
+                            {/* If staff/admin, allow switching back to their own portal */}
+                            {['super administrator', 'admin', 'teacher', 'staff'].includes(rawRole) && (
+                                <option value="">My Portal</option>
+                            )}
                             {childrenList.map((child: any) => (
                                 <option key={child.id} value={child.id}>
-                                    {cleanName(child.firstName)} {cleanName(child.lastName)}
+                                    {cleanName(child.firstName)} {cleanName(child.lastName)}'s Portal
                                 </option>
                             ))}
                         </select>

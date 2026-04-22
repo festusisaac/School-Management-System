@@ -9,7 +9,7 @@ import { useAuthStore } from '../../stores/authStore';
 export function MainLayout() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const { WarningModal } = useSessionTimeout();
-    const { refreshUser, user, setChildrenList, setSelectedChildId, childrenList } = useAuthStore();
+    const { refreshUser, user, setChildrenList, setSelectedChildId, childrenList, selectedChildId } = useAuthStore();
 
     const location = useLocation();
     
@@ -27,16 +27,20 @@ export function MainLayout() {
         refreshUser();
     }, []);
 
-    // Load children if user is a parent
+    // Load children if user is a parent or staff who is also a parent
     useEffect(() => {
         const loadChildren = async () => {
-            const role = (user?.role || user?.roleObject?.name || '').toLowerCase();
-            if (role === 'parent' && childrenList.length === 0) {
+            const userRole = (user?.roleObject?.name || user?.role || 'student').toLowerCase().trim();
+            const isStaffOrAdmin = ['super administrator', 'admin', 'teacher', 'staff'].includes(userRole);
+            
+            if ((userRole === 'parent' || isStaffOrAdmin) && childrenList.length === 0) {
                 try {
                     const { default: api } = await import('../../services/api');
                     const children = await api.getMyChildren();
                     setChildrenList(children);
-                    if (children.length > 0) {
+                    
+                    // Only auto-select for actual 'parents' to avoid confusing staff
+                    if (children.length > 0 && !selectedChildId && userRole === 'parent') {
                         setSelectedChildId(children[0].id);
                     }
                 } catch (error) {
@@ -45,7 +49,7 @@ export function MainLayout() {
             }
         };
         loadChildren();
-    }, [user]);
+    }, [user, childrenList.length, selectedChildId, setChildrenList, setSelectedChildId]);
 
     return (
         <div className="h-screen bg-gray-50 dark:bg-gray-950 flex overflow-hidden">
@@ -74,4 +78,3 @@ export function MainLayout() {
         </div>
     );
 }
-

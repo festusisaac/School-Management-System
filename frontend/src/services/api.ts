@@ -1022,7 +1022,7 @@ class ApiService {
   }
 
   async getStudentExamDashboard(studentId: string) {
-    return this.get<any>(`/examination/results/student/${studentId}/dashboard`)
+    return this.get<any>(`/examination/student/${studentId}/dashboard`)
   }
 
   async verifyStudentResult(studentId: string, data: any) {

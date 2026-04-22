@@ -37,8 +37,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     const { settings, getFullUrl } = useSystem();
     const { user, logout, selectedChildId } = useAuthStore();
     const navigate = useNavigate();
-    const userRole = (user?.role || user?.roleObject?.name || 'student').toLowerCase().trim();
-    const isStudentOrParent = userRole === 'student' || userRole === 'parent' || userRole === 'member';
+    const userRole = (user?.roleObject?.name || user?.role || 'student').toLowerCase().trim();
+    const isStudentOrParent = userRole === 'student' || userRole === 'parent' || userRole === 'member' || !!selectedChildId;
 
     // Role Mapping for display
     const roleMapping: Record<string, string> = {
@@ -350,7 +350,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     // For parents, replace standard Finance with Family Billing
     const finalStudentNavItems = userRole === 'parent'
         ? studentNavItems.map(item => {
-            if (item.label === 'Dashboard') return { ...item, path: '/parent/dashboard' };
+            if (item.label === 'Dashboard') return { ...item, path: '/dashboard' };
             if (item.label === 'My Profile') return { ...item, path: '/parent/profile' };
             if (item.label === 'Finance') return { ...item, label: 'Family Billing', path: '/parent/billing' };
             return item;

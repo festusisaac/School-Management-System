@@ -1,11 +1,12 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, Like, MoreThan } from 'typeorm';
+import { EntityManager, Repository, In, Like, MoreThan } from 'typeorm';
 import { ScratchCard } from '../entities/scratch-card.entity';
 import { ScratchCardBatch } from '../entities/scratch-card-batch.entity';
 import { ScratchCardLog } from '../entities/scratch-card-log.entity';
 import { StudentTermResult } from '../entities/student-term-result.entity';
 import { GenerateScratchCardDto, GetScratchCardsFilterDto, VerifyScratchCardDto } from '../dtos/control/control.dto';
+import { Student } from '../../students/entities/student.entity';
 import { v4 as uuidv4 } from 'uuid';
 import * as crypto from 'crypto';
 import moment from 'moment';
@@ -271,6 +272,20 @@ export class ResultControlService {
     }
 
     async verifyCard(dto: VerifyScratchCardDto, tenantId: string, ip?: string, userAgent?: string) {
+        return this.processScratchCardVerification(dto, tenantId, ip, userAgent, true);
+    }
+
+    async validateCard(dto: VerifyScratchCardDto, tenantId: string, ip?: string, userAgent?: string) {
+        return this.processScratchCardVerification(dto, tenantId, ip, userAgent, false);
+    }
+
+    private async processScratchCardVerification(
+        dto: VerifyScratchCardDto,
+        tenantId: string,
+        ip: string | undefined,
+        userAgent: string | undefined,
+        consumeUsage: boolean
+    ) {
         const { code, pin, studentId, sessionId, termId } = dto;
 
         // 1. Brute Force Protection (Lockout)
@@ -285,77 +300,108 @@ export class ResultControlService {
         });
 
         if (failedAttempts >= 5) {
+            await this.logRepo.save({
+                action: 'validate',
+                details: dto,
+                ipAddress: ip,
+                userAgent,
+                tenantId,
+                status: false,
+                failureReason: 'Too many failed attempts from this IP'
+            });
             throw new BadRequestException('Too many failed attempts. Please try again in 15 minutes.');
         }
 
         // 2. Perform verification and redemption in a single transaction
         return this.scratchCardRepo.manager.transaction(async (transactionalEntityManager) => {
-            // Fetch card with lock FIRST (to prevent race conditions)
-            const card = await transactionalEntityManager.findOne(ScratchCard, {
-                where: { code, pin, tenantId },
-                lock: { mode: 'pessimistic_write' }
-            });
-
-            // Load batch separately if needed (to avoid outer join FOR UPDATE error)
-            if (card && card.batchId) {
-                card.batch = await transactionalEntityManager.findOne(ScratchCardBatch as any, { where: { id: card.batchId, tenantId } }) as any;
-            }
-
-            const logData = {
-                action: 'validate',
-                details: dto,
-                ipAddress: ip,
-                userAgent: userAgent,
+            const { card, logData } = await this.validateScratchCardOrThrow(
+                transactionalEntityManager,
+                dto,
                 tenantId,
-                scratchCardId: card?.id,
-                status: false // Default to false
-            };
+                ip,
+                userAgent
+            );
 
-            if (!card) {
-                await transactionalEntityManager.save(ScratchCardLog, { ...logData, failureReason: 'Invalid scratch card details' });
-                throw new BadRequestException('Invalid scratch card details');
+            if (!consumeUsage) {
+                return { valid: true, card };
             }
 
-            if (card.batch && card.batch.status !== 'active') {
-                await transactionalEntityManager.save(ScratchCardLog, { ...logData, failureReason: 'Card belongs to an inactive batch' });
-                throw new BadRequestException('This card belongs to an inactive batch');
-            }
-
-            if (card.sessionId && card.sessionId !== sessionId) {
-                await transactionalEntityManager.save(ScratchCardLog, { ...logData, failureReason: 'Card belongs to a different session' });
-                throw new BadRequestException('This card is not valid for the current session');
-            }
-
-            if (card.expiryDate && new Date(card.expiryDate) < new Date()) {
-                await transactionalEntityManager.save(ScratchCardLog, { ...logData, failureReason: 'Card expired' });
-                throw new BadRequestException('Card expired');
-            }
-
-            if (card.usageCount >= card.maxUsage) {
-                await transactionalEntityManager.save(ScratchCardLog, { ...logData, failureReason: 'Max usage exceeded' });
-                throw new BadRequestException('This card has exceeded its usage limit');
-            }
-
-            // If card was already used for a different student/term/session
-            if (card.usageCount > 0) {
-                if (card.studentId !== studentId || (termId && card.termId !== termId) || (card.sessionId && card.sessionId !== sessionId)) {
-                    await transactionalEntityManager.save(ScratchCardLog, { ...logData, failureReason: 'Card used for different student/term' });
-                    throw new BadRequestException('Card already used for another student or for another term');
-                }
-            } else {
-                // First time use: bind to student and term
+            if (card.usageCount === 0) {
                 card.studentId = studentId;
                 card.termId = termId || null as any;
                 card.status = 'redeemed';
             }
 
             card.usageCount += 1;
-            
+
             await transactionalEntityManager.save(card);
             await transactionalEntityManager.save(ScratchCardLog, { ...logData, status: true });
 
             return { valid: true, card };
         });
+    }
+
+    private async validateScratchCardOrThrow(
+        transactionalEntityManager: EntityManager,
+        dto: VerifyScratchCardDto,
+        tenantId: string,
+        ip?: string,
+        userAgent?: string
+    ) {
+        const { code, pin, studentId, sessionId, termId } = dto;
+
+        const card = await transactionalEntityManager.findOne(ScratchCard, {
+            where: { code, pin, tenantId },
+            lock: { mode: 'pessimistic_write' }
+        });
+
+        if (card && card.batchId) {
+            card.batch = await transactionalEntityManager.findOne(ScratchCardBatch as any, { where: { id: card.batchId, tenantId } }) as any;
+        }
+
+        const logData = {
+            action: 'validate',
+            details: dto,
+            ipAddress: ip,
+            userAgent: userAgent,
+            tenantId,
+            scratchCardId: card?.id,
+            status: false
+        };
+
+        if (!card) {
+            await this.logRepo.save({ ...logData, failureReason: 'Invalid scratch card details' });
+            throw new BadRequestException('Invalid scratch card details');
+        }
+
+        if (card.batch && card.batch.status !== 'active') {
+            await this.logRepo.save({ ...logData, failureReason: 'Card belongs to an inactive batch' });
+            throw new BadRequestException('This card belongs to an inactive batch');
+        }
+
+        if (card.sessionId && card.sessionId !== sessionId) {
+            await this.logRepo.save({ ...logData, failureReason: 'Card belongs to a different session' });
+            throw new BadRequestException('This card is not valid for the current session');
+        }
+
+        if (card.expiryDate && new Date(card.expiryDate) < new Date()) {
+            await this.logRepo.save({ ...logData, failureReason: 'Card expired' });
+            throw new BadRequestException('Card expired');
+        }
+
+        if (card.usageCount >= card.maxUsage) {
+            await this.logRepo.save({ ...logData, failureReason: 'Max usage exceeded' });
+            throw new BadRequestException('This card has exceeded its usage limit');
+        }
+
+        if (card.usageCount > 0) {
+            if (card.studentId !== studentId || (termId && card.termId !== termId) || (card.sessionId && card.sessionId !== sessionId)) {
+                await this.logRepo.save({ ...logData, failureReason: 'Card used for different student/term' });
+                throw new BadRequestException('Card already used for another student or for another term');
+            }
+        }
+
+        return { card, logData };
     }
 
     async sellCard(id: string, tenantId: string, userId: string) {
@@ -415,11 +461,55 @@ export class ResultControlService {
             take: 10
         });
 
-        // Suspicious Activity: multiple failures from same IP or details
-        const suspiciousActivities = await this.logRepo.find({
-            where: { tenantId, status: false },
+        // Suspicious Activity: show only recent failed validation events so tests appear immediately
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const suspiciousLogs = await this.logRepo.find({
+            where: {
+                tenantId,
+                action: 'validate',
+                status: false,
+                createdAt: MoreThan(oneDayAgo)
+            },
             order: { createdAt: 'DESC' },
-            take: 5
+            take: 5,
+            relations: ['scratchCard', 'scratchCard.student']
+        });
+
+        const unresolvedStudentIds = Array.from(new Set(
+            suspiciousLogs
+                .filter(log => !!log.details?.studentId && !log.scratchCard?.student)
+                .map(log => log.details.studentId as string)
+        ));
+
+        const fallbackStudents = unresolvedStudentIds.length > 0
+            ? await this.logRepo.manager.getRepository(Student).find({
+                where: { id: In(unresolvedStudentIds), tenantId } as any,
+                select: ['id', 'firstName', 'lastName']
+            })
+            : [];
+
+        const fallbackStudentMap = new Map(
+            fallbackStudents.map(student => [student.id, `${student.firstName} ${student.lastName}`.trim()])
+        );
+
+        const suspiciousActivities = suspiciousLogs.map((log) => {
+            const reason = log.failureReason || 'Validation failed';
+            const severity: 'low' | 'medium' | 'high' =
+                reason === 'Too many failed attempts from this IP' || reason === 'Invalid scratch card details'
+                    ? 'high'
+                    : reason === 'Card expired'
+                        ? 'medium'
+                        : 'low';
+
+            return {
+                severity,
+                message: reason,
+                studentName: log.scratchCard?.student
+                    ? `${log.scratchCard.student.firstName} ${log.scratchCard.student.lastName}`.trim()
+                    : (log.details?.studentId ? fallbackStudentMap.get(log.details.studentId) : undefined),
+                time: moment(log.createdAt).fromNow(),
+                timestamp: log.createdAt.toISOString()
+            };
         });
 
         return {
@@ -441,11 +531,9 @@ export class ResultControlService {
                 ip: l.ipAddress,
                 time: moment(l.createdAt).format('MMM dd, HH:mm')
             })),
-            suspiciousActivities: suspiciousActivities.map(l => ({
-                severity: 'medium',
-                message: l.failureReason || 'Validation failed',
-                time: moment(l.createdAt).fromNow()
-            }))
+            suspiciousActivities: suspiciousActivities
+                .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                .slice(0, 5)
         };
     }
 }

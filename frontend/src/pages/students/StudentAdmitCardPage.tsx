@@ -36,8 +36,13 @@ const StudentAdmitCardPage = () => {
                 }
             } catch (err: any) {
                 console.error('Dashboard error:', err);
-                setError(err.message || 'Failed to load examination dashboard');
-                showError('Failed to load examination dashboard');
+                if (err?.response?.status === 404) {
+                    setDashboardData(null);
+                    setError(null);
+                } else {
+                    setError(err.message || 'Failed to load examination dashboard');
+                    showError('Failed to load examination dashboard');
+                }
             } finally {
                 setLoading(false);
             }

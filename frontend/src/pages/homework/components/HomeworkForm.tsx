@@ -57,19 +57,42 @@ export default function HomeworkForm({ isOpen, onClose, onSuccess, initialData }
 
     const fetchInitialData = async () => {
         try {
-            const [classesRes, subjectsRes, teachersRes] = await Promise.all([
+            const [classesRes, teachersRes] = await Promise.all([
                 api.get('/academics/classes'),
-                api.get('/academics/subjects'),
                 api.get('/hr/staff?isTeachingStaff=true'),
             ]);
             setClasses(Array.isArray(classesRes) ? classesRes : []);
-            setSubjects(Array.isArray(subjectsRes) ? subjectsRes : []);
             setTeachers(Array.isArray(teachersRes) ? teachersRes : []);
         } catch (error) {
             console.error('Error fetching form data:', error);
             toast.showError('Failed to load form data');
         }
     };
+    // Fetch subjects when class changes
+    useEffect(() => {
+        const fetchClassSubjects = async () => {
+            if (!formData.classId) {
+                setSubjects([]);
+                return;
+            }
+            try {
+                // Use the scoped findByClass API which we updated in the backend
+                const response = await api.get(`/academics/assign-class-subjects/class/${formData.classId}`);
+                // Extract unique subjects from ClassSubject mappings
+                const mappedSubjects = response.map((cs: any) => ({
+                    id: cs.subjectId,
+                    name: cs.subject?.name
+                })).filter((s: any, index: number, self: any[]) => 
+                    s.id && self.findIndex(t => t.id === s.id) === index
+                );
+                setSubjects(mappedSubjects);
+            } catch (error) {
+                console.error('Error fetching class subjects:', error);
+                setSubjects([]);
+            }
+        };
+        fetchClassSubjects();
+    }, [formData.classId]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];

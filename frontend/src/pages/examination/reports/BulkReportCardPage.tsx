@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
+import { FileText, Printer } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
-import ReportCardTemplate, { ReportCardData, ReportCardSubject } from '../../../components/examination/ReportCardTemplate';
+import ReportCardTemplate, { ReportCardConfig, ReportCardData, ReportCardSubject } from '../../../components/examination/ReportCardTemplate';
 import { examinationService } from '../../../services/examinationService';
 import { systemService } from '../../../services/systemService';
 import api from '../../../services/api';
@@ -15,7 +16,7 @@ const BulkReportCardPage = () => {
     const [loading, setLoading] = useState(true);
     const [rawData, setRawData] = useState<any>(null);
     const [assessments, setAssessments] = useState<any[]>([]);
-    const [config] = useState<any>({
+    const [config] = useState<ReportCardConfig>({
         showPhoto: true,
         showHighest: true,
         showLowest: true,
@@ -24,6 +25,26 @@ const BulkReportCardPage = () => {
         showClassPosition: true,
         showAttendance: true,
         showCumulative: true,
+        teacherCommentTemplates: {
+            excellent: 'Excellent performance, keep it up',
+            veryGood: 'Very good result, maintain the tempo',
+            good: 'Good, keep improving',
+            fair: 'Fair performance, work harder',
+            pass: 'Pass mark attained, put in more effort',
+            poor: 'Poor result, serious improvement is needed'
+        },
+        principalCommentTemplates: {
+            excellent: 'Outstanding result, congratulations',
+            veryGood: 'Excellent work, keep soaring higher',
+            good: 'Good, keep improving',
+            fair: 'Satisfactory result, aim higher',
+            pass: 'You can do better next term',
+            poor: 'Below expectation, work harder next term'
+        },
+        promotionStatusTemplates: {
+            promoted: 'PROMOTED TO NEXT CLASS',
+            notPromoted: 'NOT PROMOTED'
+        }
     });
 
     const [currentPage, setCurrentPage] = useState(1);
@@ -299,13 +320,13 @@ const BulkReportCardPage = () => {
                 }
             ` }} />
             
-            <div className="no-print p-4 bg-white/80 backdrop-blur-md border-b flex flex-col md:flex-row justify-between items-start md:items-center sticky top-0 z-50 gap-4 shadow-sm">
+            <div className="no-print p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 flex flex-col md:flex-row justify-between items-start md:items-center sticky top-0 z-50 gap-4 shadow-sm">
                 <div>
-                    <h1 className="text-xl font-bold">Bulk Report Card Preview</h1>
-                    <div className="flex items-center gap-3 mt-1">
-                        <span className="text-sm text-gray-500 font-medium">Showing {Math.min(reportCards.length, pageSize)} of {reportCards.length} Cards</span>
-                        <div className="bg-amber-50 text-amber-700 text-[10px] px-2 py-0.5 rounded border border-amber-200 font-bold uppercase animate-pulse">
-                            Preview Mode: Printing only prints current page
+                    <h1 className="text-xl font-bold text-gray-900 dark:text-white">Bulk Report Card Preview</h1>
+                    <div className="flex items-center gap-3 mt-1 text-sm">
+                        <span className="text-gray-500 dark:text-gray-400 font-medium">Page {currentPage} of {Math.ceil(reportCards.length / pageSize)}</span>
+                        <div className="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 text-[10px] px-2 py-0.5 rounded border border-amber-200 dark:border-amber-800 font-bold uppercase animate-pulse">
+                            Printing only prints current page
                         </div>
                     </div>
                 </div>
@@ -321,9 +342,10 @@ const BulkReportCardPage = () => {
                     />
                     <button
                         onClick={() => window.print()}
-                        className="bg-primary-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-primary-700 shadow-lg ml-4"
+                        className="bg-primary-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-primary-700 shadow-lg ml-4 flex items-center gap-2"
                     >
-                        Print Current Page
+                        <Printer size={16} />
+                        Print Page {currentPage}
                     </button>
                 </div>
             </div>

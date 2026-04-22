@@ -14,24 +14,33 @@ export class ClassSubjectService {
         private classRepository: Repository<Class>,
     ) { }
 
-    async findByClass(classId: string, tenantId: string, sectionId?: string): Promise<ClassSubject[]> {
+    async findByClass(classId: string, tenantId: string, sectionId?: string, teacherId?: string): Promise<ClassSubject[]> {
+        const query = this.classSubjectRepository.createQueryBuilder('cs')
+            .leftJoinAndSelect('cs.class', 'class')
+            .leftJoinAndSelect('cs.subject', 'subject')
+            .leftJoinAndSelect('cs.section', 'section')
+            .where('cs.classId = :classId', { classId })
+            .andWhere('cs.tenantId = :tenantId', { tenantId });
+
         if (sectionId) {
-            return this.classSubjectRepository.createQueryBuilder('cs')
-                .leftJoinAndSelect('cs.class', 'class')
-                .leftJoinAndSelect('cs.subject', 'subject')
-                .leftJoinAndSelect('cs.section', 'section')
-                .where('cs.classId = :classId', { classId })
-                .andWhere('cs.tenantId = :tenantId', { tenantId })
-                .andWhere('(cs.sectionId = :sectionId OR cs.sectionId IS NULL)', { sectionId })
-                .orderBy('subject.name', 'ASC')
-                .getMany();
+            query.andWhere('(cs.sectionId = :sectionId OR cs.sectionId IS NULL)', { sectionId });
+        } else {
+            query.andWhere('cs.sectionId IS NULL');
         }
 
-        return this.classSubjectRepository.find({
-            where: { classId, sectionId: IsNull(), tenantId },
-            relations: ['class', 'subject', 'section'],
-            order: { subject: { name: 'ASC' } },
-        });
+        if (teacherId) {
+            query.andWhere((qb: any) => {
+                const subQuery = qb.subQuery()
+                    .select('st.subjectId')
+                    .from('subject_teachers', 'st')
+                    .where('st.teacherId = :teacherId', { teacherId })
+                    .andWhere('st.classId = :classId', { classId })
+                    .getQuery();
+                return 'cs.subjectId IN (' + subQuery + ')';
+            });
+        }
+
+        return query.orderBy('subject.name', 'ASC').getMany();
     }
 
     async findOne(id: string, tenantId: string): Promise<ClassSubject> {

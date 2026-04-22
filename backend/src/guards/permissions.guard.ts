@@ -41,6 +41,13 @@ export class PermissionsGuard implements CanActivate {
       return true;
     }
 
+    // Teacher & Staff Bypass for Academic Modules
+    const academicPrefixes = ['students:', 'attendance:', 'examination:', 'academics:'];
+    if ((userRole === 'teacher' || userRole === 'staff') && 
+        requiredPermissions.some(p => academicPrefixes.some(prefix => p.startsWith(prefix)))) {
+      return true;
+    }
+
     // Check if user has ALL required permissions for the action
     const userPermissions = user.permissions || [];
     const hasAllPermissions = requiredPermissions.every(permission =>

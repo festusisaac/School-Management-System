@@ -68,6 +68,26 @@ export interface ReportCardConfig {
     showClassPosition: boolean;
     showAttendance: boolean;
     showCumulative: boolean;
+    teacherCommentTemplates: {
+        excellent: string;
+        veryGood: string;
+        good: string;
+        fair: string;
+        pass: string;
+        poor: string;
+    };
+    principalCommentTemplates: {
+        excellent: string;
+        veryGood: string;
+        good: string;
+        fair: string;
+        pass: string;
+        poor: string;
+    };
+    promotionStatusTemplates: {
+        promoted: string;
+        notPromoted: string;
+    };
 }
 
 interface Props {
@@ -87,7 +107,27 @@ const ReportCardTemplate: React.FC<Props> = ({
         showSubjectPosition: true,
         showClassPosition: true,
         showAttendance: true,
-        showCumulative: true
+        showCumulative: true,
+        teacherCommentTemplates: {
+            excellent: 'Excellent performance, keep it up',
+            veryGood: 'Very good result, maintain the tempo',
+            good: 'Good, keep improving',
+            fair: 'Fair performance, work harder',
+            pass: 'Pass mark attained, put in more effort',
+            poor: 'Poor result, serious improvement is needed'
+        },
+        principalCommentTemplates: {
+            excellent: 'Outstanding result, congratulations',
+            veryGood: 'Excellent work, keep soaring higher',
+            good: 'Good, keep improving',
+            fair: 'Satisfactory result, aim higher',
+            pass: 'You can do better next term',
+            poor: 'Below expectation, work harder next term'
+        },
+        promotionStatusTemplates: {
+            promoted: 'PROMOTED TO NEXT CLASS',
+            notPromoted: 'NOT PROMOTED'
+        }
     } 
 }) => {
     const { settings, getFullUrl } = useSystem();
@@ -118,6 +158,29 @@ const ReportCardTemplate: React.FC<Props> = ({
     const colorHeaderBg = '#eaf6f0';
     const colorSectionBg = '#d9ead3';
     const colorBorderGreen = '#218b12ff';
+
+    const formatComment = (comment?: string, fallback?: string) => {
+        const value = (comment || '').replace(/\s+/g, ' ').trim();
+        if (!value) return fallback || '';
+        return value.length > 90 ? `${value.slice(0, 87).trimEnd()}...` : value;
+    };
+
+    const resolveAssetUrl = (path?: string) => {
+        if (!path) return '';
+        if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) {
+            return path;
+        }
+        return getFullUrl(path);
+    };
+
+    const getCommentByAverage = (average: number, templates: ReportCardConfig['teacherCommentTemplates']) => {
+        if (average >= 80) return templates.excellent;
+        if (average >= 70) return templates.veryGood;
+        if (average >= 60) return templates.good;
+        if (average >= 50) return templates.fair;
+        if (average >= 40) return templates.pass;
+        return templates.poor;
+    };
 
     const containerStyle: React.CSSProperties = {
         width: '100%',
@@ -507,45 +570,96 @@ const ReportCardTemplate: React.FC<Props> = ({
                                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                     <tbody>
                                         <tr>
-                                            <td style={{ paddingBottom: '8px', borderBottom: `1px solid ${colorPrimary}` }}>
-                                                <strong>Class Teacher's Comments:</strong> {data.academicInfo.teacherComment || ''}
-                                                <span style={{ float: 'right' }}>
-                                                    <strong>Sign.:</strong> 
-                                                    {data.academicInfo.classTeacherSignature ? (
-                                                        <img src={data.academicInfo.classTeacherSignature} alt="" style={{ height: '25px', maxWidth: '80px', objectFit: 'contain', verticalAlign: 'middle' }} />
-                                                    ) : (
-                                                        <span style={{ display: 'inline-block', width: '50px', borderBottom: '1px solid #000' }}></span>
-                                                    )}
-                                                    <strong>Date:</strong> {new Date().toLocaleDateString()}
-                                                </span>
+                                            <td style={{ paddingBottom: '4px', borderBottom: `1px solid ${colorPrimary}` }}>
+                                                <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td style={{ width: '58%', paddingRight: '8px', fontSize: '10px', lineHeight: '1.25', verticalAlign: 'middle' }}>
+                                                                <strong>Class Teacher's Comments:</strong>{' '}
+                                                                {formatComment(
+                                                                    data.academicInfo.teacherComment,
+                                                                    getCommentByAverage(data.summary.averageScore, config.teacherCommentTemplates)
+                                                                )}
+                                                            </td>
+                                                            <td style={{ width: '16%', fontSize: '10px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                                                                <strong>Sign.:</strong>{' '}
+                                                                <span style={{ marginLeft: '4px' }}>
+                                                                    {data.academicInfo.classTeacherSignature ? (
+                                                                        <img
+                                                                            src={resolveAssetUrl(data.academicInfo.classTeacherSignature)}
+                                                                            alt="Teacher signature"
+                                                                            style={{ width: '72px', height: '20px', objectFit: 'contain', objectPosition: 'left center', verticalAlign: 'middle', display: 'inline-block' }}
+                                                                        />
+                                                                    ) : (
+                                                                        <span style={{ display: 'inline-block', width: '50px', borderBottom: '1px solid #000' }}></span>
+                                                                    )}
+                                                                </span>
+                                                            </td>
+                                                            <td style={{ width: '26%', fontSize: '10px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                                                                <strong>Date:</strong> {new Date().toLocaleDateString()}
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td style={{ paddingTop: '8px', paddingBottom: '8px', borderBottom: `1px solid ${colorPrimary}` }}>
-                                                <strong>Principal's Comments:</strong> {data.academicInfo.principalComment || ''}
-                                                <span style={{ float: 'right' }}>
-                                                    <strong>Sign.:</strong> 
-                                                    {data.academicInfo.principalSignature || settings?.principalSignature ? (
-                                                        <img src={data.academicInfo.principalSignature || getFullUrl(settings?.principalSignature || '')} alt="" style={{ height: '25px', maxWidth: '80px', objectFit: 'contain', verticalAlign: 'middle' }} />
-                                                    ) : (
-                                                        <span style={{ display: 'inline-block', width: '50px', borderBottom: '1px solid #000' }}></span>
-                                                    )}
-                                                    <strong>Date:</strong> {new Date().toLocaleDateString()}
-                                                </span>
+                                            <td style={{ paddingTop: '4px', paddingBottom: '4px', borderBottom: `1px solid ${colorPrimary}` }}>
+                                                <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td style={{ width: '58%', paddingRight: '8px', fontSize: '10px', lineHeight: '1.25', verticalAlign: 'middle' }}>
+                                                                <strong>Principal's Comments:</strong>{' '}
+                                                                {formatComment(
+                                                                    data.academicInfo.principalComment,
+                                                                    getCommentByAverage(data.summary.averageScore, config.principalCommentTemplates)
+                                                                )}
+                                                            </td>
+                                                            <td style={{ width: '16%', fontSize: '10px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                                                                <strong>Sign.:</strong>{' '}
+                                                                <span style={{ marginLeft: '4px' }}>
+                                                                    {data.academicInfo.principalSignature || settings?.principalSignature ? (
+                                                                        <img
+                                                                            src={resolveAssetUrl(data.academicInfo.principalSignature || settings?.principalSignature || '')}
+                                                                            alt="Principal signature"
+                                                                            style={{ width: '72px', height: '20px', objectFit: 'contain', objectPosition: 'left center', verticalAlign: 'middle', display: 'inline-block' }}
+                                                                        />
+                                                                    ) : (
+                                                                        <span style={{ display: 'inline-block', width: '50px', borderBottom: '1px solid #000' }}></span>
+                                                                    )}
+                                                                </span>
+                                                            </td>
+                                                            <td style={{ width: '26%', fontSize: '10px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                                                                <strong>Date:</strong> {new Date().toLocaleDateString()}
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td style={{ paddingTop: '8px' }}>
-                                                <strong>Promotion Status:</strong> <span style={{ fontWeight: 'bold' }}>{data.academicInfo.promotionStatus || (data.summary.averageScore >= 50 ? 'PROMOTED TO NEXT CLASS' : 'NOT PROMOTED')}</span>
+                                            <td style={{ paddingTop: '4px', fontSize: '10px' }}>
+                                                <strong>Promotion Status:</strong>{' '}
+                                                <span style={{ fontWeight: 'bold' }}>
+                                                    {data.academicInfo.promotionStatus || (
+                                                        data.summary.averageScore >= 50
+                                                            ? config.promotionStatusTemplates.promoted
+                                                            : config.promotionStatusTemplates.notPromoted
+                                                    )}
+                                                </span>
                                             </td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </td>
                             <td style={{ width: '110px', borderLeft: `2px solid ${colorPrimary}`, verticalAlign: 'middle', textAlign: 'center' }}>
-                                <div style={{ height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colorPrimary, fontWeight: 'bold' }}>
+                                <div style={{ height: '82px', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colorPrimary, fontWeight: 'bold' }}>
                                     {settings?.schoolStamp ? (
-                                        <img src={getFullUrl(settings.schoolStamp)} alt="Stamp" style={{ maxWidth: '90px', maxHeight: '70px', objectFit: 'contain' }} />
+                                        <img
+                                            src={resolveAssetUrl(settings.schoolStamp)}
+                                            alt="School stamp"
+                                            style={{ width: '96px', height: '74px', objectFit: 'contain', objectPosition: 'center' }}
+                                        />
                                     ) : (
                                         'STAMP'
                                     )}

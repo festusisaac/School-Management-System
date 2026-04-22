@@ -255,12 +255,23 @@ export class AcademicsService {
         return this.subjectRepository.save(newSubject) as Promise<Subject>;
     }
 
-    async getAllSubjects(tenantId: string): Promise<Subject[]> {
-        return this.subjectRepository.find({
-            where: { tenantId },
-            relations: ['group'],
-            order: { name: 'ASC' },
-        });
+    async getAllSubjects(tenantId: string, teacherId?: string): Promise<Subject[]> {
+        const query = this.subjectRepository.createQueryBuilder('subject')
+            .leftJoinAndSelect('subject.group', 'group')
+            .where('subject.tenantId = :tenantId', { tenantId });
+
+        if (teacherId) {
+            query.andWhere((qb: any) => {
+                const subQuery = qb.subQuery()
+                    .select('st.subjectId')
+                    .from('subject_teachers', 'st')
+                    .where('st.teacherId = :teacherId', { teacherId })
+                    .getQuery();
+                return 'subject.id IN (' + subQuery + ')';
+            });
+        }
+
+        return query.orderBy('subject.name', 'ASC').getMany();
     }
 
     async getSubjectById(id: string): Promise<Subject> {
@@ -309,12 +320,25 @@ export class AcademicsService {
         return this.subjectGroupRepository.save(newGroup);
     }
 
-    async getAllSubjectGroups(tenantId: string): Promise<SubjectGroup[]> {
-        return this.subjectGroupRepository.find({
-            where: { tenantId },
-            relations: ['subjects'],
-            order: { name: 'ASC' },
-        });
+    async getAllSubjectGroups(tenantId: string, teacherId?: string): Promise<SubjectGroup[]> {
+        const query = this.subjectGroupRepository.createQueryBuilder('group')
+            .leftJoinAndSelect('group.subjects', 'subjects')
+            .where('group.tenantId = :tenantId', { tenantId });
+
+        if (teacherId) {
+            query.andWhere((qb: any) => {
+                const subQuery = qb.subQuery()
+                    .select('st.subjectId')
+                    .from('subject_teachers', 'st')
+                    .where('st.teacherId = :teacherId', { teacherId })
+                    .getQuery();
+                
+                // Only show groups that have at least one subject assigned to this teacher
+                return 'subjects.id IN (' + subQuery + ')';
+            });
+        }
+
+        return query.orderBy('group.name', 'ASC').getMany();
     }
 
     async getSubjectGroupById(id: string): Promise<SubjectGroup> {

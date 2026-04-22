@@ -187,7 +187,7 @@ export class StudentExamController {
         });
         if (!student) throw new NotFoundException('Student not found');
 
-        await this.controlService.verifyCard({ 
+        await this.controlService.validateCard({ 
             code: dto.code, 
             pin: dto.pin, 
             studentId: student.id, 
@@ -238,7 +238,7 @@ export class StudentExamController {
             relations: ['domain']
         });
 
-        return {
+        const response = {
             summary: summary.summary,
             subjectScores: summary.subjectScores,
             subjectStats: summary.subjectStats,
@@ -249,5 +249,15 @@ export class StudentExamController {
             examGroup, // for term/session info
             student // for personal details
         };
+
+        await this.controlService.verifyCard({
+            code: dto.code,
+            pin: dto.pin,
+            studentId: student.id,
+            sessionId: academicSessionId || undefined as any,
+            termId: academicTermId || undefined as any,
+        }, tenantId, req.ip, req.headers['user-agent']);
+
+        return response;
     }
 }

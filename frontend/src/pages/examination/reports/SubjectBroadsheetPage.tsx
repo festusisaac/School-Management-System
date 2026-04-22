@@ -45,7 +45,7 @@ const SubjectBroadsheetPage = () => {
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 50;
-    
+
     const { showError, showSuccess } = useToast();
 
     const isThirdTerm = useMemo(() => {
@@ -134,7 +134,7 @@ const SubjectBroadsheetPage = () => {
             // 3.5. Indexing for O(1) lookups
             const rawSubjectMarks = (allMarks as any[]).filter(m => m.subjectId === selectedSubject);
             const marksLookup = groupById(rawSubjectMarks, 'studentId');
-            
+
             const enrichedMap = new Map<string, any>();
             subjectEnrichedScores.forEach((s: any) => {
                 if (s.subjectId === selectedSubject) enrichedMap.set(s.studentId || s.studentid, s);
@@ -155,7 +155,7 @@ const SubjectBroadsheetPage = () => {
             const processedRows: SubjectRow[] = allStudents.map((student: any) => {
                 const scores: Record<string, number> = {};
                 const studentMarks = marksLookup.get(student.id) || [];
-                
+
                 assessmentTypes.forEach((ass: any) => {
                     const mark = studentMarks.find((m: any) => m.assessmentTypeId === ass.id);
                     scores[ass.id] = mark ? mark.score : 0;
@@ -180,7 +180,7 @@ const SubjectBroadsheetPage = () => {
 
             const rawStats = broadsheetData?.subjectStats || [];
             const currentSubjectStats = rawStats.find((s: any) => s.subjectId === selectedSubject);
-            
+
             if (currentSubjectStats) {
                 setSubjectStats({
                     high: parseFloat(currentSubjectStats.highestScore),
@@ -203,7 +203,7 @@ const SubjectBroadsheetPage = () => {
     const getOrdinal = (n: number) => {
         if (n === 0) return '-';
         const s = ["th", "st", "nd", "rd"],
-              v = n % 100;
+            v = n % 100;
         return n + (s[(v - 20) % 10] || s[v] || s[0]);
     };
 
@@ -221,7 +221,7 @@ const SubjectBroadsheetPage = () => {
                 row[ass.name] = r.scores[ass.id] || 0;
             });
             row['Total'] = r.total;
-            
+
             if (isThirdTerm) {
                 row['1st Term'] = r.cumulative?.term1 || 0;
                 row['2nd Term'] = r.cumulative?.term2 || 0;
@@ -378,42 +378,42 @@ const SubjectBroadsheetPage = () => {
                                     const cumAvg = cumTotal / 3;
 
                                     return (
-                                    <tr key={row.studentId} className="hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
-                                        <td className="px-6 py-4 text-center font-bold text-primary-600">{getOrdinal(row.position)}</td>
-                                        <td className="px-6 py-4">
-                                            <div className="font-semibold text-gray-900 dark:text-white">{row.studentName}</div>
-                                            <div className="text-[10px] text-gray-400">{row.admissionNumber}</div>
-                                        </td>
-                                        {assessments.map(ass => (
-                                            <td key={ass.id} className="px-6 py-4 text-center">{row.scores[ass.id] || 0}</td>
-                                        ))}
-                                        <td className="px-6 py-4 text-center font-black text-primary-700 dark:text-primary-400">{row.total}</td>
-                                        {isThirdTerm && (
-                                            <>
-                                                <td className="px-6 py-4 text-center border-l border-gray-100 dark:border-gray-800 text-gray-400">{row.cumulative?.term1 || 0}</td>
-                                                <td className="px-6 py-4 text-center text-gray-400">{row.cumulative?.term2 || 0}</td>
-                                                <td className="px-6 py-4 text-center font-bold bg-primary-50/30 dark:bg-primary-900/5">{cumTotal}</td>
-                                                <td className="px-6 py-4 text-center font-black text-primary-600 bg-primary-50/50 dark:bg-primary-900/10">{cumAvg.toFixed(1)}</td>
-                                            </>
-                                        )}
-                                        <td className="px-6 py-4 text-center font-bold text-emerald-600 dark:text-emerald-400">
-                                            {subjectStats?.high || '-'}
-                                        </td>
-                                        <td className="px-6 py-4 text-center font-bold text-rose-600 dark:text-rose-400">
-                                            {subjectStats?.low || '-'}
-                                        </td>
-                                        <td className="px-6 py-4 text-center">
-                                            <span className="px-2 py-1 rounded bg-primary-50 dark:bg-primary-900/20 text-primary-700 font-bold">{row.grade}</span>
-                                        </td>
-                                        <td className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase">{row.remark}</td>
-                                    </tr>
+                                        <tr key={row.studentId} className="hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
+                                            <td className="px-6 py-4 text-center font-bold text-primary-600">{getOrdinal(row.position)}</td>
+                                            <td className="px-6 py-4">
+                                                <div className="font-semibold text-gray-900 dark:text-white">{row.studentName}</div>
+                                                <div className="text-[10px] text-gray-400">{row.admissionNumber}</div>
+                                            </td>
+                                            {assessments.map(ass => (
+                                                <td key={ass.id} className="px-6 py-4 text-center">{row.scores[ass.id] || 0}</td>
+                                            ))}
+                                            <td className="px-6 py-4 text-center font-black text-primary-700 dark:text-primary-400">{row.total}</td>
+                                            {isThirdTerm && (
+                                                <>
+                                                    <td className="px-6 py-4 text-center border-l border-gray-100 dark:border-gray-800 text-gray-400">{row.cumulative?.term1 || 0}</td>
+                                                    <td className="px-6 py-4 text-center text-gray-400">{row.cumulative?.term2 || 0}</td>
+                                                    <td className="px-6 py-4 text-center font-bold bg-primary-50/30 dark:bg-primary-900/5">{cumTotal}</td>
+                                                    <td className="px-6 py-4 text-center font-black text-primary-600 bg-primary-50/50 dark:bg-primary-900/10">{cumAvg.toFixed(1)}</td>
+                                                </>
+                                            )}
+                                            <td className="px-6 py-4 text-center font-bold text-emerald-600 dark:text-emerald-400">
+                                                {subjectStats?.high || '-'}
+                                            </td>
+                                            <td className="px-6 py-4 text-center font-bold text-rose-600 dark:text-rose-400">
+                                                {subjectStats?.low || '-'}
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <span className="px-2 py-1 rounded bg-primary-50 dark:bg-primary-900/20 text-primary-700 font-bold">{row.grade}</span>
+                                            </td>
+                                            <td className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase">{row.remark}</td>
+                                        </tr>
                                     );
                                 })}
                             </tbody>
                         </table>
-                        
+
                         <div className="border-t border-gray-100 dark:border-gray-800/50 bg-gray-50/30 dark:bg-gray-800/20">
-                            <TablePagination 
+                            <TablePagination
                                 currentPage={currentPage}
                                 totalItems={rows.length}
                                 pageSize={pageSize}

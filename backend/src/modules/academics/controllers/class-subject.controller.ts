@@ -14,12 +14,16 @@ import { JwtAuthGuard, RolesGuard } from '@guards/jwt-auth.guard';
 import { Roles } from '@decorators/roles.decorator';
 import { UserRole } from '@common/dtos/auth.dto';
 import { ClassSubjectService } from '../services/class-subject.service';
+import { StaffService } from '@modules/hr/services/staff.service';
 import { CreateClassSubjectDto, BulkAssignClassSubjectsDto, UpdateClassSubjectDto } from '../dto/class-subject.dto';
 
 @Controller('academics/assign-class-subjects')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ClassSubjectController {
-    constructor(private readonly classSubjectService: ClassSubjectService) { }
+    constructor(
+        private readonly classSubjectService: ClassSubjectService,
+        private readonly staffService: StaffService,
+    ) { }
 
     @Get('class/:classId')
     @Roles(UserRole.ADMIN, UserRole.TEACHER)
@@ -28,7 +32,11 @@ export class ClassSubjectController {
         @Request() req: any,
         @Query('sectionId') sectionId?: string,
     ) {
-        return this.classSubjectService.findByClass(classId, req.user.tenantId, sectionId);
+        let teacherId: string | undefined;
+        if (req.user.role === UserRole.TEACHER) {
+            teacherId = await this.staffService.resolveStaffIdByEmail(req.user.email, req.user.tenantId);
+        }
+        return this.classSubjectService.findByClass(classId, req.user.tenantId, sectionId, teacherId);
     }
 
     @Get(':id')

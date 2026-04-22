@@ -5,7 +5,7 @@ import { useSystem } from '../../../context/SystemContext';
 import { examinationService, ExamGroup } from '../../../services/examinationService';
 import api from '../../../services/api';
 import { systemService, AcademicTerm } from '../../../services/systemService';
-import ReportCardTemplate, { ReportCardData, ReportCardSubject } from '../../../components/examination/ReportCardTemplate';
+import ReportCardTemplate, { ReportCardConfig, ReportCardData, ReportCardSubject } from '../../../components/examination/ReportCardTemplate';
 import { useSearchParams } from 'react-router-dom';
 import { groupById, identifyTerm } from '../../../utils/reportingUtils';
 import React from 'react';
@@ -81,6 +81,17 @@ const BulkPrintSection = React.memo(({ students, assessments, config }: {
 });
 
 const ReportCardPage = () => {
+    const toggleKeys: Array<keyof Pick<ReportCardConfig, 'showPhoto' | 'showHighest' | 'showLowest' | 'showAverage' | 'showSubjectPosition' | 'showClassPosition' | 'showAttendance' | 'showCumulative'>> = [
+        'showPhoto',
+        'showHighest',
+        'showLowest',
+        'showAverage',
+        'showSubjectPosition',
+        'showClassPosition',
+        'showAttendance',
+        'showCumulative'
+    ];
+
     const [searchParams] = useSearchParams();
 
     const { settings, getFullUrl } = useSystem();
@@ -103,7 +114,7 @@ const ReportCardPage = () => {
     const [statusFilter, setStatusFilter] = useState('all');
     const [showSettings, setShowSettings] = useState(false);
 
-    const [config, setConfig] = useState<any>({
+    const [config, setConfig] = useState<ReportCardConfig>({
         showPhoto: true,
         showHighest: true,
         showLowest: true,
@@ -111,7 +122,27 @@ const ReportCardPage = () => {
         showSubjectPosition: true,
         showClassPosition: true,
         showAttendance: true,
-        showCumulative: true
+        showCumulative: true,
+        teacherCommentTemplates: {
+            excellent: 'Excellent performance, keep it up',
+            veryGood: 'Very good result, maintain the tempo',
+            good: 'Good, keep improving',
+            fair: 'Fair performance, work harder',
+            pass: 'Pass mark attained, put in more effort',
+            poor: 'Poor result, serious improvement is needed'
+        },
+        principalCommentTemplates: {
+            excellent: 'Outstanding result, congratulations',
+            veryGood: 'Excellent work, keep soaring higher',
+            good: 'Good, keep improving',
+            fair: 'Satisfactory result, aim higher',
+            pass: 'You can do better next term',
+            poor: 'Below expectation, work harder next term'
+        },
+        promotionStatusTemplates: {
+            promoted: 'PROMOTED TO NEXT CLASS',
+            notPromoted: 'NOT PROMOTED'
+        }
     });
 
     // Initial Load
@@ -176,6 +207,18 @@ const ReportCardPage = () => {
         (g.academicYear === settings?.activeSessionName) &&
         (!selectedTerm || g.term === selectedTerm)
     ), [groups, settings?.activeSessionName, selectedTerm]);
+
+    useEffect(() => {
+        if (filteredGroups.length === 0) {
+            setSelectedGroup('');
+            return;
+        }
+
+        const hasSelectedGroup = filteredGroups.some(group => group.id === selectedGroup);
+        if (!hasSelectedGroup) {
+            setSelectedGroup(filteredGroups[0].id);
+        }
+    }, [filteredGroups, selectedGroup]);
 
     const fetchReportCards = async () => {
         if (!selectedGroup || !selectedClass) return;
@@ -365,103 +408,317 @@ const ReportCardPage = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 print:min-h-0 print:bg-white text-gray-900 dark:text-white">
-            <div className="p-6 space-y-6 print:hidden">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div>
-                        <h1 className="text-2xl font-bold">Report Cards</h1>
-                        <p className="text-sm text-gray-500">Generate and print student result slips.</p>
-                    </div>
-                    <div className="flex gap-2">
-                        <button onClick={() => setShowSettings(!showSettings)} className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 transition-all shadow-sm">
-                            <SlidersHorizontal className="w-4 h-4" /> Layout
-                        </button>
-                        {students.length > 0 && (
-                            <button onClick={handlePrint} className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 shadow-sm">
-                                <Printer className="w-4 h-4" /> Print All
+            <div className="p-6 print:hidden">
+                <div className="mx-auto w-full max-w-7xl space-y-6">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Report Cards</h1>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Generate and print student result slips.</p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            <button
+                                onClick={() => setShowSettings(!showSettings)}
+                                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all shadow-sm text-sm font-medium"
+                            >
+                                <SlidersHorizontal className="w-4 h-4" />
+                                Report Settings
                             </button>
-                        )}
-            </div>
-            
-            <BulkPrintSection students={printData} assessments={assessments} config={config} />
-                    <div className="space-y-1">
-                        <label className="text-sm font-medium">Term</label>
-                        <select className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-transparent px-3 py-2 text-sm" value={selectedTerm} onChange={(e) => { setSelectedTerm(e.target.value); setSelectedGroup(''); }}>
-                            <option value="">All Terms</option>
-                            {terms.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
-                        </select>
+                            {students.length > 0 && (
+                                <button
+                                    onClick={handlePrint}
+                                    className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-all shadow-sm text-sm font-medium"
+                                >
+                                    <Printer className="w-4 h-4" />
+                                    Print All
+                                </button>
+                            )}
+                        </div>
                     </div>
-                    <div className="space-y-1">
-                        <label className="text-sm font-medium">Exam Group</label>
-                        <select className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-transparent px-3 py-2 text-sm" value={selectedGroup} onChange={(e) => setSelectedGroup(e.target.value)}>
-                            <option value="">Select Exam Group</option>
-                            {filteredGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-                        </select>
-                    </div>
-                    <div className="space-y-1">
-                        <label className="text-sm font-medium">Class</label>
-                        <select className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-transparent px-3 py-2 text-sm" value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)}>
-                            <option value="">Select Class</option>
-                            {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                        </select>
-                    </div>
-                    <div className="flex items-end">
-                        {loading && <div className="flex items-center gap-2 py-2 text-primary-600 font-medium"><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div><span className="text-sm">Loading...</span></div>}
-                    </div>
-                </div>
 
-                {showSettings && (
-                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowSettings(false)} />
-                        <div className="bg-white dark:bg-gray-800 w-full max-w-md rounded-xl shadow-2xl relative animate-in zoom-in-95 duration-200 overflow-hidden">
-                            <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
-                                <h3 className="font-bold">Layout Options</h3>
-                                <X className="w-4 h-4 cursor-pointer" onClick={() => setShowSettings(false)} />
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Term</label>
+                            <select
+                                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                value={selectedTerm}
+                                onChange={(e) => {
+                                    setSelectedTerm(e.target.value);
+                                    setSelectedGroup('');
+                                }}
+                            >
+                                <option value="">All Terms</option>
+                                {terms.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Exam Group</label>
+                            <select
+                                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                value={selectedGroup}
+                                onChange={(e) => setSelectedGroup(e.target.value)}
+                            >
+                                <option value="">Select Exam Group</option>
+                                {filteredGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Class</label>
+                            <select
+                                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                value={selectedClass}
+                                onChange={(e) => setSelectedClass(e.target.value)}
+                            >
+                                <option value="">Select Class</option>
+                                {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            </select>
+                        </div>
+                    </div>
+
+                    {loading && (
+                        <div className="flex items-center gap-2 text-primary-600 font-medium px-1">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
+                            <span className="text-sm">Loading report cards...</span>
+                        </div>
+                    )}
+
+                    {showSettings && (
+                     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+                        <div className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm" onClick={() => setShowSettings(false)} />
+                        <div className="relative w-full max-w-5xl h-[calc(100vh-1rem)] sm:h-auto sm:max-h-[90vh] rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                            <div className="px-4 sm:px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-start justify-between gap-4 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm">
+                                <div>
+                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">Report Settings</h3>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">Control report sheet visibility and comment rules for average score bands.</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowSettings(false)}
+                                    className="shrink-0 rounded-lg p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 dark:hover:text-gray-200 transition-colors"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
                             </div>
-                            <div className="p-5 space-y-3">
-                                {['showPhoto', 'showHighest', 'showLowest', 'showAverage', 'showSubjectPosition', 'showClassPosition', 'showAttendance', 'showCumulative'].map(key => (
-                                    <label key={key} className="flex items-center justify-between py-1 cursor-pointer">
-                                        <span className="text-sm capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
-                                        <input type="checkbox" checked={config[key]} onChange={() => setConfig({ ...config, [key]: !config[key] })} className="w-4 h-4" />
-                                    </label>
-                                ))}
+
+                            <div className="overflow-y-auto max-h-[calc(100vh-8.5rem)] sm:max-h-[calc(90vh-8.5rem)]">
+                                <div className="p-4 sm:p-6 space-y-5">
+                                    <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-900/30 p-4 sm:p-5">
+                                        <div className="mb-4">
+                                            <p className="text-sm font-semibold text-gray-900 dark:text-white">Visibility Options</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">Choose which sections and metrics should appear on the printed report sheet.</p>
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+                                            {toggleKeys.map(key => (
+                                                <label key={key} className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 cursor-pointer">
+                                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{key.replace(/([A-Z])/g, ' $1')}</span>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={config[key]}
+                                                        onChange={() => setConfig({ ...config, [key]: !config[key] })}
+                                                        className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                                    />
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+                                        <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/20 p-4 sm:p-5">
+                                            <div className="mb-4">
+                                                <p className="text-base font-semibold text-gray-900 dark:text-white">Class Teacher Comment Rules</p>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400">Used when no saved teacher comment exists for a student.</p>
+                                            </div>
+                                            <div className="space-y-3">
+                                                {([
+                                                    ['excellent', '80 and above'],
+                                                    ['veryGood', '70 - 79'],
+                                                    ['good', '60 - 69'],
+                                                    ['fair', '50 - 59'],
+                                                    ['pass', '40 - 49'],
+                                                    ['poor', 'Below 40'],
+                                                ] as const).map(([key, label]) => (
+                                                    <label key={`teacher-${key}`} className="block space-y-1.5">
+                                                        <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{label}</span>
+                                                        <input
+                                                            type="text"
+                                                            value={config.teacherCommentTemplates[key]}
+                                                            onChange={(e) => setConfig({
+                                                                ...config,
+                                                                teacherCommentTemplates: {
+                                                                    ...config.teacherCommentTemplates,
+                                                                    [key]: e.target.value
+                                                                }
+                                                            })}
+                                                            className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                                        />
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/20 p-4 sm:p-5">
+                                            <div className="mb-4">
+                                                <p className="text-base font-semibold text-gray-900 dark:text-white">Principal Comment Rules</p>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400">Used when no saved principal comment exists for a student.</p>
+                                            </div>
+                                            <div className="space-y-3">
+                                                {([
+                                                    ['excellent', '80 and above'],
+                                                    ['veryGood', '70 - 79'],
+                                                    ['good', '60 - 69'],
+                                                    ['fair', '50 - 59'],
+                                                    ['pass', '40 - 49'],
+                                                    ['poor', 'Below 40'],
+                                                ] as const).map(([key, label]) => (
+                                                    <label key={`principal-${key}`} className="block space-y-1.5">
+                                                        <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{label}</span>
+                                                        <input
+                                                            type="text"
+                                                            value={config.principalCommentTemplates[key]}
+                                                            onChange={(e) => setConfig({
+                                                                ...config,
+                                                                principalCommentTemplates: {
+                                                                    ...config.principalCommentTemplates,
+                                                                    [key]: e.target.value
+                                                                }
+                                                            })}
+                                                            className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                                        />
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/20 p-4 sm:p-5">
+                                        <div className="mb-4">
+                                            <p className="text-base font-semibold text-gray-900 dark:text-white">Promotion Status</p>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">Used when no saved promotion status exists on the processed result.</p>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <label className="block space-y-1.5">
+                                                <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Average 50 and above</span>
+                                                <input
+                                                    type="text"
+                                                    value={config.promotionStatusTemplates.promoted}
+                                                    onChange={(e) => setConfig({
+                                                        ...config,
+                                                        promotionStatusTemplates: {
+                                                            ...config.promotionStatusTemplates,
+                                                            promoted: e.target.value
+                                                        }
+                                                    })}
+                                                    className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                                />
+                                            </label>
+                                            <label className="block space-y-1.5">
+                                                <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Below average 50</span>
+                                                <input
+                                                    type="text"
+                                                    value={config.promotionStatusTemplates.notPromoted}
+                                                    onChange={(e) => setConfig({
+                                                        ...config,
+                                                        promotionStatusTemplates: {
+                                                            ...config.promotionStatusTemplates,
+                                                            notPromoted: e.target.value
+                                                        }
+                                                    })}
+                                                    className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                                />
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="px-4 sm:px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <p className="text-xs text-gray-500 dark:text-gray-400">These settings affect the current report preview immediately.</p>
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowSettings(false)}
+                                        className="w-full sm:w-auto rounded-xl border border-gray-300 dark:border-gray-600 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                    >
+                                        Close
+                                    </button>
+                                </div>
                             </div>
                         </div>
                      </div>
-                )}
+                    )}
 
-                {!loading && students.length > 0 && (
-                    <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
-                        <div className="relative w-full md:w-96">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                            <input type="text" placeholder="Search students..." className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent text-sm" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                    {!loading && students.length > 0 && (
+                        <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                            <div className="relative w-full md:w-96">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Search students..."
+                                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
+                            <select
+                                className="w-full md:w-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                            >
+                                <option value="all">All Status</option>
+                                <option value="passed">Passed</option>
+                                <option value="failed">Failed</option>
+                            </select>
                         </div>
-                        <select className="rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent text-sm px-3 py-2" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                            <option value="all">All Status</option>
-                            <option value="passed">Passed</option>
-                            <option value="failed">Failed</option>
-                        </select>
-                    </div>
-                )}
+                    )}
 
-                {filteredStudents.length > 0 && (
-                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-                        <table className="w-full text-sm text-left">
-                            <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 text-gray-500 font-medium">
-                                <tr>
-                                    <th className="px-6 py-4 w-12 text-center">#</th>
-                                    <th className="px-6 py-4">Student</th>
-                                    <th className="px-6 py-4 text-center">Subjects</th>
-                                    <th className="px-6 py-4 text-center">Total</th>
-                                    <th className="px-6 py-4 text-center">Avg</th>
-                                    <th className="px-6 py-4 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                                {filteredStudents.map((s, idx) => <StudentRow key={idx} student={s} idx={idx} onSelect={handleSelectStudent} onPrint={printSingle} />)}
-                            </tbody>
-                        </table>
+                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden min-h-[400px]">
+                        {loading ? (
+                            <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mb-3"></div>
+                                <p className="text-sm font-medium">Generating report cards...</p>
+                            </div>
+                        ) : !selectedGroup || !selectedClass ? (
+                            <div className="flex flex-col items-center justify-center h-64 text-center p-8 text-gray-400">
+                                <Search className="w-12 h-12 mb-4 opacity-10" />
+                                <p className="font-medium text-gray-900 dark:text-white">Ready to Generate</p>
+                                <p className="text-sm mt-1">Select an exam group and class to generate report cards.</p>
+                            </div>
+                        ) : filteredStudents.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center h-64 text-center p-8 text-gray-400">
+                                <Eye className="w-12 h-12 mb-4 opacity-10" />
+                                <p className="font-medium text-gray-900 dark:text-white">No Report Cards Found</p>
+                                <p className="text-sm mt-1">No processed results matched this selection.</p>
+                            </div>
+                        ) : (
+                            <div className="w-full overflow-x-auto">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 font-medium">
+                                        <tr>
+                                            <th className="px-6 py-4 w-12 text-center">#</th>
+                                            <th className="px-6 py-4">Student</th>
+                                            <th className="px-6 py-4 text-center">Subjects</th>
+                                            <th className="px-6 py-4 text-center">Total</th>
+                                            <th className="px-6 py-4 text-center">Avg</th>
+                                            <th className="px-6 py-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                                        {filteredStudents.map((s, idx) => (
+                                            <StudentRow
+                                                key={idx}
+                                                student={s}
+                                                idx={idx}
+                                                onSelect={handleSelectStudent}
+                                                onPrint={printSingle}
+                                            />
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
                     </div>
-                )}
+                </div>
             </div>
 
             <BulkPrintSection students={printData} assessments={assessments} config={config} />

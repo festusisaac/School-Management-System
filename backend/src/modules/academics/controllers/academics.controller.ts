@@ -150,8 +150,12 @@ export class AcademicsController {
     }
 
     @Get('subjects')
-    getAllSubjects(@Request() req: any) {
-        return this.academicsService.getAllSubjects(req.user.tenantId);
+    async getAllSubjects(@Request() req: any) {
+        let teacherId: string | undefined;
+        if (req.user.role === UserRole.TEACHER) {
+            teacherId = await this.staffService.resolveStaffIdByEmail(req.user.email, req.user.tenantId);
+        }
+        return this.academicsService.getAllSubjects(req.user.tenantId, teacherId);
     }
 
     @Get('subjects/:id')
@@ -189,8 +193,12 @@ export class AcademicsController {
     }
 
     @Get('subject-groups')
-    getAllSubjectGroups(@Request() req: any) {
-        return this.academicsService.getAllSubjectGroups(req.user.tenantId);
+    async getAllSubjectGroups(@Request() req: any) {
+        let teacherId: string | undefined;
+        if (req.user.role === UserRole.TEACHER) {
+            teacherId = await this.staffService.resolveStaffIdByEmail(req.user.email, req.user.tenantId);
+        }
+        return this.academicsService.getAllSubjectGroups(req.user.tenantId, teacherId);
     }
 
     @Get('subject-groups/:id')

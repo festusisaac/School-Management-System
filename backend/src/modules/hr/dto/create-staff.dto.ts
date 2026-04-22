@@ -1,4 +1,4 @@
-import { IsString, IsEmail, IsEnum, IsOptional, IsDate, IsDateString, IsNumber, IsArray, MinLength, MaxLength, Matches, IsBoolean } from 'class-validator';
+import { IsString, IsEmail, IsEnum, IsOptional, IsDate, IsDateString, IsNumber, IsArray, MinLength, MaxLength, Matches, IsBoolean, ValidateIf } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { EmploymentType, Gender, StaffStatus, MaritalStatus } from '../entities/staff.entity';
 
@@ -137,6 +137,7 @@ export class CreateStaffDto {
     @IsString()
     @IsOptional()
     @Transform(({ value }) => value === '' ? undefined : value)
+    @ValidateIf((o) => o.password && o.password.length > 0)
     @MinLength(6)
     password?: string;
 

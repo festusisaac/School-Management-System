@@ -56,6 +56,9 @@ export default function ChangePasswordPage() {
         setUser({ ...user, mustChangePassword: false });
       }
 
+      const { refreshUser } = useAuthStore.getState();
+      await refreshUser();
+      
       setSuccess(true)
       setTimeout(() => {
         navigate('/dashboard')

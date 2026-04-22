@@ -167,7 +167,7 @@ const ClassBroadsheetPage = () => {
         // 1. Create Lookup Maps (O(1))
         const subjectLookup = createIdLookupMap(allSubjects, 'id');
         const termResultMap = createIdLookupMap<BroadsheetResult>(termResults, 'studentId');
-        
+
         const cumulativeOverallMap = new Map<string, { term1: number; term2: number }>();
         cumulativeOverallResults.forEach((r: any) => {
             const sId = (r.studentId || r.studentid)?.toString();
@@ -198,7 +198,7 @@ const ClassBroadsheetPage = () => {
 
             const rawScore = item.totalSubjectScore || item.totalsubjectscore || 0;
             const subjName = idToNameMap.get(subjId) || 'Unknown';
-            
+
             if (!studentSubjectMap.has(sId)) studentSubjectMap.set(sId, {});
             studentSubjectMap.get(sId)![subjName] = parseFloat(rawScore);
         });
@@ -224,7 +224,7 @@ const ClassBroadsheetPage = () => {
                 admissionNumber: student.admissionNumber || student.admissionNo || 'N/A',
                 totalScore: termResult ? parseFloat(termResult.totalScore.toString()) : calculatedTotal,
                 averageScore: termResult ? parseFloat(termResult.averageScore.toString()) : (subjectCount > 0 ? calculatedTotal / subjectCount : 0),
-                position: termResult?.position || 0, 
+                position: termResult?.position || 0,
                 subjectScores: scores,
                 cumulative
             };
@@ -232,7 +232,7 @@ const ClassBroadsheetPage = () => {
 
         // 6. Sort and Rank (O(N log N))
         processedRows.sort((a, b) => b.totalScore - a.totalScore);
-        
+
         // Always ensure positions are correct based on totalScore
         let currentRank = 1;
         processedRows.forEach((row, index) => {
@@ -257,7 +257,7 @@ const ClassBroadsheetPage = () => {
                 ...r.subjectScores,
                 'Total': r.totalScore,
             };
-            
+
             if (isThirdTerm) {
                 row['1st Term'] = r.cumulative?.term1 || 0;
                 row['2nd Term'] = r.cumulative?.term2 || 0;
@@ -284,7 +284,7 @@ const ClassBroadsheetPage = () => {
     const getOrdinal = (n: number) => {
         if (n === 0) return '-';
         const s = ["th", "st", "nd", "rd"],
-              v = n % 100;
+            v = n % 100;
         return n + (s[(v - 20) % 10] || s[v] || s[0]);
     };
 
@@ -411,58 +411,58 @@ const ClassBroadsheetPage = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-800 whitespace-nowrap">
-                            {rows.slice((currentPage - 1) * pageSize, currentPage * pageSize).map((row) => (
-                                <tr key={row.studentId} className="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
-                                    <td className="px-4 py-3 text-center font-black text-primary-600 dark:text-primary-400 sticky left-0 bg-white dark:bg-gray-800 z-10 border-r border-gray-100 dark:border-gray-700 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                                        <span className="bg-primary-50 dark:bg-primary-900/20 px-2 py-1 rounded text-[11px]">
-                                            {getOrdinal(row.position)}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-3 sticky left-16 bg-white dark:bg-gray-800 z-10 border-r border-gray-100 dark:border-gray-700 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                                        <div className="flex flex-col">
-                                            <span className="font-semibold text-gray-900 dark:text-white">{row.studentName}</span>
-                                            <span className="text-xs text-gray-400 font-medium">ID: {row.admissionNumber}</span>
-                                        </div>
-                                    </td>
+                                {rows.slice((currentPage - 1) * pageSize, currentPage * pageSize).map((row) => (
+                                    <tr key={row.studentId} className="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
+                                        <td className="px-4 py-3 text-center font-black text-primary-600 dark:text-primary-400 sticky left-0 bg-white dark:bg-gray-800 z-10 border-r border-gray-100 dark:border-gray-700 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
+                                            <span className="bg-primary-50 dark:bg-primary-900/20 px-2 py-1 rounded text-[11px]">
+                                                {getOrdinal(row.position)}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-3 sticky left-16 bg-white dark:bg-gray-800 z-10 border-r border-gray-100 dark:border-gray-700 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
+                                            <div className="flex flex-col">
+                                                <span className="font-semibold text-gray-900 dark:text-white">{row.studentName}</span>
+                                                <span className="text-xs text-gray-400 font-medium">ID: {row.admissionNumber}</span>
+                                            </div>
+                                        </td>
 
-                                    {subjects.map(subj => {
-                                        const score = row.subjectScores[subj];
-                                        return (
-                                            <td key={subj} className="px-4 py-3 text-center text-gray-700 dark:text-gray-300 border-r border-gray-50 dark:border-gray-800">
-                                                {score !== undefined ? Math.round(score) : '-'}
-                                            </td>
-                                        );
-                                    })}
+                                        {subjects.map(subj => {
+                                            const score = row.subjectScores[subj];
+                                            return (
+                                                <td key={subj} className="px-4 py-3 text-center text-gray-700 dark:text-gray-300 border-r border-gray-50 dark:border-gray-800">
+                                                    {score !== undefined ? Math.round(score) : '-'}
+                                                </td>
+                                            );
+                                        })}
 
-                                    <td className="px-4 py-3 text-center font-bold text-primary-600 dark:text-primary-400 bg-primary-50/50 dark:bg-primary-900/5">
-                                        {Math.round(row.totalScore)}
-                                    </td>
-                                    {isThirdTerm && (
-                                        <>
-                                            <td className="px-4 py-3 text-center font-medium text-gray-400 bg-primary-50/20 dark:bg-primary-900/5">
-                                                {Math.round(row.cumulative?.term1 || 0)}
-                                            </td>
-                                            <td className="px-4 py-3 text-center font-medium text-gray-400 bg-primary-50/20 dark:bg-primary-900/5">
-                                                {Math.round(row.cumulative?.term2 || 0)}
-                                            </td>
-                                            <td className="px-4 py-3 text-center font-black text-primary-700 bg-primary-50/80 dark:bg-primary-900/20">
-                                                {Math.round((row.cumulative?.term1 || 0) + (row.cumulative?.term2 || 0) + row.totalScore)}
-                                            </td>
-                                            <td className="px-4 py-3 text-center font-black text-primary-800 bg-primary-100 dark:bg-primary-900/40">
-                                                {(((row.cumulative?.term1 || 0) + (row.cumulative?.term2 || 0) + row.totalScore) / 3).toFixed(1)}
-                                            </td>
-                                        </>
-                                    )}
-                                    <td className="px-4 py-3 text-center font-bold text-gray-800 dark:text-gray-200 bg-primary-50/50 dark:bg-primary-900/5">
-                                        {Number(row.averageScore).toFixed(1)}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
+                                        <td className="px-4 py-3 text-center font-bold text-primary-600 dark:text-primary-400 bg-primary-50/50 dark:bg-primary-900/5">
+                                            {Math.round(row.totalScore)}
+                                        </td>
+                                        {isThirdTerm && (
+                                            <>
+                                                <td className="px-4 py-3 text-center font-medium text-gray-400 bg-primary-50/20 dark:bg-primary-900/5">
+                                                    {Math.round(row.cumulative?.term1 || 0)}
+                                                </td>
+                                                <td className="px-4 py-3 text-center font-medium text-gray-400 bg-primary-50/20 dark:bg-primary-900/5">
+                                                    {Math.round(row.cumulative?.term2 || 0)}
+                                                </td>
+                                                <td className="px-4 py-3 text-center font-black text-primary-700 bg-primary-50/80 dark:bg-primary-900/20">
+                                                    {Math.round((row.cumulative?.term1 || 0) + (row.cumulative?.term2 || 0) + row.totalScore)}
+                                                </td>
+                                                <td className="px-4 py-3 text-center font-black text-primary-800 bg-primary-100 dark:bg-primary-900/40">
+                                                    {(((row.cumulative?.term1 || 0) + (row.cumulative?.term2 || 0) + row.totalScore) / 3).toFixed(1)}
+                                                </td>
+                                            </>
+                                        )}
+                                        <td className="px-4 py-3 text-center font-bold text-gray-800 dark:text-gray-200 bg-primary-50/50 dark:bg-primary-900/5">
+                                            {Number(row.averageScore).toFixed(1)}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
                         </table>
-                        
+
                         <div className="border-t border-gray-100 dark:border-gray-800/50 bg-gray-50/30 dark:bg-gray-800/20">
-                            <TablePagination 
+                            <TablePagination
                                 currentPage={currentPage}
                                 totalItems={rows.length}
                                 pageSize={pageSize}

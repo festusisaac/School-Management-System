@@ -41,7 +41,9 @@ export class StaffService {
             .where('staff.tenantId = :tenantId', { tenantId });
 
         // Only exclude inactive if not explicitly requested
-        if (!filters?.includeInactive) {
+        if (filters?.includeInactive) {
+            query.andWhere('staff.status = :inactive', { inactive: StaffStatus.INACTIVE });
+        } else {
             query.andWhere('staff.status != :inactive', { inactive: StaffStatus.INACTIVE });
         }
 
@@ -179,10 +181,12 @@ export class StaffService {
             throw new ConflictException(`Staff member with Employee ID ${data.employeeId} already exists`);
         }
 
-        // Check for duplicate email
-        const existingByEmail = await this.staffRepository.findOne({
-            where: { email: data.email, tenantId },
-        });
+        // Check for duplicate email (case-insensitive)
+        const existingByEmail = await this.staffRepository
+            .createQueryBuilder('staff')
+            .where('LOWER(staff.email) = LOWER(:email)', { email: data.email })
+            .andWhere('staff.tenantId = :tenantId', { tenantId })
+            .getOne();
 
         if (existingByEmail) {
             throw new ConflictException(`Staff member with email ${data.email} already exists`);
@@ -207,6 +211,10 @@ export class StaffService {
 
         if (staffData.roleId === '') {
             staffData.roleId = null;
+        }
+
+        if (staffData.biometricId === '') {
+            staffData.biometricId = null;
         }
 
         const inputData = data as any;
@@ -258,7 +266,7 @@ export class StaffService {
                     firstName: savedStaff.firstName,
                     lastName: savedStaff.lastName,
                     roleId: staffDto.roleId,
-                    role: staffDto.role || (staffDto.roleId ? undefined : 'staff'),
+                    role: staffDto.role || roleName.toLowerCase(),
                     password: plainPassword!,
                     isActive: true,
                     tenantId: tenantId,

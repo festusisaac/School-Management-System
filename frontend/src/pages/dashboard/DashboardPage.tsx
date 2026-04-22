@@ -3,6 +3,7 @@ import apiService from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
 import StudentDashboard from './StudentDashboard'
 import TeacherDashboard from './TeacherDashboard'
+import ParentDashboard from '../parent/ParentDashboard'
 import { useSystem } from '../../context/SystemContext'
 
 import { Link, Navigate } from 'react-router-dom'
@@ -73,7 +74,7 @@ const COLORS = ['#3B82F6', '#EC4899', '#10B981', '#F59E0B'];
 
 const DashboardPage: React.FC = () => {
   const { user, selectedChildId } = useAuthStore()
-  const userRole = (user?.role || user?.roleObject?.name || '').toLowerCase()
+  const userRole = (user?.roleObject?.name || user?.role || '').toLowerCase()
   const isStudentOrParent = userRole === 'student' || userRole === 'parent'
   const { activeSectionId, settings } = useSystem()
   const currentSessionId = settings?.currentSessionId
@@ -115,7 +116,7 @@ const DashboardPage: React.FC = () => {
     }
 
     fetchData()
-  }, [activeSectionId, currentSessionId, currentTermId])
+  }, [activeSectionId, currentSessionId, currentTermId, isStudentOrParent])
 
   if (loading) {
     return (
@@ -125,15 +126,15 @@ const DashboardPage: React.FC = () => {
     )
   }
 
-  if (userRole === 'parent') {
+  if (userRole === 'parent' || (selectedChildId && isStudentOrParent)) {
     if (!selectedChildId) {
-      return <Navigate to="/parent/dashboard" replace />;
+      return <ParentDashboard />;
     }
     return <StudentDashboard />;
   }
 
   if (userRole === 'student') {
-     return <StudentDashboard />;
+    return <StudentDashboard />;
   }
 
   if (userRole === 'teacher') {
@@ -187,7 +188,7 @@ const DashboardPage: React.FC = () => {
           <div className="flex flex-col md:flex-row gap-6 items-center">
             <div className="flex-1">
               <h2 className="text-2xl font-bold flex items-center gap-2">
-                <div className="p-2 bg-white/20 rounded-lg">ðŸš€</div>
+                <div className="p-2 bg-white/20 rounded-lg">🚀</div>
                 Welcome, {user?.firstName}! Let's get started.
               </h2>
               <p className="text-primary-100 mt-1">Complete these essential steps to get your school running smoothly.</p>
@@ -206,7 +207,7 @@ const DashboardPage: React.FC = () => {
                     <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                       item.completed ? 'bg-green-500 text-white' : 'bg-primary-100'
                     }`}>
-                      {item.completed ? 'âœ“' : item.id}
+                      {item.completed ? '✓' : item.id}
                     </div>
                     <span className="text-sm font-semibold">{item.label}</span>
                   </Link>
@@ -277,7 +278,7 @@ const DashboardPage: React.FC = () => {
               <TrendingUp className="w-4 h-4 mr-1" />
               Active
             </span>
-            <span className="text-gray-400 mx-2">â€¢</span>
+            <span className="text-gray-400 mx-2">•</span>
             <span className="text-gray-500 dark:text-gray-400">{stats?.students?.inactive || 0} Inactive</span>
           </div>
         </div>

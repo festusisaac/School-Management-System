@@ -1,4 +1,5 @@
 import { IsOptional, IsString, IsEnum } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { StaffStatus, EmploymentType } from '../entities/staff.entity';
 
 export class StaffFilterDto {
@@ -22,4 +23,8 @@ export class StaffFilterDto {
     @IsString()
     @IsOptional()
     sectionId?: string;
+    
+    @IsOptional()
+    @Transform(({ value }) => value === 'true' || value === true)
+    includeInactive?: boolean;
 }

@@ -226,13 +226,18 @@ const ScratchCardPage = () => {
                             </h3>
                         </div>
                         <div className="flex-1 p-4 space-y-4 overflow-y-auto max-h-[400px]">
-                            {stats.suspiciousActivities.length > 0 ? stats.suspiciousActivities.map((alert, i) => (
-                                <div key={i} className="flex gap-3 p-3 rounded-lg bg-red-50/50 dark:bg-red-900/5 border border-red-100 dark:border-red-900/20">
+                            {stats.suspiciousActivities.length > 0 ? stats.suspiciousActivities.map((alert) => (
+                                <div key={`${alert.timestamp}-${alert.message}`} className="flex gap-3 p-3 rounded-lg bg-red-50/50 dark:bg-red-900/5 border border-red-100 dark:border-red-900/20">
                                     <div className="flex-shrink-0 mt-1">
                                         <div className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
                                     </div>
                                     <div>
                                         <p className="text-xs text-red-900 dark:text-red-200 font-medium">{alert.message}</p>
+                                        {alert.studentName ? (
+                                            <p className="text-[11px] text-red-700 dark:text-red-300 mt-1 font-semibold">
+                                                Student: {alert.studentName}
+                                            </p>
+                                        ) : null}
                                         <span className="text-[10px] text-red-500 mt-1 block uppercase font-bold">{alert.time}</span>
                                     </div>
                                 </div>

@@ -333,7 +333,9 @@ export interface ScratchCardDashboardStats {
     suspiciousActivities: {
         severity: 'low' | 'medium' | 'high';
         message: string;
+        studentName?: string;
         time: string;
+        timestamp: string;
     }[];
 }
 

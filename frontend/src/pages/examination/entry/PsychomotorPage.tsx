@@ -46,38 +46,38 @@ const PsychomotorPage = () => {
     useEffect(() => {
         const init = async () => {
             try {
-                const [g, c, d, t] = await Promise.all([
+                const [g, c, d] = await Promise.all([
                     examinationService.getExamGroups(),
                     api.getClasses(),
                     examinationService.getPsychomotorDomains(),
-                    systemService.getTerms()
                 ]);
                 setGroups(g || []);
                 setClasses(c || []);
                 setDomains(d || []);
-                setTerms(t || []);
-
-                // Select matching group if possible
-                const sessionToUse = settings?.activeSessionName;
-                const termToUse = selectedTerm || settings?.activeTermName;
-
-                if (g?.length > 0) {
-                    const filtered = g.filter(group =>
-                        (!sessionToUse || group.academicYear === sessionToUse) &&
-                        (!termToUse || group.term === termToUse)
-                    );
-                    if (filtered.length > 0) {
-                        setSelectedGroup(filtered[0].id);
-                    } else {
-                        setSelectedGroup(g[0].id);
-                    }
-                }
             } catch (e) {
                 showError('Failed to load initial data');
             }
         };
         init();
     }, []);
+
+    useEffect(() => {
+        const fetchSessionTerms = async () => {
+            if (!settings?.currentSessionId) {
+                setTerms([]);
+                return;
+            }
+
+            try {
+                const sessionTerms = await systemService.getTermsBySession(settings.currentSessionId);
+                setTerms(sessionTerms || []);
+            } catch (e) {
+                showError('Failed to load terms for the active session');
+            }
+        };
+
+        fetchSessionTerms();
+    }, [settings?.currentSessionId]);
 
     useEffect(() => {
         if (!selectedTerm && settings?.activeTermName) {
@@ -90,6 +90,18 @@ const PsychomotorPage = () => {
         (g.academicYear === settings?.activeSessionName) &&
         (!selectedTerm || g.term === selectedTerm)
     );
+
+    useEffect(() => {
+        if (filteredGroups.length === 0) {
+            setSelectedGroup('');
+            return;
+        }
+
+        const hasSelectedGroup = filteredGroups.some(group => group.id === selectedGroup);
+        if (!hasSelectedGroup) {
+            setSelectedGroup(filteredGroups[0].id);
+        }
+    }, [filteredGroups, selectedGroup]);
 
     useEffect(() => {
         if (selectedGroup && selectedClass) {

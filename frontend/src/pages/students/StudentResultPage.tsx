@@ -14,6 +14,7 @@ const StudentResultPage = () => {
     const [showPin, setShowPin] = useState(false);
     
     const [examGroups, setExamGroups] = useState<any[]>([]);
+    const [dashboardUnavailable, setDashboardUnavailable] = useState(false);
     
     const [form, setForm] = useState({
         examGroupId: '',
@@ -29,14 +30,20 @@ const StudentResultPage = () => {
                 const targetId = isParent ? selectedChildId : (user?.id || 'me');
                 if (isParent && !targetId) return;
                 const data = await api.getStudentExamDashboard(targetId);
+                setDashboardUnavailable(false);
                 if (data.examGroups) {
                     setExamGroups(data.examGroups);
                     if (data.examGroups.length > 0) {
                         setForm(f => ({ ...f, examGroupId: data.examGroups[0].id }));
                     }
                 }
-            } catch (error) {
-                showError('Failed to load examination groups');
+            } catch (error: any) {
+                if (error?.response?.status === 404) {
+                    setDashboardUnavailable(true);
+                    setExamGroups([]);
+                } else {
+                    showError('Failed to load examination groups');
+                }
             } finally {
                 setLoadingInit(false);
             }
@@ -176,6 +183,19 @@ const StudentResultPage = () => {
             </div>
 
             <div className="bg-white dark:bg-gray-900 p-8 sm:p-12 rounded-[1.5rem] shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1)] w-full max-w-[500px]">
+                {dashboardUnavailable || examGroups.length === 0 ? (
+                    <div className="text-center space-y-4">
+                        <div className="w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-900/20 text-amber-500 flex items-center justify-center mx-auto">
+                            <BookOpen className="w-8 h-8" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Result Not Available Yet</h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
+                                There is no published examination result available for you right now. Once the school processes and publishes results, you can check them here.
+                            </p>
+                        </div>
+                    </div>
+                ) : (
                 <form onSubmit={handleVerify} className="space-y-6">
                     <div>
                         <label className="block text-sm font-medium text-gray-900 dark:text-gray-200 mb-2">Term</label>
@@ -250,6 +270,7 @@ const StudentResultPage = () => {
                         )}
                     </button>
                 </form>
+                )}
             </div>
         </div>
     );
