@@ -47,5 +47,13 @@ export const staffService = {
 
     getImportStatus: async (jobId: string) => {
         return api.getStaffImportStatus(jobId);
+    },
+    
+    getNextStaffId: async () => {
+        return api.getNextStaffId();
+    },
+
+    restoreStaff: async (id: string) => {
+        return api.restoreStaff(id);
     }
 };

@@ -4,6 +4,7 @@ import api from '../../../services/api';
 import homeworkService from '../../../services/homework.service';
 import { useToast } from '../../../context/ToastContext';
 import { useAuthStore } from '@stores/authStore';
+import { useSystem } from '../../../context/SystemContext';
 
 interface HomeworkFormProps {
     isOpen: boolean;
@@ -14,6 +15,7 @@ interface HomeworkFormProps {
 
 export default function HomeworkForm({ isOpen, onClose, onSuccess, initialData }: HomeworkFormProps) {
     const { user } = useAuthStore();
+    const { settings } = useSystem();
     const toast = useToast();
     const [loading, setLoading] = useState(false);
     const [classes, setClasses] = useState<any[]>([]);
@@ -70,9 +72,15 @@ export default function HomeworkForm({ isOpen, onClose, onSuccess, initialData }
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            setSelectedFile(e.target.files[0]);
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > (settings?.maxFileUploadSizeMb || 5) * 1024 * 1024) {
+            toast.showError(`File is too large. Maximum allowed size is ${settings?.maxFileUploadSizeMb || 5}MB`);
+            return;
         }
+
+        setSelectedFile(file);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -227,7 +235,7 @@ export default function HomeworkForm({ isOpen, onClose, onSuccess, initialData }
                                     <p className="text-sm text-gray-500 dark:text-gray-400">
                                         <span className="font-bold text-primary-600">Click to upload</span> or drag and drop
                                     </p>
-                                    <p className="text-xs text-gray-400">PDF, DOC, JPG, PNG (Max 10MB)</p>
+                                    <p className="text-xs text-gray-400">PDF, DOC, JPG, PNG (Max {settings?.maxFileUploadSizeMb || 5}MB)</p>
                                 </div>
                                 <input type="file" className="hidden" onChange={handleFileChange} />
                             </label>

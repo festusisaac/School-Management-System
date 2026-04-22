@@ -94,7 +94,7 @@ const LogoUploader = ({
                     )}
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">
-                    PNG/SVG, Max 2MB. {recommended && <span className="text-xs text-primary-500 font-medium">Rec: {recommended}</span>}
+                    PNG/SVG, Max {settings?.maxFileUploadSizeMb || 5}MB. {recommended && <span className="text-xs text-primary-500 font-medium">Rec: {recommended}</span>}
                 </p>
                 <div className="mt-3 flex items-center justify-center md:justify-start gap-2">
                     <label className="inline-flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer transition-colors shadow-sm">

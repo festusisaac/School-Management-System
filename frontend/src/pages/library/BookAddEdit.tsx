@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { libraryService, Author, Category, Book } from '../../services/library.service';
 import { useToast } from '../../context/ToastContext';
+import { useSystem } from '../../context/SystemContext';
 import { ArrowLeft, Save, Upload, Book as BookIcon, X } from 'lucide-react';
 import { getFileUrl } from '../../services/api';
 
@@ -9,6 +10,7 @@ const BookAddEdit: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { showSuccess, showError } = useToast();
+  const { settings } = useSystem();
   
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(!!id);
@@ -99,6 +101,10 @@ const BookAddEdit: React.FC = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > (settings?.maxFileUploadSizeMb || 5) * 1024 * 1024) {
+        showError(`Cover image is too large. Maximum allowed size is ${settings?.maxFileUploadSizeMb || 5}MB`);
+        return;
+      }
       setCoverFile(file);
       setCoverPreview(URL.createObjectURL(file));
     }

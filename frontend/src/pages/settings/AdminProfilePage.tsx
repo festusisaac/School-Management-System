@@ -36,6 +36,11 @@ const AdminProfilePage = () => {
         const file = e.target.files?.[0];
         if (!file) return;
 
+        if (file.size > (settings?.maxFileUploadSizeMb || 5) * 1024 * 1024) {
+            showError(`Photo is too large. Maximum allowed size is ${settings?.maxFileUploadSizeMb || 5}MB`);
+            return;
+        }
+
         try {
             setUploading(true);
             await systemService.uploadUserPhoto(user.id, file);

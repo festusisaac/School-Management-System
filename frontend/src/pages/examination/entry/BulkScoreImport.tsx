@@ -32,7 +32,7 @@ const BulkScoreImport: React.FC<BulkScoreImportProps> = ({ isOpen, onClose, onIm
 
         const maxMB = settings?.maxFileUploadSizeMb || 2;
         if (file.size > maxMB * 1024 * 1024) {
-            showWarning(`File size exceeds ${maxMB}MB limit.`);
+            showWarning(`File size exceeds ${maxMB}MB limit. Please choose a smaller file.`);
             e.target.value = '';
             return;
         }

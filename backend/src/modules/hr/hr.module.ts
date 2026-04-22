@@ -40,6 +40,7 @@ import { AcademicsModule } from '../academics/academics.module';
 
 import { BullModule } from '@nestjs/bull';
 import { StaffImportProcessor } from './processors/staff-import.processor';
+import { InternalCommunicationModule } from '../internal-communication/internal-communication.module';
 
 @Module({
     imports: [
@@ -47,6 +48,7 @@ import { StaffImportProcessor } from './processors/staff-import.processor';
         forwardRef(() => SystemModule),
         forwardRef(() => StudentsModule),
         forwardRef(() => AcademicsModule),
+        forwardRef(() => InternalCommunicationModule),
         TypeOrmModule.forFeature([
             Department,
             Staff,

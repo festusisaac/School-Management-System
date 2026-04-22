@@ -3,6 +3,7 @@ import { X, Send, Paperclip, FileText, AlertCircle, Loader2, Plus, Trash2 } from
 import { Homework, homeworkService } from '../../../services/homework.service';
 import { useToast } from '../../../context/ToastContext';
 import api from '../../../services/api';
+import { useSystem } from '../../../context/SystemContext';
 
 interface SubmissionModalProps {
     isOpen: boolean;
@@ -16,11 +17,11 @@ export default function SubmissionModal({ isOpen, onClose, onSuccess, homework }
     const [loading, setLoading] = useState(false);
     const [content, setContent] = useState('');
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-    const [maxSizeMb, setMaxSizeMb] = useState(2); // Default 2MB
+    const { settings } = useSystem();
+    const maxSizeMb = settings?.maxFileUploadSizeMb || 2;
 
     useEffect(() => {
         if (isOpen) {
-            fetchSettings();
             if (homework?.submission) {
                 setContent(homework.submission.content || '');
             } else {
@@ -30,16 +31,7 @@ export default function SubmissionModal({ isOpen, onClose, onSuccess, homework }
         }
     }, [isOpen, homework]);
 
-    const fetchSettings = async () => {
-        try {
-            const settings = await api.get<any>('/system/settings');
-            if (settings?.maxFileUploadSizeMb) {
-                setMaxSizeMb(settings.maxFileUploadSizeMb);
-            }
-        } catch (error) {
-            console.error('Error fetching system settings:', error);
-        }
-    };
+
 
     if (!isOpen || !homework) return null;
 
@@ -58,7 +50,7 @@ export default function SubmissionModal({ isOpen, onClose, onSuccess, homework }
             });
 
             if (invalidFiles.length > 0) {
-                toast.showError(`Following files exceed ${maxSizeMb}MB limit: ${invalidFiles.join(', ')}`);
+                toast.showWarning(`Following files exceed ${maxSizeMb}MB limit: ${invalidFiles.join(', ')}. Please choose smaller files.`);
             }
 
             setSelectedFiles(prev => [...prev, ...validFiles]);

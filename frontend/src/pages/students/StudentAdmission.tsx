@@ -1127,7 +1127,7 @@ export default function StudentAdmission() {
                                                                 }} />
                                                             </label>
                                                         </div>
-                                                        <p className="text-xs text-gray-500 mt-1 uppercase tracking-tight font-medium">PNG, JPG, BMP (Max 2MB)</p>
+                                                        <p className="text-xs text-gray-500 mt-1 uppercase tracking-tight font-medium">PNG, JPG, BMP (Max {settings?.maxFileUploadSizeMb || 5}MB)</p>
                                                     </div>
                                                 )}
                                             </div>

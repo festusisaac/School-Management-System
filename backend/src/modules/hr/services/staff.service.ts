@@ -1,12 +1,14 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, Not } from 'typeorm';
+import { Repository, Like, Not, DataSource } from 'typeorm';
 import { Staff, StaffStatus } from '../entities/staff.entity';
 import { Department } from '../entities/department.entity';
 import { Role } from '../../auth/entities/role.entity';
 import { UsersService } from '../../system/services/users.service';
 import { ActivityLogService } from '../../system/services/activity-log.service';
+import { EmailService } from '../../internal-communication/email.service';
 import { In } from 'typeorm';
+import * as crypto from 'crypto';
 
 export interface StaffFilters {
     search?: string;
@@ -14,6 +16,7 @@ export interface StaffFilters {
     status?: StaffStatus;
     employmentType?: string;
     sectionId?: string;
+    includeInactive?: boolean;
 }
 
 @Injectable()
@@ -27,14 +30,20 @@ export class StaffService {
         private readonly roleRepository: Repository<Role>,
         private readonly usersService: UsersService,
         private readonly activityLogService: ActivityLogService,
+        private readonly emailService: EmailService,
+        private readonly dataSource: DataSource,
     ) { }
 
     async findAll(filters: StaffFilters = {}, tenantId: string): Promise<Staff[]> {
         const query = this.staffRepository.createQueryBuilder('staff')
             .leftJoinAndSelect('staff.department', 'department')
             .leftJoinAndSelect('staff.roleObject', 'roleObject')
-            .where('staff.tenantId = :tenantId', { tenantId })
-            .andWhere('staff.status != :inactive', { inactive: StaffStatus.INACTIVE });
+            .where('staff.tenantId = :tenantId', { tenantId });
+
+        // Only exclude inactive if not explicitly requested
+        if (!filters?.includeInactive) {
+            query.andWhere('staff.status != :inactive', { inactive: StaffStatus.INACTIVE });
+        }
 
         // Apply filters
         if (filters?.search) {
@@ -115,6 +124,41 @@ export class StaffService {
 
         return staff;
     }
+    /**
+     * Generate a cryptographically secure random password
+     */
+    private generateSecurePassword(length = 12): string {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
+        const bytes = crypto.randomBytes(length);
+        let password = '';
+        for (let i = 0; i < length; i++) {
+            password += chars[bytes[i] % chars.length];
+        }
+        return password;
+    }
+
+    /**
+     * Get the next available employee ID for auto-suggestion
+     */
+    async getNextEmployeeId(tenantId: string): Promise<string> {
+        const latestStaff = await this.staffRepository
+            .createQueryBuilder('staff')
+            .where('staff.tenantId = :tenantId', { tenantId })
+            .orderBy('staff.createdAt', 'DESC')
+            .getMany();
+
+        let maxNum = 0;
+        for (const s of latestStaff) {
+            const match = s.employeeId.match(/(\d+)$/);
+            if (match) {
+                const num = parseInt(match[1], 10);
+                if (num > maxNum) maxNum = num;
+            }
+        }
+
+        const nextNum = String(maxNum + 1).padStart(3, '0');
+        return nextNum;
+    }
 
     async create(data: Partial<Staff>, tenantId: string, files?: {
         photo?: Express.Multer.File[],
@@ -185,25 +229,71 @@ export class StaffService {
             if (files.signature?.[0]) staffData.signature = `/uploads/staff/${files.signature[0].filename}`;
         }
 
-        const staff = this.staffRepository.create(staffData as Partial<Staff>);
-        const savedStaff = await this.staffRepository.save(staff) as any as Staff;
+        // Use a transaction to ensure staff + user account are created atomically
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
 
-        // Handle user account creation if role/enableLogin is provided
-        const staffDto = data as any;
-        if (staffDto.enableLogin || staffDto.roleId || staffDto.role) {
-            await this.usersService.findOrCreateUser(savedStaff.employeeId, {
-                firstName: savedStaff.firstName,
-                lastName: savedStaff.lastName,
-                roleId: staffDto.roleId,
-                role: staffDto.role || (staffDto.roleId ? undefined : 'staff'),
-                password: staffDto.password,
-                isActive: true,
-                tenantId: tenantId,
-                photo: savedStaff.photo
-            });
+        try {
+            const staff = this.staffRepository.create(staffData as Partial<Staff>);
+            const savedStaff = await queryRunner.manager.save(staff) as any as Staff;
+
+            // Handle user account creation if role/enableLogin is provided
+            const staffDto = data as any;
+            let plainPassword: string | undefined;
+
+            if (staffDto.enableLogin || staffDto.roleId || staffDto.role) {
+                // Generate a secure random password if none provided
+                plainPassword = staffDto.password || this.generateSecurePassword();
+
+                // Resolve role name for the welcome email
+                let roleName = staffDto.role || 'Staff';
+                if (staffDto.roleId) {
+                    const roleObj = await this.roleRepository.findOne({ where: { id: staffDto.roleId } });
+                    if (roleObj) roleName = roleObj.name;
+                }
+
+                // Use the staff's actual email as login identifier (not employeeId)
+                await this.usersService.findOrCreateUser(savedStaff.email, {
+                    firstName: savedStaff.firstName,
+                    lastName: savedStaff.lastName,
+                    roleId: staffDto.roleId,
+                    role: staffDto.role || (staffDto.roleId ? undefined : 'staff'),
+                    password: plainPassword!,
+                    isActive: true,
+                    tenantId: tenantId,
+                    photo: savedStaff.photo,
+                    mustChangePassword: true, // Force password change on first login
+                });
+
+                // Send welcome email with credentials (async, don't block)
+                this.emailService.sendStaffWelcomeEmail({
+                    email: savedStaff.email,
+                    firstName: savedStaff.firstName,
+                    lastName: savedStaff.lastName,
+                    employeeId: savedStaff.employeeId,
+                    password: plainPassword!,
+                    roleName,
+                }).catch((err: any) => console.error('[StaffService] Welcome email failed:', err.message));
+            }
+
+            await queryRunner.commitTransaction();
+
+            // Log the activity (outside transaction, non-critical)
+            this.activityLogService.logAction({
+                userEmail: 'system',
+                action: 'STAFF_CREATED',
+                details: `Staff member ${savedStaff.firstName} ${savedStaff.lastName} (${savedStaff.employeeId}) was created`,
+                tenantId,
+            }).catch((err: any) => console.error('[StaffService] Activity log failed:', err.message));
+
+            return savedStaff;
+        } catch (error) {
+            await queryRunner.rollbackTransaction();
+            throw error;
+        } finally {
+            await queryRunner.release();
         }
-
-        return savedStaff;
     }
 
     async update(id: string, data: Partial<Staff>, tenantId: string, files?: {
@@ -287,7 +377,7 @@ export class StaffService {
         // Handle user account updates if role/enableLogin is provided
         const staffDto = data as any;
         if (staffDto.enableLogin || staffDto.roleId || staffDto.role) {
-            await this.usersService.findOrCreateUser(savedStaff.employeeId, {
+            await this.usersService.findOrCreateUser(savedStaff.email, {
                 firstName: savedStaff.firstName,
                 lastName: savedStaff.lastName,
                 roleId: staffDto.roleId,
@@ -591,5 +681,30 @@ export class StaffService {
                 pendingRequests
             }
         };
+    }
+
+    async restore(id: string, tenantId: string): Promise<Staff> {
+        const staff = await this.staffRepository.findOne({
+            where: { id, tenantId },
+        });
+
+        if (!staff) {
+            throw new NotFoundException(`Staff member with ID ${id} not found`);
+        }
+
+        if (staff.status !== StaffStatus.INACTIVE) {
+            throw new BadRequestException('Staff member is not inactive');
+        }
+
+        staff.status = StaffStatus.ACTIVE;
+        const savedStaff = await this.staffRepository.save(staff);
+
+        // Reactivate user account if exists
+        const user = await this.usersService.findByEmail(staff.email);
+        if (user) {
+            await this.usersService.update(user.id, { isActive: true });
+        }
+
+        return savedStaff;
     }
 }

@@ -9,6 +9,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MaintenanceGuard } from './guards/maintenance.guard';
 import { SystemSetupGuard } from './guards/system-setup.guard';
+import { FileSizeGuard } from './guards/file-size.guard';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 
 // Modules
@@ -101,6 +102,10 @@ import { ExpensesModule } from '@modules/expenses/expenses.module';
     {
       provide: APP_GUARD,
       useClass: MaintenanceGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: FileSizeGuard,
     },
     {
       provide: APP_INTERCEPTOR,

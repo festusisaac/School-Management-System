@@ -13,6 +13,8 @@ import {
     UseInterceptors,
     UploadedFiles,
     Request,
+    Patch,
+    BadRequestException,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -57,6 +59,16 @@ export class StaffController {
         return this.staffService.findByEmail(req.user.email);
     }
 
+    @Get('next-id')
+    async getNextId(@Request() req: any) {
+        return { nextId: await this.staffService.getNextEmployeeId(req.user.tenantId) };
+    }
+
+    @Patch(':id/restore')
+    async restore(@Param('id') id: string, @Request() req: any) {
+        return this.staffService.restore(id, req.user.tenantId);
+    }
+
 
     @Get(':id')
     async findOne(@Param('id') id: string, @Request() req: any) {
@@ -82,7 +94,14 @@ export class StaffController {
                 const ext = extname(file.originalname);
                 cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
             }
-        })
+        }),
+
+        fileFilter: (req, file, cb) => {
+            if (!file.originalname.match(/\.(jpg|jpeg|png|webp|pdf|doc|docx)$/i)) {
+                return cb(new BadRequestException('Only images and documents are allowed!'), false);
+            }
+            cb(null, true);
+        }
     }))
     async create(
         @Body() createStaffDto: CreateStaffDto,
@@ -119,7 +138,16 @@ export class StaffController {
                 const ext = extname(file.originalname);
                 cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
             }
-        })
+        }),
+        limits: {
+            fileSize: 5 * 1024 * 1024, // 5MB
+        },
+        fileFilter: (req, file, cb) => {
+            if (!file.originalname.match(/\.(jpg|jpeg|png|webp|pdf|doc|docx)$/i)) {
+                return cb(new BadRequestException('Only images and documents are allowed!'), false);
+            }
+            cb(null, true);
+        }
     }))
     async update(
         @Param('id') id: string,

@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEmail, IsNotEmpty, IsOptional, IsString, IsUUID, IsBoolean, MinLength } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateUserDto {
   @ApiProperty({ example: 'admin@sms.school or STAFF/001' })
@@ -83,6 +84,7 @@ export class UpdateUserDto {
   @ApiPropertyOptional({ example: 'newpassword123' })
   @IsString()
   @IsOptional()
+  @Transform(({ value }) => value === '' ? undefined : value)
   @MinLength(6)
   password?: string;
 

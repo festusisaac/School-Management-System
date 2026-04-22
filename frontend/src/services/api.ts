@@ -693,6 +693,14 @@ class ApiService {
     return this.get<any>(`/hr/staff/bulk/import/status/${jobId}`)
   }
 
+  async getNextStaffId() {
+    return this.get<{ nextId: string }>('/hr/staff/next-id')
+  }
+
+  async restoreStaff(id: string) {
+    return this.patch<any>(`/hr/staff/${id}/restore`, {})
+  }
+
   // Attendance API methods
   async markAttendance(data: any) {
     return this.post<any>('/hr/attendance/mark', data)

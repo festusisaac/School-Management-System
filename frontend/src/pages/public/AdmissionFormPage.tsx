@@ -167,9 +167,15 @@ const AdmissionFormPage = () => {
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'passportPhoto' | 'birthCertificate' | 'guardianPhoto') => {
-        if (e.target.files && e.target.files[0]) {
-            setFiles(prev => ({ ...prev, [field]: e.target.files![0] }));
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > (settings?.maxFileUploadSizeMb || 5) * 1024 * 1024) {
+            toast.showError(`File is too large. Maximum allowed size is ${settings?.maxFileUploadSizeMb || 5}MB`);
+            return;
         }
+
+        setFiles(prev => ({ ...prev, [field]: file }));
     };
 
     const validateStep = (step: number) => {
@@ -407,21 +413,21 @@ const AdmissionFormPage = () => {
                             <div className="space-y-6">
                                                                 <FileUpload 
                                     label="Guardian's Passport Photograph" 
-                                    desc="Required for portal access and identification. Max 2MB." 
+                                    desc={`Required for portal access and identification. Max ${settings?.maxFileUploadSizeMb || 5}MB.`} 
                                     file={files.guardianPhoto} 
                                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFileChange(e, 'guardianPhoto' as any)} 
                                     id="guardian_photo"
                                 />
 <FileUpload 
                                     label="Passport Photograph" 
-                                    desc="A clear colored passport with clean background. Max 2MB." 
+                                    desc={`A clear colored passport with clean background. Max ${settings?.maxFileUploadSizeMb || 5}MB.`} 
                                     file={files.passportPhoto} 
                                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFileChange(e, 'passportPhoto')} 
                                     id="passport"
                                 />
                                 <FileUpload 
                                     label="Birth Certificate" 
-                                    desc="Government issued or hospital record. Max 2MB." 
+                                    desc={`Government issued or hospital record. Max ${settings?.maxFileUploadSizeMb || 5}MB.`} 
                                     file={files.birthCertificate} 
                                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFileChange(e, 'birthCertificate')} 
                                     id="birthcert"

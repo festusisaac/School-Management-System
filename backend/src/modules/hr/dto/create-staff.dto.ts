@@ -34,10 +34,11 @@ export class CreateStaffDto {
     email!: string;
 
     @IsString()
+    @IsOptional()
     @Matches(/^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/, {
         message: 'Phone number must be valid',
     })
-    phone!: string;
+    phone?: string;
 
     @IsString()
     @IsOptional()
@@ -135,6 +136,7 @@ export class CreateStaffDto {
 
     @IsString()
     @IsOptional()
+    @Transform(({ value }) => value === '' ? undefined : value)
     @MinLength(6)
     password?: string;
 

@@ -172,4 +172,85 @@ export class EmailService {
     const html = `<p>Hi ${firstName}, click here to reset your password: <a href="${resetLink}">Reset</a></p>`;
     return this.sendEmail({ to: email, subject: `Password Reset - ${schoolName}`, html });
   }
+
+  async sendStaffWelcomeEmail(options: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    employeeId: string;
+    password: string;
+    roleName?: string;
+    schoolName?: string;
+    portalUrl?: string;
+  }): Promise<boolean> {
+    const {
+      email,
+      firstName,
+      lastName,
+      employeeId,
+      password,
+      roleName = 'Staff',
+      schoolName = 'School Management System',
+      portalUrl = process.env.FRONTEND_URL || 'http://localhost:3001',
+    } = options;
+
+    const html = `
+      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; color: #1e293b;">
+        <div style="background: linear-gradient(135deg, #0f766e 0%, #115e59 100%); padding: 32px; text-align: center;">
+          <h1 style="color: white; margin: 0; font-size: 24px; letter-spacing: -0.5px;">Welcome to ${schoolName}</h1>
+          <p style="color: #99f6e4; margin: 8px 0 0 0; font-size: 16px;">Your staff account has been created</p>
+        </div>
+        
+        <div style="padding: 32px; background: white;">
+          <p style="font-size: 16px; line-height: 1.6;">Dear <strong>${firstName} ${lastName}</strong>,</p>
+          <p style="font-size: 16px; line-height: 1.6;">Your staff account has been successfully provisioned. You can now access the school management portal using the credentials below.</p>
+          
+          <div style="margin: 32px 0; padding: 24px; background: #f0fdfa; border: 1px solid #ccfbf1; border-radius: 12px;">
+            <h3 style="margin-top: 0; color: #0f766e; font-size: 18px;">Your Login Credentials</h3>
+            
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 10px 0; color: #64748b; width: 120px; font-size: 14px;">Employee ID:</td>
+                <td style="padding: 10px 0; font-family: monospace; font-weight: bold; font-size: 14px;">${employeeId}</td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 0; color: #64748b; font-size: 14px;">Role:</td>
+                <td style="padding: 10px 0; font-weight: bold; font-size: 14px;">${roleName}</td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 0; color: #64748b; font-size: 14px;">Login Email:</td>
+                <td style="padding: 10px 0; font-family: monospace; font-weight: bold; font-size: 14px; background: #fff; padding: 6px 10px; border-radius: 4px; border: 1px solid #e2e8f0;">${email}</td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 0; color: #64748b; font-size: 14px;">Password:</td>
+                <td style="padding: 10px 0; font-family: monospace; font-weight: bold; font-size: 14px; background: #fff; padding: 6px 10px; border-radius: 4px; border: 1px solid #e2e8f0;">${password}</td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 0; color: #64748b; font-size: 14px;">Portal URL:</td>
+                <td style="padding: 10px 0;"><a href="${portalUrl}" style="color: #0f766e; text-decoration: none; font-weight: bold; font-size: 14px;">${portalUrl}</a></td>
+              </tr>
+            </table>
+          </div>
+          
+          <div style="margin: 24px 0; padding: 16px; background: #fefce8; border: 1px solid #fef08a; border-radius: 8px;">
+            <p style="margin: 0; font-size: 14px; color: #854d0e;">
+              <strong>⚠️ Important:</strong> For security reasons, you will be required to change your password upon your first login.
+            </p>
+          </div>
+          
+          <div style="margin-top: 32px; border-top: 1px solid #f1f5f9; padding-top: 24px;">
+            <p style="font-size: 16px; margin-bottom: 4px;">Best Regards,</p>
+            <p style="font-size: 16px; font-weight: bold; margin-top: 0;">HR Department</p>
+            <p style="font-size: 14px; color: #64748b;">${schoolName}</p>
+          </div>
+        </div>
+        
+        <div style="background: #f8fafc; padding: 16px; text-align: center; border-top: 1px solid #f1f5f9;">
+          <p style="font-size: 12px; color: #94a3b8; margin: 0;">This is an automated message. Please do not reply directly to this email.</p>
+        </div>
+      </div>
+    `;
+
+    return this.sendEmail({ to: email, subject: `Your Staff Account — ${schoolName}`, html });
+  }
 }

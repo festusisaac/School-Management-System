@@ -74,7 +74,7 @@ const ApplyLeavePage = () => {
             const file = fileInput.files[0];
             const maxSizeMb = settings?.maxFileUploadSizeMb || 2;
             if (file.size > maxSizeMb * 1024 * 1024) {
-                toast.showWarning(`File size exceeds ${maxSizeMb}MB limit.`);
+                toast.showWarning(`File size exceeds ${maxSizeMb}MB limit. Please choose a smaller file.`);
                 return;
             }
             form.append('document', file);
@@ -215,7 +215,7 @@ const ApplyLeavePage = () => {
                                             if (file) {
                                                 const maxSizeMb = settings?.maxFileUploadSizeMb || 2;
                                                 if (file.size > maxSizeMb * 1024 * 1024) {
-                                                    toast.showWarning(`File size exceeds ${maxSizeMb}MB limit.`);
+                                                    toast.showWarning(`File size exceeds ${maxSizeMb}MB limit. Please choose a smaller file.`);
                                                     e.target.value = '';
                                                 }
                                             }

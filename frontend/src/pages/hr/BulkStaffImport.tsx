@@ -3,6 +3,7 @@ import { Upload, X, Check, AlertTriangle, FileText, Download, ChevronRight, Chev
 import * as XLSX from 'xlsx';
 import { staffService } from '../../services/hrService';
 import { useToast } from '../../context/ToastContext';
+import { useSystem } from '../../context/SystemContext';
 
 interface BulkStaffImportProps {
     onClose: () => void;
@@ -38,11 +39,17 @@ const BulkStaffImport: React.FC<BulkStaffImportProps> = ({ onClose, onSuccess })
     const [importResults, setImportResults] = useState<{ success: number, failed: number, records: any[], errors: any[] } | null>(null);
     const [importProgress, setImportProgress] = useState(0);
     const [loading, setLoading] = useState(false);
+    const { settings } = useSystem();
     const toast = useToast();
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+
+        if (file.size > (settings?.maxFileUploadSizeMb || 5) * 1024 * 1024) {
+            toast.showError(`File is too large. Maximum allowed size is ${settings?.maxFileUploadSizeMb || 5}MB`);
+            return;
+        }
 
         const reader = new FileReader();
         reader.onload = (evt) => {
