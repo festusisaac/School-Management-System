@@ -224,6 +224,9 @@ export class SystemSetting {
     @Column({ type: 'varchar', nullable: true })
     ogImage!: string;
 
+    @Column({ type: 'jsonb', nullable: true })
+    reportCardConfig?: Record<string, any>;
+
     @CreateDateColumn()
     createdAt!: Date;
 

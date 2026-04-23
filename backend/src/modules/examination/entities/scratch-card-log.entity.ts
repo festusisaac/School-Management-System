@@ -12,6 +12,7 @@ import { ScratchCard } from './scratch-card.entity';
 @Entity('scratch_card_logs')
 @Index(['ipAddress', 'createdAt'])
 @Index(['tenantId', 'createdAt'])
+@Index(['tenantId', 'ipAddress', 'status', 'createdAt'])
 export class ScratchCardLog {
     @PrimaryGeneratedColumn('uuid')
     id!: string;

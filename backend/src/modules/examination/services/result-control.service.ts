@@ -312,19 +312,29 @@ export class ResultControlService {
             throw new BadRequestException('Too many failed attempts. Please try again in 15 minutes.');
         }
 
-        // 2. Perform verification and redemption in a single transaction
+        if (!consumeUsage) {
+            const { card } = await this.validateScratchCardOrThrow(
+                this.scratchCardRepo.manager,
+                dto,
+                tenantId,
+                ip,
+                userAgent,
+                false
+            );
+
+            return { valid: true, card };
+        }
+
+        // Perform verification and redemption in a single transaction when usage must be consumed.
         return this.scratchCardRepo.manager.transaction(async (transactionalEntityManager) => {
             const { card, logData } = await this.validateScratchCardOrThrow(
                 transactionalEntityManager,
                 dto,
                 tenantId,
                 ip,
-                userAgent
+                userAgent,
+                true
             );
-
-            if (!consumeUsage) {
-                return { valid: true, card };
-            }
 
             if (card.usageCount === 0) {
                 card.studentId = studentId;
@@ -346,17 +356,23 @@ export class ResultControlService {
         dto: VerifyScratchCardDto,
         tenantId: string,
         ip?: string,
-        userAgent?: string
+        userAgent?: string,
+        lockCard = false
     ) {
         const { code, pin, studentId, sessionId, termId } = dto;
 
-        const card = await transactionalEntityManager.findOne(ScratchCard, {
+        const card = await transactionalEntityManager.findOne(ScratchCard, lockCard ? {
             where: { code, pin, tenantId },
             lock: { mode: 'pessimistic_write' }
+        } : {
+            where: { code, pin, tenantId },
+            relations: ['batch']
         });
 
-        if (card && card.batchId) {
-            card.batch = await transactionalEntityManager.findOne(ScratchCardBatch as any, { where: { id: card.batchId, tenantId } }) as any;
+        if (card && lockCard && card.batchId) {
+            card.batch = await transactionalEntityManager.findOne(ScratchCardBatch, {
+                where: { id: card.batchId, tenantId }
+            }) || undefined;
         }
 
         const logData = {

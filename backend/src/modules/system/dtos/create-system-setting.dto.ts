@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsUUID, IsNumber, IsDateString, ValidateIf, IsBoolean, IsUrl } from 'class-validator';
+import { IsString, IsOptional, IsUUID, IsNumber, IsDateString, ValidateIf, IsBoolean, IsUrl, IsObject } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateSystemSettingDto {
@@ -286,4 +286,8 @@ export class CreateSystemSettingDto {
     @IsString()
     @IsOptional()
     ogImage?: string;
+
+    @IsObject()
+    @IsOptional()
+    reportCardConfig?: Record<string, any>;
 }

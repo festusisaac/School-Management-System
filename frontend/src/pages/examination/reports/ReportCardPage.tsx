@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Printer, Search, X, Eye, SlidersHorizontal } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { useSystem } from '../../../context/SystemContext';
@@ -8,6 +8,7 @@ import { systemService, AcademicTerm } from '../../../services/systemService';
 import ReportCardTemplate, { ReportCardConfig, ReportCardData, ReportCardSubject } from '../../../components/examination/ReportCardTemplate';
 import { useSearchParams } from 'react-router-dom';
 import { groupById, identifyTerm } from '../../../utils/reportingUtils';
+import { resolveReportCardConfig, saveReportCardConfig } from '../../../utils/reportCardConfig';
 import React from 'react';
 
 // Memoized Row Component to prevent full table re-renders
@@ -70,7 +71,7 @@ const BulkPrintSection = React.memo(({ students, assessments, config }: {
 }) => {
     if (students.length === 0) return null;
     return (
-        <div className="hidden print:block">
+        <div id="report-card-print-root" className="hidden print:block">
             {students.map((student, idx) => (
                 <div key={idx} style={{ pageBreakAfter: idx === students.length - 1 ? 'auto' : 'always' }}>
                     <ReportCardTemplate data={student} assessments={assessments} config={config} />
@@ -94,7 +95,7 @@ const ReportCardPage = () => {
 
     const [searchParams] = useSearchParams();
 
-    const { settings, getFullUrl } = useSystem();
+    const { settings, getFullUrl, refreshSettings } = useSystem();
     const { showError } = useToast();
 
     const [groups, setGroups] = useState<ExamGroup[]>([]);
@@ -114,36 +115,8 @@ const ReportCardPage = () => {
     const [statusFilter, setStatusFilter] = useState('all');
     const [showSettings, setShowSettings] = useState(false);
 
-    const [config, setConfig] = useState<ReportCardConfig>({
-        showPhoto: true,
-        showHighest: true,
-        showLowest: true,
-        showAverage: true,
-        showSubjectPosition: true,
-        showClassPosition: true,
-        showAttendance: true,
-        showCumulative: true,
-        teacherCommentTemplates: {
-            excellent: 'Excellent performance, keep it up',
-            veryGood: 'Very good result, maintain the tempo',
-            good: 'Good, keep improving',
-            fair: 'Fair performance, work harder',
-            pass: 'Pass mark attained, put in more effort',
-            poor: 'Poor result, serious improvement is needed'
-        },
-        principalCommentTemplates: {
-            excellent: 'Outstanding result, congratulations',
-            veryGood: 'Excellent work, keep soaring higher',
-            good: 'Good, keep improving',
-            fair: 'Satisfactory result, aim higher',
-            pass: 'You can do better next term',
-            poor: 'Below expectation, work harder next term'
-        },
-        promotionStatusTemplates: {
-            promoted: 'PROMOTED TO NEXT CLASS',
-            notPromoted: 'NOT PROMOTED'
-        }
-    });
+    const [config, setConfig] = useState<ReportCardConfig>(() => resolveReportCardConfig(settings));
+    const hasLoadedPersistedConfig = useRef(false);
 
     // Initial Load
     useEffect(() => {
@@ -202,6 +175,29 @@ const ReportCardPage = () => {
             setSelectedTerm(settings.activeTermName);
         }
     }, [settings?.activeTermName, selectedTerm]);
+
+    useEffect(() => {
+        if (!hasLoadedPersistedConfig.current && settings) {
+            setConfig(resolveReportCardConfig(settings));
+            hasLoadedPersistedConfig.current = true;
+        }
+    }, [settings]);
+
+    useEffect(() => {
+        saveReportCardConfig(config);
+
+        if (!hasLoadedPersistedConfig.current) {
+            return;
+        }
+
+        const timeoutId = window.setTimeout(() => {
+            systemService.updateSettings({ reportCardConfig: config }).then(() => {
+                refreshSettings().catch(() => undefined);
+            }).catch(() => undefined);
+        }, 300);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [config, refreshSettings]);
 
     const filteredGroups = useMemo(() => groups.filter(g =>
         (g.academicYear === settings?.activeSessionName) &&
@@ -408,6 +404,35 @@ const ReportCardPage = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 print:min-h-0 print:bg-white text-gray-900 dark:text-white">
+            <style>{`
+                @media print {
+                    html, body {
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        background: #fff !important;
+                        overflow: visible !important;
+                    }
+
+                    body * {
+                        visibility: hidden !important;
+                    }
+
+                    #report-card-print-root,
+                    #report-card-print-root * {
+                        visibility: visible !important;
+                    }
+
+                    #report-card-print-root {
+                        display: block !important;
+                        position: absolute;
+                        left: 0;
+                        top: 0;
+                        width: 100%;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                    }
+                }
+            `}</style>
             <div className="p-6 print:hidden">
                 <div className="mx-auto w-full max-w-7xl space-y-6">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -475,13 +500,6 @@ const ReportCardPage = () => {
                             </select>
                         </div>
                     </div>
-
-                    {loading && (
-                        <div className="flex items-center gap-2 text-primary-600 font-medium px-1">
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
-                            <span className="text-sm">Loading report cards...</span>
-                        </div>
-                    )}
 
                     {showSettings && (
                      <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
@@ -735,8 +753,8 @@ const ReportCardPage = () => {
                              <button className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium transition-colors" onClick={() => printSingle(selectedStudent)}>Print Report Card</button>
                         </div>
                     </div>
-                    <div className="flex-1 overflow-y-auto p-0 md:p-2 lg:p-4 flex justify-center items-start">
-                        <div className="w-full bg-white border border-gray-200/50">
+                    <div className="flex-1 overflow-y-auto p-2 md:p-4 lg:p-6 flex justify-center items-start bg-slate-100">
+                        <div className="w-full max-w-[210mm] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.12)] print:max-w-none print:shadow-none">
                            <ReportCardTemplate data={selectedStudent} assessments={assessments} config={config} />
                         </div>
                     </div>

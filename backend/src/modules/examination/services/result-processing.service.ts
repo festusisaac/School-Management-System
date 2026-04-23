@@ -453,6 +453,42 @@ export class ResultProcessingService {
 
         if (!summary) return null;
 
+        if (currentGroup?.startDate && currentGroup?.endDate && summary.classId) {
+            const rangeStart = new Date(currentGroup.startDate).toISOString().split('T')[0];
+            const rangeEnd = new Date(currentGroup.endDate).toISOString().split('T')[0];
+
+            const attendanceDates = await this.attendanceRepo
+                .createQueryBuilder('attendance')
+                .select('DISTINCT(attendance.date)', 'date')
+                .where('attendance.classId = :classId', { classId: summary.classId })
+                .andWhere('attendance.date BETWEEN :start AND :end', {
+                    start: rangeStart,
+                    end: rangeEnd
+                })
+                .andWhere('attendance.tenantId = :tenantId', { tenantId })
+                .andWhere(sessionId ? 'attendance.sessionId = :sessionId' : 'attendance.sessionId IS NULL', sessionId ? { sessionId } : {})
+                .getRawMany();
+
+            const actualDaysOpened = attendanceDates.length;
+            const daysOpened = termDetails?.daysOpened && termDetails.daysOpened > 0
+                ? termDetails.daysOpened
+                : actualDaysOpened;
+
+            const daysPresent = await this.attendanceRepo.count({
+                where: {
+                    studentId,
+                    classId: summary.classId,
+                    date: Between(rangeStart, rangeEnd) as any,
+                    status: In([AttendanceStatus.PRESENT, AttendanceStatus.LATE, AttendanceStatus.HALFDAY]),
+                    tenantId,
+                    sessionId: sessionId || IsNull()
+                }
+            });
+
+            summary.daysOpened = daysOpened;
+            summary.daysPresent = daysPresent;
+        }
+
         // 2. Cumulative logic for Report Card
         let cumulativeSummary: any[] = [];
         let cumulativeSubjectScores: any[] = [];
@@ -529,6 +565,42 @@ export class ResultProcessingService {
             .groupBy('exam.subjectId')
             .getRawMany();
 
+        const classSubjectScoresQuery = this.examResultRepo
+            .createQueryBuilder('result')
+            .leftJoin('result.exam', 'exam')
+            .select('result.studentId', 'studentId')
+            .addSelect('exam.subjectId', 'subjectId')
+            .addSelect('SUM(result.score)', 'totalSubjectScore')
+            .where('exam.examGroupId = :examGroupId', { examGroupId })
+            .andWhere('result.tenantId = :tenantId', { tenantId });
+
+        if (summary.classId) {
+            classSubjectScoresQuery.andWhere('exam.classId = :classId', { classId: summary.classId });
+        }
+
+        if (sessionId) {
+            classSubjectScoresQuery.andWhere('result.sessionId = :sessionId', { sessionId });
+        }
+
+        const classSubjectScoresRaw = await classSubjectScoresQuery
+            .groupBy('result.studentId')
+            .addGroupBy('exam.subjectId')
+            .getRawMany();
+
+        const subjectRankingMap = new Map<string, number[]>();
+        classSubjectScoresRaw.forEach((row: any) => {
+            const subjectId = row.subjectId;
+            const totalScore = parseFloat(row.totalSubjectScore || 0);
+            if (!subjectRankingMap.has(subjectId)) {
+                subjectRankingMap.set(subjectId, []);
+            }
+            subjectRankingMap.get(subjectId)!.push(totalScore);
+        });
+
+        subjectRankingMap.forEach((scores, subjectId) => {
+            subjectRankingMap.set(subjectId, scores.sort((a, b) => b - a));
+        });
+
         // 4. Fetch grade scale
         const gradeScale = await this.gradeScaleRepo.findOne({
             where: { tenantId, isActive: true }
@@ -538,6 +610,8 @@ export class ResultProcessingService {
         const subjectScores = subjectScoresRaw.map(s => {
             const score = parseFloat(s.totalSubjectScore);
             const exam = exams.find(e => e.subjectId === s.subjectId);
+            const rankedScores = subjectRankingMap.get(s.subjectId) || [];
+            const positionInSubject = rankedScores.indexOf(score) + 1;
             
             let grade = '-';
             let remark = '-';
@@ -553,6 +627,7 @@ export class ResultProcessingService {
                 subjectId: s.subjectId,
                 subject: exam?.subject,
                 totalScore: score,
+                positionInSubject: positionInSubject > 0 ? positionInSubject : undefined,
                 grade,
                 remark,
                 highestInClass: exam?.highestScore,
@@ -574,6 +649,8 @@ export class ResultProcessingService {
             cumulativeSubjectScores,
             termDetails: {
                 daysOpened: termDetails?.daysOpened,
+                startDate: termDetails?.startDate,
+                endDate: termDetails?.endDate,
                 nextTermStartDate: termDetails?.nextTermStartDate
             }
         };

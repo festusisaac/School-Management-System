@@ -90,6 +90,37 @@ export interface ReportCardConfig {
     };
 }
 
+export const defaultReportCardConfig: ReportCardConfig = {
+    showPhoto: true,
+    showHighest: true,
+    showLowest: true,
+    showAverage: true,
+    showSubjectPosition: true,
+    showClassPosition: true,
+    showAttendance: true,
+    showCumulative: true,
+    teacherCommentTemplates: {
+        excellent: 'Excellent performance, keep it up',
+        veryGood: 'Very good result, maintain the tempo',
+        good: 'Good, keep improving',
+        fair: 'Fair performance, work harder',
+        pass: 'Pass mark attained, put in more effort',
+        poor: 'Poor result, serious improvement is needed'
+    },
+    principalCommentTemplates: {
+        excellent: 'Outstanding result, congratulations',
+        veryGood: 'Excellent work, keep soaring higher',
+        good: 'Good, keep improving',
+        fair: 'Satisfactory result, aim higher',
+        pass: 'You can do better next term',
+        poor: 'Below expectation, work harder next term'
+    },
+    promotionStatusTemplates: {
+        promoted: 'PROMOTED TO NEXT CLASS',
+        notPromoted: 'NOT PROMOTED'
+    }
+};
+
 interface Props {
     data: ReportCardData;
     assessments: { id: string, name: string, maxMarks: number }[];
@@ -99,36 +130,7 @@ interface Props {
 const ReportCardTemplate: React.FC<Props> = ({ 
     data, 
     assessments, 
-    config = {
-        showPhoto: true,
-        showHighest: true,
-        showLowest: true,
-        showAverage: true,
-        showSubjectPosition: true,
-        showClassPosition: true,
-        showAttendance: true,
-        showCumulative: true,
-        teacherCommentTemplates: {
-            excellent: 'Excellent performance, keep it up',
-            veryGood: 'Very good result, maintain the tempo',
-            good: 'Good, keep improving',
-            fair: 'Fair performance, work harder',
-            pass: 'Pass mark attained, put in more effort',
-            poor: 'Poor result, serious improvement is needed'
-        },
-        principalCommentTemplates: {
-            excellent: 'Outstanding result, congratulations',
-            veryGood: 'Excellent work, keep soaring higher',
-            good: 'Good, keep improving',
-            fair: 'Satisfactory result, aim higher',
-            pass: 'You can do better next term',
-            poor: 'Below expectation, work harder next term'
-        },
-        promotionStatusTemplates: {
-            promoted: 'PROMOTED TO NEXT CLASS',
-            notPromoted: 'NOT PROMOTED'
-        }
-    } 
+    config = defaultReportCardConfig
 }) => {
     const { settings, getFullUrl } = useSystem();
 
@@ -184,8 +186,10 @@ const ReportCardTemplate: React.FC<Props> = ({
 
     const containerStyle: React.CSSProperties = {
         width: '100%',
+        maxWidth: '980px',
+        minHeight: 'auto',
         margin: '0 auto',
-        padding: '0', 
+        padding: '6mm',
         backgroundColor: 'white',
         color: '#000',
         fontFamily: "'DejaVu Sans', sans-serif",
@@ -671,10 +675,30 @@ const ReportCardTemplate: React.FC<Props> = ({
             </div>
 
             <style>{`
+                .main-container {
+                    width: 100%;
+                    max-width: 980px;
+                    min-height: auto;
+                    box-sizing: border-box;
+                    overflow: visible;
+                }
+
                 @media print {
-                    @page { margin: 5mm; size: A4 portrait; }
-                    body { margin: 0; padding: 0; background: white; }
-                    .main-container { padding: 5mm !important; width: 100%; margin: 0; }
+                    @page { margin: 4mm; size: A4 portrait; }
+                    html, body {
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        background: white !important;
+                        overflow: hidden !important;
+                    }
+                    .main-container {
+                        width: calc(210mm - 8mm) !important;
+                        max-width: calc(210mm - 8mm) !important;
+                        min-height: calc(297mm - 8mm) !important;
+                        padding: 3mm !important;
+                        margin: 0 !important;
+                        overflow: hidden !important;
+                    }
                     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                 }
             `}</style>

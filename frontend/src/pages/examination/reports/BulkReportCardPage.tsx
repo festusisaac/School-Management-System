@@ -7,45 +7,19 @@ import { systemService } from '../../../services/systemService';
 import api from '../../../services/api';
 import { TablePagination } from '../../../components/ui/TablePagination';
 import { createIdLookupMap, groupById, identifyTerm } from '../../../utils/reportingUtils';
+import { useSystem } from '../../../context/SystemContext';
+import { resolveReportCardConfig } from '../../../utils/reportCardConfig';
 
 const BulkReportCardPage = () => {
     const [searchParams] = useSearchParams();
+    const { settings } = useSystem();
     const classId = searchParams.get('classId');
     const examGroupId = searchParams.get('examGroupId');
 
     const [loading, setLoading] = useState(true);
     const [rawData, setRawData] = useState<any>(null);
     const [assessments, setAssessments] = useState<any[]>([]);
-    const [config] = useState<ReportCardConfig>({
-        showPhoto: true,
-        showHighest: true,
-        showLowest: true,
-        showAverage: true,
-        showSubjectPosition: true,
-        showClassPosition: true,
-        showAttendance: true,
-        showCumulative: true,
-        teacherCommentTemplates: {
-            excellent: 'Excellent performance, keep it up',
-            veryGood: 'Very good result, maintain the tempo',
-            good: 'Good, keep improving',
-            fair: 'Fair performance, work harder',
-            pass: 'Pass mark attained, put in more effort',
-            poor: 'Poor result, serious improvement is needed'
-        },
-        principalCommentTemplates: {
-            excellent: 'Outstanding result, congratulations',
-            veryGood: 'Excellent work, keep soaring higher',
-            good: 'Good, keep improving',
-            fair: 'Satisfactory result, aim higher',
-            pass: 'You can do better next term',
-            poor: 'Below expectation, work harder next term'
-        },
-        promotionStatusTemplates: {
-            promoted: 'PROMOTED TO NEXT CLASS',
-            notPromoted: 'NOT PROMOTED'
-        }
-    });
+    const [config] = useState<ReportCardConfig>(() => resolveReportCardConfig(settings));
 
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 10;
@@ -350,9 +324,9 @@ const BulkReportCardPage = () => {
                 </div>
             </div>
 
-            <div className="flex flex-col items-center">
+            <div className="flex flex-col items-center px-3 py-4">
                 {reportCards.slice((currentPage - 1) * pageSize, currentPage * pageSize).map((data: ReportCardData, index: number) => (
-                    <div key={index} className="page-break w-full bg-white shadow-lg my-6 print:my-0 print:shadow-none border border-gray-100">
+                    <div key={index} className="page-break w-full max-w-[210mm] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.12)] my-4 print:my-0 print:max-w-none print:shadow-none">
                         <ReportCardTemplate data={data} assessments={assessments} config={config} />
                     </div>
                 ))}

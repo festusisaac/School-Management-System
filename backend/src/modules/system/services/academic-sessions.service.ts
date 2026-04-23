@@ -120,7 +120,52 @@ export class AcademicSessionsService {
 
     async remove(id: string): Promise<void> {
         const session = await this.findOne(id);
+        await this.ensureSessionHasNoLinkedData(id, session.name);
         await this.sessionRepository.remove(session);
+    }
+
+    private async ensureSessionHasNoLinkedData(id: string, sessionName: string): Promise<void> {
+        const settings = await this.systemSettingsService.getSettings();
+        if (settings.currentSessionId === id) {
+            throw new BadRequestException(
+                `Cannot delete the academic session "${sessionName}" because it is currently set as the active session.`
+            );
+        }
+
+        const checks: Array<{ table: string; label: string }> = [
+            { table: 'academic_terms', label: 'academic term' },
+            { table: 'timetables', label: 'timetable' },
+            { table: 'subject_teachers', label: 'subject teacher assignment' },
+            { table: 'class_subject', label: 'class subject mapping' },
+            { table: 'student_attendance', label: 'student attendance record' },
+            { table: 'staff_attendance', label: 'staff attendance record' },
+            { table: 'homework', label: 'homework item' },
+            { table: 'expenses', label: 'expense record' },
+            { table: 'transactions', label: 'transaction' },
+            { table: 'fee_assignments', label: 'fee assignment' },
+            { table: 'carry_forwards', label: 'carry-forward record' },
+            { table: 'grade_scales', label: 'grade scale' },
+            { table: 'exam_groups', label: 'exam group' },
+            { table: 'exams', label: 'exam' },
+            { table: 'exam_results', label: 'exam result' },
+            { table: 'student_term_results', label: 'student term result' },
+            { table: 'scratch_card_batches', label: 'scratch card batch' },
+            { table: 'scratch_cards', label: 'scratch card' },
+        ];
+
+        for (const check of checks) {
+            const result = await this.sessionRepository.manager.query(
+                `SELECT COUNT(*)::int AS count FROM "${check.table}" WHERE "sessionId" = $1`,
+                [id]
+            );
+
+            const count = Number(result?.[0]?.count || 0);
+            if (count > 0) {
+                throw new BadRequestException(
+                    `Cannot delete the academic session "${sessionName}" because it already has ${count} ${check.label}${count === 1 ? '' : 's'} linked to it.`
+                );
+            }
+        }
     }
 
     // Unified Transition Logic (All-at-once)

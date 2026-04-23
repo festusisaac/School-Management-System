@@ -4,11 +4,15 @@ import { useAuthStore } from '../../stores/authStore';
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import ReportCardTemplate, { ReportCardData } from '../../components/examination/ReportCardTemplate';
+import { resolveReportCardConfig } from '../../utils/reportCardConfig';
+import { useSystem } from '../../context/SystemContext';
 
 const StudentResultPage = () => {
     const { user, selectedChildId } = useAuthStore();
     const isParent = (user?.role || user?.roleObject?.name || '').toLowerCase() === 'parent';
     const { showError, showSuccess } = useToast();
+    const { settings } = useSystem();
+    const reportCardConfig = resolveReportCardConfig(settings);
     const [loadingInit, setLoadingInit] = useState(true);
     const [checking, setChecking] = useState(false);
     const [showPin, setShowPin] = useState(false);
@@ -85,7 +89,13 @@ const StudentResultPage = () => {
     }
 
     if (resultData) {
-        const { summary, subjectScores, subjectStats, assessments, studentMarks, affectiveTraits, psychomotorSkills, examGroup, student } = resultData as any;
+        const { summary, subjectScores, subjectStats, assessments, studentMarks, affectiveTraits, psychomotorSkills, examGroup, student, termDetails } = resultData as any;
+
+        const formatDate = (value?: string | Date) => {
+            if (!value) return '';
+            const date = new Date(value);
+            return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString();
+        };
 
         // Map backend data to official ReportCardData format
         const reportCardData: ReportCardData = {
@@ -106,6 +116,10 @@ const StudentResultPage = () => {
                 timesOpened: summary.daysOpened || 0,
                 timesPresent: summary.daysPresent || 0,
                 timesAbsent: Math.max(0, (summary.daysOpened || 0) - (summary.daysPresent || 0)),
+                terminalDuration: termDetails?.daysOpened ? `${termDetails.daysOpened} days` : '',
+                termBegins: formatDate(termDetails?.startDate),
+                termEnds: formatDate(termDetails?.endDate),
+                nextTermBegins: formatDate(termDetails?.nextTermStartDate),
             },
             subjects: subjectScores.map((score: any) => {
                 const marksForSubject = (studentMarks || []).filter((m: any) => m.subjectId === (score.subjectId || score.subject?.id));
@@ -142,6 +156,35 @@ const StudentResultPage = () => {
 
         return (
             <div className="space-y-6">
+                <style>{`
+                    @media print {
+                        html, body {
+                            margin: 0 !important;
+                            padding: 0 !important;
+                            background: #fff !important;
+                            overflow: visible !important;
+                        }
+
+                        body * {
+                            visibility: hidden !important;
+                        }
+
+                        #student-result-print-root,
+                        #student-result-print-root * {
+                            visibility: visible !important;
+                        }
+
+                        #student-result-print-root {
+                            display: block !important;
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            width: 100%;
+                            margin: 0 !important;
+                            padding: 0 !important;
+                        }
+                    }
+                `}</style>
                 {/* Header Action */}
                 <div className="flex justify-between items-center mb-6 mt-2 print:hidden w-full max-w-[210mm] mx-auto">
                     <div>
@@ -165,8 +208,15 @@ const StudentResultPage = () => {
                 </div>
 
                 {/* Official Report Card Template */}
-                <div className="bg-white dark:bg-transparent rounded-xl shadow-sm border border-gray-200 dark:border-gray-800/50 print:shadow-none print:border-none print:p-0 overflow-x-auto w-full max-w-[215mm] mx-auto flex justify-center pb-8">
-                    <ReportCardTemplate data={reportCardData} assessments={assessments || []} />
+                <div
+                    id="student-result-print-root"
+                    className="bg-white dark:bg-transparent rounded-xl shadow-sm border border-gray-200 dark:border-gray-800/50 print:shadow-none print:border-none print:p-0 overflow-x-auto w-full max-w-[215mm] mx-auto flex justify-center pb-8"
+                >
+                    <ReportCardTemplate
+                        data={reportCardData}
+                        assessments={assessments || []}
+                        config={reportCardConfig}
+                    />
                 </div>
             </div>
         );

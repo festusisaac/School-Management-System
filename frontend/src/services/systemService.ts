@@ -1,4 +1,5 @@
 import api from './api';
+import { ReportCardConfig } from '../components/examination/ReportCardTemplate';
 
 export interface SystemSetting {
     id?: string;
@@ -79,6 +80,7 @@ export interface SystemSetting {
     seoDescription?: string;
     seoKeywords?: string;
     ogImage?: string;
+    reportCardConfig?: ReportCardConfig;
     createdAt?: string;
     updatedAt?: string;
 }

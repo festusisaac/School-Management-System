@@ -242,6 +242,7 @@ export class StudentExamController {
             summary: summary.summary,
             subjectScores: summary.subjectScores,
             subjectStats: summary.subjectStats,
+            termDetails: summary.termDetails,
             assessments,
             studentMarks,
             affectiveTraits,
