@@ -102,6 +102,22 @@ async function seed() {
     const rolesToSeed = [
       { name: 'Admin', isSystem: true, permissions: savedPermissions },
       { name: 'Principal', isSystem: true, permissions: savedPermissions.filter(p => !p.slug.startsWith('settings:')) },
+      { name: 'Accountant', isSystem: true, permissions: savedPermissions.filter(p =>
+        [
+          'communication:view_notices',
+          'finance:collect_fees',
+          'finance:view_payments',
+          'finance:view_reports',
+          'finance:manage_fee_structure',
+          'finance:manage_reminders',
+          'hr:manage_payroll',
+          'expenses:view',
+          'expenses:view_reports',
+          'expenses:manage_categories',
+          'expenses:manage_vendors',
+          'expenses:manage_records',
+        ].includes(p.slug)
+      ) },
       { name: 'Teacher', isSystem: true, permissions: savedPermissions.filter(p => 
         p.slug.includes('view') || 
         p.slug === 'exams:enter_marks' || 

@@ -185,6 +185,10 @@ export class CreateStaffDto {
     @IsOptional()
     signature?: string;
 
+    @Transform(({ value }) => {
+        if (value === undefined || value === null || value === '') return undefined;
+        return Array.isArray(value) ? value : [value];
+    })
     @IsArray()
     @IsString({ each: true })
     @IsOptional()

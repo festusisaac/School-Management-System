@@ -69,7 +69,9 @@ export class StaffService {
         }
 
         if (filters?.sectionId) {
-            query.innerJoin('staff.sections', 'section', 'section.id = :sectionId', { sectionId: filters.sectionId });
+            query
+                .innerJoin('staff.sections', 'section', 'section.id = :sectionId', { sectionId: filters.sectionId })
+                .leftJoinAndSelect('staff.sections', 'sections');
         } else {
             // Include sections explicitly if no filter is applied
             query.leftJoinAndSelect('staff.sections', 'sections');
@@ -96,7 +98,7 @@ export class StaffService {
     async findByEmail(email: string): Promise<Staff> {
         const staff = await this.staffRepository.findOne({
             where: { email },
-            relations: ['department'],
+            relations: ['department', 'roleObject', 'sections'],
         });
 
         if (!staff) {
@@ -315,6 +317,7 @@ export class StaffService {
         signature?: Express.Multer.File[]
     }): Promise<Staff> {
         const staff = await this.findOne(id, tenantId);
+        const staffDto = data as any;
 
         // Check for duplicate employee ID if being updated
         if (data.employeeId && data.employeeId !== staff.employeeId) {
@@ -359,6 +362,26 @@ export class StaffService {
             updateData.roleId = null;
         }
 
+        let resolvedRoleName = staff.role || 'staff';
+        if (updateData.roleId !== undefined) {
+            if (updateData.roleId) {
+                const roleObj = await this.roleRepository.findOne({ where: { id: updateData.roleId } });
+                if (!roleObj) {
+                    throw new BadRequestException('Selected role was not found');
+                }
+                updateData.roleObject = roleObj;
+                updateData.role = roleObj.name.toLowerCase();
+                resolvedRoleName = roleObj.name;
+            } else {
+                updateData.roleObject = null;
+                updateData.role = 'staff';
+                resolvedRoleName = 'Staff';
+            }
+        } else if (staffDto.role) {
+            resolvedRoleName = staffDto.role;
+            updateData.role = staffDto.role;
+        }
+
         const inputUpdateData = data as any;
         if (inputUpdateData.sectionIds && Array.isArray(inputUpdateData.sectionIds)) {
             updateData.sections = inputUpdateData.sectionIds.map((id: string) => ({ id }));
@@ -383,13 +406,12 @@ export class StaffService {
         const savedStaff = await this.staffRepository.save(staff) as any as Staff;
 
         // Handle user account updates if role/enableLogin is provided
-        const staffDto = data as any;
         if (staffDto.enableLogin || staffDto.roleId || staffDto.role) {
             await this.usersService.findOrCreateUser(savedStaff.email, {
                 firstName: savedStaff.firstName,
                 lastName: savedStaff.lastName,
                 roleId: staffDto.roleId,
-                role: staffDto.role,
+                role: staffDto.role || resolvedRoleName.toLowerCase(),
                 password: staffDto.password,
                 isActive: true,
                 tenantId: tenantId,

@@ -3,7 +3,9 @@ import apiService from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
 import StudentDashboard from './StudentDashboard'
 import TeacherDashboard from './TeacherDashboard'
+import AccountantDashboard from './AccountantDashboard'
 import ParentDashboard from '../parent/ParentDashboard'
+import { LibraryDashboard } from '../library'
 import { useSystem } from '../../context/SystemContext'
 
 import { Link, Navigate } from 'react-router-dom'
@@ -76,6 +78,12 @@ const DashboardPage: React.FC = () => {
   const { user, selectedChildId } = useAuthStore()
   const userRole = (user?.roleObject?.name || user?.role || '').toLowerCase()
   const isStudentOrParent = userRole === 'student' || userRole === 'parent'
+  const hasDedicatedDashboard =
+    isStudentOrParent ||
+    userRole === 'teacher' ||
+    userRole === 'accountant' ||
+    userRole === 'bursar' ||
+    userRole === 'librarian'
   const { activeSectionId, settings } = useSystem()
   const currentSessionId = settings?.currentSessionId
   const currentTermId = settings?.currentTermId
@@ -89,7 +97,7 @@ const DashboardPage: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (isStudentOrParent) {
+      if (hasDedicatedDashboard) {
           setLoading(false);
           return;
       }
@@ -116,7 +124,7 @@ const DashboardPage: React.FC = () => {
     }
 
     fetchData()
-  }, [activeSectionId, currentSessionId, currentTermId, isStudentOrParent])
+  }, [activeSectionId, currentSessionId, currentTermId, hasDedicatedDashboard])
 
   if (loading) {
     return (
@@ -139,6 +147,14 @@ const DashboardPage: React.FC = () => {
 
   if (userRole === 'teacher') {
     return <TeacherDashboard />;
+  }
+
+  if (userRole === 'accountant' || userRole === 'bursar') {
+    return <AccountantDashboard />;
+  }
+
+  if (userRole === 'librarian') {
+    return <LibraryDashboard />;
   }
 
   // Fallback data for charts if API returns empty

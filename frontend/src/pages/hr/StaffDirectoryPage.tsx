@@ -108,6 +108,7 @@ const StaffDirectoryPage = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [showArchived, setShowArchived] = useState(false);
+    const [selectedRoleId, setSelectedRoleId] = useState('');
 
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
@@ -134,6 +135,7 @@ const StaffDirectoryPage = () => {
         setSelectedFiles({});
         setEnableLogin(false);
         setIsTeachingStaff(false);
+        setSelectedRoleId('');
         setPassword('');
         setSelectedSectionIds([]);
         setShowModal(true);
@@ -199,13 +201,28 @@ const StaffDirectoryPage = () => {
         if (editingStaff) {
             setEmployeeIdField(editingStaff.employeeId);
             setSelectedSectionIds(editingStaff.sections?.map((s: any) => s.id) || []);
+            setSelectedRoleId(editingStaff.roleId || '');
         } else if (!showModal) {
             setEmployeeIdField('');
             setIsTeachingStaff(false);
+            setSelectedRoleId('');
             setPassword('');
             setSelectedSectionIds([]);
         }
     }, [editingStaff, showModal]);
+
+    const isTeacherRoleSelected = roles.some(
+        (role) => role.id === selectedRoleId && role.name.toLowerCase() === 'teacher'
+    );
+
+    useEffect(() => {
+        if (!selectedRoleId) {
+            setIsTeachingStaff(false);
+            return;
+        }
+
+        setIsTeachingStaff(isTeacherRoleSelected);
+    }, [isTeacherRoleSelected, selectedRoleId]);
 
     useEffect(() => {
         // Removed auto-generation of Staff@ password to improve security
@@ -263,11 +280,22 @@ const StaffDirectoryPage = () => {
     };
 
     const handleEdit = (staffMember: Staff) => {
-        setEditingStaff(staffMember);
-        setSelectedFiles({});
-        setEnableLogin(true); // Default to ON so you can see the password management section immediately
-        setIsTeachingStaff(staffMember.isTeachingStaff || false);
-        setShowModal(true);
+        const openEditor = async () => {
+            try {
+                const fullStaff = await staffService.getStaffById(staffMember.id);
+                setEditingStaff(fullStaff);
+                setSelectedSectionIds(fullStaff.sections?.map((s: any) => s.id) || []);
+                setSelectedFiles({});
+                setEnableLogin(true); // Default to ON so you can see the password management section immediately
+                setIsTeachingStaff(fullStaff.isTeachingStaff || false);
+                setShowModal(true);
+            } catch (error) {
+                console.error('Error loading staff details for edit:', error);
+                toast.showError('Failed to load staff details');
+            }
+        };
+
+        openEditor();
     };
 
     const fetchSalaryHistory = async (staffId: string) => {
@@ -539,7 +567,7 @@ const StaffDirectoryPage = () => {
                                     const formData = new FormData(e.currentTarget);
                                     
                                     // Append multi-select sections array
-                                    selectedSectionIds.forEach(id => formData.append('sectionIds[]', id));
+                                    selectedSectionIds.forEach(id => formData.append('sectionIds', id));
 
                                     try {
                                         if (editingStaff) {
@@ -605,16 +633,14 @@ const StaffDirectoryPage = () => {
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Role</label>
                                                         <select
                                                             name="roleId"
-                                                            defaultValue={editingStaff?.roleId}
+                                                            value={selectedRoleId}
                                                             className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                                             onChange={(e) => {
-                                                                // Automatically enable login if a role is selected
-                                                                if (e.target.value) setEnableLogin(true);
+                                                                const nextRoleId = e.target.value;
+                                                                setSelectedRoleId(nextRoleId);
 
-                                                                const selectedRole = roles.find(r => r.id === e.target.value);
-                                                                if (selectedRole?.name === 'Teacher') {
-                                                                    setIsTeachingStaff(true);
-                                                                }
+                                                                // Automatically enable login if a role is selected
+                                                                if (nextRoleId) setEnableLogin(true);
                                                             }}
                                                         >
                                                             <option value="">Select Role</option>
@@ -629,13 +655,19 @@ const StaffDirectoryPage = () => {
                                                                 name="isTeachingStaff"
                                                                 id="isTeachingStaff"
                                                                 checked={isTeachingStaff}
+                                                                disabled={!isTeacherRoleSelected}
                                                                 onChange={(e) => setIsTeachingStaff(e.target.checked)}
-                                                                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                                                                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 disabled:cursor-not-allowed disabled:opacity-50"
                                                             />
-                                                            <label htmlFor="isTeachingStaff" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                            <label htmlFor="isTeachingStaff" className={`text-sm font-medium ${isTeacherRoleSelected ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-500'}`}>
                                                                 Teaching Staff
                                                             </label>
                                                         </div>
+                                                        {!isTeacherRoleSelected && (
+                                                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                                This is enabled automatically only when the Teacher role is selected.
+                                                            </p>
+                                                        )}
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Department</label>

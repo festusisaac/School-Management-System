@@ -116,8 +116,8 @@ export default function RecordPaymentPage() {
                 schoolSectionId: activeSectionId || undefined
             });
             setStudents(results as any);
-        } catch (error) {
-            showError('Search failed');
+        } catch (error: any) {
+            showError(error?.response?.data?.message || 'Search failed');
         } finally {
             setLoading(false);
         }

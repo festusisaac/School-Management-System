@@ -30,6 +30,15 @@ interface SystemContextType {
     availableSections: any[];
 }
 
+interface SchoolSection {
+    id: string;
+    name: string;
+}
+
+interface StaffProfile {
+    sections?: SchoolSection[];
+}
+
 const SystemContext = createContext<SystemContextType | undefined>(undefined);
 
 /**
@@ -74,7 +83,7 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         return cached ? JSON.parse(cached) : {};
     });
     const [loading, setLoading] = useState(true);
-    const { token } = useAuthStore();
+    const { token, user } = useAuthStore();
     
     // Multi-Section Multi-Tenancy Architecture 🚀
     const [activeSectionId, setActiveSectionIdState] = useState<string>(() => {
@@ -95,12 +104,37 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const refreshSettings = useCallback(async () => {
         try {
             const data = await systemService.getSettings();
-            
+            let nextAvailableSections: SchoolSection[] = [];
+
             // Try fetching sections using the base api call
             try {
                 if (localStorage.getItem('access_token')) {
                     const sectData = await api.getSchoolSections();
-                    setAvailableSections(sectData || []);
+                    nextAvailableSections = Array.isArray(sectData) ? sectData : [];
+
+                    const rawRole = (user?.roleObject?.name || user?.role || '').toLowerCase().trim();
+                    const isFinanceScopedUser = rawRole === 'accountant' || rawRole === 'bursar';
+
+                    if (isFinanceScopedUser) {
+                        const profileData = await api.getMyProfile().catch(() => null) as StaffProfile | null;
+                        const assignedSectionIds = profileData?.sections?.map((section) => section.id) || [];
+
+                        if (assignedSectionIds.length > 0) {
+                            nextAvailableSections = nextAvailableSections.filter((section) => assignedSectionIds.includes(section.id));
+                        } else {
+                            nextAvailableSections = [];
+                        }
+                    }
+
+                    setAvailableSections(nextAvailableSections);
+
+                    const currentActiveSectionId = localStorage.getItem('active_section_id') || '';
+                    const nextActiveSectionId = nextAvailableSections.some((section) => section.id === currentActiveSectionId)
+                        ? currentActiveSectionId
+                        : (nextAvailableSections[0]?.id || '');
+
+                    setActiveSectionIdState(nextActiveSectionId);
+                    localStorage.setItem('active_section_id', nextActiveSectionId);
                 }
             } catch (e) {
                 console.error('Failed to load sections', e);
@@ -175,7 +209,7 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         } finally {
             setLoading(false);
         }
-    }, [applyColors]);
+    }, [applyColors, user]);
 
     useEffect(() => {
         refreshSettings();

@@ -37,7 +37,13 @@ export class StudentsController {
             return null;
         }
 
-        // 2. Everyone else (Teachers, Staff, etc.) is scoped by their staff assignments
+        // 2. Only teaching roles are scoped by assigned classes.
+        // Finance/admin support roles rely on their own route-level scoping.
+        if (role !== 'teacher' && role !== 'staff') {
+            return null;
+        }
+
+        // 3. Teaching users are scoped by their staff assignments
         console.log(`[RBAC] Scoping access for user: ${user.email} (Role: ${role})`);
 
         const staffResult = await this.entityManager.query(
@@ -130,9 +136,25 @@ export class StudentsController {
     }
 
     @Get()
-    @Permissions('students:view_directory')
     async findAll(@Query() query: any, @Request() req: any) {
         if (!req.user?.tenantId) throw new ForbiddenException('Tenant context missing');
+        const userPermissions = Array.isArray(req.user?.permissions) ? req.user.permissions : [];
+        const canViewDirectory = userPermissions.includes('students:view_directory');
+        const canAccessFinanceStudentLookup = userPermissions.some((permission: string) =>
+            ['finance:collect_fees', 'finance:manage_fee_structure', 'finance:view_reports'].includes(permission),
+        );
+
+        if (!canViewDirectory && !canAccessFinanceStudentLookup) {
+            throw new ForbiddenException('Insufficient granular permissions');
+        }
+
+        // Finance users can search students only within an active section scope.
+        if (!canViewDirectory && canAccessFinanceStudentLookup) {
+            if (!query.schoolSectionId || query.schoolSectionId === 'undefined' || query.schoolSectionId === '') {
+                throw new ForbiddenException('Select a school section before searching for students.');
+            }
+        }
+
         const managedClassIds = await this.getTeacherManagedClassIds(req.user);
         if (managedClassIds !== null) {
             if (managedClassIds.length === 0) return [];

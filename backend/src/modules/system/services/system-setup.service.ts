@@ -91,8 +91,9 @@ export class SystemSetupService {
           name: 'Accountant',
           description: 'Financial officer responsible for fee collection and payroll.',
           permissions: [
+            'communication:view_notices',
             'finance:collect_fees', 'finance:view_payments', 'finance:view_reports',
-            'finance:manage_fee_structure', 'hr:manage_payroll',
+            'finance:manage_fee_structure', 'finance:manage_reminders', 'hr:manage_payroll',
             'expenses:view', 'expenses:view_reports', 'expenses:manage_categories',
             'expenses:manage_vendors', 'expenses:manage_records'
           ]
@@ -138,19 +139,27 @@ export class SystemSetupService {
       ];
 
       for (const roleDef of standardRoles) {
-        let role = await queryRunner.manager.findOne(Role, { where: { name: roleDef.name } });
+        let role = await queryRunner.manager.findOne(Role, {
+          where: { name: roleDef.name },
+          relations: ['permissions'],
+        });
+        const permissions = await queryRunner.manager.find(Permission, {
+          where: roleDef.permissions.map(slug => ({ slug }))
+        });
+
         if (!role) {
-          const permissions = await queryRunner.manager.find(Permission, {
-            where: roleDef.permissions.map(slug => ({ slug }))
-          });
           role = queryRunner.manager.create(Role, {
             name: roleDef.name,
             description: roleDef.description,
             isSystem: false,
             permissions: permissions
           });
-          await queryRunner.manager.save(role);
+        } else {
+          role.description = roleDef.description;
+          role.permissions = permissions;
         }
+
+        await queryRunner.manager.save(role);
       }
 
       // 2. Create or find the first Academic Session
