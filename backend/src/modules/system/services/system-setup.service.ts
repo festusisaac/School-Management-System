@@ -102,6 +102,7 @@ export class SystemSetupService {
           name: 'Librarian',
           description: 'Manages school library, books, and circulation.',
           permissions: [
+            'communication:view_notices',
             'library:view_books', 'library:manage_books', 'library:issue_return', 'library:view_reports'
           ]
         },

@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { CreateUserDto, LoginDto } from '@common/dtos/auth.dto';
 import { User } from './entities/user.entity';
 import { EmailService } from '@modules/internal-communication/email.service';
+import { Staff } from '../hr/entities/staff.entity';
 
 @Injectable()
 export class AuthService {
@@ -16,6 +17,8 @@ export class AuthService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    @InjectRepository(Staff)
+    private staffRepository: Repository<Staff>,
     private jwtService: JwtService,
     private configService: ConfigService,
     private emailService: EmailService,
@@ -88,6 +91,32 @@ export class AuthService {
     }
 
     this.logger.debug(`Password valid for user: ${loginDto.email}`);
+
+    if (!user.student && !user.parent) {
+      const linkedStaff = await this.staffRepository.findOne({
+        where: { email: user.email, tenantId: user.tenantId },
+        relations: ['roleObject'],
+      });
+
+      const staffRoleId = linkedStaff?.roleObject?.id || linkedStaff?.roleId;
+      const staffRole = (linkedStaff?.roleObject?.name || linkedStaff?.role || '').toLowerCase();
+      const userRole = (user.roleObject?.name || user.role || '').toLowerCase();
+
+      if (linkedStaff && (staffRoleId !== user.roleId || (staffRole && staffRole !== userRole))) {
+        user.roleId = staffRoleId || null as any;
+        user.role = staffRole || user.role;
+        await this.usersRepository.save(user);
+
+        const refreshedUser = await this.usersRepository.findOne({
+          where: { id: user.id },
+          relations: ['roleObject', 'roleObject.permissions', 'student', 'parent'],
+        });
+
+        if (refreshedUser) {
+          Object.assign(user, refreshedUser);
+        }
+      }
+    }
 
     const { access_token, refresh_token } = await this.generateTokens(user);
 

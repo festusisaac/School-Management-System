@@ -17,7 +17,28 @@ interface AuthStore {
   logout: () => void
 }
 
-export const useAuthStore = create<AuthStore>((set) => ({
+const canRetainChildPortalContext = (user: any | null) => {
+  const role = (user?.roleObject?.name || user?.role || '').toLowerCase().trim()
+  return ['parent', 'member'].includes(role)
+}
+
+const syncDependentSessionState = (user: any | null, currentState: Pick<AuthStore, 'childrenList' | 'selectedChildId'>) => {
+  if (canRetainChildPortalContext(user)) {
+    return {
+      childrenList: currentState.childrenList,
+      selectedChildId: currentState.selectedChildId,
+    }
+  }
+
+  authSession.setChildrenList([])
+  authSession.setSelectedChildId(null)
+  return {
+    childrenList: [],
+    selectedChildId: null,
+  }
+}
+
+export const useAuthStore = create<AuthStore>((set, get) => ({
   user: authSession.getUser(),
   token: authSession.getAccessToken(),
   childrenList: authSession.getChildrenList(),
@@ -32,7 +53,8 @@ export const useAuthStore = create<AuthStore>((set) => ({
   },
   setUser: (user) => {
     authSession.setUser(user)
-    set({ user })
+    const dependentState = syncDependentSessionState(user, get())
+    set({ user, ...dependentState })
   },
   setToken: (token) => {
     authSession.setAccessToken(token)
@@ -51,7 +73,8 @@ export const useAuthStore = create<AuthStore>((set) => ({
       
       const userData = response.data.data || response.data;
       authSession.setUser(userData);
-      set({ user: userData });
+      const dependentState = syncDependentSessionState(userData, get())
+      set({ user: userData, ...dependentState });
     } catch (error) {
       console.error('Failed to refresh user:', error);
     }

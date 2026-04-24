@@ -11,6 +11,7 @@ import { User } from './entities/user.entity';
 import { Role } from './entities/role.entity';
 import { Permission } from './entities/permission.entity';
 import { InternalCommunicationModule } from '../internal-communication/internal-communication.module';
+import { Staff } from '../hr/entities/staff.entity';
 
 @Module({
   imports: [
@@ -25,7 +26,7 @@ import { InternalCommunicationModule } from '../internal-communication/internal-
         },
       }),
     }),
-    TypeOrmModule.forFeature([User, Role, Permission]),
+    TypeOrmModule.forFeature([User, Role, Permission, Staff]),
     forwardRef(() => InternalCommunicationModule),
   ],
   providers: [AuthService, JwtStrategy],

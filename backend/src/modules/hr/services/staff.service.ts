@@ -405,13 +405,32 @@ export class StaffService {
         Object.assign(staff, updateData);
         const savedStaff = await this.staffRepository.save(staff) as any as Staff;
 
-        // Handle user account updates if role/enableLogin is provided
-        if (staffDto.enableLogin || staffDto.roleId || staffDto.role) {
+        const syncedRoleId =
+            updateData.roleId !== undefined
+                ? updateData.roleId
+                : (updateData.roleObject?.id || savedStaff.roleObject?.id || savedStaff.roleId);
+        const syncedRole = (updateData.role || savedStaff.role || resolvedRoleName).toLowerCase();
+        const existingUser = await this.usersService.findByEmail(savedStaff.email);
+
+        // Keep linked login account in sync whenever it already exists,
+        // or provision one when the edit explicitly requested login details.
+        if (existingUser) {
+            await this.usersService.update(existingUser.id, {
+                firstName: savedStaff.firstName,
+                lastName: savedStaff.lastName,
+                roleId: syncedRoleId,
+                role: syncedRole,
+                password: staffDto.password,
+                isActive: true,
+                tenantId,
+                photo: savedStaff.photo
+            });
+        } else if (staffDto.enableLogin || syncedRoleId || staffDto.role) {
             await this.usersService.findOrCreateUser(savedStaff.email, {
                 firstName: savedStaff.firstName,
                 lastName: savedStaff.lastName,
-                roleId: staffDto.roleId,
-                role: staffDto.role || resolvedRoleName.toLowerCase(),
+                roleId: syncedRoleId,
+                role: syncedRole,
                 password: staffDto.password,
                 isActive: true,
                 tenantId: tenantId,

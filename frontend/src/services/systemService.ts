@@ -1,5 +1,5 @@
 import api from './api';
-import { ReportCardConfig } from '../components/examination/ReportCardTemplate';
+import type { ReportCardConfig } from '../components/examination/ReportCardTemplate';
 
 export interface SystemSetting {
     id?: string;

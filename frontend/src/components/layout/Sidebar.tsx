@@ -345,7 +345,16 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             });
     };
 
-    const finalStaffNavItems = filterNavItems(staffNavItems);
+    const finalStaffNavItems = filterNavItems(staffNavItems).map((item: any) => {
+        if (userRole !== 'librarian' || item.label !== 'Library' || !item.children) {
+            return item;
+        }
+
+        return {
+            ...item,
+            children: item.children.filter((child: any) => child.label !== 'Dashboard'),
+        };
+    });
 
     // For parents, replace standard Finance with Family Billing
     const finalStudentNavItems = userRole === 'parent'

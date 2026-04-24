@@ -84,6 +84,21 @@ export function createApiHttpClient(baseURL: string): AxiosInstance {
           authSession.setAccessToken(access_token);
           authSession.setRefreshToken(newRefreshToken);
 
+          try {
+            const meResponse = await axios.get(`${baseURL}/auth/me`, {
+              headers: {
+                Authorization: `Bearer ${access_token}`,
+              },
+            });
+            const latestUser =
+              meResponse.data && typeof meResponse.data === 'object' && 'data' in meResponse.data
+                ? meResponse.data.data
+                : meResponse.data;
+            authSession.setUser(latestUser);
+          } catch {
+            // If profile refresh fails, keep the renewed token and let normal auth flow continue.
+          }
+
           axiosInstance.defaults.headers.common.Authorization = `Bearer ${access_token}`;
           originalRequest.headers.Authorization = `Bearer ${access_token}`;
 

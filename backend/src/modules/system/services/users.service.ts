@@ -105,6 +105,23 @@ export class UsersService implements OnModuleInit {
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
     const user = await this.findOne(id);
 
+    if (updateUserDto.roleId !== undefined) {
+      if (updateUserDto.roleId) {
+        const role = await this.roleRepository.findOne({ where: { id: updateUserDto.roleId } });
+        if (!role) {
+          throw new NotFoundException(`Role with ID ${updateUserDto.roleId} not found`);
+        }
+        user.roleObject = role;
+        user.roleId = role.id;
+        if (!updateUserDto.role) {
+          updateUserDto.role = role.name.toLowerCase();
+        }
+      } else {
+        user.roleObject = null as any;
+        user.roleId = null as any;
+      }
+    }
+
     if (updateUserDto.password) {
       const plainPassword = updateUserDto.password; // Keep plain for email
       updateUserDto.password = await bcrypt.hash(plainPassword, 10);
@@ -146,7 +163,21 @@ export class UsersService implements OnModuleInit {
       // Update existing user properties if provided
       const updates: any = {};
       
-      if (details.roleId !== undefined) updates.roleId = details.roleId;
+      if (details.roleId !== undefined) {
+        updates.roleId = details.roleId;
+
+        if (details.roleId) {
+          const role = await this.roleRepository.findOne({ where: { id: details.roleId } });
+          if (role) {
+            user.roleObject = role;
+            if (details.role === undefined) {
+              updates.role = role.name.toLowerCase();
+            }
+          }
+        } else {
+          user.roleObject = null as any;
+        }
+      }
       if (details.role !== undefined) updates.role = details.role;
       if (details.tenantId !== undefined) updates.tenantId = details.tenantId;
       if (details.photo !== undefined) updates.photo = details.photo;
