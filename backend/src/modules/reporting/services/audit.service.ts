@@ -113,9 +113,12 @@ export class AuditService {
     };
   }
 
-  async getActivityLogs(tenantId: string, params: { search?: string; action?: string; portal?: string; page?: number; limit?: number }) {
+  async getActivityLogs(
+    tenantId: string,
+    params: { search?: string; action?: string; portal?: string; page?: number; limit?: number; dateFrom?: string; dateTo?: string },
+  ) {
     const page = Math.max(Number(params.page || 1), 1);
-    const limit = Math.min(Math.max(Number(params.limit || 20), 1), 100);
+    const limit = Math.min(Math.max(Number(params.limit || 20), 1), 500);
 
     const query = this.activityLogRepository.createQueryBuilder('log')
       .leftJoin('users', 'u', 'log.userEmail = u.email AND u.tenantId = log.tenantId')
@@ -136,6 +139,14 @@ export class AuditService {
 
     if (params.portal) {
       query.andWhere('log.portal = :portal', { portal: params.portal });
+    }
+
+    if (params.dateFrom) {
+      query.andWhere('log.createdAt >= :dateFrom', { dateFrom: new Date(params.dateFrom) });
+    }
+
+    if (params.dateTo) {
+      query.andWhere('log.createdAt <= :dateTo', { dateTo: new Date(params.dateTo) });
     }
 
     const queryResult = await query
@@ -172,10 +183,10 @@ export class AuditService {
 
   async getCommunicationLogs(
     tenantId: string,
-    params: { search?: string; type?: string; status?: string; page?: number; limit?: number },
+    params: { search?: string; type?: string; status?: string; page?: number; limit?: number; dateFrom?: string; dateTo?: string },
   ) {
     const page = Math.max(Number(params.page || 1), 1);
-    const limit = Math.min(Math.max(Number(params.limit || 20), 1), 100);
+    const limit = Math.min(Math.max(Number(params.limit || 20), 1), 500);
 
     const query = this.communicationLogRepository.createQueryBuilder('log')
       .where('log.tenantId = :tenantId', { tenantId })
@@ -194,6 +205,14 @@ export class AuditService {
 
     if (params.status) {
       query.andWhere('log.status = :status', { status: params.status });
+    }
+
+    if (params.dateFrom) {
+      query.andWhere('log.createdAt >= :dateFrom', { dateFrom: new Date(params.dateFrom) });
+    }
+
+    if (params.dateTo) {
+      query.andWhere('log.createdAt <= :dateTo', { dateTo: new Date(params.dateTo) });
     }
 
     const [items, total] = await query

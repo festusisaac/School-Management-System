@@ -279,11 +279,11 @@ class ApiService {
     return this.get<any>('/reporting/audit/overview')
   }
 
-  async getAuditActivityLogs(params?: { search?: string; action?: string; portal?: string; page?: number; limit?: number }) {
+  async getAuditActivityLogs(params?: { search?: string; action?: string; portal?: string; page?: number; limit?: number; dateFrom?: string; dateTo?: string }) {
     return this.get<any>('/reporting/audit/activity-logs', { params })
   }
 
-  async getAuditCommunicationLogs(params?: { search?: string; type?: string; status?: string; page?: number; limit?: number }) {
+  async getAuditCommunicationLogs(params?: { search?: string; type?: string; status?: string; page?: number; limit?: number; dateFrom?: string; dateTo?: string }) {
     return this.get<any>('/reporting/audit/communication-logs', { params })
   }
 

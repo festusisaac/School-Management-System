@@ -7,6 +7,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import { Modal } from '../../components/ui/modal';
 
 const RolesPermissionsPage = () => {
+    const protectedRoleNames = new Set(['Admin', 'Teacher', 'Accountant', 'Librarian']);
     const [roles, setRoles] = useState<Role[]>([]);
     const [permissions, setPermissions] = useState<Permission[]>([]);
     const [loading, setLoading] = useState(true);
@@ -93,13 +94,16 @@ const RolesPermissionsPage = () => {
     };
 
     const handleDeleteClick = (role: Role) => {
-        if (role.isSystem) {
-            showWarning('System roles cannot be deleted');
+        if (role.isSystem || protectedRoleNames.has(role.name)) {
+            showWarning(`${role.name} cannot be deleted`);
             return;
         }
         setDeletingRole(role);
         setIsDeleteOpen(true);
     };
+
+    const canEditRole = (role: Role) => !role.isSystem || protectedRoleNames.has(role.name);
+    const canDeleteRole = (role: Role) => !role.isSystem && !protectedRoleNames.has(role.name);
 
     const confirmDelete = async () => {
         if (!deletingRole) return;
@@ -146,6 +150,11 @@ const RolesPermissionsPage = () => {
                             <Lock className="w-3 h-3 text-amber-500" />
                         </span>
                     )}
+                    {protectedRoleNames.has(row.original.name) && (
+                        <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-100 dark:border-blue-800">
+                            Core
+                        </span>
+                    )}
                 </div>
             )
         },
@@ -169,7 +178,7 @@ const RolesPermissionsPage = () => {
             header: () => <div className="text-right">Action</div>,
             cell: ({ row }) => (
                 <div className="flex items-center justify-end gap-2">
-                    {!row.original.isSystem && (
+                    {canEditRole(row.original) && (
                         <button
                             onClick={() => handleEdit(row.original)}
                             className="p-1.5 text-primary-600 bg-primary-50 hover:bg-primary-100 rounded-lg transition-colors"
@@ -178,7 +187,7 @@ const RolesPermissionsPage = () => {
                             <Edit2 className="w-4 h-4" />
                         </button>
                     )}
-                    {!row.original.isSystem && (
+                    {canDeleteRole(row.original) && (
                         <button
                             onClick={() => handleDeleteClick(row.original)}
                             className="p-1.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"

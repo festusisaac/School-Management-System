@@ -7,6 +7,8 @@ import { CreateRoleDto, UpdateRoleDto } from '../dtos/roles.dto';
 
 @Injectable()
 export class RolesPermissionsService implements OnModuleInit {
+  private readonly protectedRoleNames = new Set(['Admin', 'Teacher', 'Accountant', 'Librarian']);
+
   constructor(
     @InjectRepository(Role)
     private readonly roleRepository: Repository<Role>,
@@ -161,8 +163,8 @@ export class RolesPermissionsService implements OnModuleInit {
 
   async deleteRole(id: string): Promise<void> {
     const role = await this.findOneRole(id);
-    if (role.isSystem) {
-      throw new Error('System roles cannot be deleted');
+    if (role.isSystem || this.protectedRoleNames.has(role.name)) {
+      throw new ConflictException(`${role.name} cannot be deleted`);
     }
     await this.roleRepository.remove(role);
   }

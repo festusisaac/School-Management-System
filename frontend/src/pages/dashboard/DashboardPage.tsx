@@ -7,6 +7,8 @@ import AccountantDashboard from './AccountantDashboard'
 import ParentDashboard from '../parent/ParentDashboard'
 import { LibraryDashboard } from '../library'
 import { useSystem } from '../../context/SystemContext'
+import { useToast } from '../../context/ToastContext'
+import { exportDailySystemReportPdf } from './utils/dailySystemReportPdf'
 
 import { Link, Navigate } from 'react-router-dom'
 import {
@@ -84,7 +86,8 @@ const DashboardPage: React.FC = () => {
     userRole === 'accountant' ||
     userRole === 'bursar' ||
     userRole === 'librarian'
-  const { activeSectionId, settings } = useSystem()
+  const { activeSectionId, settings, getSchoolInfo } = useSystem()
+  const { showError, showLoading, hideLoading, showSuccess } = useToast()
   const currentSessionId = settings?.currentSessionId
   const currentTermId = settings?.currentTermId
   const currentSessionName = settings?.activeSessionName || 'Current Session'
@@ -94,6 +97,7 @@ const DashboardPage: React.FC = () => {
   const [activities, setActivities] = useState<RecentActivity | null>(null)
   const [charts, setCharts] = useState<BasicChartData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [exportingReport, setExportingReport] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -195,6 +199,87 @@ const DashboardPage: React.FC = () => {
   const netBalance = stats?.accounting?.netBalance || 0;
   const isNetBalanceNegative = netBalance < 0;
 
+  const handleGenerateDailyReport = async () => {
+    const loadingToastId = showLoading('Generating daily PDF report...')
+    setExportingReport(true)
+
+    try {
+      const now = new Date()
+      const startOfDay = new Date(now)
+      startOfDay.setHours(0, 0, 0, 0)
+      const endOfDay = new Date(now)
+      endOfDay.setHours(23, 59, 59, 999)
+
+      const [auditOverview, activityResponse, communicationResponse, latestActivities, latestStats] = await Promise.all([
+        apiService.getAuditOverview(),
+        apiService.getAuditActivityLogs({
+          dateFrom: startOfDay.toISOString(),
+          dateTo: endOfDay.toISOString(),
+          limit: 500,
+        }),
+        apiService.getAuditCommunicationLogs({
+          dateFrom: startOfDay.toISOString(),
+          dateTo: endOfDay.toISOString(),
+          limit: 500,
+        }),
+        apiService.getRecentActivities({
+          sectionId: activeSectionId || undefined,
+          sessionId: currentSessionId || undefined,
+          termId: currentTermId || undefined,
+        }),
+        apiService.getAdminStats({
+          sectionId: activeSectionId || undefined,
+          sessionId: currentSessionId || undefined,
+          termId: currentTermId || undefined,
+        }),
+      ])
+
+      const isSameDay = (value?: string | Date) => {
+        if (!value) return false
+        const date = new Date(value)
+        return date >= startOfDay && date <= endOfDay
+      }
+
+      const todaysEnrollments = (latestActivities?.recentEnrollments || []).filter((item: any) => isSameDay(item.createdAt))
+      const todaysPayments = (latestActivities?.recentPayments || []).filter((item: any) => isSameDay(item.createdAt))
+      const todayCommunicationLogs = communicationResponse?.items || []
+      const deliveredCommunicationLogs = todayCommunicationLogs.filter((log: any) =>
+        ['DELIVERED', 'OPENED'].includes(String(log.status || '').toUpperCase()),
+      ).length
+      const failedCommunicationLogs = todayCommunicationLogs.filter((log: any) =>
+        ['FAILED', 'BOUNCED'].includes(String(log.status || '').toUpperCase()),
+      ).length
+
+      exportDailySystemReportPdf({
+        reportDate: now,
+        schoolInfo: getSchoolInfo(),
+        summary: {
+          totalStudents: latestStats?.students?.total || 0,
+          totalStaff: latestStats?.staff?.total || 0,
+          totalRevenue: latestStats?.finance?.totalRevenue || 0,
+          outstandingFees: latestStats?.finance?.outstandingFees || 0,
+          todayActivityLogs: activityResponse?.total || auditOverview?.metrics?.todayActivityLogs || 0,
+          totalCommunicationLogs: todayCommunicationLogs.length,
+          failedCommunicationLogs,
+          deliveredCommunicationLogs,
+          totalFinancialTransactions: todaysPayments.length,
+        },
+        todaysEnrollments,
+        todaysPayments,
+        activityLogs: activityResponse?.items || [],
+        communicationLogs: todayCommunicationLogs,
+      })
+
+      showSuccess('Daily system report PDF generated successfully')
+    } catch (error) {
+      console.error('Failed to generate daily system report:', error)
+      showError('Failed to generate daily system report PDF')
+    } finally {
+      hideLoading(loadingToastId)
+      setExportingReport(false)
+    }
+  }
+
   return (
     <div className="space-y-6 overflow-x-hidden p-4 sm:p-6 lg:p-8">
       
@@ -269,9 +354,13 @@ const DashboardPage: React.FC = () => {
             <UserPlus className="w-4 h-4 mr-2" />
             New Admission
           </Link>
-          <button className="flex items-center px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 shadow-sm transition-colors">
+          <button
+            onClick={handleGenerateDailyReport}
+            disabled={exportingReport}
+            className="flex items-center px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 shadow-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          >
             <ArrowUpRight className="w-4 h-4 mr-2" />
-            Generate Report
+            {exportingReport ? 'Generating...' : 'Generate Report'}
           </button>
         </div>
       </div>

@@ -1,8 +1,6 @@
-/**
- * Utility to format technical audit logs into human-readable strings.
- */
-
-const ACTION_MAPPING: Record<string, string> = {
+const fs = require('fs');
+const mappings = {
+  // Auth & System
   'POST /api/v1/auth/login': 'User System Login',
   'POST /api/v1/auth/logout': 'User System Logout',
   'GET /api/v1/auth/me': 'Account Access Verified',
@@ -26,6 +24,8 @@ const ACTION_MAPPING: Record<string, string> = {
   'PUT /api/v1/users': 'User Updated',
   'DELETE /api/v1/users': 'User Deleted',
   'POST /api/v1/users/photo': 'User Photo Uploaded',
+
+  // Academics
   'POST /api/v1/academics/classes': 'Class Created',
   'PUT /api/v1/academics/classes': 'Class Updated',
   'PATCH /api/v1/academics/classes': 'Class Updated',
@@ -65,6 +65,8 @@ const ACTION_MAPPING: Record<string, string> = {
   'PUT /api/v1/academics/timetable/slots': 'Timetable Slot Updated',
   'DELETE /api/v1/academics/timetable/slots': 'Timetable Slot Deleted',
   'DELETE /api/v1/academics/timetable/slots/clear': 'Timetable Slots Cleared',
+
+  // Students
   'POST /api/v1/students': 'Student Enrolled',
   'PUT /api/v1/students': 'Student Profile Updated',
   'PATCH /api/v1/students': 'Student Profile Modified',
@@ -87,6 +89,8 @@ const ACTION_MAPPING: Record<string, string> = {
   'POST /api/v1/students/online-admissions': 'Online Admission Submitted',
   'POST /api/v1/students/online-admissions/approve': 'Online Admission Approved',
   'PATCH /api/v1/students/online-admissions/status': 'Online Admission Status Updated',
+
+  // HR & Staff
   'POST /api/v1/hr/staff': 'Staff Member Added',
   'PUT /api/v1/hr/staff': 'Staff Profile Updated',
   'DELETE /api/v1/hr/staff': 'Staff Member Deleted',
@@ -112,6 +116,8 @@ const ACTION_MAPPING: Record<string, string> = {
   'POST /api/v1/hr/ratings': 'Staff Rating Submitted',
   'PUT /api/v1/hr/ratings': 'Staff Rating Updated',
   'DELETE /api/v1/hr/ratings': 'Staff Rating Deleted',
+
+  // Finance
   'POST /api/v1/finance/record-payment': 'Fee Payment Recorded',
   'POST /api/v1/finance/heads': 'Fee Head Created',
   'PATCH /api/v1/finance/heads': 'Fee Head Updated',
@@ -138,6 +144,8 @@ const ACTION_MAPPING: Record<string, string> = {
   'POST /api/v1/finance/structures': 'Fee Structure Created',
   'POST /api/v1/finance/paystack/verify': 'Online Payment Verified (Paystack)',
   'POST /api/v1/finance/flutterwave/verify': 'Online Payment Verified (Flutterwave)',
+
+  // Expenses
   'POST /api/v1/expenses': 'Expense Recorded',
   'PATCH /api/v1/expenses': 'Expense Updated',
   'DELETE /api/v1/expenses': 'Expense Deleted',
@@ -147,6 +155,8 @@ const ACTION_MAPPING: Record<string, string> = {
   'POST /api/v1/expenses/vendors': 'Expense Vendor Created',
   'PATCH /api/v1/expenses/vendors': 'Expense Vendor Updated',
   'DELETE /api/v1/expenses/vendors': 'Expense Vendor Deleted',
+
+  // Examination & CBT
   'POST /api/v1/examination/setup/groups': 'Exam Group Created',
   'PATCH /api/v1/examination/setup/groups': 'Exam Group Updated',
   'DELETE /api/v1/examination/setup/groups': 'Exam Group Deleted',
@@ -195,6 +205,8 @@ const ACTION_MAPPING: Record<string, string> = {
   'POST /api/v1/examination/cbt/sync/generate-key': 'CBT Sync Key Generated',
   'POST /api/v1/examination/cbt/sync/upload-scores': 'CBT Scores Uploaded',
   'POST /api/v1/examination/cbt/sync/validate-totals': 'CBT Totals Validated',
+
+  // Communication
   'POST /api/v1/communication/broadcast': 'Broadcast Message Sent',
   'POST /api/v1/communication/notices': 'Notice Created',
   'PATCH /api/v1/communication/notices': 'Notice Updated',
@@ -203,6 +215,8 @@ const ACTION_MAPPING: Record<string, string> = {
   'PUT /api/v1/communication/templates': 'Message Template Updated',
   'DELETE /api/v1/communication/templates': 'Message Template Deleted',
   'POST /api/v1/internal-communication/webhooks/resend': 'Resend Webhook Triggered',
+
+  // Homework & Online Classes
   'POST /api/v1/homework': 'Homework Created',
   'PATCH /api/v1/homework': 'Homework Updated',
   'DELETE /api/v1/homework': 'Homework Deleted',
@@ -211,6 +225,8 @@ const ACTION_MAPPING: Record<string, string> = {
   'POST /api/v1/online-classes': 'Online Class Created',
   'PATCH /api/v1/online-classes': 'Online Class Updated',
   'DELETE /api/v1/online-classes': 'Online Class Deleted',
+
+  // Library
   'POST /api/v1/library/books': 'Library Book Added',
   'PATCH /api/v1/library/books': 'Library Book Updated',
   'DELETE /api/v1/library/books': 'Library Book Deleted',
@@ -226,6 +242,8 @@ const ACTION_MAPPING: Record<string, string> = {
   'PATCH /api/v1/library/copies': 'Book Copy Updated',
   'DELETE /api/v1/library/copies': 'Book Copy Deleted',
   'POST /api/v1/library/settings': 'Library Settings Updated',
+
+  // Front CMS
   'POST /api/v1/front-cms/news': 'CMS News Created',
   'PUT /api/v1/front-cms/news': 'CMS News Updated',
   'DELETE /api/v1/front-cms/news': 'CMS News Deleted',
@@ -249,119 +267,30 @@ const ACTION_MAPPING: Record<string, string> = {
   'POST /api/v1/front-cms/contact': 'CMS Contact Submitted',
   'PUT /api/v1/front-cms/contacts/read': 'CMS Contact Marked Read',
   'DELETE /api/v1/front-cms/contacts': 'CMS Contact Deleted',
+
+  // Backup
   'POST /api/v1/backup/full': 'Full System Backup Created',
   'POST /api/v1/backup/schema': 'Database Schema Backup Created',
   'POST /api/v1/backup/cleanup': 'System Backups Cleaned Up',
   'POST /api/v1/backup/verify': 'System Backup Verified',
+  
+  // Custom manual actions
   'BULK_STAFF_IMPORT': 'Batch Staff Records Imported',
   'SYSTEM_INITIALIZATION': 'Institutional Setup Completed',
 };
 
-/**
- * Resolves a technical action/method/path to a friendly label.
- */
-export function getFriendlyAction(method: string, path: string, originalAction: string): string {
-  // 1. Try manual action match first (from our custom logs)
-  if (ACTION_MAPPING[originalAction]) return ACTION_MAPPING[originalAction];
+const file = 'c:/Users/USER/Desktop/SMS/school-management-system/frontend/src/utils/auditFormatter.ts';
+let content = fs.readFileSync(file, 'utf8');
 
-  // 2. Clean up path (remove UUIDs/IDs for matching)
-  const cleanPath = path.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '')
-                        .replace(/\/\d+/g, '/')
-                        .replace(/\/$/, '')
-                        .toLowerCase();
-  
-  const key = `${method} ${cleanPath}`;
-  
-  // 3. Try exact match on method + cleanPath
-  if (ACTION_MAPPING[key]) return ACTION_MAPPING[key];
+// Replace everything between ACTION_MAPPING = { and };
+const newMappingStr = Object.entries(mappings)
+  .map(([k, v]) => `  '${k}': '${v}',`)
+  .join('\n');
 
-  // 4. Try prefix match
-  const match = Object.entries(ACTION_MAPPING).find(([k]) => key.startsWith(k));
-  if (match) return match[1];
+const newContent = content.replace(
+  /const ACTION_MAPPING: Record<string, string> = {[\s\S]*?};\n/,
+  `const ACTION_MAPPING: Record<string, string> = {\n${newMappingStr}\n};\n`
+);
 
-  // 5. Fallback: Return original action prettified
-  return originalAction.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-}
-
-/**
- * Formats JSON details into a readable string.
- */
-export function getFriendlyDetails(details: any): string {
-  if (!details) return '-';
-  
-  let data = details;
-  if (typeof details === 'string') {
-    try {
-      // Clean up stringified escape chars if any
-      data = JSON.parse(details.replace(/\\"/g, '"'));
-    } catch (e) {
-      // If this is plain text, sanitize technical noise and return a friendly sentence.
-      const chunks = String(details)
-        .split('•')
-        .map((part) => part.trim())
-        .filter(Boolean)
-        .filter((part) => !/id\s*:/i.test(part))
-        .filter((part) => !/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.test(part));
-
-      const normalized = chunks
-        .map((part) =>
-          part
-            .replace(/\bIs Active\s*:\s*true\b/gi, 'Status: Active')
-            .replace(/\bIs Active\s*:\s*false\b/gi, 'Status: Inactive')
-            .replace(/\bClass Level\b/gi, 'Class')
-            .replace(/\bAssessment Type\b/gi, 'Assessment')
-        )
-        .join(' • ')
-        .replace(/\s{2,}/g, ' ')
-        .trim();
-
-      return normalized || 'Action completed successfully';
-    }
-  }
-
-  if (typeof data !== 'object' || data === null || Object.keys(data).length === 0) {
-    return '-';
-  }
-
-  // Define sensitive/technical keys to hide
-  const skipKeys = ['tenantId', 'password', 'id', 'userId', 'roleId', 'sessionId', 'termId', 'createdAt', 'updatedAt'];
-  
-  const entries = Object.entries(data)
-    .filter(([key]) => !skipKeys.includes(key) && !/id$/i.test(key))
-    .map(([key, value]) => {
-      const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-      let valDisplay = '';
-      
-      if (typeof value === 'object' && value !== null) {
-        valDisplay = '[Complex Data]';
-      } else {
-        if (typeof value === 'boolean') {
-          valDisplay = value ? 'Yes' : 'No';
-        } else {
-          const textValue = String(value);
-          // Hide UUID-like values and long technical hashes
-          if (/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.test(textValue) || textValue.length > 80) {
-            return null;
-          }
-          valDisplay = textValue;
-        }
-      }
-      
-      return `${label}: ${valDisplay}`;
-    })
-    .filter((entry): entry is string => Boolean(entry));
-
-  if (entries.length === 0) return 'Action completed successfully';
-  
-  return entries.join(', ');
-}
-
-/**
- * Returns a semantic color class for the action.
- */
-export function getActionColor(action: string, method: string): string {
-  if (method === 'DELETE') return 'text-red-700 bg-red-50 dark:bg-red-900/20';
-  if (method === 'POST') return 'text-emerald-700 bg-emerald-50 dark:bg-emerald-900/20';
-  if (method === 'PUT' || method === 'PATCH') return 'text-blue-700 bg-blue-50 dark:bg-blue-900/20';
-  return 'text-gray-700 bg-gray-50 dark:bg-gray-800';
-}
+fs.writeFileSync(file, newContent);
+console.log('Successfully updated auditFormatter.ts mapping.');
