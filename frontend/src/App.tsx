@@ -84,7 +84,7 @@ function AppRoutes() {
     <Router future={{ v7_relativeSplatPath: true }}>
       <ScrollToTop />
       <Routes>
-        <Route path="/setup" element={<SetupWizard />} />
+        <Route path="/setup" element={isInitialized ? <Navigate to="/login" replace /> : <SetupWizard />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/change-password" element={<ChangePasswordPage />} />
         <Route path="/maintenance" element={<MaintenancePage />} />
