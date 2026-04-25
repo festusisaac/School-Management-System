@@ -13,10 +13,14 @@ export class CmsSchema1777151452087 implements MigrationInterface {
         await queryRunner.query(`CREATE TABLE IF NOT EXISTS "cms_heroes" ("id" SERIAL NOT NULL, "title" character varying NOT NULL DEFAULT 'Nurturing Leaders of Tomorrow', "subtitle" character varying NOT NULL DEFAULT 'Welcome to our school, where we combine academic rigor with moral guidance.', "welcomeText" character varying NOT NULL DEFAULT 'Excellence in Education', CONSTRAINT "PK_cbee718cb07db178c70ceeb7712" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE IF NOT EXISTS "cms_gallery_items" ("id" SERIAL NOT NULL, "imageUrl" character varying NOT NULL, "title" character varying NOT NULL, "category" character varying NOT NULL, CONSTRAINT "PK_9bfa67d34bf16675f664fc9a832" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE IF NOT EXISTS "cms_contacts" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "fullName" character varying NOT NULL, "email" character varying NOT NULL, "phone" character varying, "subject" character varying, "message" text NOT NULL, "isRead" boolean NOT NULL DEFAULT false, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_467c4a3c431e8bf0b0c47bd28b9" PRIMARY KEY ("id"))`);
-        try {
+        const constraintCheck = await queryRunner.query(`
+            SELECT 1 
+            FROM information_schema.table_constraints 
+            WHERE constraint_name = 'FK_487cc658b7c50f7c1af194c40c3' 
+            AND table_name = 'cms_carousel_images'
+        `);
+        if (constraintCheck.length === 0) {
             await queryRunner.query(`ALTER TABLE "cms_carousel_images" ADD CONSTRAINT "FK_487cc658b7c50f7c1af194c40c3" FOREIGN KEY ("heroId") REFERENCES "cms_heroes"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        } catch (error) {
-            console.log('Constraint may already exist, skipping...');
         }
     }
 
