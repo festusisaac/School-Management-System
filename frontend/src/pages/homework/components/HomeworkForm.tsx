@@ -79,7 +79,7 @@ export default function HomeworkForm({ isOpen, onClose, onSuccess, initialData }
                 // Use the scoped findByClass API which we updated in the backend
                 const response = await api.get(`/academics/assign-class-subjects/class/${formData.classId}`);
                 // Extract unique subjects from ClassSubject mappings
-                const mappedSubjects = response.map((cs: any) => ({
+                const mappedSubjects = (response as any[]).map((cs: any) => ({
                     id: cs.subjectId,
                     name: cs.subject?.name
                 })).filter((s: any, index: number, self: any[]) => 
