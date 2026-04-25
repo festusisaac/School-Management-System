@@ -1,6 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreateTimetableTables1734361234567 implements MigrationInterface {
+export class CreateTimetableTables1777000000000 implements MigrationInterface {
     public async up(queryRunner: QueryRunner): Promise<void> {
         // Create period_type enum if not exists
         await queryRunner.query(`

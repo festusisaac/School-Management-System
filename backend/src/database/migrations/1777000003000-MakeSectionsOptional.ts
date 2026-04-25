@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class MakeSectionsOptional1735220000000 implements MigrationInterface {
-    name = 'MakeSectionsOptional1735220000000'
+export class MakeSectionsOptional1777000003000 implements MigrationInterface {
+    name = 'MakeSectionsOptional1777000003000'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         // 1. Make sectionId nullable in subject_teachers

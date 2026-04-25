@@ -1,6 +1,6 @@
 import { MigrationInterface, QueryRunner, Table, TableForeignKey } from 'typeorm';
 
-export class CreateClassSubject1735203593000 implements MigrationInterface {
+export class CreateClassSubject1777000001000 implements MigrationInterface {
     public async up(queryRunner: QueryRunner): Promise<void> {
         // 1. Create table IF NOT EXISTS
         await queryRunner.query(`CREATE TABLE IF NOT EXISTS "class_subject" (
