@@ -19,12 +19,13 @@ import { extname, join } from 'path';
 import { Public } from '@decorators/public.decorator';
 import { Permissions } from '@decorators/permissions.decorator';
 import { PermissionsGuard } from '@guards/permissions.guard';
+import { JwtAuthGuard } from '@guards/jwt-auth.guard';
 import { ApiTags } from '@nestjs/swagger';
 import { CreateCmsContactDto } from '../dtos/create-cms-contact.dto';
 
 @ApiTags('Front CMS')
 @Controller('front-cms')
-@UseGuards(PermissionsGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class FrontCmsController {
   constructor(private readonly cmsService: FrontCmsService) {}
 
