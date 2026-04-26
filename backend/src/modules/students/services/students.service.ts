@@ -314,7 +314,7 @@ export class StudentsService {
                             '{guardian_name}': parent.guardianName || parent.fatherName || 'Parent',
                             '{admission_no}': savedStudent.admissionNo,
                             '{school_name}': settings?.schoolName || 'Our School',
-                            '{portal_url}': settings?.officialWebsite || process.env.FRONTEND_URL || 'http://localhost:3000',
+                            '{portal_url}': settings?.officialWebsite || process.env.FRONTEND_URL || 'https://phjcschool.com.ng',
                             '{fee_balance}': new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(feeBalance)
                         };
 

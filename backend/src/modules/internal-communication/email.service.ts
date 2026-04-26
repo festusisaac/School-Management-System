@@ -91,7 +91,7 @@ export class EmailService {
       parentUsername, 
       parentPassword, 
       schoolName = 'Our School', 
-      portalUrl = process.env.FRONTEND_URL || 'http://localhost:3000',
+      portalUrl = process.env.FRONTEND_URL || 'https://phjcschool.com.ng',
       admissionLetterHtml
     } = options;
 
@@ -191,7 +191,7 @@ export class EmailService {
       password,
       roleName = 'Staff',
       schoolName = 'School Management System',
-      portalUrl = process.env.FRONTEND_URL || 'http://localhost:3001',
+      portalUrl = process.env.FRONTEND_URL || 'https://phjcschool.com.ng',
     } = options;
 
     const html = `
