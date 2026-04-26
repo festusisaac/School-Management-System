@@ -48,7 +48,7 @@ export class AuthService {
       .sendRegistrationEmail(
         user.email,
         user.firstName,
-        `${process.env.FRONTEND_URL || 'http://localhost:3001'}/verify-email?token=sample`,
+        `${process.env.FRONTEND_URL || 'https://phjcschool.com.ng'}/verify-email?token=sample`,
       )
       .catch((err: any) => this.logger.error('Failed to send registration email', err));
 

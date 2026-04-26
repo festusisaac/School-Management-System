@@ -136,7 +136,7 @@ export class NoticeboardService {
       '{school_phone}': settings.schoolPhone || '',
       '{school_email}': settings.schoolEmail || '',
       '{school_address}': settings.schoolAddress || '',
-      '{portal_url}': process.env.FRONTEND_URL || 'http://localhost:3000',
+      '{portal_url}': process.env.FRONTEND_URL || 'https://phjcschool.com.ng',
       '{current_date}': new Date().toLocaleDateString(),
       '{current_year}': new Date().getFullYear().toString(),
     };

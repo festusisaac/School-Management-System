@@ -39,7 +39,7 @@ async function bootstrap() {
 
   // CORS Configuration
   app.enableCors({
-    origin: configService.get('CORS_ORIGIN', 'http://localhost:3001').split(','),
+    origin: configService.get('CORS_ORIGIN', 'https://phjcschool.com.ng').split(','),
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Accept, Authorization',
@@ -77,7 +77,7 @@ async function bootstrap() {
   const port = configService.get('PORT', 3000);
   await app.listen(port);
 
-  winstonLogger.info(`🚀 Application is running on: http://localhost:${port}`);
+  winstonLogger.info(`🚀 Application is running on port: ${port}`);
   winstonLogger.info(`📝 API Prefix: api/${configService.get('API_VERSION')}`);
   winstonLogger.info(`🌍 Environment: ${configService.get('NODE_ENV')}`);
 }

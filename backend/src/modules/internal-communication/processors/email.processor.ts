@@ -14,8 +14,8 @@ import { CommunicationLog } from '../../communication/entities/communication-log
 export class EmailProcessor {
   private readonly logger = new Logger(EmailProcessor.name);
   private transporter: any;
-  private readonly portalUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-  private readonly backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
+  private readonly portalUrl = process.env.FRONTEND_URL || 'https://phjcschool.com.ng';
+  private readonly backendUrl = process.env.BACKEND_URL || 'https://api.phjcschool.com.ng';
 
   constructor(
     @Inject(forwardRef(() => SystemSettingsService))

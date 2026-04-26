@@ -170,8 +170,8 @@ const BulkReportCardPage = () => {
         const getFullUrl = (path: string) => {
             if (!path) return '';
             if (path.startsWith('http')) return path;
-            const bUrl = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000';
-            return bUrl.replace('/api', '') + (path.startsWith('/') ? '' : '/') + path;
+            const bUrl = (import.meta as any).env?.VITE_API_URL || 'https://api.phjcschool.com.ng';
+            return bUrl + (path.startsWith('/') ? '' : '/') + path;
         };
 
         // 2. Generate Cards (using indexed O(1) lookups)

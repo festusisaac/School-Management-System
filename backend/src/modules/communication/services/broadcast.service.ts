@@ -236,7 +236,7 @@ export class BroadcastService {
     let result = text;
     const data = recipient.data;
     const settings = await this.systemSettingsService.getSettings();
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://phjcschool.com.ng';
 
     // Determine the name to use in 'Dear {name}'
     const displayName = data.firstName 
