@@ -130,19 +130,30 @@ const cmsService = {
   getPrograms: () => api.get<CmsProgram[]>('/front-cms/programs'),
   createProgram: (data: Partial<CmsProgram>, image: File | string) => {
     const formData = new FormData();
-    Object.keys(data).forEach(key => formData.append(key, String(data[key as keyof CmsProgram])));
+    Object.keys(data).forEach(key => {
+      // Don't append imageUrl here if we are going to append it manually below
+      if (key !== 'imageUrl' && data[key as keyof CmsProgram] !== undefined) {
+        formData.append(key, String(data[key as keyof CmsProgram]));
+      }
+    });
+
     if (typeof image === 'string') {
       formData.append('imageUrl', image);
-    } else {
+    } else if (image instanceof File) {
       formData.append('file', image);
     }
+    
     return api.post<CmsProgram>('/front-cms/programs', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
   updateProgram: (id: number, data: Partial<CmsProgram>, file?: File) => {
     const formData = new FormData();
-    Object.keys(data).forEach(key => formData.append(key, String(data[key as keyof CmsProgram])));
+    Object.keys(data).forEach(key => {
+      if (data[key as keyof CmsProgram] !== undefined) {
+        formData.append(key, String(data[key as keyof CmsProgram]));
+      }
+    });
     if (file) formData.append('file', file);
     return api.put<CmsProgram>(`/front-cms/programs/${id}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
