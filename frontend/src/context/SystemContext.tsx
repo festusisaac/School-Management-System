@@ -204,8 +204,13 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 const cacheBuster = data?.updatedAt ? `?v=${new Date(data.updatedAt).getTime()}` : '';
                 favicon.href = faviconUrl ? `${buildUrl(faviconUrl)}${cacheBuster}` : '/vite.svg';
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to fetch system settings:', error);
+            // If backend says system is not initialized, clear cache and force setup
+            if (error.response?.status === 403 && error.response?.data?.error === 'SystemNotInitialized') {
+                localStorage.removeItem('system_settings');
+                setSettings(prev => ({ ...prev, isInitialized: false }));
+            }
         } finally {
             setLoading(false);
         }

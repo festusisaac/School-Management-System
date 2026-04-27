@@ -240,7 +240,7 @@ export class Staff {
     sections!: SchoolSection[];
 
     @Index()
-    @Column({ nullable: false })
+    @Column({ type: 'uuid', nullable: false })
     tenantId!: string;
 
     @CreateDateColumn({ name: 'created_at' })
