@@ -103,7 +103,10 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     const refreshSettings = useCallback(async () => {
         try {
-            const data = await systemService.getSettings();
+            const hasToken = !!localStorage.getItem('access_token');
+            const data = hasToken 
+                ? await systemService.getSettings()
+                : await systemService.getPublicSettings();
             let nextAvailableSections: SchoolSection[] = [];
 
             // Try fetching sections using the base api call

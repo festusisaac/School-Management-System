@@ -131,6 +131,11 @@ export const systemService = {
         return response;
     },
 
+    getPublicSettings: async () => {
+        const response = await api.get<SystemSetting>('/system/settings/public');
+        return response;
+    },
+
     updateSettings: async (data: Partial<SystemSetting>) => {
         const response = await api.put<SystemSetting>('/system/settings', data);
         return response;

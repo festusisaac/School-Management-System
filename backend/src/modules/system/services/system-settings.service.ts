@@ -21,6 +21,7 @@ export class SystemSettingsService {
         return {
             schoolName: settings.schoolName,
             schoolLogo: settings.primaryLogo,
+            primaryLogo: settings.primaryLogo,
             schoolEmail: settings.schoolEmail,
             schoolPhone: settings.schoolPhone,
             admissionFee: settings.admissionFee,
