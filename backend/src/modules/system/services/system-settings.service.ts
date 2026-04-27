@@ -24,6 +24,8 @@ export class SystemSettingsService {
             primaryLogo: settings.primaryLogo,
             schoolEmail: settings.schoolEmail,
             schoolPhone: settings.schoolPhone,
+            primaryColor: settings.primaryColor,
+            secondaryColor: settings.secondaryColor,
             admissionFee: settings.admissionFee,
             admissionInstructions: settings.admissionInstructions,
             onlineAdmissionEnabled: settings.onlineAdmissionEnabled,
