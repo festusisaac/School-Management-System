@@ -134,18 +134,25 @@ const AdmissionLetterTemplate = forwardRef<HTMLDivElement, AdmissionLetterProps>
                 {/* Closing */}
                 <div className="mt-16">
                     <p>Yours Faithfully,</p>
-                    <div className="mt-10">
-                        <div className="h-0.5 w-48 bg-gray-900 mb-2"></div>
-                        <p className="font-bold uppercase">{settings?.schoolName} Admissions Board</p>
-                        <p className="text-sm italic">Registrar's Office</p>
+                    <div className="mt-8">
+                        {settings?.principalSignature && (
+                            <img 
+                                src={getFileUrl(settings.principalSignature)} 
+                                alt="Principal Signature" 
+                                className="h-12 w-auto mb-[-8px] ml-4 object-contain"
+                                style={{ mixBlendMode: 'multiply' }}
+                            />
+                        )}
+                        <div className="h-px w-48 bg-gray-900 mb-2"></div>
+                        <p className="font-bold uppercase tracking-wide">Principal</p>
+                        <p className="text-xs italic text-gray-500">{settings?.schoolName}</p>
                     </div>
                 </div>
 
                 {/* Footer Disclaimer */}
                 <div className="absolute bottom-[20mm] left-[20mm] right-[20mm] border-t pt-4 text-center">
-                    <p className="text-[10px] text-gray-400">
-                        This is an electronically generated document. No signature is required. 
-                        Verification code: {application.id.split('-')[0].toUpperCase()}
+                    <p className="text-[10px] text-gray-400 font-mono tracking-widest">
+                        AUTHENTICITY VERIFICATION CODE: {application.id.split('-')[0].toUpperCase()}
                     </p>
                 </div>
             </div>

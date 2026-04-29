@@ -129,12 +129,18 @@ export default function StudentAdmission() {
     // Documents State
     const [documents, setDocuments] = useState<any[]>([]);
 
-    // Apply Admission Number Prefix
+    // Apply Admission Number Prefix & Current Year
     useEffect(() => {
-        if (!isEditMode && settings?.admissionNumberPrefix && !formData.admissionNo) {
+        if (!isEditMode && !formData.admissionNo) {
+            const currentYear = new Date().getFullYear();
+            const prefix = settings?.admissionNumberPrefix || '';
+            // Ensure year is included (e.g., PREFIX/2026/)
+            const yearStr = `${currentYear}/`;
+            const finalAutoValue = prefix.includes(yearStr) ? prefix : `${prefix}${yearStr}`;
+
             setFormData(prev => ({
                 ...prev,
-                admissionNo: settings.admissionNumberPrefix || ''
+                admissionNo: finalAutoValue
             }));
         }
     }, [settings?.admissionNumberPrefix, isEditMode]);
