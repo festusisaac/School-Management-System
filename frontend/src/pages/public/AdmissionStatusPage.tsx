@@ -121,32 +121,57 @@ const AdmissionStatusPage = () => {
                                 <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
                                     {/* Credentials Box */}
                                     <div className="bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/20 rounded-2xl p-6 text-center space-y-4">
-                                        <div className="space-y-1">
-                                            <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">School Admission Number</span>
-                                            <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tighter">
-                                                {application.finalAdmissionNo || "Generating..."}
-                                            </div>
-                                        </div>
-                                        
-                                        <div className="h-px bg-emerald-100/50 dark:bg-emerald-800/20 mx-4" />
-
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-4">
                                             <div className="space-y-1">
-                                                <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest block">Username</span>
-                                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate block px-2">
-                                                    {application.finalAdmissionNo}
-                                                </span>
+                                                <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Student Portal Access</span>
+                                                <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tighter">
+                                                    {application.finalAdmissionNo || "Generating..."}
+                                                </div>
                                             </div>
-                                            <div className="space-y-1 border-l border-emerald-100 dark:border-emerald-800/20">
-                                                <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest block">Password</span>
-                                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
-                                                    Student@{application.finalAdmissionNo?.split('/').pop() || '****'}
-                                                </span>
+                                            
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-1">
+                                                    <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest block text-left">Username</span>
+                                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate block px-2 bg-white dark:bg-slate-900 py-1.5 rounded-lg border border-emerald-100/50">
+                                                        {application.finalAdmissionNo}
+                                                    </span>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest block text-left">Password</span>
+                                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block bg-white dark:bg-slate-900 py-1.5 rounded-lg border border-emerald-100/50">
+                                                        Std@{application.finalAdmissionNo?.slice(-4) || '****'}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
+
+                                        <div className="h-px bg-emerald-200/30 dark:bg-emerald-800/20 mx-4" />
+
+                                        {application.parentUsername && (
+                                            <div className="space-y-4">
+                                                <div className="space-y-1">
+                                                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Parent Portal Access</span>
+                                                </div>
+                                                
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-1">
+                                                        <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest block text-left">Username</span>
+                                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate block px-2 bg-white dark:bg-slate-900 py-1.5 rounded-lg border border-emerald-100/50">
+                                                            {application.parentUsername}
+                                                        </span>
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest block text-left">Password</span>
+                                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block bg-white dark:bg-slate-900 py-1.5 rounded-lg border border-emerald-100/50">
+                                                            {application.parentPassword}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                         
-                                        <p className="text-[10px] text-emerald-600/70 dark:text-emerald-400/60 font-medium">
-                                            * You will be required to change this password on your first login for security.
+                                        <p className="text-[10px] text-emerald-600/70 dark:text-emerald-400/60 font-medium pt-2">
+                                            * You will be required to change these passwords on your first login for security.
                                         </p>
                                     </div>
 

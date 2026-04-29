@@ -49,7 +49,7 @@ const AdmissionFormPage = () => {
         stateOfOrigin: '',
         nationality: 'Nigerian',
         mobileNumber: '',
-        email: '',
+        guardianEmail: '',
         guardianName: '',
         guardianPhone: '',
         guardianRelation: '',
@@ -94,7 +94,7 @@ const AdmissionFormPage = () => {
             // Pre-fill if empty
             setFormData(prev => ({
                 ...prev,
-                email: prev.email || payEmail,
+                guardianEmail: prev.guardianEmail || payEmail,
                 guardianName: prev.guardianName || payName || ''
             }));
         }
@@ -142,12 +142,12 @@ const AdmissionFormPage = () => {
                 if (value === 'Father') {
                     next.guardianName = prev.fatherName;
                     next.guardianPhone = prev.fatherPhone;
-                    next.email = prev.fatherEmail;
+                    next.guardianEmail = prev.fatherEmail;
                     next.guardianRelation = 'Father';
                 } else if (value === 'Mother') {
                     next.guardianName = prev.motherName;
                     next.guardianPhone = prev.motherPhone;
-                    next.email = prev.motherEmail;
+                    next.guardianEmail = prev.motherEmail;
                     next.guardianRelation = 'Mother';
                 }
             }
@@ -155,11 +155,11 @@ const AdmissionFormPage = () => {
             if (prev.primaryGuardian === 'Father') {
                 if (name === 'fatherName') next.guardianName = value;
                 if (name === 'fatherPhone') next.guardianPhone = value;
-                if (name === 'fatherEmail') next.email = value;
+                if (name === 'fatherEmail') next.guardianEmail = value;
             } else if (prev.primaryGuardian === 'Mother') {
                 if (name === 'motherName') next.guardianName = value;
                 if (name === 'motherPhone') next.guardianPhone = value;
-                if (name === 'motherEmail') next.email = value;
+                if (name === 'motherEmail') next.guardianEmail = value;
             }
 
             return next;
@@ -211,7 +211,10 @@ const AdmissionFormPage = () => {
             const finalData = new FormData();
             const { primaryGuardian, ...submissionData } = formData;
             Object.entries(submissionData).forEach(([key, value]) => {
-                finalData.append(key, value as any);
+                // Skip empty strings to prevent backend validation errors for optional fields
+                if (value !== '' && value !== null && value !== undefined) {
+                    finalData.append(key, value as any);
+                }
             });
             if (files.passportPhoto) finalData.append('passportPhoto', files.passportPhoto);
             if (files.birthCertificate) finalData.append('birthCertificate', files.birthCertificate);
@@ -361,7 +364,7 @@ const AdmissionFormPage = () => {
                                         <FormInput label="Guardian Name" name="guardianName" value={formData.guardianName} onChange={handleChange} required disabled={formData.primaryGuardian !== 'Other'} />
                                         <FormInput label="Guardian Phone" name="guardianPhone" value={formData.guardianPhone} onChange={handleChange} required disabled={formData.primaryGuardian !== 'Other'} />
                                         <FormSelect label="Relation" name="guardianRelation" value={formData.guardianRelation} onChange={handleChange} options={['Father', 'Mother', 'Uncle', 'Aunt', 'Other']} required disabled={formData.primaryGuardian !== 'Other'} />
-                                        <FormInput label="Guardian Email" name="email" type="email" value={formData.email || ''} onChange={handleChange} required disabled={formData.primaryGuardian !== 'Other'} />
+                                        <FormInput label="Guardian Email" name="guardianEmail" type="email" value={formData.guardianEmail || ''} onChange={handleChange} required disabled={formData.primaryGuardian !== 'Other'} />
                                         
                                         <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <FormTextarea label="Current Resident Address" name="currentAddress" value={formData.currentAddress || ''} onChange={handleChange} rows={2} />
@@ -449,6 +452,7 @@ const AdmissionFormPage = () => {
                                     <ReviewItem label="Target Class" value={classes.find(c => c.id === formData.preferredClassId)?.name || 'Not selected'} />
                                     <ReviewItem label="Guardian" value={`${formData.guardianName} (${formData.guardianRelation})`} />
                                     <ReviewItem label="Phone" value={formData.guardianPhone} />
+                                    <ReviewItem label="Email" value={formData.guardianEmail} />
                                     <ReviewItem label="Address" value={formData.currentAddress} />
                                 </div>
                                 <div className="p-6 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-3xl space-y-4">

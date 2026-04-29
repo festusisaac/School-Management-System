@@ -52,18 +52,19 @@ export class AcademicsController {
     @Public()
     @Get('public/classes')
     async getPublicClasses() {
-        // Resolve tenantId from the first super admin, then fallback to any user, then any class
-        let result = await this.entityManager.query('SELECT "tenantId" FROM "users" WHERE "role" ILIKE \'%Super Administrator%\' LIMIT 1');
-        
+        // Resolve tenantId: Prioritize a tenant that actually has classes first
+        let result = await this.entityManager.query('SELECT "tenantId" FROM "classes" LIMIT 1');
         let tenantId = result[0]?.tenantId;
         
+        // Fallback to Super Administrator if no classes exist yet
         if (!tenantId) {
-            result = await this.entityManager.query('SELECT "tenantId" FROM "users" LIMIT 1');
+            result = await this.entityManager.query('SELECT "tenantId" FROM "users" WHERE "role" ILIKE \'%Super Administrator%\' LIMIT 1');
             tenantId = result[0]?.tenantId;
         }
-
+        
+        // Last fallback to any user
         if (!tenantId) {
-            result = await this.entityManager.query('SELECT "tenantId" FROM "classes" LIMIT 1');
+            result = await this.entityManager.query('SELECT "tenantId" FROM "users" LIMIT 1');
             tenantId = result[0]?.tenantId;
         }
 

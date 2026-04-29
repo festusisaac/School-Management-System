@@ -301,9 +301,15 @@ export class StudentsController {
         let tenantId = req.user?.tenantId;
         
         if (!tenantId) {
-            // Resolve tenantId from the first super admin for public requests
-            const result = await this.entityManager.query('SELECT "tenantId" FROM "users" WHERE "role" ILIKE \'%Super Administrator%\' LIMIT 1');
+            // Resolve tenantId: Prioritize a tenant that actually has classes first (most reliable indicator of active tenant)
+            let result = await this.entityManager.query('SELECT "tenantId" FROM "classes" LIMIT 1');
             tenantId = result[0]?.tenantId;
+
+            // Fallback to first Super Admin
+            if (!tenantId) {
+                result = await this.entityManager.query('SELECT "tenantId" FROM "users" WHERE "role" ILIKE \'%Super Administrator%\' LIMIT 1');
+                tenantId = result[0]?.tenantId;
+            }
         }
 
         if (!tenantId) throw new ForbiddenException('Tenant context missing');
@@ -318,6 +324,12 @@ export class StudentsController {
             (dto as any).guardianPhoto = files.guardianPhoto[0].path;
         }
 
+        // Force explicit mapping for guardianEmail to ensure it's not lost
+        if (!dto.guardianEmail && (req.body.guardianEmail || (req as any).guardianEmail)) {
+            dto.guardianEmail = req.body.guardianEmail || (req as any).guardianEmail;
+        }
+
+
         return this.studentsService.createOnlineAdmission(dto, tenantId);
     }
 
@@ -326,9 +338,14 @@ export class StudentsController {
     async verifyAdmissionPayment(@Param('reference') reference: string, @Query('email') email: string) {
         if (!email) throw new BadRequestException('Email is required for verification');
         
-        // Resolve tenantId from the first super admin since this is a public request
-        const result = await this.entityManager.query('SELECT "tenantId" FROM "users" WHERE "role" ILIKE \'%Super Administrator%\' LIMIT 1');
-        const tenantId = result[0]?.tenantId;
+        // Resolve tenantId: Prioritize a tenant that actually has classes first
+        let result = await this.entityManager.query('SELECT "tenantId" FROM "classes" LIMIT 1');
+        let tenantId = result[0]?.tenantId;
+        
+        if (!tenantId) {
+            result = await this.entityManager.query('SELECT "tenantId" FROM "users" WHERE "role" ILIKE \'%Super Administrator%\' LIMIT 1');
+            tenantId = result[0]?.tenantId;
+        }
         
         if (!tenantId) throw new ForbiddenException('Tenant context missing');
         

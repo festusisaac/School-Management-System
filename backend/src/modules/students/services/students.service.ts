@@ -107,7 +107,7 @@ export class StudentsService {
 
     // --- Students ---
 
-    async create(createStudentDto: CreateStudentDto, tenantId: string, documentFiles?: Express.Multer.File[]): Promise<Student> {
+    async create(createStudentDto: CreateStudentDto, tenantId: string, documentFiles?: Express.Multer.File[], isOnline = false): Promise<Student> {
         let parent: Parent | null = null;
 
         // 1. Check for Sibling or Parent Link (explicit linking)
@@ -252,10 +252,11 @@ export class StudentsService {
             const studentRole = await this.roleRepository.findOne({ where: { name: 'Student' } });
             const parentRole = await this.roleRepository.findOne({ where: { name: 'Parent' } });
 
-            // Create Student User (Use admissionNo as the login identifier)
+            // 4. Provision User Account for Student
             const studentIdentifier = savedStudent.admissionNo;
-            const studentTempPassword = `Student@${savedStudent.admissionNo.split('/').pop()}`;
+            const studentTempPassword = `Std@${savedStudent.admissionNo.slice(-4)}`;
             
+            // Security: Force student to change password on first login
             const studentUser = await this.usersService.findOrCreateUser(studentIdentifier, {
                 firstName: savedStudent.firstName,
                 lastName: savedStudent.lastName || '',
@@ -264,30 +265,42 @@ export class StudentsService {
                 roleId: studentRole?.id,
                 tenantId: tenantId,
                 photo: savedStudent.studentPhoto,
-                mustChangePassword: mustChangePassword // Pass the security flag
+                mustChangePassword: true // Explicitly force change
             });
             await this.studentsRepository.update(savedStudent.id, { userId: studentUser.id });
 
             // Create Parent User (Prioritize guardian email, fallback to phone)
             const parentEmail = parent?.guardianEmail || (parent?.guardianPhone ? `${parent.guardianPhone.replace(/\s+/g, '')}@parent.sms` : null);
-            
-            if (parent && parentEmail && !parent.userId) {
-                // Split name into first and last for cleaner user profile
-                const fullName = (parent.guardianName || parent.fatherName || 'Parent').trim();
-                const nameParts = fullName.split(' ');
-                const parentFirstName = nameParts[0];
-                const parentLastName = nameParts.slice(1).join(' ') || '';
 
-                const parentUser = await this.usersService.findOrCreateUser(parentEmail, {
-                    firstName: parentFirstName,
-                    lastName: parentLastName, 
-                    password: parentEmail === studentIdentifier ? undefined : `Parent@${parent.guardianPhone?.slice(-4) || '1234'}`,
-                    role: 'parent',
-                    roleId: parentRole?.id,
-                    tenantId: tenantId,
-                    photo: parent.guardianPhoto
-                });
-                await this.parentRepository.update(parent.id, { userId: parentUser.id });
+            // --- Parent User Provisioning & Admission Email ---
+            if (parent && parentEmail) {
+                let isNewParentUser = false;
+                let parentUser = await this.usersService.findByEmail(parentEmail);
+                const parentPassword = `Parent@${parent.guardianPhone?.slice(-4) || '1234'}`;
+
+                if (!parentUser) {
+                    isNewParentUser = true;
+                    // Split name into first and last for cleaner user profile
+                    const fullName = (parent.guardianName || parent.fatherName || 'Parent').trim();
+                    const nameParts = fullName.split(' ');
+                    const parentFirstName = nameParts[0];
+                    const parentLastName = nameParts.slice(1).join(' ') || '';
+
+                    parentUser = await this.usersService.findOrCreateUser(parentEmail, {
+                        firstName: parentFirstName,
+                        lastName: parentLastName, 
+                        password: parentEmail === studentIdentifier ? undefined : parentPassword,
+                        role: 'parent',
+                        roleId: parentRole?.id,
+                        tenantId: tenantId,
+                        photo: parent.guardianPhoto,
+                        mustChangePassword: true // Enforce security for new parents
+                    });
+                    await this.parentRepository.update(parent.id, { userId: parentUser.id });
+                } else if (!parent.userId) {
+                    // Link existing user to this parent record if not already linked
+                    await this.parentRepository.update(parent.id, { userId: parentUser.id });
+                }
                 
                 // Fetch settings for school/portal info
                 const settings = await this.systemSettingsService.getSettings();
@@ -298,7 +311,7 @@ export class StudentsService {
                     const templates = await this.messageTemplatesService.findAll(tenantId);
                     const template = templates.find(t => t.name === 'Admission Template');
 
-                    if (template) {
+                    if (template && template.body) {
                         // Fetch student current balance (from fees allocated during creation)
                         let feeBalance = 0;
                         try {
@@ -318,7 +331,7 @@ export class StudentsService {
                             '{fee_balance}': new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(feeBalance)
                         };
 
-                        admissionLetterHtml = (template.body || '').replace(/\n/g, '<br />');
+                        admissionLetterHtml = template.body.replace(/\n/g, '<br />');
                         Object.entries(replacements).forEach(([key, value]) => {
                             admissionLetterHtml = admissionLetterHtml?.replace(new RegExp(key, 'g'), String(value));
                         });
@@ -333,21 +346,16 @@ export class StudentsService {
                     studentName: `${savedStudent.firstName} ${savedStudent.lastName || ''}`,
                     admissionNo: savedStudent.admissionNo,
                     parentUsername: parentUser.email,
-                    parentPassword: `Parent@${parent.guardianPhone?.slice(-4) || '1234'}`,
+                    parentPassword: isNewParentUser ? parentPassword : undefined,
+                    studentPassword: studentTempPassword,
                     schoolName: settings?.schoolName,
                     portalUrl: settings?.officialWebsite,
-                    admissionLetterHtml: admissionLetterHtml
+                    admissionLetterHtml: admissionLetterHtml,
+                    isNewUser: isNewParentUser,
+                    isOnline: isOnline
                 });
             }
 
-            // --- Student Welcome Email (Unchanged) ---
-            await this.emailService.sendAdmissionWelcomeEmail(
-                studentUser.email,
-                studentUser.firstName,
-                studentUser.email,
-                studentTempPassword,
-                'Student'
-            );
         } catch (error) {
             console.error('Failed to auto-provision user accounts or send welcome emails:', error);
         }
@@ -762,16 +770,25 @@ export class StudentsService {
             throw new NotFoundException(`Application with reference ${referenceNumber} not found`);
         }
 
-        // Fetch fee breakdown if approved
+        // Fetch extra details if approved (Login details, fees, etc.)
         if (admission.status === 'approved' && admission.admittedStudentId) {
             try {
+                // Fetch student and parent info
+                const student = await this.studentsRepository.findOne({
+                    where: { id: admission.admittedStudentId, tenantId: admission.tenantId },
+                    relations: ['parent']
+                });
+
                 const statement = await this.feesService.getStudentStatement(admission.admittedStudentId, admission.tenantId);
+                
                 return {
                     ...admission,
                     assignedFees: statement.assignedHeads || [],
+                    parentUsername: student?.parent?.guardianEmail || null,
+                    parentPassword: student?.parent?.guardianPhone ? `Prt@${student.parent.guardianPhone.replace(/\s+/g, '').slice(-4)}` : null,
                 };
             } catch (e: any) {
-                console.warn('Failed to fetch fee breakdown for admission letter:', e.message);
+                console.warn('Failed to fetch extra admission details for letter:', e.message);
             }
         }
 
@@ -817,10 +834,10 @@ export class StudentsService {
         // Automated Sibling/Parent Matching:
         // Try to find an existing parent with the same guardian phone or email to link siblings automatically
         let existingParentId: string | undefined = undefined;
-        if (admission.guardianPhone || admission.email) {
+        if (admission.guardianPhone || admission.guardianEmail) {
             const where: any[] = [];
             if (admission.guardianPhone) where.push({ guardianPhone: admission.guardianPhone, tenantId });
-            if (admission.email) where.push({ guardianEmail: admission.email, tenantId });
+            if (admission.guardianEmail) where.push({ guardianEmail: admission.guardianEmail, tenantId });
 
             const parentMatch = await this.parentRepository.findOne({ where });
             if (parentMatch) {
@@ -844,16 +861,16 @@ export class StudentsService {
             guardianName: admission.guardianName,
             guardianPhone: admission.guardianPhone,
             guardianRelation: admission.guardianRelation,
-            guardianEmail: admission.email,
+            guardianEmail: admission.guardianEmail,
             permanentAddress: admission.permanentAddress,
             medicalConditions: admission.medicalConditions,
             fatherName: admission.fatherName || ((admission.guardianRelation || '').toLowerCase() === 'father' ? admission.guardianName : undefined),
             fatherPhone: admission.fatherPhone || ((admission.guardianRelation || '').toLowerCase() === 'father' ? admission.guardianPhone : undefined),
-            fatherEmail: admission.fatherEmail || ((admission.guardianRelation || '').toLowerCase() === 'father' ? (admission.email || undefined) : undefined),
+            fatherEmail: admission.fatherEmail || ((admission.guardianRelation || '').toLowerCase() === 'father' ? (admission.guardianEmail || undefined) : undefined),
             fatherOccupation: admission.fatherOccupation,
             motherName: admission.motherName || ((admission.guardianRelation || '').toLowerCase() === 'mother' ? admission.guardianName : undefined),
             motherPhone: admission.motherPhone || ((admission.guardianRelation || '').toLowerCase() === 'mother' ? admission.guardianPhone : undefined),
-            motherEmail: admission.motherEmail || ((admission.guardianRelation || '').toLowerCase() === 'mother' ? (admission.email || undefined) : undefined),
+            motherEmail: admission.motherEmail || ((admission.guardianRelation || '').toLowerCase() === 'mother' ? (admission.guardianEmail || undefined) : undefined),
             motherOccupation: admission.motherOccupation,
             emergencyContact: admission.emergencyContact,
             currentAddress: admission.currentAddress,
@@ -865,7 +882,7 @@ export class StudentsService {
             classId: admission.preferredClassId,
             studentPhoto: admission.passportPhoto,
             guardianPhoto: admission.guardianPhoto,
-            email: admission.email,
+            email: undefined, // Online admission doesn't have student-specific email in this flow
             // Security: Force password change on first login
             mustChangePassword: true,
             feeGroupIds: feeGroupIds,
@@ -874,7 +891,7 @@ export class StudentsService {
         };
 
         // Reuse existing create logic which handles parent creation/linking, fee allocation, and user provisioning
-        const student = await this.create(createStudentDto, tenantId);
+        const student = await this.create(createStudentDto, tenantId, undefined, true);
 
         // Update admission status and link records
         admission.status = 'approved';

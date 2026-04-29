@@ -44,7 +44,7 @@ export class OnlineAdmission {
     mobileNumber?: string;
 
     @Column({ nullable: true })
-    email?: string;
+    guardianEmail?: string;
 
     @Column()
     guardianName!: string;

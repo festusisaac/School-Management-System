@@ -128,13 +128,6 @@ export class UsersService implements OnModuleInit {
       
       // Clear force change flag if password is updated
       user.mustChangePassword = false;
-
-      // Notify user via email
-      await this.emailService.sendPasswordChangedNotification(
-        user.email,
-        user.firstName,
-        plainPassword
-      );
     }
 
     Object.assign(user, updateUserDto);
