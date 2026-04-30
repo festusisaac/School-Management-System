@@ -14,6 +14,8 @@ import { format, subMonths, isToday } from 'date-fns';
 import api, { getFileUrl } from '../../services/api';
 import { ResultVerificationModal } from './components/ResultVerificationModal';
 import { PaymentModal } from './components/PaymentModal';
+import { ResetPasswordModal } from './components/ResetPasswordModal';
+import { CredentialSummaryModal } from './components/CredentialSummaryModal';
 import { formatCurrency } from '../../utils/currency';
 import { clsx } from 'clsx';
 import { FeeNoticeTemplate } from '../finance/components/FeeNoticeTemplate';
@@ -45,7 +47,7 @@ export default function StudentProfile() {
     const [loadingCommunications, setLoadingCommunications] = useState(false);
     const { selectedChildId, user } = useAuthStore();
     const isParent = (user?.role || user?.roleObject?.name || '').toLowerCase() === 'parent';
-    const isSuperAdmin = (user?.role || user?.roleObject?.name || '').toLowerCase() === 'super administrator';
+    const isSuperAdmin = (user?.role || user?.roleObject?.name || '').toLowerCase().includes('super');
 
     // Document States
     const [isUploadingDoc, setIsUploadingDoc] = useState(false);
@@ -56,6 +58,22 @@ export default function StudentProfile() {
     // Fee Payment State
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [selectedFeeHead, setSelectedFeeHead] = useState<any>(null);
+
+    // Password Reset State
+    const [resetModal, setResetModal] = useState<{
+        isOpen: boolean;
+        userId: string;
+        userName: string;
+        userType: 'student' | 'parent' | 'staff';
+        defaultPattern?: string;
+    }>({
+        isOpen: false,
+        userId: '',
+        userName: '',
+        userType: 'student'
+    });
+
+    const [showCredentialSummary, setShowCredentialSummary] = useState(false);
 
     useEffect(() => {
         if (activeTab === 'Attendance' && student?.id) {
@@ -398,23 +416,39 @@ export default function StudentProfile() {
                             ))}
                         </div>
 
-                        <div className={`w-full pt-8 ${hasPermission('students:edit') ? 'grid grid-cols-2' : 'flex justify-center'} gap-3 mt-auto`}>
-                            {hasPermission('students:edit') && (
+                        <div className="w-full pt-8 flex flex-col gap-3 mt-auto">
+                            <div className={cn("grid gap-3 w-full", hasPermission('students:edit') ? 'grid-cols-2' : 'grid-cols-1')}>
+                                {hasPermission('students:edit') && (
+                                    <button
+                                        onClick={() => navigate(`/students/admission?id=${student.id}&edit=true`)}
+                                        className="flex items-center justify-center gap-2 py-2.5 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition shadow-sm w-full"
+                                    >
+                                        <Edit className="w-4 h-4" />
+                                        <span>Edit</span>
+                                    </button>
+                                )}
                                 <button
-                                    onClick={() => navigate(`/students/admission?id=${student.id}&edit=true`)}
-                                    className="flex items-center justify-center gap-2 py-2.5 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition shadow-sm w-full"
+                                    onClick={handlePrint}
+                                    className={cn(
+                                        "flex items-center justify-center gap-2 py-2.5 bg-primary-600 text-white font-medium rounded-xl hover:bg-primary-700 transition shadow-sm",
+                                        hasPermission('students:edit') ? 'w-full' : 'w-full'
+                                    )}
                                 >
-                                    <Edit className="w-4 h-4" />
-                                    <span>Edit</span>
+                                    <Printer className="w-4 h-4" />
+                                    <span>Print</span>
+                                </button>
+                            </div>
+
+                            {/* New Credentials Button */}
+                            {isSuperAdmin && (
+                                <button
+                                    onClick={() => setShowCredentialSummary(true)}
+                                    className="flex items-center justify-center gap-2 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold text-xs uppercase tracking-widest rounded-xl hover:opacity-90 transition shadow-xl shadow-gray-900/10 dark:shadow-white/5 w-full border-2 border-transparent"
+                                >
+                                    <KeySquare className="w-4 h-4" />
+                                    <span>Access Credentials</span>
                                 </button>
                             )}
-                            <button
-                                onClick={handlePrint}
-                                className={`flex items-center justify-center gap-2 py-2.5 bg-primary-600 text-white font-medium rounded-xl hover:bg-primary-700 transition shadow-sm ${hasPermission('students:edit') ? 'w-full' : 'px-8'}`}
-                            >
-                                <Printer className="w-4 h-4" />
-                                <span>Print</span>
-                            </button>
                         </div>
                     </InfoCard>
 
@@ -547,7 +581,7 @@ export default function StudentProfile() {
                                         ))}
                                     </div>
                                 </div>
-                            </InfoCard>
+                             </InfoCard>
 
                             {/* Address & Logistics Grid */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1376,6 +1410,30 @@ export default function StudentProfile() {
                     <p className="text-[8px] mt-1 italic font-serif">Printed on {new Date().toLocaleString()}</p>
                 </div>
             </div>
+
+             {/* Credentials Summary Modal */}
+            <CredentialSummaryModal
+                isOpen={showCredentialSummary}
+                onClose={() => setShowCredentialSummary(false)}
+                student={student}
+                onResetPassword={(target) => {
+                    setShowCredentialSummary(false);
+                    setResetModal({
+                        isOpen: true,
+                        ...target
+                    });
+                }}
+            />
+
+            {/* Reset Password Modal */}
+            <ResetPasswordModal
+                isOpen={resetModal.isOpen}
+                onClose={() => setResetModal(prev => ({ ...prev, isOpen: false }))}
+                userId={resetModal.userId}
+                userName={resetModal.userName}
+                userType={resetModal.userType}
+                defaultPattern={resetModal.defaultPattern}
+            />
 
             <style>{`
                 @media print {

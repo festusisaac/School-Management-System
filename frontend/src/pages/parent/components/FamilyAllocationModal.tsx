@@ -126,10 +126,10 @@ export function FamilyAllocationModal({
     return (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <div className="w-full max-w-5xl max-h-[92vh] overflow-hidden rounded-3xl bg-white dark:bg-gray-800 shadow-2xl border border-white/20 flex flex-col">
-                <div className="p-4 sm:p-6 border-b border-gray-100 dark:border-gray-700 flex items-start justify-between gap-4">
+                <div className="p-4 sm:p-6 border-b border-gray-100 dark:border-gray-700 flex items-start justify-between gap-4 shrink-0">
                     <div>
-                        <h3 className="text-lg sm:text-xl font-black text-gray-900 dark:text-white tracking-tight">{title}</h3>
-                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-2xl">{description}</p>
+                        <h3 className="text-lg font-black text-gray-900 dark:text-white tracking-tight leading-tight">{title}</h3>
+                        <p className="text-[10px] sm:text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-2xl line-clamp-1 sm:line-clamp-none">{description}</p>
                     </div>
                     <button
                         onClick={onClose}
@@ -139,91 +139,88 @@ export function FamilyAllocationModal({
                     </button>
                 </div>
 
-                <div className="p-4 sm:p-6 border-b border-gray-100 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-900/30">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-                            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Outstanding</p>
-                            <p className="text-2xl font-black text-red-600 mt-1">{formatCurrency(totalOutstanding)}</p>
+                <div className="p-3 sm:p-6 border-b border-gray-100 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-900/30 shrink-0">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
+                        <div className="rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-2.5 sm:p-4">
+                            <p className="text-[9px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-widest">Outstanding</p>
+                            <p className="text-sm sm:text-2xl font-black text-red-600 mt-0.5">{formatCurrency(totalOutstanding)}</p>
                         </div>
-                        <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-                            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Allocated</p>
-                            <p className="text-2xl font-black text-primary-600 mt-1">{formatCurrency(totalAllocated)}</p>
+                        <div className="rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-2.5 sm:p-4">
+                            <p className="text-[9px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-widest">Allocated</p>
+                            <p className="text-sm sm:text-2xl font-black text-primary-600 mt-0.5">{formatCurrency(totalAllocated)}</p>
                         </div>
-                        <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-                            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Unallocated Outstanding</p>
-                            <p className="text-2xl font-black text-amber-600 mt-1">{formatCurrency(totalOutstanding - totalAllocated)}</p>
+                        <div className="col-span-2 sm:col-span-1 rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-2.5 sm:p-4 flex sm:block items-center justify-between">
+                            <div>
+                                <p className="text-[9px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-widest">Unallocated</p>
+                                <p className="text-sm sm:text-2xl font-black text-amber-600 mt-0.5">{formatCurrency(totalOutstanding - totalAllocated)}</p>
+                            </div>
+                            <span className="sm:hidden text-[10px] font-bold px-2 py-1 bg-amber-50 dark:bg-amber-900/20 text-amber-600 rounded-lg">Balance</span>
                         </div>
                     </div>
 
-                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
                         <button
                             onClick={autoAllocateFull}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-600 text-white text-sm font-bold hover:bg-primary-700 transition-colors"
+                            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg sm:rounded-xl bg-primary-600 text-white text-[11px] sm:text-sm font-bold hover:bg-primary-700 transition-colors"
                         >
-                            <Wallet size={16} />
-                            Auto Allocate Full Balance
+                            <Wallet size={14} />
+                            Auto Allocate
                         </button>
                         <button
                             onClick={clearAll}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg sm:rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-[11px] sm:text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                         >
-                            <RotateCcw size={16} />
+                            <RotateCcw size={14} />
                             Clear All
                         </button>
                     </div>
                 </div>
 
                 <div className="flex-1 overflow-auto p-4 sm:p-6">
-                    <div className="space-y-3 md:hidden">
+                    <div className="space-y-2 md:hidden">
                         {draftLines.map((line, index) => {
                             const outstanding = parseFloat(line.amountDue || '0') || 0;
                             const allocated = parseFloat(line.amount || '0') || 0;
                             const remaining = outstanding - allocated;
 
                             return (
-                                <div key={`${line.studentId}-${line.id}`} className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 space-y-3">
+                                <div key={`${line.studentId}-${line.id}`} className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 space-y-2.5">
                                     <div className="flex items-start justify-between gap-3">
-                                        <div>
-                                            <p className="text-sm font-black text-gray-900 dark:text-white">{line.studentName}</p>
-                                            <p className="text-[10px] text-gray-400 uppercase tracking-wider mt-1">
-                                                {line.sourceType === 'CARRY_FORWARD' ? 'Arrears' : 'Assigned Fee'}
+                                        <div className="min-w-0">
+                                            <p className="text-xs font-black text-gray-900 dark:text-white truncate">{line.studentName}</p>
+                                            <p className="text-[9px] text-gray-400 uppercase tracking-wider font-bold">
+                                                {line.feeHeadName}
                                             </p>
                                         </div>
-                                        <span className="text-xs font-bold text-gray-500 dark:text-gray-400">
-                                            {formatCurrency(outstanding)}
-                                        </span>
-                                    </div>
-
-                                    <div>
-                                        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">{line.feeHeadName}</p>
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
-                                            Allocate Amount
-                                        </label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            max={outstanding}
-                                            value={line.amount}
-                                            onChange={(event) => updateLineAmount(index, event.target.value)}
-                                            onBlur={() => formatLineAmount(index)}
-                                            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3 text-base font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                                            placeholder="0.00"
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="rounded-xl bg-gray-50 dark:bg-gray-900 px-3 py-2">
-                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Outstanding</p>
-                                            <p className="mt-1 text-sm font-black text-gray-900 dark:text-white">{formatCurrency(outstanding)}</p>
+                                        <div className="text-right shrink-0">
+                                            <p className="text-[9px] font-bold text-gray-400 uppercase">Due</p>
+                                            <p className="text-xs font-black text-gray-900 dark:text-white">
+                                                {formatCurrency(outstanding)}
+                                            </p>
                                         </div>
-                                        <div className="rounded-xl bg-gray-50 dark:bg-gray-900 px-3 py-2">
-                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Remaining</p>
+                                    </div>
+
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex-1">
+                                            <div className="relative">
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    step="0.01"
+                                                    max={outstanding}
+                                                    value={line.amount}
+                                                    onChange={(event) => updateLineAmount(index, event.target.value)}
+                                                    onBlur={() => formatLineAmount(index)}
+                                                    className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 pl-3 pr-8 py-2 text-sm font-bold text-gray-900 dark:text-white focus:ring-1 focus:ring-primary-500"
+                                                    placeholder="0.00"
+                                                />
+                                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">#</div>
+                                            </div>
+                                        </div>
+                                        <div className="text-right shrink-0 min-w-[70px]">
+                                            <p className="text-[9px] font-bold text-gray-400 uppercase">Remaining</p>
                                             <p className={clsx(
-                                                "mt-1 text-sm font-black",
+                                                "text-xs font-black",
                                                 remaining > 0 ? "text-amber-600" : "text-emerald-600"
                                             )}>
                                                 {formatCurrency(remaining)}

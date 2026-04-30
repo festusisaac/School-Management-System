@@ -1042,7 +1042,7 @@ class ApiService {
   }
 
   async getStudentAttendance(studentId: string, startDate: string, endDate: string) {
-    return this.get<any[]>(`/hr/attendance/student/${studentId}`, { params: { startDate, endDate } })
+    return this.get<any[]>(`/students/attendance/student/${studentId}`, { params: { startDate, endDate } })
   }
 
 

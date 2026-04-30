@@ -401,7 +401,7 @@ export class StudentsService {
 
         const results = await this.studentsRepository.find({
             where,
-            relations: ['class', 'section', 'category', 'house', 'parent', 'parent.students', 'parent.students.class', 'documents'],
+            relations: ['class', 'section', 'category', 'house', 'parent', 'parent.students', 'parent.students.class', 'documents', 'user', 'parent.user'],
             order: { firstName: 'ASC' },
         });
 
@@ -422,7 +422,7 @@ export class StudentsService {
                 { id, tenantId },
                 { userId: id, tenantId }
             ],
-            relations: ['class', 'section', 'category', 'house', 'deactivateReason', 'parent', 'parent.students', 'parent.students.class', 'documents'],
+            relations: ['class', 'section', 'category', 'house', 'deactivateReason', 'parent', 'parent.students', 'parent.students.class', 'documents', 'user', 'parent.user'],
         });
         if (!student) throw new NotFoundException(`Student with ID ${id} not found`);
 

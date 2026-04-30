@@ -39,10 +39,7 @@ export function MainLayout() {
                     const children = await api.getMyChildren();
                     setChildrenList(children);
                     
-                    // Only auto-select for actual 'parents' to avoid confusing staff
-                    if (children.length > 0 && !selectedChildId && userRole === 'parent') {
-                        setSelectedChildId(children[0].id);
-                    }
+                    /* Auto-selection removed to allow parents to see Family Dashboard first */
                 } catch (error) {
                     console.error("Failed to load children", error);
                 }
