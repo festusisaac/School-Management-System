@@ -31,4 +31,25 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-utils': ['lucide-react', 'date-fns', 'lodash', 'xlsx'],
+          'vendor-ui': ['recharts', 'html2canvas', 'jspdf', 'uuid'],
+          'vendor-finance': ['react-paystack', 'flutterwave-react-v3'],
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000,
+    sourcemap: false,
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    },
+  },
 })
