@@ -161,6 +161,7 @@ function AppRoutes() {
                 <Route path="finance" element={<Finance.StudentFinancePage />} />
                 <Route path="examination/admit-card" element={<Students.StudentAdmitCardPage />} />
                 <Route path="examination/results" element={<Students.StudentResultPage />} />
+                <Route path="transcript/:id" element={<Students.StudentTranscriptPage />} />
                 <Route path="library" element={<Students.StudentLibraryPage />} />
                 <Route path="online-classes" element={<OnlineClasses.OnlineClassesPage />} />
                 <Route path="online-classes/history" element={<OnlineClasses.CompletedClassesPage />} />

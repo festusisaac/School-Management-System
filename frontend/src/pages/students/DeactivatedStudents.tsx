@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { DataTable } from '../../components/ui/data-table';
 import { ColumnDef } from '@tanstack/react-table';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Eye } from 'lucide-react';
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { usePermissions } from '../../hooks/usePermissions';
@@ -74,14 +74,26 @@ export default function DeactivatedStudents() {
         },
         {
             id: 'actions',
-            cell: ({ row }) => hasPermission('students:delete') ? (
-                <button
-                    onClick={() => handleEnable(row.original.id, `${row.original.firstName} ${row.original.lastName || ''}`)}
-                    className="text-primary-600 hover:underline flex items-center gap-1 font-medium"
-                >
-                    <RefreshCw className="w-3.5 h-3.5" /> Enable
-                </button>
-            ) : null
+            cell: ({ row }) => (
+                <div className="flex items-center gap-3">
+                    {hasPermission('students:view_profile') && (
+                        <button
+                            onClick={() => window.location.href = `/students/profile/${row.original.id}`}
+                            className="text-primary-600 hover:underline flex items-center gap-1 font-medium"
+                        >
+                            <Eye className="w-3.5 h-3.5" /> Profile
+                        </button>
+                    )}
+                    {hasPermission('students:delete') && (
+                        <button
+                            onClick={() => handleEnable(row.original.id, `${row.original.firstName} ${row.original.lastName || ''}`)}
+                            className="text-green-600 hover:underline flex items-center gap-1 font-medium"
+                        >
+                            <RefreshCw className="w-3.5 h-3.5" /> Enable
+                        </button>
+                    )}
+                </div>
+            )
         }
     ];
 

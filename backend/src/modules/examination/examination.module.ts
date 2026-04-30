@@ -15,6 +15,8 @@ import { CbtSyncController } from './controllers/cbt-sync.controller';
 import { CbtQuestionController } from './controllers/cbt-question.controller';
 import { CbtManifestService } from './services/cbt-manifest.service';
 import { CbtQuestionService } from './services/cbt-question.service';
+import { TranscriptService } from './services/transcript.service';
+import { TranscriptController } from './controllers/transcript.controller';
 import { Student } from '../students/entities/student.entity';
 import { StudentAttendance } from '../students/entities/student-attendance.entity';
 import { ExamGroup } from './entities/exam-group.entity';
@@ -80,6 +82,7 @@ import { SystemModule } from '../system/system.module';
         StudentExamController,
         CbtSyncController,
         CbtQuestionController,
+        TranscriptController,
     ],
     providers: [
         ExamSetupService,
@@ -88,6 +91,7 @@ import { SystemModule } from '../system/system.module';
         ResultControlService,
         CbtManifestService,
         CbtQuestionService,
+        TranscriptService,
         ScoreImportProcessor
     ],
     exports: [

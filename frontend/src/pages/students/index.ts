@@ -15,4 +15,4 @@ export { default as StudentLibraryPage } from './StudentLibraryPage';
 export { default as StudentAttendanceMarkingPage } from './StudentAttendanceMarkingPage';
 export { default as StudentAttendanceHistoryPage } from './StudentAttendanceHistoryPage';
 export { default as StudentAttendanceReportsPage } from './StudentAttendanceReportsPage';
-
+export { default as StudentTranscriptPage } from './StudentTranscriptPage';

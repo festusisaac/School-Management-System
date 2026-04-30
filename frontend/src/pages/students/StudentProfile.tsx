@@ -6,6 +6,7 @@ import {
     Users, Printer, Edit, DollarSign,
     FileText, GraduationCap, ClipboardList, Clock, CheckCircle2,
     QrCode as QrCodeIcon, Barcode as BarcodeIcon, ShieldAlert, ShieldCheck,
+    History as HistoryIcon,
     KeySquare, CalendarDays, CreditCard, ArrowRight, MapPinned,
     Trash2, Download, Upload, Info, MessageSquare, Mail
 } from 'lucide-react';
@@ -44,6 +45,7 @@ export default function StudentProfile() {
     const [loadingCommunications, setLoadingCommunications] = useState(false);
     const { selectedChildId, user } = useAuthStore();
     const isParent = (user?.role || user?.roleObject?.name || '').toLowerCase() === 'parent';
+    const isSuperAdmin = (user?.role || user?.roleObject?.name || '').toLowerCase() === 'super administrator';
 
     // Document States
     const [isUploadingDoc, setIsUploadingDoc] = useState(false);
@@ -760,26 +762,28 @@ export default function StudentProfile() {
                             ) : (
                                 <>
                                     {/* Action Cards */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        {/* Result Checker Card */}
-                                        <div 
-                                            onClick={() => setIsVerifyModalOpen(true)}
-                                            className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all cursor-pointer group relative overflow-hidden"
-                                        >
-                                            <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/5 -mr-16 -mt-16 rounded-full group-hover:bg-primary-500/10 transition-colors" />
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-14 h-14 bg-primary-50 dark:bg-primary-900/20 rounded-xl flex items-center justify-center text-primary-600 dark:text-primary-400">
-                                                    <KeySquare className="w-7 h-7" />
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        {/* Result Checker Card - Super Admin Only */}
+                                        {isSuperAdmin && (
+                                            <div 
+                                                onClick={() => setIsVerifyModalOpen(true)}
+                                                className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all cursor-pointer group relative overflow-hidden"
+                                            >
+                                                <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/5 -mr-16 -mt-16 rounded-full group-hover:bg-primary-500/10 transition-colors" />
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-14 h-14 bg-primary-50 dark:bg-primary-900/20 rounded-xl flex items-center justify-center text-primary-600 dark:text-primary-400">
+                                                        <KeySquare className="w-7 h-7" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-lg font-bold text-gray-900 dark:text-white">Check Result</h4>
+                                                        <p className="text-sm text-gray-500 dark:text-gray-400">View terminal reports</p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <h4 className="text-lg font-bold text-gray-900 dark:text-white">Check Terminal Result</h4>
-                                                    <p className="text-sm text-gray-500 dark:text-gray-400">Enter Scratch Card PIN to view results</p>
+                                                <div className="mt-4 flex items-center text-primary-600 font-bold text-sm">
+                                                    Check Now <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
                                                 </div>
                                             </div>
-                                            <div className="mt-4 flex items-center text-primary-600 font-bold text-sm">
-                                                Check Now <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-                                            </div>
-                                        </div>
+                                        )}
 
                                         {/* Exam Status Card */}
                                         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
@@ -788,11 +792,11 @@ export default function StudentProfile() {
                                                     <CalendarDays className="w-7 h-7" />
                                                 </div>
                                                 <div>
-                                                    <h4 className="text-lg font-bold text-gray-900 dark:text-white">Examination Status</h4>
+                                                    <h4 className="text-lg font-bold text-gray-900 dark:text-white">Exam Status</h4>
                                                     <p className="text-sm text-gray-500 dark:text-gray-400">
                                                         {examData?.examGroups?.length > 0 
-                                                            ? `${examData.examGroups[0].name} Ongoing` 
-                                                            : 'No Active Examination'}
+                                                            ? `${examData.examGroups[0].name}` 
+                                                            : 'No Active Exam'}
                                                     </p>
                                                 </div>
                                             </div>
@@ -802,6 +806,32 @@ export default function StudentProfile() {
                                                 </div>
                                             </div>
                                         </div>
+
+                                        {/* Transcript Generation Card - Accessible to Staff/Admins */}
+                                        {(() => {
+                                            const roleName = (user?.role || user?.roleObject?.name || '').toLowerCase();
+                                            const isStaff = !['student', 'parent'].includes(roleName);
+                                            return isStaff && hasPermission('students:view_profile') && (
+                                                <div 
+                                                    onClick={() => navigate(`/students/transcript/${student.id}`)}
+                                                    className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all cursor-pointer group relative overflow-hidden"
+                                                >
+                                                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 -mr-16 -mt-16 rounded-full group-hover:bg-amber-500/10 transition-colors" />
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-14 h-14 bg-amber-50 dark:bg-amber-900/20 rounded-xl flex items-center justify-center text-amber-600 dark:text-amber-400">
+                                                            <HistoryIcon className="w-7 h-7" />
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="text-lg font-bold text-gray-900 dark:text-white">Transcript</h4>
+                                                            <p className="text-sm text-gray-500 dark:text-gray-400">Cumulative record</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="mt-4 flex items-center text-amber-600 font-bold text-sm">
+                                                        View <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
 
                                     {/* Verified Result Section */}

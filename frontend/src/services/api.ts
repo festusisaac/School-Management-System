@@ -1029,6 +1029,10 @@ class ApiService {
     return this.post<any>(`/examination/student/${studentId}/verify-result`, data)
   }
 
+  async getStudentTranscript(studentId: string) {
+    return this.get<any>(`/examination/transcripts/${studentId}`)
+  }
+
   async deleteStudentDocument(docId: string) {
     return this.delete<any>(`/students/documents/${docId}`)
   }

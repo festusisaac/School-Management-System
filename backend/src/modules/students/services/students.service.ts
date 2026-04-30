@@ -586,6 +586,7 @@ export class StudentsService {
         student.deactivatedAt = new Date();
         if (reasonId) {
             student.deactivateReasonId = reasonId;
+            student.deactivateReason = undefined; // Force TypeORM to use the ID and not a stale object
         }
         
         await this.studentsRepository.save(student);

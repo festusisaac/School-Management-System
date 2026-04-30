@@ -538,7 +538,11 @@ export default function StudentDirectory() {
                         >
                             Cancel
                         </button>
+                        {!selectedReasonId && (
+                            <p className="text-[10px] text-red-500 font-bold italic animate-pulse">Please select a reason to proceed</p>
+                        )}
                         <button
+                            disabled={!selectedReasonId || deactivating}
                             onClick={async () => {
                                 if (!studentToDeactivate) return;
                                 setDeactivating(true);

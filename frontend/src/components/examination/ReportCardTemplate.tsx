@@ -383,7 +383,7 @@ const ReportCardTemplate: React.FC<Props> = ({
                                     </tr>
                                     <tr style={{ backgroundColor: colorSectionBg, fontSize: '9px' }}>
                                         {caAsses.length > 0 ? caAsses.map(a => (
-                                            <th key={a.id} style={{ border: `1px solid ${colorBorderGreen}`, padding: '2px', textAlign: 'center' }}>{a.maxMarks || 20}</th>
+                                            <th key={a.id} style={{ border: `1px solid ${colorBorderGreen}`, padding: '2px', textAlign: 'center' }}>{a.name || (a.maxMarks || 20)}</th>
                                         )) : (
                                             <th style={{ border: `1px solid ${colorBorderGreen}`, padding: '2px', textAlign: 'center' }}>20</th>
                                         )}
@@ -407,7 +407,7 @@ const ReportCardTemplate: React.FC<Props> = ({
                                     </tr>
                                     <tr style={{ backgroundColor: colorSectionBg, fontSize: '10px' }}>
                                         {caAsses.length > 0 ? caAsses.map(a => (
-                                            <th key={a.id} style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}>{a.maxMarks || 20}</th>
+                                            <th key={a.id} style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}>{a.name || (a.maxMarks || 20)}</th>
                                         )) : (
                                             <th style={{ border: `1px solid ${colorBorderGreen}`, padding: '3px', textAlign: 'center' }}>20</th>
                                         )}
