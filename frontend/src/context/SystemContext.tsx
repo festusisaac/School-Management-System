@@ -111,11 +111,12 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
             // Try fetching sections using the base api call
             try {
-                if (localStorage.getItem('access_token')) {
+                if (localStorage.getItem('access_token') && user) {
                     const sectData = await api.getSchoolSections();
                     nextAvailableSections = Array.isArray(sectData) ? sectData : [];
 
                     const rawRole = (user?.roleObject?.name || user?.role || '').toLowerCase().trim();
+                    const isSuperAdmin = rawRole.includes('super administrator') || rawRole.includes('super admin') || rawRole.includes('superadmin');
                     const isFinanceScopedUser = rawRole === 'accountant' || rawRole === 'bursar';
 
                     if (isFinanceScopedUser) {
@@ -131,13 +132,23 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
                     setAvailableSections(nextAvailableSections);
 
-                    const currentActiveSectionId = localStorage.getItem('active_section_id') || '';
-                    const nextActiveSectionId = nextAvailableSections.some((section) => section.id === currentActiveSectionId)
-                        ? currentActiveSectionId
-                        : (nextAvailableSections[0]?.id || '');
+                    const currentActiveSectionId = localStorage.getItem('active_section_id');
+                    let nextActiveSectionId = currentActiveSectionId || '';
 
-                    setActiveSectionIdState(nextActiveSectionId);
-                    localStorage.setItem('active_section_id', nextActiveSectionId);
+                    // Only attempt to validate if we have sections to validate against
+                    if (nextAvailableSections.length > 0) {
+                        const isValidSection = nextAvailableSections.some((section) => section.id === currentActiveSectionId);
+                        const isAllSectionsValid = (currentActiveSectionId === '' || currentActiveSectionId === null) && isSuperAdmin;
+                        
+                        if (!isValidSection && !isAllSectionsValid) {
+                            nextActiveSectionId = nextAvailableSections[0]?.id || '';
+                        }
+                    }
+
+                    if (nextActiveSectionId !== currentActiveSectionId) {
+                        setActiveSectionIdState(nextActiveSectionId);
+                        localStorage.setItem('active_section_id', nextActiveSectionId);
+                    }
                 }
             } catch (e) {
                 console.error('Failed to load sections', e);
