@@ -559,7 +559,6 @@ export default function StudentDirectory() {
                                     setDeactivating(false);
                                 }
                             }}
-                            disabled={deactivating}
                             className="px-6 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-all shadow-md shadow-red-600/20 disabled:opacity-50"
                         >
                             {deactivating ? 'Deactivating...' : 'Confirm Deactivation'}
