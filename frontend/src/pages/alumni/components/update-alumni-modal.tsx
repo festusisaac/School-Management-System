@@ -118,7 +118,7 @@ export function UpdateAlumniModal({ isOpen, onClose, onSuccess, alumni }: Update
                     <div className="relative">
                         <Linkedin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
-                            type="url"
+                            type="text"
                             placeholder="https://linkedin.com/in/username"
                             value={formData.linkedInUrl}
                             onChange={(e) => setFormData({ ...formData, linkedInUrl: e.target.value })}
