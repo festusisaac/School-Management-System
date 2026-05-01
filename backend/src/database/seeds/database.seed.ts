@@ -19,43 +19,20 @@ export class SeedDatabase {
     console.log('🌱 Starting database seeding...');
 
     try {
-/* 
-      // Clear existing data
-      await studentRepository.delete({});
-      await staffRepository.delete({});
-      await userRepository.delete({});
-      console.log('✓ Cleared existing data');
-      */
+      /* 
+            // Clear existing data
+            await studentRepository.delete({});
+            await staffRepository.delete({});
+            await userRepository.delete({});
+            console.log('✓ Cleared existing data');
+            */
 
       // Seed Roles & Permissions
       await seedPermissions(dataSource);
       await seedRoles(dataSource);
-      const users: User[] = [];
-
-      // Admin users
-      const existingAdmin = await userRepository.findOne({ where: { email: 'admin@sms.school' } });
-      if (!existingAdmin) {
-        const admin = userRepository.create({
-          email: 'admin@sms.school',
-          password: await bcrypt.hash('Admin@12345', 10),
-          firstName: 'PHJC',
-          lastName: 'Super Admin',
-          role: 'super administrator',
-          isActive: true,
-          tenantId: '00000000-0000-0000-0000-000000000001',
-        });
-        users.push(admin);
-        await userRepository.save(users);
-        console.log(`✓ Created ${users.length} users`);
-      } else {
-        console.log('✓ Admin user already exists');
-      }
 
       console.log('\n✅ Database seeding completed successfully!');
-      console.log('\n📋 Seed Summary:');
-      console.log(`   - Users: ${users.length}`);
-      console.log('\n🔐 Test Credentials:');
-      console.log('   Super Admin: admin@sms.school / Admin@12345');
+      console.log('✓ System roles and permissions have been updated.');
     } catch (error) {
       console.error('❌ Error seeding database:', error);
       throw error;
