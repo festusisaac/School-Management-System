@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsNumber, IsOptional, IsUrl, IsUUID, IsEmail, IsDateString } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsOptional, IsUrl, IsUUID, IsEmail, IsDateString, ValidateIf } from 'class-validator';
 
 export class CreateAlumniDto {
   @IsUUID()
@@ -17,6 +17,7 @@ export class CreateAlumniDto {
   @IsOptional()
   currentCompany?: string;
 
+  @ValidateIf(o => o.linkedInUrl !== '' && o.linkedInUrl !== null)
   @IsUrl()
   @IsOptional()
   linkedInUrl?: string;
