@@ -5,6 +5,7 @@ import {
   MapPin,
   Globe,
   ChevronRight, 
+  ChevronDown,
   Menu, 
   X,
   Phone,
@@ -31,6 +32,7 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
   
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [mobileSubmenuOpen, setMobileSubmenuOpen] = useState<string | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -44,8 +46,17 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
   const navLinks = [
     { name: 'Home', href: '/' },
     { name: 'About Us', href: '/#about' },
-    { name: 'Academics', href: '/academics' },
+    { 
+      name: 'Academics', 
+      href: '/academics',
+      submenu: [
+        { name: 'Programs & Curriculum', href: '/academics' },
+        { name: 'Alumni Network', href: '/alumni-hub' },
+        { name: 'Career Center', href: '/career-hub' },
+      ]
+    },
     { name: 'Admissions', href: '/admission' },
+    { name: 'Support & Giving', href: '/donations' },
     { name: 'News & Events', href: '/news' },
     { name: 'Gallery', href: '/gallery' },
   ];
@@ -102,7 +113,34 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
             <div className="hidden md:flex items-center gap-8">
               {navLinks.map((link) => {
                 const active = isLinkActive(link.href);
-                // Use <a> for hash links or Home to ensure proper loading/scrolling
+                const hasSubmenu = 'submenu' in link;
+
+                if (hasSubmenu) {
+                  return (
+                    <div key={link.name} className="relative group py-2">
+                      <button className={`flex items-center gap-1 text-sm font-medium transition-all ${active ? 'text-primary-600' : navTextClass} hover:text-primary-600`}>
+                        {link.name} <ChevronDown size={14} className="group-hover:rotate-180 transition-transform duration-300" />
+                      </button>
+                      
+                      {/* Dropdown Menu */}
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 pt-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 min-w-[220px]">
+                        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 p-2 overflow-hidden">
+                          {link.submenu?.map((sub) => (
+                            <Link
+                              key={sub.name}
+                              to={sub.href}
+                              className="flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:text-primary-600 transition-all group/sub"
+                            >
+                              {sub.name}
+                              <ChevronRight size={14} className="opacity-0 -translate-x-2 group-hover/sub:opacity-100 group-hover/sub:translate-x-0 transition-all" />
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
                 if (link.href === '/' || link.href.includes('#')) {
                   return (
                     <a
@@ -126,7 +164,6 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
                       hover:text-primary-600`}
                   >
                     {link.name}
-                    {/* Activity Indicator Line */}
                     <span className={`absolute bottom-0 left-0 h-0.5 bg-primary-600 transition-all duration-300 ${active ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
                   </Link>
                 );
@@ -155,6 +192,43 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
             <div className="px-4 py-6 space-y-2">
               {navLinks.map((link) => {
                 const active = isLinkActive(link.href);
+                const hasSubmenu = 'submenu' in link;
+
+                if (hasSubmenu) {
+                  const isOpen = mobileSubmenuOpen === link.name;
+                  return (
+                    <div key={link.name}>
+                      <button
+                        onClick={() => setMobileSubmenuOpen(isOpen ? null : link.name)}
+                        className={`flex items-center justify-between w-full px-4 py-3 rounded-xl text-base font-semibold transition-all
+                          ${isOpen || active
+                            ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600' 
+                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+                      >
+                        {link.name}
+                        <ChevronDown size={16} className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+                      </button>
+                      {isOpen && (
+                        <div className="mt-1 ml-4 pl-4 border-l-2 border-slate-100 dark:border-slate-800 space-y-1">
+                          {link.submenu?.map((sub) => (
+                            <Link
+                              key={sub.name}
+                              to={sub.href}
+                              className={`block px-4 py-2.5 rounded-xl text-sm font-semibold transition-all
+                                ${isLinkActive(sub.href) 
+                                  ? 'text-primary-600' 
+                                  : 'text-slate-500 dark:text-slate-400 hover:text-primary-600'}`}
+                              onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                              {sub.name}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
                 if (link.href === '/' || link.href.includes('#')) {
                   return (
                     <a

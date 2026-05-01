@@ -80,6 +80,11 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    if (!user.isActive) {
+      this.logger.warn(`Login attempt for deactivated user: ${loginDto.email}`);
+      throw new UnauthorizedException('Your account has been deactivated. Please contact the administrator.');
+    }
+
     this.logger.debug(`User found: ${user.email}, comparing password...`);
 
     const passwordMatch = await bcrypt.compare(loginDto.password, user.password);
@@ -154,6 +159,10 @@ export class AuthService {
         throw new UnauthorizedException('User not found');
       }
 
+      if (!user.isActive) {
+        throw new UnauthorizedException('Account deactivated');
+      }
+
       const { access_token, refresh_token } = await this.generateTokens(user);
 
       return {
@@ -174,6 +183,10 @@ export class AuthService {
 
     if (!user) {
       throw new UnauthorizedException('User not found');
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedException('Account deactivated');
     }
 
     const { password, ...userWithoutPassword } = user;

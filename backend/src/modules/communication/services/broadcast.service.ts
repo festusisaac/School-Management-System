@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Student } from '../../students/entities/student.entity';
 import { Staff } from '../../hr/entities/staff.entity';
+import { Alumni } from '../../alumni/entities/alumni.entity';
 import { MessageTemplate } from '../entities/message-template.entity';
 import { CommunicationLog, CommunicationType, CommunicationStatus } from '../entities/communication-log.entity';
 import { EmailService } from '../../internal-communication/email.service';
@@ -25,6 +26,8 @@ export class BroadcastService {
     private readonly templateRepository: Repository<MessageTemplate>,
     @InjectRepository(CommunicationLog)
     private readonly logRepository: Repository<CommunicationLog>,
+    @InjectRepository(Alumni)
+    private readonly alumniRepository: Repository<Alumni>,
     private readonly emailService: EmailService,
     private readonly smsService: SmsService,
     private readonly feesService: FeesService,
@@ -64,8 +67,9 @@ export class BroadcastService {
         body: personalizedBody,
         status,
         tenantId,
-        studentId: data?.admissionNo ? data.id : undefined, // Heuristic: students have admissionNo
-        staffId: data?.employeeId ? data.id : undefined,   // Heuristic: staff have employeeId
+        studentId: data?.admissionNo ? data.id : undefined,
+        staffId: data?.employeeId ? data.id : undefined,
+        alumniId: recipient.isAlumni ? data.id : undefined,
         scheduledAt: scheduledAt || undefined,
       });
       await this.logRepository.save(log);
@@ -77,6 +81,7 @@ export class BroadcastService {
           subject: personalizedSubject || 'School Notification',
           html: personalizedBody,
           logId: log.id,
+          hideCta: recipient.isAlumni,
         }, delay);
         queuedCount++;
       } else if (dto.channel === 'SMS' && recipient.phone) {
@@ -191,6 +196,34 @@ export class BroadcastService {
             recipients.push(...this.extractStudentTarget(s, dto.includeParents));
           });
           break;
+      }
+
+      case BroadcastTarget.ALUMNI: {
+        const alumni = await this.alumniRepository.find({ where: { tenantId } });
+        alumni.forEach(a => recipients.push({
+          name: a.email ? a.email.split('@')[0] : 'Alumnus', // Use a better fallback if available
+          email: a.email,
+          phone: a.phoneNumber,
+          data: a,
+          isAlumni: true
+        }));
+        break;
+      }
+
+      case BroadcastTarget.INDIVIDUAL_ALUMNI: {
+        if (dto.targetIds?.length) {
+          const alumni = await this.alumniRepository.find({
+            where: { tenantId, id: In(dto.targetIds) }
+          });
+          alumni.forEach(a => recipients.push({
+            name: a.email ? a.email.split('@')[0] : 'Alumnus',
+            email: a.email,
+            phone: a.phoneNumber,
+            data: a,
+            isAlumni: true
+          }));
+        }
+        break;
       }
     }
 

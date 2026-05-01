@@ -224,3 +224,40 @@ export const exportStudents = (students: any[]): void => {
   
   exportToExcel(students, columns, filename, 'Student Directory');
 };
+/**
+ * Export donation history to Excel
+ */
+export const exportDonationHistory = (donations: any[]): void => {
+  const columns: ExportColumn[] = [
+    { header: 'Date', key: 'createdAt', formatter: (val) => new Date(val).toLocaleDateString() },
+    { header: 'Donor Name', key: 'donorName' },
+    { header: 'Donor Email', key: 'donorEmail' },
+    { header: 'Amount', key: 'amount', formatter: (val) => parseFloat(val) },
+    { header: 'Campaign', key: 'project', formatter: (val) => val?.title || 'General Endowment' },
+    { header: 'Reference', key: 'paymentReference' },
+    { header: 'Gateway', key: 'paymentGateway' },
+  ];
+
+  const filename = `donation-history-${new Date().toISOString().split('T')[0]}.xlsx`;
+  
+  exportToExcel(donations, columns, filename, 'Donation History');
+};
+
+/**
+ * Export donation projects to Excel
+ */
+export const exportDonationProjects = (projects: any[]): void => {
+  const columns: ExportColumn[] = [
+    { header: 'Project Title', key: 'title' },
+    { header: 'Description', key: 'description' },
+    { header: 'Goal Amount', key: 'goalAmount', formatter: (val) => parseFloat(val) },
+    { header: 'Current Raised', key: 'currentAmount', formatter: (val) => parseFloat(val) },
+    { header: 'Progress (%)', key: 'currentAmount', formatter: (val, row) => ((parseFloat(val) / parseFloat(row.goalAmount)) * 100).toFixed(2) + '%' },
+    { header: 'End Date', key: 'endDate', formatter: (val) => val ? new Date(val).toLocaleDateString() : 'N/A' },
+    { header: 'Status', key: 'status' },
+  ];
+
+  const filename = `donation-projects-${new Date().toISOString().split('T')[0]}.xlsx`;
+  
+  exportToExcel(projects, columns, filename, 'Donation Projects');
+};

@@ -1071,6 +1071,146 @@ class ApiService {
   async deleteNotice(id: string) {
     return this.delete<void>(`/communication/notices/${id}`)
   }
+
+  // Alumni API methods
+  async getAlumni() {
+    return this.get<any[]>('/alumni')
+  }
+
+  async getAlumniById(id: string) {
+    return this.get<any>(`/alumni/${id}`)
+  }
+
+  async createAlumni(data: any) {
+    return this.post<any>('/alumni', data)
+  }
+
+  async updateAlumni(id: string, data: any) {
+    return this.patch<any>(`/alumni/${id}`, data)
+  }
+
+  async deleteAlumni(id: string) {
+    return this.delete<any>(`/alumni/${id}`)
+  }
+
+  async graduateStudent(data: { studentId: string; graduationYear: number; currentOccupation?: string; currentCompany?: string }) {
+    return this.post<any>('/alumni/graduate', data)
+  }
+
+  async bulkGraduateStudents(data: { studentIds: string[]; graduationYear: number }) {
+    return this.post<{ graduated: number; skipped: number }>('/alumni/bulk-graduate', data)
+  }
+
+  async getAlumniAttendance(id: string) {
+    return this.get<any[]>(`/alumni/${id}/attendance`)
+  }
+
+  async toggleAlumniFeatured(id: string) {
+    return this.patch<any>(`/alumni/${id}/toggle-featured`, {})
+  }
+
+  async getFeaturedAlumni() {
+    return this.get<any[]>('/alumni/public/featured')
+  }
+
+  // Donations & Crowdfunding
+  async getPublicDonationProjects(tenantId?: string) {
+    return this.get<any[]>('/donations/projects/public', { params: { tenantId } })
+  }
+
+  async getPublicDonationStats(tenantId?: string) {
+    return this.get<any>('/donations/stats/public', { params: { tenantId } })
+  }
+
+  async initiateDonation(data: any) {
+    return this.post<any>('/donations/initiate', data)
+  }
+
+  async verifyDonation(data: { reference: string; gateway: string; tenantId?: string }) {
+    return this.post<any>('/donations/verify', data)
+  }
+
+  async getAdminDonationProjects() {
+    return this.get<any[]>('/donations/projects')
+  }
+
+  async createDonationProject(data: any) {
+    return this.post<any>('/donations/projects', data)
+  }
+
+  async updateDonationProject(id: string, data: any) {
+    return this.put<any>(`/donations/projects/${id}`, data)
+  }
+
+  async deleteDonationProject(id: string) {
+    return this.delete<any>(`/donations/projects/${id}`)
+  }
+
+  async getDonationHistory() {
+    return this.get<any[]>('/donations/history')
+  }
+
+  async getAdminDonationStats() {
+    return this.get<any>('/donations/stats')
+  }
+
+  async getPublicFeaturedAlumni() {
+    return this.get<any[]>('/alumni/featured/public')
+  }
+
+  async getAlumniEvents() {
+    return this.get<any[]>('/alumni/events/all')
+  }
+
+  async getAlumniEventById(id: string) {
+    return this.get<any>(`/alumni/events/${id}`)
+  }
+
+  async createAlumniEvent(data: any) {
+    return this.post<any>('/alumni/events', data)
+  }
+
+  async updateAlumniEvent(id: string, data: any) {
+    return this.patch<any>(`/alumni/events/${id}`, data)
+  }
+
+  async deleteAlumniEvent(id: string) {
+    return this.delete<any>(`/alumni/events/${id}`)
+  }
+
+  // Attendees
+  async registerEventAttendee(eventId: string, alumniId: string) {
+    return this.post<any>(`/alumni/events/${eventId}/attendees/${alumniId}`, {})
+  }
+
+  getEventAttendees(eventId: string) {
+    return this.get<any[]>(`/alumni/events/${eventId}/attendees`)
+  }
+
+  removeEventAttendee(attendeeId: string) {
+    return this.delete<any>(`/alumni/events/attendees/${attendeeId}`)
+  }
+
+  // --- Career Center ---
+  async getJobPostings() {
+    return this.get<any[]>('/career/jobs')
+  }
+
+  async getPublicJobPostings() {
+    return this.get<any[]>('/career/jobs/public')
+  }
+
+  async createJobPosting(data: any) {
+    return this.post<any>('/career/jobs', data)
+  }
+
+  async updateJobPosting(id: string, data: any) {
+    return this.patch<any>(`/career/jobs/${id}`, data)
+  }
+
+  async deleteJobPosting(id: string) {
+    return this.delete<any>(`/career/jobs/${id}`)
+  }
 }
 
 export const api = new ApiService()

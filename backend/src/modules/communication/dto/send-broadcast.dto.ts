@@ -9,6 +9,8 @@ export enum BroadcastTarget {
   INDIVIDUAL_STAFF = 'INDIVIDUAL_STAFF',
   DEBTORS_ONLY = 'DEBTORS_ONLY',
   PAID_ONLY = 'PAID_ONLY',
+  ALUMNI = 'ALUMNI',
+  INDIVIDUAL_ALUMNI = 'INDIVIDUAL_ALUMNI',
 }
 
 export class SendBroadcastDto {

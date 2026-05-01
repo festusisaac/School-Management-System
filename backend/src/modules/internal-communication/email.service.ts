@@ -11,6 +11,7 @@ export interface EmailOptions {
   text?: string;
   from?: string;
   logId?: string;
+  hideCta?: boolean;
 }
 
 @Injectable()

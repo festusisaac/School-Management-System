@@ -12,6 +12,7 @@ import { BroadcastService } from './services/broadcast.service';
 import { NoticeboardService } from './services/noticeboard.service';
 import { Student } from '../students/entities/student.entity';
 import { Staff } from '../hr/entities/staff.entity';
+import { Alumni } from '../alumni/entities/alumni.entity';
 import { StudentsModule } from '../students/students.module';
 import { HrModule } from '../hr/hr.module';
 import { InternalCommunicationModule } from '../internal-communication/internal-communication.module';
@@ -24,7 +25,8 @@ import { FinanceModule } from '../finance/finance.module';
       CommunicationLog,
       Notice,
       Student,
-      Staff
+      Staff,
+      Alumni
     ]),
     InternalCommunicationModule,
     forwardRef(() => SystemModule),

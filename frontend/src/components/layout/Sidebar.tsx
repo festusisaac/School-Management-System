@@ -17,7 +17,8 @@ import {
     ChevronRight,
     Video,
     MessageSquare,
-    Star
+    Star,
+    Heart
 } from 'lucide-react';
 import { useState } from 'react';
 import { clsx } from 'clsx';
@@ -186,6 +187,27 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 { label: 'Student Categories', path: '/students/categories', permission: 'students:manage_categories' },
                 { label: 'Student House', path: '/students/houses', permission: 'students:manage_categories' },
                 { label: 'Deactivation Reason', path: '/students/deactivate-reasons', permission: 'students:manage_categories' },
+            ]
+        },
+        {
+            label: 'Alumni',
+            icon: GraduationCap,
+            path: '/alumni',
+            children: [
+                { label: 'Alumni Directory', path: '/alumni/directory', permission: 'alumni:view' },
+                { label: 'Alumni Events', path: '/alumni/events', permission: 'alumni:view' },
+                { label: 'Job Board', path: '/alumni/job-board', permission: 'career:view' },
+                { label: 'Job Management', path: '/alumni/job-management', permission: 'career:manage' },
+            ]
+        },
+        {
+            label: 'Donations',
+            icon: Heart,
+            path: '/donations',
+            permission: 'donations:view',
+            children: [
+                { label: 'Fundraising Campaigns', path: '/donations/campaigns', permission: 'donations:manage_projects' },
+                { label: 'Contribution History', path: '/donations/history', permission: 'donations:view' },
             ]
         },
         {

@@ -42,7 +42,7 @@ export class EmailProcessor {
     this.logger.log(`Background Email Worker initialized. Primary Provider: ${provider.toUpperCase()}`);
   }
 
-  private formatHtmlContent(content: string, settings: any): string {
+  private formatHtmlContent(content: string, settings: any, hideCta = false): string {
     if (!content) return '';
     
     // Check if content already contains complex HTML tags (beyond simple common ones)
@@ -99,17 +99,21 @@ export class EmailProcessor {
             ${bodyContent}
             <div style="display: none; visibility: hidden; opacity: 0; font-size: 1px; color: transparent;">ID: ${uniqueEmailId}</div>
           </div>
+          ${!hideCta ? `
           <div class="cta-container">
             <a href="${this.portalUrl}" class="cta-button">Login to Portal</a>
           </div>
+          ` : ''}
           <div class="footer">
             <p><strong>${schoolName}</strong></p>
             ${address ? `<p>${address}</p>` : ''}
             <p>${phone ? `Phone: ${phone}` : ''} ${email ? ` | Email: ${email}` : ''}</p>
+            ${!hideCta ? `
             <div class="footer-links">
               <a href="${this.portalUrl}" class="footer-link">Dashboard</a>
               <a href="${this.portalUrl}/support" class="footer-link">Support</a>
             </div>
+            ` : ''}
             <p style="margin-top: 20px; font-size: 11px;">This is an automated notification from the School Management System.</p>
           </div>
         </div>
@@ -142,7 +146,7 @@ export class EmailProcessor {
       
       // Get current branding settings
       const settings = await this.systemSettingsService.getSettings();
-      const formattedHtml = this.formatHtmlContent(options.html || '', settings);
+      const formattedHtml = this.formatHtmlContent(options.html || '', settings, options.hideCta);
 
       // Enhance fromEmail with School Name for better inbox presence
       const senderName = settings.emailFromName || settings.schoolName || 'School Notification';

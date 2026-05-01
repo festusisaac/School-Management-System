@@ -564,7 +564,8 @@ export class StudentsService {
                 await this.usersService.update(student.userId, {
                     firstName: student.firstName,
                     lastName: student.lastName,
-                    photo: student.studentPhoto
+                    photo: student.studentPhoto,
+                    isActive: student.isActive
                 });
             } catch (err) {
                 console.error(`Failed to sync user account for student ${student.id}:`, err);
@@ -600,6 +601,25 @@ export class StudentsService {
             }
         }
 
+        // Handle Parent Account Deactivation (Only if no other active children)
+        if (student.parentId) {
+            const parent = await this.parentRepository.findOne({
+                where: { id: student.parentId, tenantId },
+                relations: ['students']
+            });
+            
+            if (parent && parent.userId) {
+                const otherActiveStudents = parent.students?.filter(s => s.id !== student.id && s.isActive);
+                if (!otherActiveStudents || otherActiveStudents.length === 0) {
+                    try {
+                        await this.usersService.update(parent.userId, { isActive: false });
+                    } catch (error: any) {
+                        console.warn(`Failed to deactivate parent user ${parent.userId}:`, error.message);
+                    }
+                }
+            }
+        }
+
         return student;
     }
 
@@ -617,6 +637,20 @@ export class StudentsService {
                 await this.usersService.update(student.userId, { isActive: true });
             } catch (error: any) {
                 console.warn(`Failed to reactivate associated user ${student.userId} for student ${id}:`, error.message);
+            }
+        }
+
+        // Reactivate Parent account
+        if (student.parentId) {
+            const parent = await this.parentRepository.findOne({
+                where: { id: student.parentId, tenantId },
+            });
+            if (parent && parent.userId) {
+                try {
+                    await this.usersService.update(parent.userId, { isActive: true });
+                } catch (error: any) {
+                    console.warn(`Failed to reactivate parent user ${parent.userId}:`, error.message);
+                }
             }
         }
 

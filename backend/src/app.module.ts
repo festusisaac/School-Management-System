@@ -30,6 +30,9 @@ import { OnlineClassesModule } from '@modules/online-classes/online-classes.modu
 import { HomeworkModule } from '@modules/homework/homework.module';
 import { FrontCmsModule } from '@modules/front-cms/front-cms.module';
 import { ExpensesModule } from '@modules/expenses/expenses.module';
+import { AlumniModule } from '@modules/alumni/alumni.module';
+import { CareerModule } from '@modules/career/career.module';
+import { DonationsModule } from '@modules/donations/donations.module';
 
 @Module({
   imports: [
@@ -91,6 +94,9 @@ import { ExpensesModule } from '@modules/expenses/expenses.module';
     forwardRef(() => HomeworkModule),
     forwardRef(() => FrontCmsModule),
     forwardRef(() => ExpensesModule),
+    forwardRef(() => AlumniModule),
+    forwardRef(() => CareerModule),
+    forwardRef(() => DonationsModule),
   ],
   controllers: [AppController],
   providers: [

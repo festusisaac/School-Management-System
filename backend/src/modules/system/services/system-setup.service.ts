@@ -134,7 +134,8 @@ export class SystemSetupService {
             'exams:manage_setup', 'exams:manage_schedule', 'exams:manage_admit_cards', 'exams:enter_marks',
             'exams:manage_domains', 'exams:view_reports', 'exams:process_results',
             'audit_reports:view',
-            'front_cms:manage'
+            'front_cms:manage',
+            'donations:view', 'donations:manage_projects'
           ]
         }
       ];

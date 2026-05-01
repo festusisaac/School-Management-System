@@ -88,6 +88,20 @@ export const seedPermissions = async (dataSource: DataSource) => {
     { slug: 'audit_reports:view', name: 'Audit & Reports Module', module: 'Audit & Reports', description: 'Access audit dashboards, activity logs, communication audit, and report hub' },
 
     { slug: 'front_cms:manage', name: 'Manage Front CMS', module: 'Front CMS', description: 'Manage website content, media, contacts, and public-facing CMS sections' },
+    
+    // Alumni
+    { slug: 'alumni:view', name: 'View Alumni Directory', module: 'Alumni', description: 'Access and search the graduate directory' },
+    { slug: 'alumni:create', name: 'Add/Graduate Alumni', module: 'Alumni', description: 'Register new alumni or graduate existing students' },
+    { slug: 'alumni:edit', name: 'Edit Alumni', module: 'Alumni', description: 'Update alumni profiles and contact info' },
+    { slug: 'alumni:delete', name: 'Remove Alumni', module: 'Alumni', description: 'Delete records from the alumni directory' },
+    { slug: 'alumni:manage_events', name: 'Manage Alumni Events', module: 'Alumni', description: 'Create and track reunions and gatherings' },
+
+    // Career Hub
+    { slug: 'career:manage_jobs', name: 'Manage Career Hub', module: 'Career Hub', description: 'Post and manage job opportunities for alumni' },
+
+    // Donations & Crowdfunding
+    { slug: 'donations:view', name: 'View Donations', module: 'Donations', description: 'Access donation history and impact reports' },
+    { slug: 'donations:manage_projects', name: 'Manage Crowdfunding', module: 'Donations', description: 'Create and edit school fundraising projects' },
   ];
 
   // Get all current slugs in the database

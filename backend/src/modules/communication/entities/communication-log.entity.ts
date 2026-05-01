@@ -53,6 +53,9 @@ export class CommunicationLog {
   @Column({ type: 'uuid', nullable: true })
   parentId?: string;
 
+  @Column({ type: 'uuid', nullable: true })
+  alumniId?: string;
+
   @Column({ type: 'timestamp', nullable: true })
   scheduledAt?: Date;
 

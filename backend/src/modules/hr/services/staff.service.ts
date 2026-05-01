@@ -421,7 +421,7 @@ export class StaffService {
                 roleId: syncedRoleId,
                 role: syncedRole,
                 password: staffDto.password,
-                isActive: true,
+                isActive: savedStaff.status !== StaffStatus.INACTIVE,
                 tenantId,
                 photo: savedStaff.photo
             });
@@ -432,7 +432,7 @@ export class StaffService {
                 roleId: syncedRoleId,
                 role: syncedRole,
                 password: staffDto.password,
-                isActive: true,
+                isActive: savedStaff.status !== StaffStatus.INACTIVE,
                 tenantId: tenantId,
                 photo: savedStaff.photo
             });

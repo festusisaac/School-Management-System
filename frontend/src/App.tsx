@@ -13,6 +13,9 @@ import AdmissionIntroPage from './pages/public/AdmissionIntroPage'
 import AdmissionFormPage from './pages/public/AdmissionFormPage'
 import AdmissionSuccessPage from './pages/public/AdmissionSuccessPage'
 import AdmissionStatusPage from './pages/public/AdmissionStatusPage'
+import AlumniPage from './pages/public/AlumniPage'
+import CareersPage from './pages/public/CareersPage'
+import PublicDonations from './pages/public/PublicDonations'
 import SetupWizard from './pages/SetupWizard'
 import { MainLayout } from './components/layout/MainLayout'
 import PublicLayout from './components/layout/PublicLayout'
@@ -30,6 +33,8 @@ import * as OnlineClasses from './pages/online-classes';
 import * as Homework from './pages/homework';
 import * as Communication from './pages/communication';
 import * as Audit from './pages/audit';
+import * as Alumni from './pages/alumni';
+import * as Donations from './pages/donations';
 import FrontCmsDashboard from './pages/front-cms/FrontCmsDashboard';
 import { 
   BookList, 
@@ -100,6 +105,9 @@ function AppRoutes() {
             <Route path="/gallery" element={<PublicLayout><GalleryPage /></PublicLayout>} />
             <Route path="/academics" element={<PublicLayout><AcademicsPage /></PublicLayout>} />
             <Route path="/news/:slug" element={<PublicLayout><NewsDetailPage /></PublicLayout>} />
+            <Route path="/alumni-hub" element={<PublicLayout><AlumniPage /></PublicLayout>} />
+            <Route path="/career-hub" element={<PublicLayout><CareersPage /></PublicLayout>} />
+            <Route path="/donations" element={<PublicLayout><PublicDonations /></PublicLayout>} />
             
             {/* Public Admission Routes */}
             <Route path="/verify/receipt/:id" element={<Finance.VerifyReceiptPage />} />
@@ -265,6 +273,20 @@ function AppRoutes() {
                 <Route path="activity" element={<Audit.ActivityLogsPage />} />
                 <Route path="communication" element={<Audit.CommunicationAuditPage />} />
                 <Route path="reports-hub" element={<Audit.ReportHubPage />} />
+              </Route>
+
+              <Route path="alumni">
+                <Route index element={<Alumni.AlumniDirectory />} />
+                <Route path="directory" element={<Alumni.AlumniDirectory />} />
+                <Route path="profile/:id" element={<Alumni.AlumniProfile />} />
+                <Route path="events" element={<Alumni.AlumniEvents />} />
+                <Route path="job-board" element={<Alumni.JobBoard />} />
+                <Route path="job-management" element={<Alumni.JobManagement />} />
+              </Route>
+
+              <Route path="donations">
+                <Route path="campaigns" element={<Donations.DonationProjects />} />
+                <Route path="history" element={<Donations.DonationHistory />} />
               </Route>
 
               {/* Settings Routes */}
