@@ -193,7 +193,17 @@ export function JobPostingModal({ isOpen, onClose, onSuccess, editingJob }: JobP
     );
 }
 
-function InputField({ label, type = "text", value, onChange, icon: Icon, required, placeholder }: any) {
+interface InputFieldProps {
+    label: string;
+    type?: string;
+    value: string;
+    onChange: (v: string) => void;
+    icon?: any;
+    required?: boolean;
+    placeholder?: string;
+}
+
+function InputField({ label, type = "text", value, onChange, icon: Icon, required, placeholder }: InputFieldProps) {
     return (
         <div className="space-y-1.5">
             <label className="text-xs font-bold text-gray-500 uppercase tracking-tight px-1">

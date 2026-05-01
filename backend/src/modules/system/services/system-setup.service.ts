@@ -13,6 +13,8 @@ import { InitializeSystemDto } from '../dtos/initialize-system.dto';
 import { SystemSettingsService } from './system-settings.service';
 import { ActivityLogService } from './activity-log.service';
 import { Request } from 'express';
+import { seedPermissions } from '../../../database/seeds/permissions.seed';
+import { seedRoles } from '../../../database/seeds/roles.seed';
 
 @Injectable()
 export class SystemSetupService {
@@ -55,113 +57,17 @@ export class SystemSetupService {
     await queryRunner.startTransaction();
 
     try {
-      // 1. Create or Sync Super Admin Role
+      // 0. Seed Permissions and Roles first to ensure everything exists
+      await seedPermissions(this.dataSource);
+      await seedRoles(this.dataSource);
+
+      // 1. Find Super Admin Role (Created by seedRoles)
       let superAdminRole = await queryRunner.manager.findOne(Role, {
         where: { name: 'Super Administrator' },
       });
 
-      const allPermissions = await queryRunner.manager.find(Permission);
-
       if (!superAdminRole) {
-        superAdminRole = queryRunner.manager.create(Role, {
-          name: 'Super Administrator',
-          description: 'Global system administrator with full access.',
-          isSystem: true,
-          permissions: allPermissions,
-        });
-      } else {
-        // Sync permissions if it already exists
-        superAdminRole.permissions = allPermissions;
-      }
-      superAdminRole = await queryRunner.manager.save(superAdminRole);
-
-      // 1b. Seed Standard Roles
-      const standardRoles = [
-        {
-          name: 'Teacher',
-          description: 'Teaching staff with access to academics, attendance, and student performance.',
-          permissions: [
-            'academics:view_timetable', 'students:view_directory', 'students:view_profile',
-            'attendance:mark', 'attendance:view_history', 'homework:view', 'homework:create',
-            'homework:evaluate', 'online_classes:manage', 'online_classes:history',
-            'exams:enter_marks', 'exams:view_reports'
-          ]
-        },
-        {
-          name: 'Accountant',
-          description: 'Financial officer responsible for fee collection and payroll.',
-          permissions: [
-            'communication:view_notices',
-            'finance:collect_fees', 'finance:view_payments', 'finance:view_reports',
-            'finance:manage_fee_structure', 'finance:manage_reminders', 'hr:manage_payroll',
-            'expenses:view', 'expenses:view_reports', 'expenses:manage_categories',
-            'expenses:manage_vendors', 'expenses:manage_records'
-          ]
-        },
-        {
-          name: 'Librarian',
-          description: 'Manages school library, books, and circulation.',
-          permissions: [
-            'communication:view_notices',
-            'library:view_books', 'library:manage_books', 'library:issue_return', 'library:view_reports'
-          ]
-        },
-        {
-          name: 'Registrar',
-          description: 'Administrative officer for student admissions and records.',
-          permissions: [
-            'academics:manage_classes', 'academics:manage_subjects', 'academics:assign_teachers',
-            'students:view_directory', 'students:view_profile', 'students:create', 'students:edit',
-            'students:manage_categories', 'hr:manage_staff', 'hr:manage_departments'
-          ]
-        },
-        {
-          name: 'Admin',
-          description: 'School administrator with broad oversight of academics, students, and human resources.',
-          permissions: [
-            'settings:general', 'settings:academic_setup',
-            'academics:manage_classes', 'academics:manage_subjects', 'academics:assign_teachers',
-            'academics:view_timetable', 'academics:manage_timetable', 'academics:promote_students',
-            'students:view_directory', 'students:view_profile', 'students:create', 'students:edit',
-            'students:manage_categories', 'hr:manage_staff', 'hr:manage_departments', 'hr:manage_attendance',
-            'hr:manage_payroll', 'hr:manage_leave', 'attendance:mark', 'attendance:view_history',
-            'attendance:view_reports', 'homework:view', 'homework:create', 'homework:evaluate',
-            'online_classes:manage', 'online_classes:history', 'library:view_books', 'library:manage_books',
-            'library:issue_return', 'library:view_reports', 'finance:collect_fees', 'finance:view_payments',
-            'finance:view_reports', 'finance:manage_fee_structure', 'finance:manage_reminders',
-            'expenses:view', 'expenses:view_reports', 'expenses:manage_categories',
-            'expenses:manage_vendors', 'expenses:manage_records',
-            'exams:manage_setup', 'exams:manage_schedule', 'exams:manage_admit_cards', 'exams:enter_marks',
-            'exams:manage_domains', 'exams:view_reports', 'exams:process_results',
-            'audit_reports:view',
-            'front_cms:manage',
-            'donations:view', 'donations:manage_projects'
-          ]
-        }
-      ];
-
-      for (const roleDef of standardRoles) {
-        let role = await queryRunner.manager.findOne(Role, {
-          where: { name: roleDef.name },
-          relations: ['permissions'],
-        });
-        const permissions = await queryRunner.manager.find(Permission, {
-          where: roleDef.permissions.map(slug => ({ slug }))
-        });
-
-        if (!role) {
-          role = queryRunner.manager.create(Role, {
-            name: roleDef.name,
-            description: roleDef.description,
-            isSystem: false,
-            permissions: permissions
-          });
-        } else {
-          role.description = roleDef.description;
-          role.permissions = permissions;
-        }
-
-        await queryRunner.manager.save(role);
+          throw new InternalServerErrorException('Critical: Super Administrator role could not be initialized.');
       }
 
       // 2. Create or find the first Academic Session
