@@ -1,0 +1,11 @@
+# Allow all search engine crawlers
+User-agent: *
+Allow: /
+
+# Block admin/private routes from being indexed (login pages etc.)
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://phjcschool.com.ng/sitemap.xml
