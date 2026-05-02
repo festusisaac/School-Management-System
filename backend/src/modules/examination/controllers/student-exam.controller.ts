@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Param, NotFoundException, BadRequestExcept
 import { ExamSetupService } from '../services/exam-setup.service';
 import { ResultControlService } from '../services/result-control.service';
 import { ResultProcessingService } from '../services/result-processing.service';
+import { FeesService } from '../../finance/services/fees.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Student } from '../../students/entities/student.entity';
@@ -19,6 +20,7 @@ export class StudentExamController {
         private readonly setupService: ExamSetupService,
         private readonly controlService: ResultControlService,
         private readonly processingService: ResultProcessingService,
+        private readonly feesService: FeesService,
         @InjectRepository(Student)
         private studentRepo: Repository<Student>,
         @InjectRepository(AcademicSession)
@@ -94,6 +96,9 @@ export class StudentExamController {
         // Fetch School Settings for branding
         const settings = await this.settingRepo.findOne({ where: { } });
 
+        // Fee Balance Check
+        const feeBalance = await this.feesService.getStudentCurrentBalance(student.id, tenantId);
+
         // Broaden relevant group discovery: Schedules OR Exams OR existing Results
         const relevantGroupIds = new Set([
             ...schedules.map(s => s.exam?.examGroupId),
@@ -109,6 +114,7 @@ export class StudentExamController {
             schedules,
             admitCards: admitCards.flat(),
             settings,
+            feeBalance,
         };
     }
 
@@ -186,6 +192,12 @@ export class StudentExamController {
             relations: ['class']
         });
         if (!student) throw new NotFoundException('Student not found');
+        
+        // 3. Fee Balance Check
+        const balance = await this.feesService.getStudentCurrentBalance(student.id, tenantId);
+        if (balance > 0.01) {
+            throw new ForbiddenException(`Access Denied: You have an outstanding balance of ₦${balance.toLocaleString()}. Please clear your school fees to view results.`);
+        }
 
         await this.controlService.validateCard({ 
             code: dto.code, 

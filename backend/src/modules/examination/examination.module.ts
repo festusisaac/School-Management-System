@@ -41,6 +41,7 @@ import { SystemSetting } from '../system/entities/system-setting.entity';
 import { CbtQuestion } from './entities/cbt-question.entity';
 import { CbtOption } from './entities/cbt-option.entity';
 import { SystemModule } from '../system/system.module';
+import { FinanceModule } from '../finance/finance.module';
 
 @Module({
     imports: [
@@ -70,6 +71,7 @@ import { SystemModule } from '../system/system.module';
             CbtOption,
         ]),
         SystemModule,
+        FinanceModule,
         BullModule.registerQueue({
             name: 'score-import',
         }),

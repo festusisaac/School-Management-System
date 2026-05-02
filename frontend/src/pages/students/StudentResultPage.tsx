@@ -19,6 +19,7 @@ const StudentResultPage = () => {
     
     const [examGroups, setExamGroups] = useState<any[]>([]);
     const [dashboardUnavailable, setDashboardUnavailable] = useState(false);
+    const [feeBalance, setFeeBalance] = useState<number>(0);
     
     const [form, setForm] = useState({
         examGroupId: '',
@@ -40,6 +41,9 @@ const StudentResultPage = () => {
                     if (data.examGroups.length > 0) {
                         setForm(f => ({ ...f, examGroupId: data.examGroups[0].id }));
                     }
+                }
+                if (data.feeBalance !== undefined) {
+                    setFeeBalance(data.feeBalance);
                 }
             } catch (error: any) {
                 if (error?.response?.status === 404) {
@@ -247,6 +251,21 @@ const StudentResultPage = () => {
                     </div>
                 ) : (
                 <form onSubmit={handleVerify} className="space-y-6">
+                    {feeBalance > 0.01 && (
+                        <div className="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/30 mb-6">
+                            <div className="flex gap-3">
+                                <ShieldCheck className="w-5 h-5 text-red-600 shrink-0" />
+                                <div>
+                                    <h4 className="text-sm font-bold text-red-900 dark:text-red-200">Outstanding Fee Balance</h4>
+                                    <p className="text-xs text-red-700 dark:text-red-300 mt-1 leading-relaxed">
+                                        You have an outstanding balance of <span className="font-bold">₦{feeBalance.toLocaleString()}</span>. 
+                                        School policy requires all fees to be cleared before results can be accessed.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     <div>
                         <label className="block text-sm font-medium text-gray-900 dark:text-gray-200 mb-2">Term</label>
                         <select 
