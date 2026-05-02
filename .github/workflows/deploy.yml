@@ -1,0 +1,55 @@
+name: Deploy SMS Production
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    # Build Backend
+    - name: Build Backend
+      run: |
+        cd backend
+        npm install
+        npm run build
+
+    # Build Frontend
+    - name: Build Frontend
+      run: |
+        cd frontend
+        npm install
+        npm run build
+
+    # Deploy via SSH
+    - name: Deploy to VPS
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          # 1. Update Backend
+          cd /var/www/sms/backend
+          git pull origin main
+          npm install
+          npm run build
+          pm2 restart sms-backend || pm2 start dist/main.js --name sms-backend
+          
+          # 2. Update Frontend
+          cd /var/www/sms/frontend
+          git pull origin main
+          npm install
+          npm run build
+          # Frontend is served by Nginx, so we just need the new 'dist' folder
+          # which npm run build creates.

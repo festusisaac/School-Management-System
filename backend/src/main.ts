@@ -13,7 +13,24 @@ import { LoggingInterceptor } from './interceptors/logging.interceptor';
 import { json, urlencoded } from 'express';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import * as Sentry from '@sentry/node';
+import { nodeProfilingIntegration } from '@sentry/profiling-node';
+
 async function bootstrap() {
+  const configService = new ConfigService();
+  
+  // Initialize Sentry
+  if (process.env.SENTRY_DSN) {
+    Sentry.init({
+      dsn: process.env.SENTRY_DSN,
+      integrations: [
+        nodeProfilingIntegration(),
+      ],
+      tracesSampleRate: 1.0,
+      profilesSampleRate: 1.0,
+    });
+  }
+
   const app = await NestFactory.create(AppModule, {
     logger: WinstonModule.createLogger({ instance: winstonLogger }),
   });

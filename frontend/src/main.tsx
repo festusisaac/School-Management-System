@@ -1,7 +1,22 @@
 import ReactDOM from 'react-dom/client'
 import App from './App'
 import { ErrorBoundary } from 'react-error-boundary'
+import * as Sentry from "@sentry/react";
 import './styles/index.css'
+
+if (import.meta.env.VITE_SENTRY_DSN) {
+  Sentry.init({
+    dsn: import.meta.env.VITE_SENTRY_DSN,
+    integrations: [
+      Sentry.browserTracingIntegration(),
+      Sentry.replayIntegration(),
+    ],
+    tracesSampleRate: 1.0,
+    tracePropagationTargets: ["localhost", /^https:\/\/phjcschool\.com\.ng\/api/],
+    replaysSessionSampleRate: 0.1,
+    replaysOnErrorSampleRate: 1.0,
+  });
+}
 
 function ErrorFallback({error, resetErrorBoundary}: any) {
   return (

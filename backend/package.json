@@ -53,6 +53,8 @@
     "redis": "^4.6.10",
     "reflect-metadata": "^0.1.13",
     "resend": "^6.10.0",
+    "@sentry/node": "^8.0.0",
+    "@sentry/profiling-node": "^8.0.0",
     "swagger-ui-express": "^4.6.3",
     "typeorm": "^0.3.17",
     "uuid": "^9.0.0",
