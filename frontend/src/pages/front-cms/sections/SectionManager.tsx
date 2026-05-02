@@ -20,7 +20,7 @@ const SectionManager: React.FC = () => {
     setLoading(true);
     try {
       const data = await cmsService.getSection(key);
-      setSectionData(data);
+      setSectionData(data || { id: 0, key, title: '', content: '', imageUrl: '', metadata: {} });
     } catch (error) {
       toast.showError(`Failed to load ${key} data`);
     } finally {
@@ -128,6 +128,17 @@ const SectionManager: React.FC = () => {
               </div>
             </div>
           )}
+
+          <div className="space-y-1.5 pt-6 border-t border-gray-100 dark:border-gray-800">
+            <label className="text-xs font-semibold uppercase text-gray-400 tracking-wider pl-1">Image Caption / Names in Picture</label>
+            <input
+              type="text"
+              placeholder="e.g. Students in the Science Lab"
+              value={sectionData?.metadata?.imageCaption || ''}
+              onChange={(e) => setSectionData(prev => prev ? { ...prev, metadata: { ...prev.metadata, imageCaption: e.target.value } } : null)}
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all shadow-sm"
+            />
+          </div>
 
           <button
             type="submit"

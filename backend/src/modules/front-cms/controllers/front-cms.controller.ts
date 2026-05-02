@@ -167,6 +167,17 @@ export class FrontCmsController {
     if (file) {
       data.imageUrl = `uploads/front-cms/${file.filename}`;
     }
+    
+    // Parse metadata if it's a string (from FormData)
+    if (typeof data.metadata === 'string') {
+      try {
+        data.metadata = JSON.parse(data.metadata);
+      } catch (e) {
+        // Fallback to empty object or ignore if invalid
+        data.metadata = {};
+      }
+    }
+
     return this.cmsService.updateSection(key, data);
   }
 

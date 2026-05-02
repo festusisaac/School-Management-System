@@ -427,6 +427,11 @@ const LandingPage = () => {
                     alt="PHJC School Campus" 
                     className="relative rounded-[1.5rem] w-full aspect-[4/5] object-cover shadow-sm grayscale hover:grayscale-0 transition-all duration-1000" 
                   />
+                  {(cmsData?.sections?.about?.metadata?.imageCaption || 'Proprietress') && (
+                    <div className="absolute bottom-4 left-4 right-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm p-2.5 rounded-xl text-[10px] font-bold text-slate-600 dark:text-slate-400 text-center shadow-md border border-slate-100 dark:border-slate-800">
+                      {cmsData?.sections?.about?.metadata?.imageCaption || 'Proprietress'}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -449,6 +454,11 @@ const LandingPage = () => {
                     alt="Saint Katharina Kasper" 
                     className="relative rounded-[2rem] w-full aspect-[3/4] object-cover shadow-2xl z-10 grayscale hover:grayscale-0 transition-all duration-1000 border-4 border-white dark:border-slate-800" 
                   />
+                  {(cmsData?.sections?.heritage?.metadata?.imageCaption || 'Foundress') && (
+                    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-primary-600 text-white px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-2xl z-20 whitespace-nowrap border-2 border-white dark:border-slate-800">
+                      {cmsData?.sections?.heritage?.metadata?.imageCaption || 'Foundress'}
+                    </div>
+                  )}
                 </div>
               </div>
 
