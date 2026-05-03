@@ -17,7 +17,6 @@ import * as Sentry from '@sentry/node';
 import { nodeProfilingIntegration } from '@sentry/profiling-node';
 
 async function bootstrap() {
-  const configService = new ConfigService();
   
   // Initialize Sentry
   if (process.env.SENTRY_DSN) {
