@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import 'dotenv/config';
 process.env.TZ = 'UTC';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
@@ -17,22 +18,19 @@ import * as Sentry from '@sentry/node';
 import { nodeProfilingIntegration } from '@sentry/profiling-node';
 
 async function bootstrap() {
-  
   // Initialize Sentry
   if (process.env.SENTRY_DSN) {
     Sentry.init({
       dsn: process.env.SENTRY_DSN,
-      integrations: [
-        nodeProfilingIntegration(),
-      ],
       tracesSampleRate: 1.0,
-      profilesSampleRate: 1.0,
     });
   }
 
   const app = await NestFactory.create(AppModule, {
     logger: WinstonModule.createLogger({ instance: winstonLogger }),
   });
+
+  const configService = app.get(ConfigService);
   
   app.use(json({ limit: '50mb' }));
   app.use(urlencoded({ extended: true, limit: '50mb' }));
@@ -47,8 +45,6 @@ async function bootstrap() {
       max: 1000, // limit each IP to 1000 requests per windowMs
     }),
   );
-
-  const configService = app.get(ConfigService);
 
   // Global Prefix
   app.setGlobalPrefix(`api/${configService.get('API_VERSION')}`);
