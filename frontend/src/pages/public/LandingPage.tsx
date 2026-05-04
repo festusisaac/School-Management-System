@@ -18,6 +18,7 @@ import {
   Instagram,
   Linkedin,
   Youtube,
+  Play,
   Image as ImageIcon
 } from 'lucide-react';
 import image16 from '@assets/herobg/image16.jpeg';
@@ -130,6 +131,158 @@ const LandingPage = () => {
   };
 
   const localHeroImages = [image16, image17, image18, image20, image24, image43];
+
+  const renderVideo = (url: string, className: string, isHero: boolean = false, isHovered: boolean = false) => {
+    if (!url) return null;
+
+    // YouTube
+    const youtubeRegExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const youtubeMatch = url.match(youtubeRegExp);
+    const youtubeId = (youtubeMatch && youtubeMatch[2].length === 11) ? youtubeMatch[2] : null;
+
+    if (youtubeId) {
+      const autoplayParam = (isHero || isHovered) ? 'autoplay=1' : 'autoplay=0';
+      return (
+        <iframe
+          src={`https://www.youtube.com/embed/${youtubeId}?${autoplayParam}&mute=1&loop=1&playlist=${youtubeId}&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3`}
+          className={`${className} border-0`}
+          allow="autoplay; encrypted-media"
+          allowFullScreen
+        />
+      );
+    }
+
+    // Vimeo
+    const vimeoRegExp = /vimeo\.com\/(?:video\/)?(\d+)/;
+    const vimeoMatch = url.match(vimeoRegExp);
+    if (vimeoMatch) {
+      const autoplayParam = (isHero || isHovered) ? '1' : '0';
+      return (
+        <iframe
+          src={`https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=${autoplayParam}&muted=1&loop=1&autopause=0`}
+          className={`${className} border-0`}
+          allow="autoplay; fullscreen; picture-in-picture"
+          allowFullScreen
+        />
+      );
+    }
+
+    // TikTok
+    const tiktokRegExp = /\/video\/(\d+)/;
+    const tiktokMatch = url.match(tiktokRegExp);
+    const tiktokId = tiktokMatch ? tiktokMatch[1] : null;
+
+    if (tiktokId) {
+      // TikTok embeds are limited in autoplay control via URL, but we render it on hover
+      return (
+        <iframe
+          src={`https://www.tiktok.com/embed/v2/${tiktokId}`}
+          className={`${className} border-0`}
+          allow="autoplay; encrypted-media"
+          allowFullScreen
+        />
+      );
+    }
+
+    // Generic Iframe (if user provides an embed link)
+    if (url.includes('<iframe')) {
+      return <div className={className} dangerouslySetInnerHTML={{ __html: url }} />;
+    }
+
+    // Direct Link
+    return (
+      <video 
+        src={url.startsWith('http') ? url : getFullUrl(url)} 
+        autoPlay={isHero || isHovered}
+        muted 
+        loop 
+        playsInline
+        className={className}
+      />
+    );
+  };
+
+  const GalleryItem = ({ item, index }: { item: any, index: number }) => {
+    const [isHovered, setIsHovered] = useState(false);
+    const isVideo = item.type === 'video' && item.videoUrl;
+
+    // Auto-generate YouTube thumbnail if missing or if it's accidentally set to the video URL
+    const isYoutube = item.videoUrl?.includes('youtube.com') || item.videoUrl?.includes('youtu.be');
+    let effectiveImageUrl = item.imageUrl?.startsWith('blob:') || item.imageUrl?.startsWith('data:') 
+      ? item.imageUrl 
+      : item.imageUrl && item.imageUrl !== item.videoUrl
+        ? getFullUrl(item.imageUrl) 
+        : '';
+
+    if (!effectiveImageUrl && isVideo && isYoutube) {
+      const youtubeRegExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+      const youtubeMatch = item.videoUrl.match(youtubeRegExp);
+      const youtubeId = (youtubeMatch && youtubeMatch[2].length === 11) ? youtubeMatch[2] : null;
+      if (youtubeId) {
+        effectiveImageUrl = `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`;
+      }
+    }
+
+    return (
+      <div 
+        className="group relative h-96 rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-700 animate-fade-in"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        {isVideo ? (
+          <>
+            {isHovered ? (
+              renderVideo(item.videoUrl, "w-full h-full object-cover", false, true)
+            ) : (
+              <div className="relative w-full h-full bg-slate-200 dark:bg-slate-800 animate-pulse-slow">
+                {effectiveImageUrl ? (
+                  <img 
+                    src={effectiveImageUrl} 
+                    alt={item.title} 
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // Fallback to hqdefault if maxresdefault fails (common for older videos)
+                      if (effectiveImageUrl.includes('maxresdefault')) {
+                        const newUrl = effectiveImageUrl.replace('maxresdefault', 'hqdefault');
+                        (e.target as HTMLImageElement).src = newUrl;
+                      }
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Youtube size={48} className="text-slate-400 opacity-20" />
+                  </div>
+                )}
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/10 transition-colors">
+                  <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 text-white transform group-hover:scale-110 transition-transform">
+                    <Play fill="currentColor" size={32} className="ml-1" />
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <img 
+            src={effectiveImageUrl} 
+            alt={item.title} 
+            className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+          />
+        )}
+        
+        {/* Minimal Overlay */}
+        <div className="absolute inset-x-0 bottom-0 p-8 pt-20 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none">
+          <div className="flex flex-col items-start translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+            <span className="text-[10px] font-extrabold text-primary-400 uppercase tracking-widest mb-1">
+              {item.category}
+            </span>
+            <h5 className="text-xl font-bold text-white leading-tight">
+              {item.title}
+            </h5>
+          </div>
+        </div>
+      </div>
+    );
+  };
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activeGalleryTab, setActiveGalleryTab] = useState('campus');
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
@@ -253,19 +406,19 @@ const LandingPage = () => {
 
     // Fallback static data for standard categories
     if (slug === 'campus') return [
-      { imageUrl: campus1, title: 'Modern Classrooms', category: 'The Campus' },
-      { imageUrl: campus2, title: 'Computer Laboratory', category: 'The Campus' },
-      { imageUrl: campus3, title: 'School Library', category: 'The Campus' },
+      { imageUrl: campus1, title: 'Modern Classrooms', category: 'The Campus', type: 'image', videoUrl: undefined },
+      { imageUrl: campus2, title: 'Computer Laboratory', category: 'The Campus', type: 'image', videoUrl: undefined },
+      { imageUrl: campus3, title: 'School Library', category: 'The Campus', type: 'image', videoUrl: undefined },
     ];
     if (slug === 'spirituality') return [
-      { imageUrl: faith1, title: 'Morning Prayer', category: 'Spirituality' },
-      { imageUrl: faith2, title: 'Catholic Heritage', category: 'Spirituality' },
-      { imageUrl: faith3, title: 'Community Service', category: 'Spirituality' },
+      { imageUrl: faith1, title: 'Morning Prayer', category: 'Spirituality', type: 'image', videoUrl: undefined },
+      { imageUrl: faith2, title: 'Catholic Heritage', category: 'Spirituality', type: 'image', videoUrl: undefined },
+      { imageUrl: faith3, title: 'Community Service', category: 'Spirituality', type: 'image', videoUrl: undefined },
     ];
     if (slug === 'activities') return [
-      { imageUrl: activity1, title: 'JET Club Projects', category: 'Activities' },
-      { imageUrl: activity2, title: 'Inter-House Sports', category: 'Activities' },
-      { imageUrl: activity3, title: 'Cultural Day Celebrations', category: 'Activities' },
+      { imageUrl: activity1, title: 'JET Club Projects', category: 'Activities', type: 'image', videoUrl: undefined },
+      { imageUrl: activity2, title: 'Inter-House Sports', category: 'Activities', type: 'image', videoUrl: undefined },
+      { imageUrl: activity3, title: 'Cultural Day Celebrations', category: 'Activities', type: 'image', videoUrl: undefined },
     ];
     
     return [];
@@ -337,6 +490,14 @@ const LandingPage = () => {
           {/* Overlays */}
           <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/40 to-slate-900/40 z-10"></div>
           <div className="absolute inset-0 bg-blue-900/10 mix-blend-overlay z-10"></div>
+          
+          {/* Hero Video Background */}
+          {hero?.videoUrl && (
+            <div className="absolute inset-0 z-20 overflow-hidden">
+              {renderVideo(hero.videoUrl, "w-full h-full object-cover scale-[1.3]", true)}
+              <div className="absolute inset-0 bg-black/40"></div>
+            </div>
+          )}
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-10">
@@ -581,27 +742,7 @@ const LandingPage = () => {
             {/* Gallery Grid */}
             <div className="grid md:grid-cols-3 gap-8 md:gap-10">
               {activeGalleryItems.map((item, index) => (
-                <div 
-                  key={`${activeGalleryTab}-${index}`} 
-                  className="group relative h-96 rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-700 animate-fade-in"
-                >
-                  <img 
-                    src={item.imageUrl?.startsWith('blob:') || item.imageUrl?.startsWith('data:') ? item.imageUrl : item.imageUrl ? getFullUrl(item.imageUrl) : ''} 
-                    alt={item.title} 
-                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
-                  />
-                  {/* Minimal Overlay */}
-                  <div className="absolute inset-x-0 bottom-0 p-8 pt-20 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
-                    <div className="flex flex-col items-start translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                      <span className="text-[10px] font-extrabold text-primary-400 uppercase tracking-widest mb-1">
-                        {item.category}
-                      </span>
-                      <h5 className="text-xl font-bold text-white leading-tight">
-                        {item.title}
-                      </h5>
-                    </div>
-                  </div>
-                </div>
+                <GalleryItem key={`${activeGalleryTab}-${index}`} item={item} index={index} />
               ))}
             </div>
 

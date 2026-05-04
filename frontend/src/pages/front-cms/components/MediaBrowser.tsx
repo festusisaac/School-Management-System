@@ -14,7 +14,9 @@ import {
   AlertTriangle,
   Info,
   Loader2,
-  Upload
+  Upload,
+  Video as VideoIcon,
+  Play
 } from 'lucide-react';
 import { useSystem } from '../../../context/SystemContext';
 import { useToast } from '../../../context/ToastContext';
@@ -122,7 +124,7 @@ const MediaBrowser = ({ onSelect, allowDelete = true, selectionMode = false }: M
                     <label className="flex-1 md:flex-none cursor-pointer flex items-center justify-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all shadow-sm shadow-primary-100 disabled:opacity-50">
                         {uploading ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
                         Upload
-                        <input type="file" className="hidden" accept="image/*" onChange={handleUpload} disabled={uploading} />
+                        <input type="file" className="hidden" accept="image/*,video/*" onChange={handleUpload} disabled={uploading} />
                     </label>
                     <div className="bg-gray-100 dark:bg-gray-800 p-1 rounded-lg flex gap-1 border border-gray-200 dark:border-gray-700">
                         <button 
@@ -174,11 +176,20 @@ const MediaBrowser = ({ onSelect, allowDelete = true, selectionMode = false }: M
                                                 selectedItem?.name === item.name ? 'border-primary-600 ring-4 ring-primary-50 dark:ring-primary-900/20' : 'border-gray-100 dark:border-gray-700 hover:border-primary-500 shadow-sm'
                                             }`}
                                         >
-                                            <img 
-                                                src={getFullUrl(item.url)} 
-                                                alt={item.name}
-                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                            />
+                                            {item.name.match(/\.(mp4|webm|ogg|mov)$/i) ? (
+                                                <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-900 group-hover:scale-110 transition-transform duration-500">
+                                                    <VideoIcon size={48} className="text-gray-400" />
+                                                    <div className="absolute top-2 right-2 bg-primary-600 rounded-full p-1 shadow-lg">
+                                                        <Play size={10} className="text-white fill-current" />
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <img 
+                                                    src={getFullUrl(item.url)} 
+                                                    alt={item.name}
+                                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                                />
+                                            )}
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
                                                 <p className="text-[10px] text-white truncate font-bold w-full">{item.name}</p>
                                             </div>
@@ -195,8 +206,12 @@ const MediaBrowser = ({ onSelect, allowDelete = true, selectionMode = false }: M
                                                 selectedItem?.name === item.name ? 'bg-primary-50 dark:bg-primary-900/10 border-primary-100' : ''
                                             }`}
                                         >
-                                            <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-900 overflow-hidden shrink-0">
-                                                <img src={getFullUrl(item.url)} alt="" className="w-full h-full object-cover" />
+                                            <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-900 overflow-hidden shrink-0 flex items-center justify-center">
+                                                {item.name.match(/\.(mp4|webm|ogg|mov)$/i) ? (
+                                                    <VideoIcon size={24} className="text-gray-400" />
+                                                ) : (
+                                                    <img src={getFullUrl(item.url)} alt="" className="w-full h-full object-cover" />
+                                                )}
                                             </div>
                                             <div className="min-w-0 flex-1 text-left">
                                                 <p className="text-sm font-bold text-gray-700 dark:text-gray-300 truncate">{item.name}</p>
@@ -235,11 +250,19 @@ const MediaBrowser = ({ onSelect, allowDelete = true, selectionMode = false }: M
                             
                             <div className="p-6 flex-1 overflow-y-auto space-y-6 custom-scrollbar">
                                 <div className="aspect-video bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden border border-gray-100 dark:border-gray-700 group relative shadow-inner">
-                                    <img 
-                                        src={getFullUrl(selectedItem.url)} 
-                                        alt="" 
-                                        className="w-full h-full object-contain"
-                                    />
+                                    {selectedItem.name.match(/\.(mp4|webm|ogg|mov)$/i) ? (
+                                        <video 
+                                            src={getFullUrl(selectedItem.url)} 
+                                            controls
+                                            className="w-full h-full object-contain"
+                                        />
+                                    ) : (
+                                        <img 
+                                            src={getFullUrl(selectedItem.url)} 
+                                            alt="" 
+                                            className="w-full h-full object-contain"
+                                        />
+                                    )}
                                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2 backdrop-blur-sm">
                                         <a href={getFullUrl(selectedItem.url)} target="_blank" rel="noreferrer" className="bg-white text-gray-900 px-4 py-2 rounded-lg text-xs font-bold shadow-xl hover:scale-105 transition-transform">
                                             Open Full View

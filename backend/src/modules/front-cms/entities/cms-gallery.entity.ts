@@ -13,4 +13,10 @@ export class CmsGallery {
 
   @Column()
   category!: string;
+
+  @Column({ default: 'image' })
+  type!: 'image' | 'video';
+
+  @Column({ nullable: true })
+  videoUrl?: string;
 }

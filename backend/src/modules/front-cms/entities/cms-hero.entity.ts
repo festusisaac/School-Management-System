@@ -17,4 +17,7 @@ export class CmsHero {
 
   @OneToMany(() => CmsCarouselImage, (image) => image.hero, { cascade: true })
   carouselImages!: CmsCarouselImage[];
+
+  @Column({ nullable: true })
+  videoUrl?: string;
 }

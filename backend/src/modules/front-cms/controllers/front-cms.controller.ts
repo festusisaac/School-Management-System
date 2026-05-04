@@ -78,6 +78,9 @@ export class FrontCmsController {
           cb(null, `media-${uniqueSuffix}${extname(file.originalname)}`);
         },
       }),
+      limits: {
+        fileSize: 100 * 1024 * 1024, // 100MB
+      },
     }),
   )
   async uploadMedia(@UploadedFile() file: Express.Multer.File) {
@@ -302,13 +305,27 @@ export class FrontCmsController {
           cb(null, `gallery-${uniqueSuffix}${extname(file.originalname)}`);
         },
       }),
+      limits: {
+        fileSize: 100 * 1024 * 1024, // 100MB
+      },
     }),
   )
   async createGalleryItem(@Body() data: any, @UploadedFile() file?: Express.Multer.File) {
     if (file) {
-      data.imageUrl = `uploads/front-cms/${file.filename}`;
+      const isVideo = file.mimetype.startsWith('video/');
+      const path = `uploads/front-cms/${file.filename}`;
+      
+      if (isVideo || data.type === 'video') {
+        data.videoUrl = path;
+      } else {
+        data.imageUrl = path;
+      }
     }
-    if (!data.imageUrl) throw new Error('Image URL or File is required');
+    
+    if (!data.imageUrl && !data.videoUrl) {
+      throw new Error('Image, Video URL or File is required');
+    }
+    
     return this.cmsService.createGalleryItem(data);
   }
 

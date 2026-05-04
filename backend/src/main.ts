@@ -54,7 +54,7 @@ async function bootstrap() {
     origin: configService.get('CORS_ORIGIN', 'https://phjcschool.com.ng').split(','),
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: 'Content-Type, Accept, Authorization',
+    allowedHeaders: 'Origin, X-Requested-With, Content-Type, Accept, Authorization, sentry-trace, baggage',
   });
 
   // Global Validation Pipe

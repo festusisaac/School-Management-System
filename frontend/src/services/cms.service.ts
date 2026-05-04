@@ -6,6 +6,7 @@ export interface CmsHero {
   subtitle: string;
   welcomeText: string;
   carouselImages: CmsCarouselImage[];
+  videoUrl?: string;
 }
 
 export interface CmsCarouselImage {
@@ -44,6 +45,8 @@ export interface CmsGalleryItem {
   imageUrl: string;
   title: string;
   category: string;
+  type: 'image' | 'video';
+  videoUrl?: string;
 }
 
 export interface CmsProgram {
@@ -163,10 +166,13 @@ const cmsService = {
 
   // Admin Gallery
   getGallery: () => api.get<CmsGalleryItem[]>('/front-cms/gallery'),
-  createGalleryItem: (data: { title: string; category: string }, image: File | string) => {
+  createGalleryItem: (data: { title: string; category: string; type: string; imageUrl?: string; videoUrl?: string }, image: File | string) => {
     const formData = new FormData();
     formData.append('title', data.title);
     formData.append('category', data.category);
+    formData.append('type', data.type);
+    if (data.videoUrl) formData.append('videoUrl', data.videoUrl);
+
     if (typeof image === 'string') {
       formData.append('imageUrl', image);
     } else {

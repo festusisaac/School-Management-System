@@ -13,8 +13,8 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,json,css,scss}\""
   },
   "dependencies": {
-    "@sentry/react": "^8.0.0",
-    "@sentry/browser": "^8.0.0",
+    "@sentry/browser": "^8.55.2",
+    "@sentry/react": "^8.55.2",
     "@tanstack/react-table": "^8.21.3",
     "axios": "^1.6.2",
     "class-variance-authority": "^0.7.1",
@@ -30,6 +30,7 @@
     "react-dom": "^18.2.0",
     "react-error-boundary": "^6.1.1",
     "react-hot-toast": "^2.4.1",
+    "react-is": "^19.2.5",
     "react-paystack": "^6.0.0",
     "react-router-dom": "^6.18.0",
     "recharts": "^3.5.1",

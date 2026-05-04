@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Save, Loader2, Upload, Image as ImageIcon } from 'lucide-react';
+import { Plus, Trash2, Save, Loader2, Upload, Image as ImageIcon, Video as VideoIcon } from 'lucide-react';
 import cmsService, { CmsHero } from '@services/cms.service';
 import { useSystem } from '@/context/SystemContext';
 import { useToast } from '@/context/ToastContext';
@@ -11,7 +11,66 @@ const HeroManager: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const { getFullUrl } = useSystem();
   const toast = useToast();
+
+  const renderVideo = (url: string, className: string) => {
+    if (!url) return null;
+
+    // YouTube
+    const youtubeRegExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const youtubeMatch = url.match(youtubeRegExp);
+    const youtubeId = (youtubeMatch && youtubeMatch[2].length === 11) ? youtubeMatch[2] : null;
+
+    if (youtubeId) {
+      return (
+        <iframe
+          src={`https://www.youtube.com/embed/${youtubeId}?autoplay=0&mute=1&controls=1&modestbranding=1&rel=0`}
+          className={className}
+          allow="autoplay; encrypted-media"
+          allowFullScreen
+        />
+      );
+    }
+
+    // Vimeo
+    const vimeoRegExp = /vimeo\.com\/(?:video\/)?(\d+)/;
+    const vimeoMatch = url.match(vimeoRegExp);
+    if (vimeoMatch) {
+      return (
+        <iframe
+          src={`https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=0&muted=1&autopause=0`}
+          className={className}
+          allow="autoplay; fullscreen; picture-in-picture"
+          allowFullScreen
+        />
+      );
+    }
+
+    // TikTok
+    const tiktokRegExp = /\/video\/(\d+)/;
+    const tiktokMatch = url.match(tiktokRegExp);
+    const tiktokId = tiktokMatch ? tiktokMatch[1] : null;
+
+    if (tiktokId) {
+      return (
+        <iframe
+          src={`https://www.tiktok.com/embed/v2/${tiktokId}`}
+          className={className}
+          allow="autoplay; encrypted-media"
+          allowFullScreen
+        />
+      );
+    }
+
+    // Generic Iframe
+    if (url.includes('<iframe')) {
+      return <div className={className} dangerouslySetInnerHTML={{ __html: url }} />;
+    }
+
+    // Direct Link
+    return <video src={url.startsWith('http') ? url : getFullUrl(url)} className={className} muted loop autoPlay />;
+  };
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
+  const [mediaTarget, setMediaTarget] = useState<'carousel' | 'video'>('carousel');
 
   const fetchHeroData = async () => {
     try {
@@ -37,6 +96,7 @@ const HeroManager: React.FC = () => {
         title: hero.title,
         subtitle: hero.subtitle,
         welcomeText: hero.welcomeText,
+        videoUrl: hero.videoUrl,
       });
       toast.showSuccess('Hero text updated successfully');
     } catch (error) {
@@ -109,6 +169,44 @@ const HeroManager: React.FC = () => {
                 className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all resize-none"
               ></textarea>
             </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold uppercase text-gray-400 tracking-wider pl-1">Background Video / External URL</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={hero?.videoUrl || ''}
+                  onChange={(e) => setHero(prev => prev ? { ...prev, videoUrl: e.target.value } : null)}
+                  placeholder="https://youtube.com/... or uploads/front-cms/video.mp4"
+                  className="flex-1 px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMediaTarget('video');
+                    setIsMediaModalOpen(true);
+                  }}
+                  className="bg-gray-100 dark:bg-gray-800 p-2.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all shadow-sm"
+                  title="Select from Library"
+                >
+                  <VideoIcon size={18} className="text-primary-600" />
+                </button>
+                {hero?.videoUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setHero(prev => prev ? { ...prev, videoUrl: undefined } : null)}
+                    className="bg-red-50 dark:bg-red-900/20 p-2.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition-all shadow-sm text-red-600"
+                    title="Remove Video"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                )}
+              </div>
+              {hero?.videoUrl && (
+                <div className="mt-2 aspect-video rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-black">
+                  {renderVideo(hero.videoUrl, "w-full h-full object-cover")}
+                </div>
+              )}
+            </div>
             <button
               type="submit"
               disabled={saving}
@@ -131,7 +229,10 @@ const HeroManager: React.FC = () => {
                 <input type="file" className="hidden" accept="image/*" onChange={handleUploadImage} />
               </label>
               <button 
-                onClick={() => setIsMediaModalOpen(true)}
+                onClick={() => {
+                  setMediaTarget('carousel');
+                  setIsMediaModalOpen(true);
+                }}
                 className="flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-3 py-2 rounded-lg text-xs font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all shadow-sm"
               >
                 <ImageIcon size={14} className="text-primary-600" />
@@ -168,11 +269,16 @@ const HeroManager: React.FC = () => {
         onSelect={async (media) => {
           try {
             setSaving(true);
-            await cmsService.addCarouselImage(media.url);
-            toast.showSuccess('Image added from library');
-            fetchHeroData();
+            if (mediaTarget === 'carousel') {
+              await cmsService.addCarouselImage(media.url);
+              toast.showSuccess('Image added from library');
+              fetchHeroData();
+            } else {
+              setHero(prev => prev ? { ...prev, videoUrl: media.url } : null);
+              toast.showSuccess('Video selected. Click Save to apply changes.');
+            }
           } catch (error) {
-            toast.showError('Failed to add image');
+            toast.showError('Failed to select media');
           } finally {
             setSaving(false);
           }

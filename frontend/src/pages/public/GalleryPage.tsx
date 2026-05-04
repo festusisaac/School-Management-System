@@ -7,7 +7,9 @@ import {
   Image as ImageIcon,
   Search,
   ChevronRight,
-  Filter
+  Filter,
+  Play,
+  Youtube
 } from 'lucide-react';
 
 // Fallback Assets (Matching LandingPage)
@@ -114,6 +116,165 @@ const GalleryPage = () => {
 
   const filteredItems = getFilteredItems();
 
+  const renderVideo = (url: string, className: string, isHovered: boolean = false) => {
+    if (!url) return null;
+
+    // YouTube
+    const youtubeRegExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const youtubeMatch = url.match(youtubeRegExp);
+    const youtubeId = (youtubeMatch && youtubeMatch[2].length === 11) ? youtubeMatch[2] : null;
+
+    if (youtubeId) {
+      const autoplayParam = isHovered ? 'autoplay=1' : 'autoplay=0';
+      return (
+        <iframe
+          src={`https://www.youtube.com/embed/${youtubeId}?${autoplayParam}&loop=1&playlist=${youtubeId}&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3`}
+          className={`${className} border-0`}
+          allow="autoplay; encrypted-media"
+          allowFullScreen
+        />
+      );
+    }
+
+    // Vimeo
+    const vimeoRegExp = /vimeo\.com\/(?:video\/)?(\d+)/;
+    const vimeoMatch = url.match(vimeoRegExp);
+    if (vimeoMatch) {
+      const autoplayParam = isHovered ? '1' : '0';
+      return (
+        <iframe
+          src={`https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=${autoplayParam}&loop=1&autopause=0`}
+          className={`${className} border-0`}
+          allow="autoplay; fullscreen; picture-in-picture"
+          allowFullScreen
+        />
+      );
+    }
+
+    // TikTok
+    const tiktokRegExp = /\/video\/(\d+)/;
+    const tiktokMatch = url.match(tiktokRegExp);
+    const tiktokId = tiktokMatch ? tiktokMatch[1] : null;
+
+    if (tiktokId) {
+      return (
+        <iframe
+          src={`https://www.tiktok.com/embed/v2/${tiktokId}`}
+          className={`${className} border-0`}
+          allow="autoplay; encrypted-media"
+          allowFullScreen
+        />
+      );
+    }
+
+    // Generic Iframe
+    if (url.includes('<iframe')) {
+      return <div className={className} dangerouslySetInnerHTML={{ __html: url }} />;
+    }
+
+    // Direct Link
+    return (
+      <video 
+        src={url.startsWith('http') ? url : getFullUrl(url)} 
+        autoPlay={isHovered}
+        muted 
+        loop 
+        playsInline
+        className={className}
+      />
+    );
+  };
+
+  const GalleryItem = ({ item, index }: { item: any, index: number }) => {
+    const [isHovered, setIsHovered] = useState(false);
+    const isVideo = item.type === 'video' && item.videoUrl;
+
+    // Auto-generate YouTube thumbnail if missing or if it's accidentally set to the video URL
+    const isYoutube = item.videoUrl?.includes('youtube.com') || item.videoUrl?.includes('youtu.be');
+    let effectiveImageUrl = item.imageUrl?.startsWith('blob:') || item.imageUrl?.startsWith('data:') 
+      ? item.imageUrl 
+      : item.imageUrl && item.imageUrl !== item.videoUrl
+        ? getFullUrl(item.imageUrl) 
+        : '';
+
+    if (!effectiveImageUrl && isVideo && isYoutube) {
+      const youtubeRegExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+      const youtubeMatch = item.videoUrl.match(youtubeRegExp);
+      const youtubeId = (youtubeMatch && youtubeMatch[2].length === 11) ? youtubeMatch[2] : null;
+      if (youtubeId) {
+        effectiveImageUrl = `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`;
+      }
+    }
+
+    return (
+      <div 
+        key={index} 
+        className="group relative h-[28rem] rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-700 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 animate-in fade-in slide-in-from-bottom-5"
+        style={{ animationDelay: `${(index % 6) * 100}ms` }}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        {isVideo ? (
+          <>
+            {isHovered ? (
+              renderVideo(item.videoUrl, "w-full h-full object-cover", true)
+            ) : (
+              <div className="relative w-full h-full bg-slate-200 dark:bg-slate-800 animate-pulse-slow">
+                {effectiveImageUrl ? (
+                  <img 
+                    src={effectiveImageUrl} 
+                    alt={item.title} 
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      if (effectiveImageUrl.includes('maxresdefault')) {
+                        const newUrl = effectiveImageUrl.replace('maxresdefault', 'hqdefault');
+                        (e.target as HTMLImageElement).src = newUrl;
+                      }
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Youtube size={64} className="text-slate-400 opacity-20" />
+                  </div>
+                )}
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/10 transition-colors">
+                  <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 text-white transform group-hover:scale-110 transition-transform">
+                    <Play fill="currentColor" size={32} className="ml-1" />
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <img 
+            src={effectiveImageUrl} 
+            alt={item.title} 
+            className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+          />
+        )}
+
+        {/* Premium Overlay */}
+        <div className="absolute inset-x-0 bottom-0 p-8 pt-24 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none">
+          <div className="flex flex-col items-start translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+            <span className="text-[10px] font-extrabold text-primary-400 uppercase tracking-widest mb-1 shadow-sm">
+              {item.category}
+            </span>
+            <h5 className="text-2xl font-black text-white leading-tight drop-shadow-md">
+              {item.title}
+            </h5>
+          </div>
+        </div>
+        
+        {/* View Details Hover Badge */}
+        <div className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 p-2 rounded-full text-white">
+            {isVideo ? <Youtube size={18} /> : <ImageIcon size={18} />}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -180,39 +341,10 @@ const GalleryPage = () => {
             </div>
           </div>
 
-          {/* Gallery Grid */}
           {filteredItems.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
               {filteredItems.map((item, index) => (
-                <div 
-                  key={index} 
-                  className="group relative h-[28rem] rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-700 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 animate-in fade-in slide-in-from-bottom-5"
-                  style={{ animationDelay: `${(index % 6) * 100}ms` }}
-                >
-                  <img 
-                    src={item.imageUrl?.startsWith('blob:') || item.imageUrl?.startsWith('data:') ? item.imageUrl : item.imageUrl ? getFullUrl(item.imageUrl) : ''} 
-                    alt={item.title} 
-                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
-                  />
-                  {/* Premium Overlay */}
-                  <div className="absolute inset-x-0 bottom-0 p-8 pt-24 bg-gradient-to-t from-black/90 via-black/40 to-transparent">
-                    <div className="flex flex-col items-start translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                      <span className="text-[10px] font-extrabold text-primary-400 uppercase tracking-widest mb-1 shadow-sm">
-                        {item.category}
-                      </span>
-                      <h5 className="text-2xl font-black text-white leading-tight drop-shadow-md">
-                        {item.title}
-                      </h5>
-                    </div>
-                  </div>
-                  
-                  {/* View Details Hover Badge */}
-                  <div className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                    <div className="bg-white/10 backdrop-blur-md border border-white/20 p-2 rounded-full text-white">
-                      <ImageIcon size={18} />
-                    </div>
-                  </div>
-                </div>
+                <GalleryItem key={index} item={item} index={index} />
               ))}
             </div>
           ) : (
