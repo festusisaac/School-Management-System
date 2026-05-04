@@ -31,7 +31,7 @@ async function bootstrap() {
   });
 
   const configService = app.get(ConfigService);
-  
+
   app.use(json({ limit: '50mb' }));
   app.use(urlencoded({ extended: true, limit: '50mb' }));
 

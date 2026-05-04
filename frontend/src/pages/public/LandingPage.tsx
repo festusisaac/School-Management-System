@@ -95,6 +95,160 @@ const ScrollReveal = ({ children, delay = 0 }: { children: React.ReactNode, dela
   );
 };
 
+const renderVideo = (url: string, className: string, getFullUrl: (path?: string) => string, isHero: boolean = false, isHovered: boolean = false) => {
+  if (!url) return null;
+
+  // YouTube
+  const youtubeRegExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const youtubeMatch = url.match(youtubeRegExp);
+  const youtubeId = (youtubeMatch && youtubeMatch[2].length === 11) ? youtubeMatch[2] : null;
+
+  if (youtubeId) {
+    const autoplayParam = (isHero || isHovered) ? 'autoplay=1' : 'autoplay=0';
+    const muteParam = isHero ? 'mute=1' : 'mute=0';
+    return (
+      <iframe
+        src={`https://www.youtube.com/embed/${youtubeId}?${autoplayParam}&${muteParam}&loop=1&playlist=${youtubeId}&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3`}
+        className={`${className} border-0`}
+        allow="autoplay; encrypted-media"
+        allowFullScreen
+      />
+    );
+  }
+
+  // Vimeo
+  const vimeoRegExp = /vimeo\.com\/(?:video\/)?(\d+)/;
+  const vimeoMatch = url.match(vimeoRegExp);
+  if (vimeoMatch) {
+    const autoplayParam = (isHero || isHovered) ? '1' : '0';
+    const mutedParam = isHero ? '1' : '0';
+    return (
+      <iframe
+        src={`https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=${autoplayParam}&muted=${mutedParam}&loop=1&autopause=0`}
+        className={`${className} border-0`}
+        allow="autoplay; fullscreen; picture-in-picture"
+        allowFullScreen
+      />
+    );
+  }
+
+  // TikTok
+  const tiktokRegExp = /\/video\/(\d+)/;
+  const tiktokMatch = url.match(tiktokRegExp);
+  const tiktokId = tiktokMatch ? tiktokMatch[1] : null;
+
+  if (tiktokId) {
+    // TikTok embeds are limited in autoplay control via URL, but we render it on hover
+    return (
+      <iframe
+        src={`https://www.tiktok.com/embed/v2/${tiktokId}`}
+        className={`${className} border-0`}
+        allow="autoplay; encrypted-media"
+        allowFullScreen
+      />
+    );
+  }
+
+  // Generic Iframe (if user provides an embed link)
+  if (url.includes('<iframe')) {
+    return <div className={className} dangerouslySetInnerHTML={{ __html: url }} />;
+  }
+
+  // Direct Link
+  return (
+    <video 
+      src={url.startsWith('http') ? url : getFullUrl(url)} 
+      autoPlay={isHero || isHovered}
+      muted={isHero} 
+      loop 
+      playsInline
+      className={className}
+    />
+  );
+};
+
+const GalleryItem = React.memo(({ item, index, getFullUrl }: { item: any, index: number, getFullUrl: (path?: string) => string }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const isVideo = item.type === 'video' && item.videoUrl;
+
+  // Auto-generate YouTube thumbnail if missing or if it's accidentally set to the video URL
+  const isYoutube = item.videoUrl?.includes('youtube.com') || item.videoUrl?.includes('youtu.be');
+  let effectiveImageUrl = item.imageUrl?.startsWith('blob:') || item.imageUrl?.startsWith('data:') 
+    ? item.imageUrl 
+    : item.imageUrl && item.imageUrl !== item.videoUrl
+      ? getFullUrl(item.imageUrl) 
+      : '';
+
+  if (!effectiveImageUrl && isVideo && isYoutube) {
+    const youtubeRegExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const youtubeMatch = item.videoUrl.match(youtubeRegExp);
+    const youtubeId = (youtubeMatch && youtubeMatch[2].length === 11) ? youtubeMatch[2] : null;
+    if (youtubeId) {
+      effectiveImageUrl = `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`;
+    }
+  }
+
+  return (
+    <div 
+      className="group relative h-96 rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-700 animate-fade-in"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {isVideo ? (
+        <>
+          {isHovered ? (
+            renderVideo(item.videoUrl, "w-full h-full object-cover", getFullUrl, false, true)
+          ) : (
+            <div className="relative w-full h-full bg-slate-200 dark:bg-slate-800 animate-pulse-slow">
+              {effectiveImageUrl ? (
+                <img 
+                  src={effectiveImageUrl} 
+                  alt={item.title} 
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // Fallback to hqdefault if maxresdefault fails (common for older videos)
+                    if (effectiveImageUrl.includes('maxresdefault')) {
+                      const newUrl = effectiveImageUrl.replace('maxresdefault', 'hqdefault');
+                      (e.target as HTMLImageElement).src = newUrl;
+                    }
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Youtube size={48} className="text-slate-400 opacity-20" />
+                </div>
+              )}
+              <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/10 transition-colors">
+                <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 text-white transform group-hover:scale-110 transition-transform">
+                  <Play fill="currentColor" size={32} className="ml-1" />
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <img 
+          src={effectiveImageUrl} 
+          alt={item.title} 
+          className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+        />
+      )}
+      
+      {/* Minimal Overlay */}
+      <div className="absolute inset-x-0 bottom-0 p-8 pt-20 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none">
+        <div className="flex flex-col items-start translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+          <span className="text-[10px] font-extrabold text-primary-400 uppercase tracking-widest mb-1">
+            {item.category}
+          </span>
+          <h5 className="text-xl font-bold text-white leading-tight">
+            {item.title}
+          </h5>
+        </div>
+      </div>
+    </div>
+  );
+});
+
 const LandingPage = () => {
   const { settings, getFullUrl } = useSystem();
   const { showToast } = useToast();
@@ -132,157 +286,6 @@ const LandingPage = () => {
 
   const localHeroImages = [image16, image17, image18, image20, image24, image43];
 
-  const renderVideo = (url: string, className: string, isHero: boolean = false, isHovered: boolean = false) => {
-    if (!url) return null;
-
-    // YouTube
-    const youtubeRegExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const youtubeMatch = url.match(youtubeRegExp);
-    const youtubeId = (youtubeMatch && youtubeMatch[2].length === 11) ? youtubeMatch[2] : null;
-
-    if (youtubeId) {
-      const autoplayParam = (isHero || isHovered) ? 'autoplay=1' : 'autoplay=0';
-      return (
-        <iframe
-          src={`https://www.youtube.com/embed/${youtubeId}?${autoplayParam}&mute=1&loop=1&playlist=${youtubeId}&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3`}
-          className={`${className} border-0`}
-          allow="autoplay; encrypted-media"
-          allowFullScreen
-        />
-      );
-    }
-
-    // Vimeo
-    const vimeoRegExp = /vimeo\.com\/(?:video\/)?(\d+)/;
-    const vimeoMatch = url.match(vimeoRegExp);
-    if (vimeoMatch) {
-      const autoplayParam = (isHero || isHovered) ? '1' : '0';
-      return (
-        <iframe
-          src={`https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=${autoplayParam}&muted=1&loop=1&autopause=0`}
-          className={`${className} border-0`}
-          allow="autoplay; fullscreen; picture-in-picture"
-          allowFullScreen
-        />
-      );
-    }
-
-    // TikTok
-    const tiktokRegExp = /\/video\/(\d+)/;
-    const tiktokMatch = url.match(tiktokRegExp);
-    const tiktokId = tiktokMatch ? tiktokMatch[1] : null;
-
-    if (tiktokId) {
-      // TikTok embeds are limited in autoplay control via URL, but we render it on hover
-      return (
-        <iframe
-          src={`https://www.tiktok.com/embed/v2/${tiktokId}`}
-          className={`${className} border-0`}
-          allow="autoplay; encrypted-media"
-          allowFullScreen
-        />
-      );
-    }
-
-    // Generic Iframe (if user provides an embed link)
-    if (url.includes('<iframe')) {
-      return <div className={className} dangerouslySetInnerHTML={{ __html: url }} />;
-    }
-
-    // Direct Link
-    return (
-      <video 
-        src={url.startsWith('http') ? url : getFullUrl(url)} 
-        autoPlay={isHero || isHovered}
-        muted 
-        loop 
-        playsInline
-        className={className}
-      />
-    );
-  };
-
-  const GalleryItem = ({ item, index }: { item: any, index: number }) => {
-    const [isHovered, setIsHovered] = useState(false);
-    const isVideo = item.type === 'video' && item.videoUrl;
-
-    // Auto-generate YouTube thumbnail if missing or if it's accidentally set to the video URL
-    const isYoutube = item.videoUrl?.includes('youtube.com') || item.videoUrl?.includes('youtu.be');
-    let effectiveImageUrl = item.imageUrl?.startsWith('blob:') || item.imageUrl?.startsWith('data:') 
-      ? item.imageUrl 
-      : item.imageUrl && item.imageUrl !== item.videoUrl
-        ? getFullUrl(item.imageUrl) 
-        : '';
-
-    if (!effectiveImageUrl && isVideo && isYoutube) {
-      const youtubeRegExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-      const youtubeMatch = item.videoUrl.match(youtubeRegExp);
-      const youtubeId = (youtubeMatch && youtubeMatch[2].length === 11) ? youtubeMatch[2] : null;
-      if (youtubeId) {
-        effectiveImageUrl = `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`;
-      }
-    }
-
-    return (
-      <div 
-        className="group relative h-96 rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-700 animate-fade-in"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        {isVideo ? (
-          <>
-            {isHovered ? (
-              renderVideo(item.videoUrl, "w-full h-full object-cover", false, true)
-            ) : (
-              <div className="relative w-full h-full bg-slate-200 dark:bg-slate-800 animate-pulse-slow">
-                {effectiveImageUrl ? (
-                  <img 
-                    src={effectiveImageUrl} 
-                    alt={item.title} 
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      // Fallback to hqdefault if maxresdefault fails (common for older videos)
-                      if (effectiveImageUrl.includes('maxresdefault')) {
-                        const newUrl = effectiveImageUrl.replace('maxresdefault', 'hqdefault');
-                        (e.target as HTMLImageElement).src = newUrl;
-                      }
-                    }}
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Youtube size={48} className="text-slate-400 opacity-20" />
-                  </div>
-                )}
-                <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/10 transition-colors">
-                  <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 text-white transform group-hover:scale-110 transition-transform">
-                    <Play fill="currentColor" size={32} className="ml-1" />
-                  </div>
-                </div>
-              </div>
-            )}
-          </>
-        ) : (
-          <img 
-            src={effectiveImageUrl} 
-            alt={item.title} 
-            className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
-          />
-        )}
-        
-        {/* Minimal Overlay */}
-        <div className="absolute inset-x-0 bottom-0 p-8 pt-20 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none">
-          <div className="flex flex-col items-start translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-            <span className="text-[10px] font-extrabold text-primary-400 uppercase tracking-widest mb-1">
-              {item.category}
-            </span>
-            <h5 className="text-xl font-bold text-white leading-tight">
-              {item.title}
-            </h5>
-          </div>
-        </div>
-      </div>
-    );
-  };
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activeGalleryTab, setActiveGalleryTab] = useState('campus');
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
@@ -494,7 +497,7 @@ const LandingPage = () => {
           {/* Hero Video Background */}
           {hero?.videoUrl && (
             <div className="absolute inset-0 z-20 overflow-hidden">
-              {renderVideo(hero.videoUrl, "w-full h-full object-cover scale-[1.3]", true)}
+              {renderVideo(hero.videoUrl, "w-full h-full object-cover scale-[1.3]", getFullUrl, true)}
               <div className="absolute inset-0 bg-black/40"></div>
             </div>
           )}
@@ -588,9 +591,9 @@ const LandingPage = () => {
                     alt="PHJC School Campus" 
                     className="relative rounded-[1.5rem] w-full aspect-[4/5] object-cover shadow-sm grayscale hover:grayscale-0 transition-all duration-1000" 
                   />
-                  {(cmsData?.sections?.about?.metadata?.imageCaption || 'Proprietress') && (
+                  {(cmsData?.sections?.about?.metadata?.imageCaption || 'Proprietress/Regional Superior - PHJC Nigeria') && (
                     <div className="absolute bottom-4 left-4 right-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm p-2.5 rounded-xl text-[10px] font-bold text-slate-600 dark:text-slate-400 text-center shadow-md border border-slate-100 dark:border-slate-800">
-                      {cmsData?.sections?.about?.metadata?.imageCaption || 'Proprietress'}
+                      {cmsData?.sections?.about?.metadata?.imageCaption || 'Proprietress/Regional Superior - PHJC Nigeria'}
                     </div>
                   )}
                 </div>
@@ -615,9 +618,9 @@ const LandingPage = () => {
                     alt="Saint Katharina Kasper" 
                     className="relative rounded-[2rem] w-full aspect-[3/4] object-cover shadow-2xl z-10 grayscale hover:grayscale-0 transition-all duration-1000 border-4 border-white dark:border-slate-800" 
                   />
-                  {(cmsData?.sections?.heritage?.metadata?.imageCaption || 'Foundress') && (
+                  {(cmsData?.sections?.heritage?.metadata?.imageCaption || 'Foundress - St. Katharina Kasper') && (
                     <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-primary-600 text-white px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-2xl z-20 whitespace-nowrap border-2 border-white dark:border-slate-800">
-                      {cmsData?.sections?.heritage?.metadata?.imageCaption || 'Foundress'}
+                      {cmsData?.sections?.heritage?.metadata?.imageCaption || 'Foundress - St. Katharina Kapser'}
                     </div>
                   )}
                 </div>
@@ -742,7 +745,7 @@ const LandingPage = () => {
             {/* Gallery Grid */}
             <div className="grid md:grid-cols-3 gap-8 md:gap-10">
               {activeGalleryItems.map((item, index) => (
-                <GalleryItem key={`${activeGalleryTab}-${index}`} item={item} index={index} />
+                <GalleryItem key={`${activeGalleryTab}-${index}`} item={item} index={index} getFullUrl={getFullUrl} />
               ))}
             </div>
 

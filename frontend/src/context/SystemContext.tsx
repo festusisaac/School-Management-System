@@ -235,7 +235,7 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [refreshSettings, token]);
 
-    const getFullUrl = (url?: string) => getFileUrl(url || '');
+    const getFullUrl = useCallback((url?: string) => getFileUrl(url || ''), []);
 
     const formatCurrency = useCallback((amount: number | string | undefined | null, includeSymbol: boolean = true) => {
         return genericFormatCurrency(amount, includeSymbol);
