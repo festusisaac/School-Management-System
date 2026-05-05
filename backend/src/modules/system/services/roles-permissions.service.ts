@@ -123,6 +123,10 @@ export class RolesPermissionsService implements OnModuleInit {
 
       // Front CMS
       { slug: 'front_cms:manage', name: 'Manage Front CMS', module: 'Front CMS', description: 'Manage website content, media, contacts, and public-facing CMS sections' },
+      
+      // Download Center
+      { slug: 'download_center:view', name: 'View Download Center', module: 'Download Center', description: 'Access learning materials, syllabus, and resources' },
+      { slug: 'download_center:manage', name: 'Manage Resources', module: 'Download Center', description: 'Upload and organize downloadable content' },
 
       // Audit & Reports
       { slug: 'audit_reports:view', name: 'Audit & Reports Module', module: 'Audit & Reports', description: 'Access audit dashboards, activity logs, communication audit, and report hub' },

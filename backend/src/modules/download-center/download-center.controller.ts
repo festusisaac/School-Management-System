@@ -11,7 +11,6 @@ import {
   Query,
   Request,
   Res,
-  StreamableFile,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -23,6 +22,8 @@ import * as fs from 'fs';
 import { createReadStream } from 'fs';
 import { Response } from 'express';
 import { JwtAuthGuard } from '@guards/jwt-auth.guard';
+import { PermissionsGuard } from '@guards/permissions.guard';
+import { Permissions } from '@decorators/permissions.decorator';
 import { DownloadCenterService } from './download-center.service';
 import { CreateDownloadResourceDto, DownloadResourceFilterDto, UpdateDownloadResourceDto } from './dto/download-resource.dto';
 
@@ -42,32 +43,35 @@ const resourceUpload = FileInterceptor('file', {
 });
 
 @Controller('download-center')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class DownloadCenterController {
   constructor(private readonly downloadCenterService: DownloadCenterService) {}
 
   @Post()
+  @Permissions('download_center:manage')
   @UseInterceptors(resourceUpload)
   create(
     @Body() dto: CreateDownloadResourceDto,
     @UploadedFile() file: Express.Multer.File,
     @Request() req: any,
   ) {
-    this.ensureStaff(req.user);
     return this.downloadCenterService.create(dto, req.user.tenantId, req.user.id, file);
   }
 
   @Get()
+  @Permissions('download_center:view')
   findAll(@Query() query: DownloadResourceFilterDto, @Request() req: any) {
     return this.downloadCenterService.findAll(req.user.tenantId, query, req.user);
   }
 
   @Get(':id')
+  @Permissions('download_center:view')
   findOne(@Param('id') id: string, @Request() req: any) {
     return this.downloadCenterService.findOne(id, req.user.tenantId, req.user);
   }
 
   @Get(':id/file')
+  @Permissions('download_center:view')
   async getFile(
     @Param('id') id: string,
     @Query('download') download: string,
@@ -132,6 +136,7 @@ export class DownloadCenterController {
   }
 
   @Patch(':id')
+  @Permissions('download_center:manage')
   @UseInterceptors(resourceUpload)
   update(
     @Param('id') id: string,
@@ -139,31 +144,24 @@ export class DownloadCenterController {
     @UploadedFile() file: Express.Multer.File,
     @Request() req: any,
   ) {
-    this.ensureStaff(req.user);
     return this.downloadCenterService.update(id, dto, req.user.tenantId, file);
   }
 
   @Delete(':id')
+  @Permissions('download_center:manage')
   remove(@Param('id') id: string, @Request() req: any) {
-    this.ensureStaff(req.user);
     return this.downloadCenterService.remove(id, req.user.tenantId);
   }
 
   @Post(':id/view')
+  @Permissions('download_center:view')
   incrementView(@Param('id') id: string, @Request() req: any) {
     return this.downloadCenterService.incrementView(id, req.user.tenantId);
   }
 
   @Post(':id/download')
+  @Permissions('download_center:view')
   incrementDownload(@Param('id') id: string, @Request() req: any) {
     return this.downloadCenterService.incrementDownload(id, req.user.tenantId);
-  }
-
-  private ensureStaff(user: any) {
-    const role = (user?.roleObject?.name || user?.role || '').toString().toLowerCase().trim();
-    const isStaff = ['admin', 'administrator', 'super admin', 'super administrator', 'teacher', 'librarian'].includes(role) || role.includes('admin');
-    if (!isStaff) {
-      throw new ForbiddenException('Only staff can manage download center resources.');
-    }
   }
 }

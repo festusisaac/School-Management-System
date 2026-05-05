@@ -102,6 +102,10 @@ export const seedPermissions = async (dataSource: DataSource) => {
     // Donations & Crowdfunding
     { slug: 'donations:view', name: 'View Donations', module: 'Donations', description: 'Access donation history and impact reports' },
     { slug: 'donations:manage_projects', name: 'Manage Crowdfunding', module: 'Donations', description: 'Create and edit school fundraising projects' },
+    
+    // Download Center
+    { slug: 'download_center:view', name: 'View Download Center', module: 'Download Center', description: 'Access learning materials, syllabus, and resources' },
+    { slug: 'download_center:manage', name: 'Manage Resources', module: 'Download Center', description: 'Upload and organize downloadable content' },
   ];
 
   // Get all current slugs in the database

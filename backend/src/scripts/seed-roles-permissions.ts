@@ -64,6 +64,8 @@ const permissionsData = [
   { slug: 'settings:manage_users', name: 'Manage Users', module: 'Settings' },
   { slug: 'audit_reports:view', name: 'Audit & Reports Module', module: 'Audit & Reports' },
   { slug: 'front_cms:manage', name: 'Manage Front CMS', module: 'Front CMS' },
+  { slug: 'download_center:view', name: 'View Download Center', module: 'Download Center' },
+  { slug: 'download_center:manage', name: 'Manage Resources', module: 'Download Center' },
 ];
 
 async function seed() {
@@ -125,15 +127,16 @@ async function seed() {
         p.slug === 'exams:view_reports' ||
         p.slug === 'attendance:mark' ||
         p.slug === 'attendance:view_reports' ||
-        p.slug === 'students:view'
+        p.slug === 'students:view' ||
+        p.slug === 'download_center:manage'
       ) },
       { name: 'Staff', isSystem: true, permissions: savedPermissions.filter(p => 
         p.slug.includes('view') || 
         p.slug === 'students:view' ||
         p.slug === 'attendance:view_reports'
       ) },
-      { name: 'Student', isSystem: true, permissions: savedPermissions.filter(p => p.slug === 'students:view') },
-      { name: 'Parent', isSystem: true, permissions: savedPermissions.filter(p => p.slug === 'students:view') },
+      { name: 'Student', isSystem: true, permissions: savedPermissions.filter(p => p.slug === 'students:view' || p.slug === 'download_center:view') },
+      { name: 'Parent', isSystem: true, permissions: savedPermissions.filter(p => p.slug === 'students:view' || p.slug === 'download_center:view') },
     ];
 
     const roleMap = new Map<string, Role>();

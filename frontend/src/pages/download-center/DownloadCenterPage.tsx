@@ -22,6 +22,7 @@ import {
 import api, { getFileUrl } from '../../services/api';
 import downloadCenterService, { DownloadResource, DownloadResourceType } from '../../services/downloadCenter.service';
 import { useAuthStore } from '../../stores/authStore';
+import { usePermissions } from '../../hooks/usePermissions';
 import { useToast } from '../../context/ToastContext';
 
 const resourceTabs: Array<{ label: string; value: 'all' | DownloadResourceType; icon: any }> = [
@@ -124,6 +125,12 @@ function getPreviewIcon(kind: string) {
 export default function DownloadCenterPage() {
   const { user, selectedChildId } = useAuthStore();
   const toast = useToast();
+  const { hasPermission } = usePermissions();
+  
+  const canManage = hasPermission('download_center:manage');
+  const canView = hasPermission('download_center:view');
+  
+  // Legacy role check for display purposes
   const role = (user?.roleObject?.name || user?.role || 'student').toLowerCase();
   const isStaff = ['admin', 'administrator', 'super administrator', 'teacher'].includes(role) || role.includes('admin');
 
@@ -490,10 +497,10 @@ export default function DownloadCenterPage() {
             Download Center
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {isStaff ? 'Upload and publish learning resources, syllabi, videos, and academic programs.' : 'View, watch, and download school learning resources.'}
+            {canManage ? 'Upload and publish learning resources, syllabi, videos, and academic programs.' : 'View, watch, and download school learning resources.'}
           </p>
         </div>
-        {isStaff && (
+        {canManage && (
           <button
             onClick={() => openCreate()}
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-primary-700"
@@ -556,7 +563,7 @@ export default function DownloadCenterPage() {
                       <span className="rounded-lg bg-gray-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-gray-600 dark:bg-gray-900 dark:text-gray-300">
                         {resourceTypeLabels[resource.resourceType]}
                       </span>
-                      {resource.status !== 'published' && isStaff && (
+                      {resource.status !== 'published' && canManage && (
                         <span className="rounded-lg bg-yellow-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-yellow-700">
                           {resource.status}
                         </span>
@@ -573,7 +580,7 @@ export default function DownloadCenterPage() {
                       {resource.class?.name && <span>{resource.class.name}</span>}
                       {resource.subject?.name && <span>{resource.subject.name}</span>}
                       {resource.fileSize && <span>{formatFileSize(resource.fileSize)}</span>}
-                      {isStaff && <span>{resource.viewCount} views · {resource.downloadCount} downloads</span>}
+                      {canManage && <span>{resource.viewCount} views · {resource.downloadCount} downloads</span>}
                     </div>
                   </div>
                 </div>
@@ -589,7 +596,7 @@ export default function DownloadCenterPage() {
                       {resource.resourceType === 'video' ? 'Open YouTube' : 'Download'}
                     </button>
                   )}
-                  {isStaff && (
+                  {canManage && (
                     <>
                       <button onClick={() => openEdit(resource)} className="rounded-lg p-2 text-gray-500 transition hover:bg-blue-50 hover:text-blue-600" title="Edit">
                         <Edit2 className="h-4 w-4" />

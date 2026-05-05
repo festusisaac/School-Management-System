@@ -152,7 +152,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         {
             label: 'Download Center',
             icon: Download,
-            path: '/download-center'
+            path: '/download-center',
+            permission: 'download_center:view'
         },
         {
             label: 'Human Resource',
