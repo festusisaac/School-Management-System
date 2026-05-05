@@ -34,6 +34,7 @@ import { AlumniModule } from '@modules/alumni/alumni.module';
 import { CareerModule } from '@modules/career/career.module';
 import { DonationsModule } from '@modules/donations/donations.module';
 import { DownloadCenterModule } from '@modules/download-center/download-center.module';
+import { LessonNotesModule } from '@modules/lesson-notes/lesson-notes.module';
 
 @Module({
   imports: [
@@ -99,6 +100,7 @@ import { DownloadCenterModule } from '@modules/download-center/download-center.m
     forwardRef(() => CareerModule),
     forwardRef(() => DonationsModule),
     forwardRef(() => DownloadCenterModule),
+    forwardRef(() => LessonNotesModule),
   ],
   controllers: [AppController],
   providers: [

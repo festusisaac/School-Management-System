@@ -128,12 +128,15 @@ async function seed() {
         p.slug === 'attendance:mark' ||
         p.slug === 'attendance:view_reports' ||
         p.slug === 'students:view' ||
-        p.slug === 'download_center:manage'
+        p.slug === 'download_center:manage' ||
+        p.slug === 'academics:lesson_notes_manage' ||
+        p.slug === 'academics:lesson_notes_view'
       ) },
       { name: 'Staff', isSystem: true, permissions: savedPermissions.filter(p => 
         p.slug.includes('view') || 
         p.slug === 'students:view' ||
-        p.slug === 'attendance:view_reports'
+        p.slug === 'attendance:view_reports' ||
+        p.slug === 'academics:lesson_notes_view'
       ) },
       { name: 'Student', isSystem: true, permissions: savedPermissions.filter(p => p.slug === 'students:view' || p.slug === 'download_center:view') },
       { name: 'Parent', isSystem: true, permissions: savedPermissions.filter(p => p.slug === 'students:view' || p.slug === 'download_center:view') },

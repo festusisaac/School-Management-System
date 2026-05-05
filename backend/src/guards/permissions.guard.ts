@@ -42,7 +42,7 @@ export class PermissionsGuard implements CanActivate {
     }
 
     // Teacher & Staff Bypass for Academic Modules
-    const academicPrefixes = ['students:', 'attendance:', 'examination:', 'academics:'];
+    const academicPrefixes = ['students:', 'attendance:', 'examination:', 'academics:', 'lesson_notes:'];
     if ((userRole === 'teacher' || userRole === 'staff') && 
         requiredPermissions.some(p => academicPrefixes.some(prefix => p.startsWith(prefix)))) {
       return true;

@@ -106,6 +106,11 @@ export const seedPermissions = async (dataSource: DataSource) => {
     // Download Center
     { slug: 'download_center:view', name: 'View Download Center', module: 'Download Center', description: 'Access learning materials, syllabus, and resources' },
     { slug: 'download_center:manage', name: 'Manage Resources', module: 'Download Center', description: 'Upload and organize downloadable content' },
+
+    // Lesson Notes
+    { slug: 'lesson_notes:view', name: 'View Lesson Notes', module: 'Lesson Notes', description: 'Read-only access to approved lesson notes and plans' },
+    { slug: 'lesson_notes:manage', name: 'Manage Lesson Notes', module: 'Lesson Notes', description: 'Create, edit, and submit lesson notes and plans' },
+    { slug: 'lesson_notes:approve', name: 'Approve Lesson Notes', module: 'Lesson Notes', description: 'Review, comment, and approve/reject lesson note submissions' },
   ];
 
   // Get all current slugs in the database

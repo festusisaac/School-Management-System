@@ -19,7 +19,8 @@ import {
     MessageSquare,
     Star,
     Heart,
-    Download
+    Download,
+    FileText
 } from 'lucide-react';
 import { useState } from 'react';
 import { clsx } from 'clsx';
@@ -132,6 +133,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 { label: 'Teachers Timetable', path: '/academics/teachers-timetable', permission: 'academics:view_timetable' },
                 { label: 'Promote Students', path: '/academics/promotion', permission: 'academics:promote_students' },
             ]
+        },
+        {
+            label: 'Lesson Notes',
+            icon: FileText,
+            path: '/lesson-notes',
+            permission: 'lesson_notes:view'
         },
         {
             label: 'Online Classes',

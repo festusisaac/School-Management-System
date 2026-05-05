@@ -9,6 +9,7 @@ import { Timetable } from './entities/timetable.entity';
 import { SubjectTeacher } from './entities/subject-teacher.entity';
 import { ClassSubject } from './entities/class-subject.entity';
 import { SchoolSection } from './entities/school-section.entity';
+
 import { StudentsModule } from '../students/students.module';
 
 import { AcademicsController } from './controllers/academics.controller';
@@ -17,11 +18,13 @@ import { SubjectTeacherController } from './controllers/subject-teacher.controll
 import { ClassSubjectController } from './controllers/class-subject.controller';
 import { SchoolSectionController } from './controllers/school-section.controller';
 
+
 import { SubjectTeacherService } from './services/subject-teacher.service';
 import { AcademicsService } from './services/academics.service';
 import { TimetableService } from './services/timetable.service';
 import { ClassSubjectService } from './services/class-subject.service';
 import { SchoolSectionService } from './services/school-section.service';
+
 
 import { AuthModule } from '@modules/auth/auth.module';
 import { HrModule } from '@modules/hr/hr.module';
