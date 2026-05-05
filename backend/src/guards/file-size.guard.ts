@@ -24,7 +24,12 @@ export class FileSizeGuard implements CanActivate {
             
             if (contentLength) {
                 const settings = await this.systemSettingsService.getSettings();
-                const maxSizeMb = settings.maxFileUploadSizeMb || 3; // Default 3MB if not set
+                const isDownloadCenterUpload = request.originalUrl?.includes('/download-center') || request.url?.includes('/download-center');
+                const configuredLimit = settings.maxFileUploadSizeMb || 3; // Default 3MB if not set
+                const downloadCenterLimit = Number(process.env.DOWNLOAD_CENTER_MAX_FILE_UPLOAD_MB || 50);
+                const maxSizeMb = isDownloadCenterUpload
+                    ? Math.max(configuredLimit, downloadCenterLimit)
+                    : configuredLimit;
                 const maxSizeBytes = maxSizeMb * 1024 * 1024;
 
                 if (parseInt(contentLength, 10) > maxSizeBytes) {

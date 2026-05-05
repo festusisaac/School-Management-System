@@ -25,6 +25,16 @@ export class TransformInterceptor<T>
     const request = context.switchToHttp().getRequest();
     const { method, url } = request;
 
+    // Skip transformation for file downloads and previews
+    const isFileRoute = url.includes('/file') || 
+                       url.includes('/download') || 
+                       url.includes('/export') ||
+                       url.includes('/attachment');
+
+    if (isFileRoute) {
+      return next.handle();
+    }
+
     return next.handle().pipe(
       map((data: any) => ({
         statusCode: context.switchToHttp().getResponse().statusCode,

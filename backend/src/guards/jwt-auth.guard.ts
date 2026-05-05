@@ -48,10 +48,16 @@ export class JwtAuthGuard implements CanActivate {
 
   private extractToken(request: any): string | undefined {
     const authHeader = request.headers.authorization;
-    if (!authHeader) return undefined;
-
-    const [scheme, token] = authHeader.split(' ');
-    return scheme === 'Bearer' ? token : undefined;
+    if (authHeader) {
+      const [scheme, token] = authHeader.split(' ');
+      if (scheme === 'Bearer' && token) return token;
+    }
+    
+    // Fallback: allow token as query param for direct file downloads
+    const queryToken = request.query?.token;
+    if (queryToken && typeof queryToken === 'string') return queryToken;
+    
+    return undefined;
   }
 }
 

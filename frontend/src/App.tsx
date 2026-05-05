@@ -35,6 +35,7 @@ import * as Communication from './pages/communication';
 import * as Audit from './pages/audit';
 import * as Alumni from './pages/alumni';
 import * as Donations from './pages/donations';
+import * as DownloadCenter from './pages/download-center';
 import FrontCmsDashboard from './pages/front-cms/FrontCmsDashboard';
 import { 
   BookList, 
@@ -174,6 +175,7 @@ function AppRoutes() {
                 <Route path="online-classes" element={<OnlineClasses.OnlineClassesPage />} />
                 <Route path="online-classes/history" element={<OnlineClasses.CompletedClassesPage />} />
                 <Route path="homework" element={<Homework.HomeworkPage />} />
+                <Route path="download-center" element={<DownloadCenter.DownloadCenterPage />} />
               </Route>
 
               {/* Parent Routes */}
@@ -188,6 +190,7 @@ function AppRoutes() {
               <Route path="online-classes/schedule" element={<OnlineClasses.OnlineClassesPage />} />
               <Route path="online-classes/history" element={<OnlineClasses.CompletedClassesPage />} />
               <Route path="homework" element={<Homework.HomeworkPage />} />
+              <Route path="download-center" element={<DownloadCenter.DownloadCenterPage />} />
 
               {/* Library Routes */}
               <Route path="library">

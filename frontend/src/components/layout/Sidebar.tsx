@@ -18,7 +18,8 @@ import {
     Video,
     MessageSquare,
     Star,
-    Heart
+    Heart,
+    Download
 } from 'lucide-react';
 import { useState } from 'react';
 import { clsx } from 'clsx';
@@ -100,6 +101,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             path: '/students/homework'
         },
         {
+            label: 'Download Center',
+            icon: Download,
+            path: '/students/download-center'
+        },
+        {
             label: 'Noticeboard',
             icon: MessageSquare,
             path: '/communication/noticeboard'
@@ -142,6 +148,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             icon: BookOpen,
             path: '/homework',
             permission: 'homework:view'
+        },
+        {
+            label: 'Download Center',
+            icon: Download,
+            path: '/download-center'
         },
         {
             label: 'Human Resource',
@@ -387,7 +398,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             return item;
         }).filter(item => {
             // Hide academic specific items for parents if no child is selected
-            const academicItems = ['Class Timetable', 'Attendance', 'Rate Teachers', 'My Library', 'Examination', 'Online Classes', 'Homework'];
+            const academicItems = ['Class Timetable', 'Attendance', 'Rate Teachers', 'My Library', 'Examination', 'Online Classes', 'Homework', 'Download Center'];
             if (academicItems.includes(item.label) && !selectedChildId) return false;
             return true;
         })
