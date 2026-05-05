@@ -20,7 +20,8 @@
     "db:migrate": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d ./src/data-source.ts",
     "db:generate": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate -d ./src/data-source.ts",
     "db:revert": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d ./src/data-source.ts",
-    "db:seed": "ts-node -r tsconfig-paths/register src/database/seeds/seed.runner.ts"
+    "db:seed": "ts-node -r tsconfig-paths/register src/database/seeds/seed.runner.ts",
+    "db:clear": "ts-node -r tsconfig-paths/register src/scripts/clear-db.ts"
   },
   "dependencies": {
     "@nestjs/bull": "^10.0.1",
