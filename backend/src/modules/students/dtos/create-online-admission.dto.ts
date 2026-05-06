@@ -1,4 +1,5 @@
 import { IsString, IsNotEmpty, IsOptional, IsEmail, IsDateString } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateOnlineAdmissionDto {
     @IsString()
@@ -139,9 +140,11 @@ export class CreateOnlineAdmissionDto {
     specialPhysicalHealthProblems?: string;
 
     @IsOptional()
+    @Transform(({ value }) => value === 'true' || value === true)
     hasDisability?: boolean;
 
     @IsOptional()
+    @Transform(({ value }) => value === 'true' || value === true)
     hasAllergies?: boolean;
 
     @IsString()
@@ -161,16 +164,20 @@ export class CreateOnlineAdmissionDto {
     familyDoctorPhone?: string;
 
     @IsOptional()
+    @Transform(({ value }) => value === 'true' || value === true)
     firstAidConsent?: boolean;
 
     // Faith & Religious Participation
     @IsOptional()
+    @Transform(({ value }) => value === 'true' || value === true)
     catholicFaithConsent?: boolean;
 
     @IsOptional()
+    @Transform(({ value }) => value === 'true' || value === true)
     isBaptized?: boolean;
 
     @IsOptional()
+    @Transform(({ value }) => value === 'true' || value === true)
     isCommunicant?: boolean;
 
     // Legal & Finalization
@@ -179,9 +186,11 @@ export class CreateOnlineAdmissionDto {
     applicationFeeReference?: string;
 
     @IsOptional()
+    @Transform(({ value }) => value === 'true' || value === true)
     undertakingAccepted?: boolean;
 
     @IsOptional()
+    @Transform(({ value }) => value === 'true' || value === true)
     parentSignature?: boolean;
 
     @IsOptional()

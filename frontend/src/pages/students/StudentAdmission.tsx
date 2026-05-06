@@ -1544,7 +1544,7 @@ export default function StudentAdmission() {
                                     <div className="p-6 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-800">
                                         <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-3">Undertaking/Declaration</h4>
                                         <p className="text-sm text-gray-600 dark:text-gray-400 italic leading-relaxed bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-800 mb-4">
-                                            "I {formData.guardianName || '[Parent Name]'} Parent/Guardian of {formData.firstName ? `${formData.firstName} ${formData.lastName || ''}` : '[Student Name]'} hereby accept to abide by the conditions set to help the child and will assist the school where possible in furtherance of the child's holistic education if the child is admitted."
+                                            {`"I ${formData.guardianName || '[Parent Name]'} Parent/Guardian of ${formData.firstName ? `${formData.firstName} ${formData.lastName || ''}`.trim() : '[Student Name]'} hereby accept to abide by the conditions set to help the child and will assist the school where possible in furtherance of the child's holistic education if the child is admitted."`}
                                         </p>
 
                                         <div className="space-y-4">

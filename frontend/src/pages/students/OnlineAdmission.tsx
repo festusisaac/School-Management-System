@@ -25,6 +25,7 @@ type OnlineApplication = {
     nationality?: string;
     mobileNumber?: string;
     email?: string;
+    guardianEmail?: string;
     guardianName: string;
     guardianPhone: string;
     guardianRelation: string;
@@ -258,6 +259,8 @@ export default function OnlineAdmission() {
         }
     ];
 
+    const isTrue = (val: any) => val === true || val === 'true';
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -359,7 +362,7 @@ export default function OnlineAdmission() {
                                     </div>
                                     <div className="flex justify-between border-b dark:border-gray-800 pb-1.5">
                                         <span className="text-gray-500 dark:text-gray-400 font-medium">Email Address</span>
-                                        <span className="font-bold">{selectedApplication.email || 'N/A'}</span>
+                                        <span className="font-bold">{selectedApplication.guardianEmail || selectedApplication.email || 'N/A'}</span>
                                     </div>
                                     <div className="flex justify-between border-b dark:border-gray-800 pb-1.5">
                                         <span className="text-gray-500 dark:text-gray-400 font-medium">Emergency Contact</span>
@@ -383,13 +386,20 @@ export default function OnlineAdmission() {
                                     <div className="flex flex-col pt-1">
                                         <span className="text-gray-500 dark:text-gray-400 font-medium text-[10px] uppercase tracking-wider mb-1">Medical Conditions / Allergies</span>
                                         <div className="space-y-2">
-                                            <span className="block font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20 px-3 py-2 rounded-xl border border-rose-100 dark:border-rose-900/30">
-                                                {selectedApplication.medicalConditions || 'NONE RECORDED'}
-                                            </span>
-                                            {(selectedApplication.hasDisability || selectedApplication.hasAllergies || selectedApplication.specialPhysicalHealthProblems) && (
+                                            {selectedApplication.medicalConditions && (
+                                                <span className="block font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20 px-3 py-2 rounded-xl border border-rose-100 dark:border-rose-900/30">
+                                                    {selectedApplication.medicalConditions}
+                                                </span>
+                                            )}
+                                            {(!selectedApplication.medicalConditions && !isTrue(selectedApplication.hasDisability) && !isTrue(selectedApplication.hasAllergies) && !selectedApplication.specialPhysicalHealthProblems) && (
+                                                <span className="block font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-3 py-2 rounded-xl border border-emerald-100 dark:border-emerald-900/30">
+                                                    NONE RECORDED
+                                                </span>
+                                            )}
+                                            {(isTrue(selectedApplication.hasDisability) || isTrue(selectedApplication.hasAllergies) || selectedApplication.specialPhysicalHealthProblems) && (
                                                 <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-xl space-y-2">
-                                                    {selectedApplication.hasDisability && <p className="text-xs font-bold text-amber-700">Disability: YES</p>}
-                                                    {selectedApplication.hasAllergies && (
+                                                    {isTrue(selectedApplication.hasDisability) && <p className="text-xs font-bold text-amber-700">Disability: YES</p>}
+                                                    {isTrue(selectedApplication.hasAllergies) && (
                                                         <div>
                                                             <p className="text-xs font-bold text-amber-700">Allergies: YES</p>
                                                             {selectedApplication.allergyDetails && <p className="text-[11px] text-amber-600">{selectedApplication.allergyDetails}</p>}
@@ -412,8 +422,8 @@ export default function OnlineAdmission() {
                                             <p className="text-[10px] text-gray-500">{selectedApplication.familyDoctorPhone}</p>
                                             <p className="text-[10px] text-gray-500 line-clamp-1">{selectedApplication.familyDoctorClinicAddress}</p>
                                             <div className="mt-2 flex items-center gap-2">
-                                                <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${selectedApplication.firstAidConsent ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                                    First Aid: {selectedApplication.firstAidConsent ? 'YES' : 'NO'}
+                                                <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${isTrue(selectedApplication.firstAidConsent) ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                    First Aid: {isTrue(selectedApplication.firstAidConsent) ? 'YES' : 'NO'}
                                                 </span>
                                             </div>
                                         </div>
@@ -426,16 +436,16 @@ export default function OnlineAdmission() {
                         <div className="bg-indigo-50/50 dark:bg-indigo-900/20 p-6 rounded-3xl border border-indigo-100 dark:border-indigo-800">
                             <h4 className="text-[11px] font-bold text-indigo-600 uppercase tracking-[0.2em] mb-4">Faith & Religion</h4>
                             <div className="flex flex-wrap gap-4">
-                                <div className={`flex items-center gap-2 px-4 py-2 rounded-2xl border ${selectedApplication.catholicFaithConsent ? 'bg-white border-green-200 text-green-700' : 'bg-white/50 border-gray-200 text-gray-400'}`}>
-                                    <CheckCircle className={`w-4 h-4 ${selectedApplication.catholicFaithConsent ? 'text-green-500' : 'text-gray-300'}`} />
+                                <div className={`flex items-center gap-2 px-4 py-2 rounded-2xl border ${isTrue(selectedApplication.catholicFaithConsent) ? 'bg-white border-green-200 text-green-700' : 'bg-white/50 border-gray-200 text-gray-400'}`}>
+                                    <CheckCircle className={`w-4 h-4 ${isTrue(selectedApplication.catholicFaithConsent) ? 'text-green-500' : 'text-gray-300'}`} />
                                     <span className="text-xs font-bold">Catholic Consent</span>
                                 </div>
-                                <div className={`flex items-center gap-2 px-4 py-2 rounded-2xl border ${selectedApplication.isBaptized ? 'bg-white border-blue-200 text-blue-700' : 'bg-white/50 border-gray-200 text-gray-400'}`}>
-                                    <CheckCircle className={`w-4 h-4 ${selectedApplication.isBaptized ? 'text-blue-500' : 'text-gray-300'}`} />
+                                <div className={`flex items-center gap-2 px-4 py-2 rounded-2xl border ${isTrue(selectedApplication.isBaptized) ? 'bg-white border-blue-200 text-blue-700' : 'bg-white/50 border-gray-200 text-gray-400'}`}>
+                                    <CheckCircle className={`w-4 h-4 ${isTrue(selectedApplication.isBaptized) ? 'text-blue-500' : 'text-gray-300'}`} />
                                     <span className="text-xs font-bold">Baptized</span>
                                 </div>
-                                <div className={`flex items-center gap-2 px-4 py-2 rounded-2xl border ${selectedApplication.isCommunicant ? 'bg-white border-purple-200 text-purple-700' : 'bg-white/50 border-gray-200 text-gray-400'}`}>
-                                    <CheckCircle className={`w-4 h-4 ${selectedApplication.isCommunicant ? 'text-purple-500' : 'text-gray-300'}`} />
+                                <div className={`flex items-center gap-2 px-4 py-2 rounded-2xl border ${isTrue(selectedApplication.isCommunicant) ? 'bg-white border-purple-200 text-purple-700' : 'bg-white/50 border-gray-200 text-gray-400'}`}>
+                                    <CheckCircle className={`w-4 h-4 ${isTrue(selectedApplication.isCommunicant) ? 'text-purple-500' : 'text-gray-300'}`} />
                                     <span className="text-xs font-bold">Communicant</span>
                                 </div>
                             </div>
@@ -452,11 +462,11 @@ export default function OnlineAdmission() {
                                 <div className="space-y-2">
                                     <h5 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Undertaking & Signature</h5>
                                     <div className="flex gap-3">
-                                        <span className={`text-[10px] font-bold px-2 py-1 rounded-lg ${selectedApplication.undertakingAccepted ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                            Undertaking: {selectedApplication.undertakingAccepted ? 'ACCEPTED' : 'PENDING'}
+                                        <span className={`text-[10px] font-bold px-2 py-1 rounded-lg ${isTrue(selectedApplication.undertakingAccepted) ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                            Undertaking: {isTrue(selectedApplication.undertakingAccepted) ? 'ACCEPTED' : 'PENDING'}
                                         </span>
-                                        <span className={`text-[10px] font-bold px-2 py-1 rounded-lg ${selectedApplication.parentSignature ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                            Digital Signature: {selectedApplication.parentSignature ? 'SIGNED' : 'NONE'}
+                                        <span className={`text-[10px] font-bold px-2 py-1 rounded-lg ${isTrue(selectedApplication.parentSignature) ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                            Digital Signature: {isTrue(selectedApplication.parentSignature) ? 'SIGNED' : 'NONE'}
                                         </span>
                                     </div>
                                 </div>
