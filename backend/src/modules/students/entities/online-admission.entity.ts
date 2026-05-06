@@ -114,6 +114,55 @@ export class OnlineAdmission {
     @Column({ nullable: true })
     guardianPhoto?: string;
 
+    // Medical & Health Records
+    @Column({ type: 'text', nullable: true })
+    specialPhysicalHealthProblems?: string;
+
+    @Column({ default: false })
+    hasDisability!: boolean;
+
+    @Column({ default: false })
+    hasAllergies!: boolean;
+
+    @Column({ type: 'text', nullable: true })
+    allergyDetails?: string;
+
+    @Column({ nullable: true })
+    familyDoctorName?: string;
+
+    @Column({ type: 'text', nullable: true })
+    familyDoctorClinicAddress?: string;
+
+    @Column({ nullable: true })
+    familyDoctorPhone?: string;
+
+    @Column({ default: false })
+    firstAidConsent!: boolean;
+
+    // Faith & Religious Participation
+    @Column({ default: false })
+    catholicFaithConsent!: boolean;
+
+    @Column({ default: false })
+    isBaptized!: boolean;
+
+    @Column({ default: false })
+    isCommunicant!: boolean;
+
+    // Legal & Finalization
+    @Column({ nullable: true })
+    applicationFeeReference?: string;
+
+    @Column({ default: false })
+    undertakingAccepted!: boolean;
+
+    @Column({ default: false })
+    parentSignature!: boolean;
+
+    // Additional Documents
+    @Column({ type: 'jsonb', nullable: true })
+    documents?: { title: string; filePath: string; fileType: string }[];
+
     // Payment Tracking
     @Column({ default: 'pending' })
     paymentStatus!: string; // 'pending', 'paid'

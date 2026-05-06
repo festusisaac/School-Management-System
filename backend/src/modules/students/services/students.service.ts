@@ -773,14 +773,30 @@ export class StudentsService {
         return `${prefix}${year}/${sequence}`;
     }
 
-    async createOnlineAdmission(dto: CreateOnlineAdmissionDto, tenantId: string): Promise<OnlineAdmission> {
+    async createOnlineAdmission(dto: CreateOnlineAdmissionDto, tenantId: string, documentFiles?: Express.Multer.File[]): Promise<OnlineAdmission> {
         console.log('Creating Online Admission with DTO:', dto);
         const referenceNumber = await this.generateAdmissionReference(tenantId);
         
+        let documents: { title: string; filePath: string; fileType: string }[] = [];
+        if (documentFiles && documentFiles.length > 0) {
+            let titles: string[] = [];
+            if (dto.documentTitles) {
+                titles = typeof dto.documentTitles === 'string'
+                    ? JSON.parse(dto.documentTitles)
+                    : dto.documentTitles;
+            }
+            documents = documentFiles.map((file, index) => ({
+                title: titles[index] || file.originalname,
+                filePath: file.path,
+                fileType: extname(file.originalname).substring(1)
+            }));
+        }
+
         const admission = this.onlineAdmissionRepository.create({ 
             ...dto, 
             referenceNumber,
             tenantId,
+            documents,
             preferredClassId: dto.preferredClassId,
             paymentStatus: dto.transactionReference ? 'paid' : 'pending',
             amountPaid: dto.transactionReference ? (await this.systemSettingsService.getSettings())?.admissionFee || 0 : 0
@@ -911,6 +927,23 @@ export class StudentsService {
             currentAddress: admission.currentAddress,
             previousSchoolName: admission.previousSchoolName,
             lastClassPassed: admission.lastClassPassed,
+            // Medical & Health Records
+            specialPhysicalHealthProblems: admission.specialPhysicalHealthProblems,
+            hasDisability: admission.hasDisability,
+            hasAllergies: admission.hasAllergies,
+            allergyDetails: admission.allergyDetails,
+            familyDoctorName: admission.familyDoctorName,
+            familyDoctorClinicAddress: admission.familyDoctorClinicAddress,
+            familyDoctorPhone: admission.familyDoctorPhone,
+            firstAidConsent: admission.firstAidConsent,
+            // Faith & Religious Participation
+            catholicFaithConsent: admission.catholicFaithConsent,
+            isBaptized: admission.isBaptized,
+            isCommunicant: admission.isCommunicant,
+            // Legal & Finalization
+            applicationFeeReference: admission.applicationFeeReference,
+            undertakingAccepted: admission.undertakingAccepted,
+            parentSignature: admission.parentSignature,
             // Core Identity
             admissionNo: admissionNo,
             admissionDate: new Date(),
@@ -927,6 +960,18 @@ export class StudentsService {
 
         // Reuse existing create logic which handles parent creation/linking, fee allocation, and user provisioning
         const student = await this.create(createStudentDto, tenantId, undefined, true);
+
+        // Convert online documents to permanent student documents
+        if (admission.documents && admission.documents.length > 0) {
+            const docs = admission.documents.map(d => this.documentRepository.create({
+                title: d.title,
+                filePath: d.filePath,
+                fileType: d.fileType,
+                studentId: student.id,
+                tenantId: tenantId
+            }));
+            await this.documentRepository.save(docs);
+        }
 
         // Update admission status and link records
         admission.status = 'approved';

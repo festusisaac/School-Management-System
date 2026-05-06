@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Save, Upload, Search, Users, User, Check, ShieldCheck, X, Plus, FileText, Trash2, AlertCircle, XCircle, Info } from 'lucide-react';
+import { Save, Upload, Search, Users, User, Check, ShieldCheck, X, Plus, FileText, Trash2, AlertCircle, XCircle, Info, ChevronRight } from 'lucide-react';
 import { clsx } from 'clsx';
 import api, { getFileUrl } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
@@ -113,6 +113,23 @@ export default function StudentAdmission() {
         discountProfileId: '',
         feeGroupIds: [] as string[],
         feeExclusions: {} as Record<string, string[]>,
+        // Medical & Health Records
+        specialPhysicalHealthProblems: '',
+        hasDisability: false,
+        hasAllergies: false,
+        allergyDetails: '',
+        familyDoctorName: '',
+        familyDoctorClinicAddress: '',
+        familyDoctorPhone: '',
+        firstAidConsent: false,
+        // Faith & Religious Participation
+        catholicFaithConsent: false,
+        isBaptized: false,
+        isCommunicant: false,
+        // Legal & Finalization
+        applicationFeeReference: '',
+        undertakingAccepted: false,
+        parentSignature: false,
     });
 
 
@@ -365,6 +382,23 @@ export default function StudentAdmission() {
                             note: student.note || '',
                             feeGroupIds: student.feeGroupIds || [],
                             feeExclusions: student.feeExclusions || {},
+                            // Medical & Health Records
+                            specialPhysicalHealthProblems: student.specialPhysicalHealthProblems || '',
+                            hasDisability: !!student.hasDisability,
+                            hasAllergies: !!student.hasAllergies,
+                            allergyDetails: student.allergyDetails || '',
+                            familyDoctorName: student.familyDoctorName || '',
+                            familyDoctorClinicAddress: student.familyDoctorClinicAddress || '',
+                            familyDoctorPhone: student.familyDoctorPhone || '',
+                            firstAidConsent: !!student.firstAidConsent,
+                            // Faith & Religious Participation
+                            catholicFaithConsent: !!student.catholicFaithConsent,
+                            isBaptized: !!student.isBaptized,
+                            isCommunicant: !!student.isCommunicant,
+                            // Legal & Finalization
+                            applicationFeeReference: student.applicationFeeReference || '',
+                            undertakingAccepted: !!student.undertakingAccepted,
+                            parentSignature: !!student.parentSignature,
                         });
                         setFeeAssignmentProtection(student.feeAssignmentProtection || {
                             hasPayments: false,
@@ -714,43 +748,47 @@ export default function StudentAdmission() {
                     <Save className="w-4 h-4" /> {loading ? 'Saving...' : (isEditMode ? 'Update Student' : 'Save Student')}
                 </button>
             </div>
-
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 {/* Sidebar Navigation for Form */}
                 <div className="lg:col-span-1 space-y-2">
-                    {['Personal Details', 'Parent / Guardian', 'Address Details', 'Academic Details', 'Transport Details', 'Hostel Details', 'Documents'].map((tab) => {
-                        const id = tab.toLowerCase().split(' ')[0];
+                    {[
+                        { name: 'Personal Details', id: 'personal' },
+                        { name: 'Parent / Guardian', id: 'parent' },
+                        { name: 'Address Details', id: 'address' },
+                        { name: 'Academic Details', id: 'academic' },
+                        { name: 'Medical Records', id: 'medical' },
+                        { name: 'Faith & Religion', id: 'faith' },
+                        { name: 'Legal', id: 'legal' },
+                        { name: 'Transport Details', id: 'transport' },
+                        { name: 'Hostel Details', id: 'hostel' },
+                        { name: 'Fee Allocation', id: 'fee_allocation' },
+                        { name: 'Documents', id: 'documents' },
+                    ].map((tab) => {
+                        const id = tab.id;
                         return (
                             <button
                                 key={id}
                                 onClick={() => setActiveTab(id)}
                                 className={clsx(
-                                    "w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
+                                    "w-full text-left px-5 py-3.5 rounded-2xl flex items-center justify-between group transition-all duration-300",
                                     activeTab === id
-                                        ? "bg-white dark:bg-gray-900 text-primary-600 shadow-md border-l-4 border-primary-600"
-                                        : "text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-800/50 hover:text-gray-700"
+                                        ? "bg-primary-600 text-white shadow-lg shadow-primary-600/20 translate-x-2"
+                                        : "hover:bg-gray-50 dark:hover:bg-gray-800/50 text-gray-600 dark:text-gray-400 hover:text-primary-600"
                                 )}
                             >
-                                {tab}
+                                <span className="font-bold text-sm">{tab.name}</span>
+                                <ChevronRight className={clsx(
+                                    "w-4 h-4 transition-transform duration-300",
+                                    activeTab === id ? "rotate-90" : "group-hover:translate-x-1"
+                                )} />
                             </button>
-                        )
+                        );
                     })}
-                    <button
-                        onClick={() => setActiveTab('fee_allocation')}
-                        className={clsx(
-                            "w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
-                            activeTab === 'fee_allocation'
-                                ? "bg-white dark:bg-gray-900 text-primary-600 shadow-md border-l-4 border-primary-600"
-                                : "text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-800/50 hover:text-gray-700"
-                        )}
-                    >
-                        Fee Allocation
-                    </button>
                 </div>
 
                 {/* Form Content */}
                 <div className="lg:col-span-3">
-                    <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800/50 p-6">
+                    <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 p-8 min-h-[600px] relative overflow-hidden group/form">
                         {/* Personal Details */}
                         {activeTab === 'personal' && (
                             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -1282,109 +1320,249 @@ export default function StudentAdmission() {
                             </div>
                         )}
 
-
                         {/* Documents */}
                         {activeTab === 'documents' && (
                             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-2">
-                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Student Documents</h3>
+                                <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-4">
+                                    <div>
+                                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">Documents</h3>
+                                        <p className="text-sm text-gray-500">Upload and manage student documents</p>
+                                    </div>
                                     <button
                                         type="button"
                                         onClick={addDocument}
-                                        className="btn btn-secondary text-sm bg-primary-50 text-primary-600 px-4 py-2 rounded-lg hover:bg-primary-100 transition-colors flex items-center gap-2"
+                                        className="btn btn-secondary px-4 py-2 rounded-xl flex items-center gap-2 text-sm"
                                     >
                                         <Plus className="w-4 h-4" /> Add Document
                                     </button>
                                 </div>
 
-                                {documents.length === 0 ? (
-                                    <div className="p-12 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl flex flex-col items-center justify-center text-gray-500 bg-gray-50/50 dark:bg-gray-800/30">
-                                        <div className="w-16 h-16 bg-white dark:bg-gray-800 rounded-full shadow-sm flex items-center justify-center mb-4">
-                                            <FileText className="w-8 h-8 text-gray-300" />
+                                <div className="space-y-4">
+                                    {documents.length === 0 ? (
+                                        <div className="text-center py-12 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl">
+                                            <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                                            <p className="text-gray-500 text-sm">No documents uploaded yet</p>
                                         </div>
-                                        <p className="font-medium text-gray-900 dark:text-white">No documents added yet</p>
-                                        <p className="text-sm mt-1">Upload birth certificates, transfer certificates, or other IDs.</p>
-                                        <button
-                                            type="button"
-                                            onClick={addDocument}
-                                            className="mt-6 text-sm font-bold text-primary-600 hover:text-primary-700 flex items-center gap-1"
-                                        >
-                                            <Plus className="w-4 h-4" /> Click here to add your first document
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-1 gap-4">
-                                        {documents.map((doc, index) => (
-                                            <div key={index} className="flex flex-col md:flex-row items-start md:items-center gap-4 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-md transition-shadow">
-                                                <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 shrink-0">
-                                                    <FileText className="w-5 h-5" />
-                                                </div>
-
-                                                <div className="flex-1 w-full space-y-1">
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Document Title (e.g. Birth Certificate)"
-                                                        value={doc.title}
-                                                        onChange={(e) => handleDocumentChange(index, 'title', e.target.value)}
-                                                        className="w-full bg-transparent border-none focus:ring-0 p-0 font-semibold text-gray-900 dark:text-white placeholder-gray-400"
-                                                    />
-                                                    <div className="flex items-center gap-2">
-                                                        {doc.isNew ? (
-                                                            <div className="flex items-center gap-2 w-full">
-                                                                <label className="cursor-pointer text-xs bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-2 py-1 rounded border border-primary-100 dark:border-primary-800 hover:bg-primary-100 transition-colors">
-                                                                    {doc.file ? 'Change file' : 'Select file'}
-                                                                    <input
-                                                                        type="file"
-                                                                        className="hidden"
-                                                                        onChange={(e) => {
-                                                                            if (e.target.files && e.target.files[0]) {
-                                                                                const file = e.target.files[0];
-                                                                                const maxSizeMb = settings?.maxFileUploadSizeMb || 2;
-                                                                                if (file.size > maxSizeMb * 1024 * 1024) {
-                                                                                    toast.showWarning(`File size exceeds ${maxSizeMb}MB limit. Please choose a smaller file.`);
-                                                                                    e.target.value = '';
-                                                                                    return;
-                                                                                }
-                                                                                handleDocumentChange(index, 'file', file);
-                                                                            }
-                                                                        }}
-                                                                    />
-                                                                </label>
-                                                                {doc.file && <span className="text-xs text-gray-500 truncate max-w-[200px]">{doc.file.name}</span>}
-                                                                {!doc.file && <span className="text-xs text-red-400 italic">No file selected</span>}
-                                                            </div>
-                                                        ) : (
-                                                            <div className="flex items-center gap-3">
-                                                                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border border-green-100 dark:border-green-800">
-                                                                    Uploaded
-                                                                </span>
-                                                                <a
-                                                                    href={getFileUrl(doc.filePath)}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    className="text-xs text-primary-500 hover:underline flex items-center gap-1"
-                                                                >
-                                                                    View Document
-                                                                </a>
-                                                            </div>
-                                                        )}
+                                    ) : (
+                                        <div className="grid grid-cols-1 gap-4">
+                                            {documents.map((doc, index) => (
+                                                <div key={index} className="flex flex-col md:flex-row items-start md:items-center gap-4 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                                                    <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 shrink-0">
+                                                        <FileText className="w-5 h-5" />
                                                     </div>
-                                                </div>
 
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeDocument(index)}
-                                                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
-                                                    title="Remove"
-                                                >
-                                                    <Trash2 className="w-5 h-5" />
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                                                    <div className="flex-1 w-full space-y-1">
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Document Title (e.g. Birth Certificate)"
+                                                            value={doc.title}
+                                                            onChange={(e) => handleDocumentChange(index, 'title', e.target.value)}
+                                                            className="w-full bg-transparent border-none focus:ring-0 p-0 font-semibold text-gray-900 dark:text-white placeholder-gray-400"
+                                                        />
+                                                        <div className="flex items-center gap-2">
+                                                            {doc.isNew ? (
+                                                                <div className="flex items-center gap-2 w-full">
+                                                                    <label className="cursor-pointer text-xs bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-2 py-1 rounded border border-primary-100 dark:border-primary-800 hover:bg-primary-100 transition-colors">
+                                                                        {doc.file ? 'Change file' : 'Select file'}
+                                                                        <input
+                                                                            type="file"
+                                                                            className="hidden"
+                                                                            onChange={(e) => {
+                                                                                if (e.target.files && e.target.files[0]) {
+                                                                                    const file = e.target.files[0];
+                                                                                    const maxSizeMb = settings?.maxFileUploadSizeMb || 2;
+                                                                                    if (file.size > maxSizeMb * 1024 * 1024) {
+                                                                                        toast.showWarning(`File size exceeds ${maxSizeMb}MB limit. Please choose a smaller file.`);
+                                                                                        e.target.value = '';
+                                                                                        return;
+                                                                                    }
+                                                                                    handleDocumentChange(index, 'file', file);
+                                                                                }
+                                                                            }}
+                                                                        />
+                                                                    </label>
+                                                                    {doc.file && <span className="text-xs text-gray-500 truncate max-w-[200px]">{doc.file.name}</span>}
+                                                                    {!doc.file && <span className="text-xs text-red-400 italic">No file selected</span>}
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex items-center gap-3">
+                                                                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border border-green-100 dark:border-green-800">
+                                                                        Uploaded
+                                                                    </span>
+                                                                    <a
+                                                                        href={getFileUrl(doc.filePath)}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="text-xs text-primary-500 hover:underline flex items-center gap-1"
+                                                                    >
+                                                                        View Document
+                                                                    </a>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeDocument(index)}
+                                                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all shrink-0"
+                                                        title="Remove"
+                                                    >
+                                                        <Trash2 className="w-5 h-5" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
+                        {/* Medical Records */}
+                        {activeTab === 'medical' && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white border-b-2 border-gray-200 dark:border-gray-800/50 pb-3 mb-2">Medical & Health Records</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="col-span-full space-y-1.5">
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Special Physical or Health Problems</label>
+                                        <textarea name="specialPhysicalHealthProblems" value={formData.specialPhysicalHealthProblems} onChange={handleChange} className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800" rows={3} placeholder="Describe any special health problems..." />
+                                    </div>
+
+                                    <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-800">
+                                        <div className="flex-1">
+                                            <label className="text-sm font-bold text-gray-900 dark:text-white">Disability Status</label>
+                                            <p className="text-xs text-gray-500">Does the student have any disability?</p>
+                                        </div>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" name="hasDisability" checked={formData.hasDisability} onChange={(e) => setFormData(prev => ({ ...prev, hasDisability: e.target.checked }))} className="sr-only peer" />
+                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                                        </label>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-800">
+                                        <div className="flex-1">
+                                            <label className="text-sm font-bold text-gray-900 dark:text-white">Allergy Status</label>
+                                            <p className="text-xs text-gray-500">Food, flowers, insects, animals, etc.</p>
+                                        </div>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" name="hasAllergies" checked={formData.hasAllergies} onChange={(e) => setFormData(prev => ({ ...prev, hasAllergies: e.target.checked }))} className="sr-only peer" />
+                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                                        </label>
+                                    </div>
+
+                                    {formData.hasAllergies && (
+                                        <div className="col-span-full space-y-1.5 animate-in fade-in duration-300">
+                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Specific Allergy Details</label>
+                                            <textarea name="allergyDetails" value={formData.allergyDetails} onChange={handleChange} className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800" rows={2} placeholder="Provide details about the allergies..." />
+                                        </div>
+                                    )}
+
+                                    <div className="col-span-full mt-4">
+                                        <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-4">Family Doctor Details</h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-1.5">
+                                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Doctor Name</label>
+                                                <input name="familyDoctorName" value={formData.familyDoctorName} onChange={handleChange} type="text" className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800" />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Emergency Contact Number</label>
+                                                <input name="familyDoctorPhone" value={formData.familyDoctorPhone} onChange={handleChange} type="text" className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800" />
+                                            </div>
+                                            <div className="col-span-full space-y-1.5">
+                                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Clinic/Hospital Address</label>
+                                                <textarea name="familyDoctorClinicAddress" value={formData.familyDoctorClinicAddress} onChange={handleChange} className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800" rows={2} />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="col-span-full mt-4">
+                                        <div className="flex items-center gap-3 p-4 bg-primary-50 dark:bg-primary-900/10 rounded-2xl border border-primary-100 dark:border-primary-800/50">
+                                            <div className="flex-1">
+                                                <label className="text-sm font-bold text-primary-900 dark:text-primary-100">First Aid Consent</label>
+                                                <p className="text-xs text-primary-700 dark:text-primary-400">Do you give consent for first aid treatment?</p>
+                                            </div>
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" name="firstAidConsent" checked={formData.firstAidConsent} onChange={(e) => setFormData(prev => ({ ...prev, firstAidConsent: e.target.checked }))} className="sr-only peer" />
+                                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Faith & Religion */}
+                        {activeTab === 'faith' && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white border-b-2 border-gray-200 dark:border-gray-800/50 pb-3 mb-2">Faith & Religious Participation</h3>
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-800">
+                                        <div className="flex-1">
+                                            <label className="text-sm font-bold text-gray-900 dark:text-white">Consent for Catholic Faith Practice</label>
+                                            <p className="text-xs text-gray-500">I accept that the child will participate in Catholic faith practices</p>
+                                        </div>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" name="catholicFaithConsent" checked={formData.catholicFaithConsent} onChange={(e) => setFormData(prev => ({ ...prev, catholicFaithConsent: e.target.checked }))} className="sr-only peer" />
+                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                                        </label>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-800">
+                                        <div className="flex-1">
+                                            <label className="text-sm font-bold text-gray-900 dark:text-white">Baptism Status</label>
+                                            <p className="text-xs text-gray-500">Has the student been baptized?</p>
+                                        </div>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" name="isBaptized" checked={formData.isBaptized} onChange={(e) => setFormData(prev => ({ ...prev, isBaptized: e.target.checked }))} className="sr-only peer" />
+                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                                        </label>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-800">
+                                        <div className="flex-1">
+                                            <label className="text-sm font-bold text-gray-900 dark:text-white">Communicant Status</label>
+                                            <p className="text-xs text-gray-500">Is the student a communicant?</p>
+                                        </div>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" name="isCommunicant" checked={formData.isCommunicant} onChange={(e) => setFormData(prev => ({ ...prev, isCommunicant: e.target.checked }))} className="sr-only peer" />
+                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Legal */}
+                        {activeTab === 'legal' && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white border-b-2 border-gray-200 dark:border-gray-800/50 pb-3 mb-2">Legal & Finalization</h3>
+                                <div className="space-y-6">
+                                    <div className="space-y-1.5">
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Application Fee Reference/Status</label>
+                                        <input name="applicationFeeReference" value={formData.applicationFeeReference} onChange={handleChange} type="text" placeholder="e.g. Paid via Bank Transfer (Ref: 12345)" className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800" />
+                                    </div>
+
+                                    <div className="p-6 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-800">
+                                        <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-3">Undertaking/Declaration</h4>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400 italic leading-relaxed bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-800 mb-4">
+                                            "I {formData.guardianName || '[Parent Name]'} Parent/Guardian of {formData.firstName ? `${formData.firstName} ${formData.lastName || ''}` : '[Student Name]'} hereby accept to abide by the conditions set to help the child and will assist the school where possible in furtherance of the child's holistic education if the child is admitted."
+                                        </p>
+
+                                        <div className="space-y-4">
+                                            <label className="flex items-center gap-3 cursor-pointer">
+                                                <input type="checkbox" name="undertakingAccepted" checked={formData.undertakingAccepted} onChange={(e) => setFormData(prev => ({ ...prev, undertakingAccepted: e.target.checked }))} className="w-5 h-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+                                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">I accept the undertaking/declaration</span>
+                                            </label>
+
+                                            <label className="flex items-center gap-3 cursor-pointer">
+                                                <input type="checkbox" name="parentSignature" checked={formData.parentSignature} onChange={(e) => setFormData(prev => ({ ...prev, parentSignature: e.target.checked }))} className="w-5 h-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+                                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">I agree and digitally sign this document</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Fee Allocation */}
                         {activeTab === 'fee_allocation' && (
                             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -1399,7 +1577,7 @@ export default function StudentAdmission() {
                                     </div>
                                 </div>
 
-                                {isEditMode && feeAssignmentProtection.hasPayments && (
+                                {feeAssignmentProtection.hasPayments && (
                                     <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-2xl">
                                         <div className="flex items-start gap-3">
                                             <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
@@ -1429,383 +1607,385 @@ export default function StudentAdmission() {
 
                                 {isEditMode && previousFeeAssignmentSuggestion && (
                                     <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-2xl">
-                                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                            <div>
-                                                <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">
-                                                    Previous session fee assignment found
-                                                </p>
-                                                <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-1">
-                                                    Reuse the structure from <span className="font-bold">{previousFeeAssignmentSuggestion.sourceSessionName}</span> as a starting point for the current session.
-                                                </p>
-                                                <div className="flex flex-wrap gap-2 mt-3">
-                                                    {previousFeeAssignmentSuggestion.groups.map((group) => (
-                                                        <span
-                                                            key={group.id}
-                                                            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/70 dark:bg-gray-900/40 border border-emerald-200 dark:border-emerald-700 text-[11px] font-bold text-emerald-700 dark:text-emerald-300"
-                                                        >
-                                                            {group.name}
-                                                            <span className="font-medium opacity-80">{group.headCount} heads</span>
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                            <button
-                                                type="button"
-                                                onClick={handleApplyPreviousSessionAssignment}
-                                                className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 transition-colors"
-                                            >
-                                                Apply Previous Session Assignment
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-                                    <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Selected Groups</p>
-                                        <p className="text-2xl font-black text-gray-900 dark:text-white mt-1">{selectedFeeGroups.length}</p>
-                                    </div>
-                                    <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Included Heads</p>
-                                        <p className="text-2xl font-black text-primary-600 mt-1">{feeAllocationSummary.totalIncludedHeads}</p>
-                                        <p className="text-xs text-gray-500 mt-1">
-                                            {feeAllocationSummary.totalMandatoryHeads} mandatory, {feeAllocationSummary.totalOptionalHeads - feeAllocationSummary.totalExcludedOptionalHeads} optional active
+                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                    <div>
+                                        <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">
+                                            Previous session fee assignment found
                                         </p>
-                                    </div>
-                                    <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Estimated Total</p>
-                                        <p className="text-2xl font-black text-emerald-600 mt-1">{formatCurrency(feeAllocationSummary.totalIncludedAmount)}</p>
-                                        <p className="text-xs text-gray-500 mt-1">
-                                            {feeAllocationSummary.totalExcludedOptionalHeads} optional head{feeAllocationSummary.totalExcludedOptionalHeads === 1 ? '' : 's'} excluded
+                                        <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-1">
+                                            Reuse the structure from <span className="font-bold">{previousFeeAssignmentSuggestion.sourceSessionName}</span> as a starting point for the current session.
                                         </p>
-                                    </div>
-                                </div>
-
-                                {selectedFeeGroups.length > 0 && (
-                                    <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 space-y-4">
-                                        <div className="flex items-center justify-between gap-3">
-                                            <div>
-                                                <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">Assignment Preview</h4>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                                    This is the fee structure that will be assigned for the active session.
-                                                </p>
-                                            </div>
-                                            {isEditMode && (
-                                                <div className="px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 text-xs font-bold border border-amber-100 dark:border-amber-800">
-                                                    Updating this will replace current-session assignments
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="space-y-3">
-                                            {feeAllocationSummary.groups.map((group: any) => (
-                                                <div key={group.id} className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/40 p-4">
-                                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3">
-                                                        <div>
-                                                            <p className="font-bold text-gray-900 dark:text-white">{group.name}</p>
-                                                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                                {group.includedHeads.length} included, {group.excludedOptionalHeads.length} optional excluded
-                                                            </p>
-                                                        </div>
-                                                        <div className="text-sm font-black text-emerald-600">
-                                                            {formatCurrency(group.subtotal)}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {group.includedHeads.map((head: any) => (
-                                                            <span
-                                                                key={head.id}
-                                                                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-700 dark:text-gray-300"
-                                                            >
-                                                                {head.name}
-                                                                <span className="font-bold text-primary-600">{formatCurrency(head.defaultAmount || 0)}</span>
-                                                            </span>
-                                                        ))}
-                                                        {group.excludedOptionalHeads.map((head: any) => (
-                                                            <span
-                                                                key={head.id}
-                                                                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 text-xs font-medium text-red-600 dark:text-red-400"
-                                                            >
-                                                                Excluded: {head.name}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                </div>
+                                        <div className="flex flex-wrap gap-2 mt-3">
+                                            {previousFeeAssignmentSuggestion.groups.map((group) => (
+                                                <span
+                                                    key={group.id}
+                                                    className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/70 dark:bg-gray-900/40 border border-emerald-200 dark:border-emerald-700 text-[11px] font-bold text-emerald-700 dark:text-emerald-300"
+                                                >
+                                                    {group.name}
+                                                    <span className="font-medium opacity-80">{group.headCount} heads</span>
+                                                </span>
                                             ))}
                                         </div>
                                     </div>
-                                )}
+                                    <button
+                                        type="button"
+                                        onClick={handleApplyPreviousSessionAssignment}
+                                        className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 transition-colors"
+                                    >
+                                        Apply Previous Session Assignment
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {effectiveFeeGroups.length > 0 ? (
-                                        effectiveFeeGroups.map(group => {
-                                            const isGroupSelected = (formData.feeGroupIds || []).includes(group.id);
-                                            const groupExclusions = formData.feeExclusions?.[group.id] || [];
-                                            const includedHeads = (group.heads || []).filter((head: any) => !groupExclusions.includes(head.id));
-                                            const groupSubtotal = includedHeads.reduce((sum: number, head: any) => sum + (parseFloat(head.defaultAmount || '0') || 0), 0);
-                                            const optionalHeadCount = (group.heads || []).filter((head: any) => !!head.isOptional).length;
-                                            const mandatoryHeadCount = (group.heads || []).filter((head: any) => !head.isOptional).length;
-                                            const isLockedGroup = feeAssignmentProtection.lockedGroupIds.includes(group.id);
+                        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                            <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Selected Groups</p>
+                                <p className="text-2xl font-black text-gray-900 dark:text-white mt-1">{selectedFeeGroups.length}</p>
+                            </div>
+                            <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Included Heads</p>
+                                <p className="text-2xl font-black text-primary-600 mt-1">{feeAllocationSummary.totalIncludedHeads}</p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    {feeAllocationSummary.totalMandatoryHeads} mandatory, {feeAllocationSummary.totalOptionalHeads - feeAllocationSummary.totalExcludedOptionalHeads} optional active
+                                </p>
+                            </div>
+                            <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Estimated Total</p>
+                                <p className="text-2xl font-black text-emerald-600 mt-1">{formatCurrency(feeAllocationSummary.totalIncludedAmount)}</p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    {feeAllocationSummary.totalExcludedOptionalHeads} optional head{feeAllocationSummary.totalExcludedOptionalHeads === 1 ? '' : 's'} excluded
+                                </p>
+                            </div>
+                        </div>
 
-                                            return (
-                                                <div
-                                                    key={group.id}
-                                                    className={clsx(
-                                                        "flex flex-col border rounded-2xl transition-all overflow-hidden",
-                                                        isGroupSelected
-                                                            ? "bg-primary-50/30 dark:bg-primary-900/10 border-primary-500 shadow-sm"
-                                                            : "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700"
-                                                    )}
-                                                >
-                                                    <label className={clsx(
-                                                        "flex items-start gap-4 p-4 cursor-pointer transition-colors",
-                                                        isGroupSelected ? "bg-primary-50/50 dark:bg-primary-900/20" : "hover:bg-gray-50 dark:hover:bg-gray-800"
-                                                    )}>
-                                                        <div className="mt-1">
-                                                            <input
-                                                                type="checkbox"
-                                                                className="w-5 h-5 rounded-lg border-gray-300 text-primary-600 focus:ring-primary-500"
-                                                                checked={isGroupSelected}
-                                                                onChange={() => handleToggleFeeGroup(group.id)}
-                                                            />
-                                                        </div>
-                                                        <div className="flex-1">
-                                                            <div className="flex items-center justify-between mb-1">
-                                                                <span className="font-bold text-gray-900 dark:text-white">{group.name}</span>
-                                                                <span className="text-xs font-mono bg-white dark:bg-gray-800 px-2 py-0.5 rounded text-gray-500 border border-gray-200 dark:border-gray-700">{group.session || '2024'}</span>
-                                                            </div>
-                                                            <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">{group.description || 'No description'}</p>
-                                                            <div className="flex flex-wrap items-center gap-2 mt-2">
-                                                                {isLockedGroup && (
-                                                                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border border-amber-100 dark:border-amber-800">
-                                                                        Payment Locked
-                                                                    </span>
-                                                                )}
-                                                                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500">
-                                                                    {mandatoryHeadCount} mandatory
-                                                                </span>
-                                                                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500">
-                                                                    {optionalHeadCount} optional
-                                                                </span>
-                                                                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 border border-emerald-100 dark:border-emerald-800">
-                                                                    {formatCurrency(groupSubtotal)}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </label>
-
-                                                    {isGroupSelected && group.heads && group.heads.length > 0 && (
-                                                        <div className="px-4 pb-4 space-y-2 border-t border-primary-100 dark:border-primary-800/50 pt-3 bg-primary-50/20 dark:bg-primary-900/5">
-                                                            <div className="flex items-center justify-between gap-3 mb-2">
-                                                                <p className="text-[10px] font-bold text-primary-600/60 dark:text-primary-400/60 uppercase tracking-widest">Assign Individual Heads</p>
-                                                                {groupExclusions.length > 0 && (
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => handleResetFeeGroupExclusions(group.id)}
-                                                                        className="text-[10px] font-bold uppercase tracking-widest text-primary-600 hover:text-primary-700"
-                                                                    >
-                                                                        Reset Exclusions
-                                                                    </button>
-                                                                )}
-                                                            </div>
-                                                            <div className="grid grid-cols-1 gap-2">
-                                                                {group.heads.map((head: any) => {
-                                                                    const isExcluded = groupExclusions.includes(head.id);
-                                                                    const isMandatory = !head.isOptional;
-                                                                    const isLockedHead = feeAssignmentProtection.lockedHeadIds.includes(head.id);
-
-                                                                    return (
-                                                                        <label
-                                                                            key={head.id}
-                                                                            className={clsx(
-                                                                                "flex items-center justify-between p-2 rounded-lg border transition-all",
-                                                                                isExcluded
-                                                                                    ? "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 opacity-60"
-                                                                                    : "bg-white dark:bg-gray-800 border-primary-200 dark:border-primary-800 shadow-sm"
-                                                                            )}
-                                                                        >
-                                                                            <div className="flex items-center gap-2">
-                                                                                <input
-                                                                                    type="checkbox"
-                                                                                    className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 disabled:opacity-50"
-                                                                                    checked={!isExcluded}
-                                                                                    disabled={isMandatory || isLockedHead}
-                                                                                    onChange={() => handleToggleFeeHead(group.id, head.id)}
-                                                                                />
-                                                                                <div className="flex flex-col">
-                                                                                    <span className={clsx("text-xs font-medium", isExcluded ? "text-gray-500 line-through" : "text-gray-700 dark:text-gray-200")}>
-                                                                                        {head.name}
-                                                                                    </span>
-                                                                                    {isMandatory && (
-                                                                                        <span className="text-[8px] text-primary-500 font-bold uppercase tracking-tighter">Mandatory</span>
-                                                                                    )}
-                                                                                    {isLockedHead && (
-                                                                                        <span className="text-[8px] text-amber-600 font-bold uppercase tracking-tighter">Paid / Locked</span>
-                                                                                    )}
-                                                                                </div>
-                                                                            </div>
-                                                                            <span className="text-xs font-bold text-gray-500 dark:text-gray-400">
-                                                                                {formatCurrency(head.defaultAmount || 0)}
-                                                                            </span>
-                                                                        </label>
-                                                                    );
-                                                                })}
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })
-                                    ) : (
-                                        <div className="col-span-full py-12 text-center bg-gray-50 dark:bg-gray-900/50 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700">
-                                            <p className="text-gray-500 text-sm">No fee groups found. Please create them in Fee Structure first.</p>
+                        {selectedFeeGroups.length > 0 && (
+                            <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 space-y-4">
+                                <div className="flex items-center justify-between gap-3">
+                                    <div>
+                                        <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">Assignment Preview</h4>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                            This is the fee structure that will be assigned for the active session.
+                                        </p>
+                                    </div>
+                                    {isEditMode && (
+                                        <div className="px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 text-xs font-bold border border-amber-100 dark:border-amber-800">
+                                            Updating this will replace current-session assignments
                                         </div>
                                     )}
                                 </div>
+
+                                <div className="space-y-3">
+                                    {feeAllocationSummary.groups.map((group: any) => (
+                                        <div key={group.id} className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/40 p-4">
+                                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3">
+                                                <div>
+                                                    <p className="font-bold text-gray-900 dark:text-white">{group.name}</p>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                        {group.includedHeads.length} included, {group.excludedOptionalHeads.length} optional excluded
+                                                    </p>
+                                                </div>
+                                                <div className="text-sm font-black text-emerald-600">
+                                                    {formatCurrency(group.subtotal)}
+                                                </div>
+                                            </div>
+
+                                            <div className="flex flex-wrap gap-2">
+                                                {group.includedHeads.map((head: any) => (
+                                                    <span
+                                                        key={head.id}
+                                                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-700 dark:text-gray-300"
+                                                    >
+                                                        {head.name}
+                                                        <span className="font-bold text-primary-600">{formatCurrency(head.defaultAmount || 0)}</span>
+                                                    </span>
+                                                ))}
+                                                {group.excludedOptionalHeads.map((head: any) => (
+                                                    <span
+                                                        key={head.id}
+                                                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 text-xs font-medium text-red-600 dark:text-red-400"
+                                                    >
+                                                        Excluded: {head.name}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {effectiveFeeGroups.length > 0 ? (
+                                effectiveFeeGroups.map(group => {
+                                    const isGroupSelected = (formData.feeGroupIds || []).includes(group.id);
+                                    const groupExclusions = formData.feeExclusions?.[group.id] || [];
+                                    const includedHeads = (group.heads || []).filter((head: any) => !groupExclusions.includes(head.id));
+                                    const groupSubtotal = includedHeads.reduce((sum: number, head: any) => sum + (parseFloat(head.defaultAmount || '0') || 0), 0);
+                                    const optionalHeadCount = (group.heads || []).filter((head: any) => !!head.isOptional).length;
+                                    const mandatoryHeadCount = (group.heads || []).filter((head: any) => !head.isOptional).length;
+                                    const isLockedGroup = feeAssignmentProtection.lockedGroupIds.includes(group.id);
+
+                                    return (
+                                        <div
+                                            key={group.id}
+                                            className={clsx(
+                                                "flex flex-col border rounded-2xl transition-all overflow-hidden",
+                                                isGroupSelected
+                                                    ? "bg-primary-50/30 dark:bg-primary-900/10 border-primary-500 shadow-sm"
+                                                    : "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700"
+                                            )}
+                                        >
+                                            <label className={clsx(
+                                                "flex items-start gap-4 p-4 cursor-pointer transition-colors",
+                                                isGroupSelected ? "bg-primary-50/50 dark:bg-primary-900/20" : "hover:bg-gray-50 dark:hover:bg-gray-800"
+                                            )}>
+                                                <div className="mt-1">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="w-5 h-5 rounded-lg border-gray-300 text-primary-600 focus:ring-primary-500"
+                                                        checked={isGroupSelected}
+                                                        onChange={() => handleToggleFeeGroup(group.id)}
+                                                    />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <span className="font-bold text-gray-900 dark:text-white">{group.name}</span>
+                                                        <span className="text-xs font-mono bg-white dark:bg-gray-800 px-2 py-0.5 rounded text-gray-500 border border-gray-200 dark:border-gray-700">{group.session || '2024'}</span>
+                                                    </div>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">{group.description || 'No description'}</p>
+                                                    <div className="flex flex-wrap items-center gap-2 mt-2">
+                                                        {isLockedGroup && (
+                                                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border border-amber-100 dark:border-amber-800">
+                                                                Payment Locked
+                                                            </span>
+                                                        )}
+                                                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500">
+                                                            {mandatoryHeadCount} mandatory
+                                                        </span>
+                                                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500">
+                                                            {optionalHeadCount} optional
+                                                        </span>
+                                                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 border border-emerald-100 dark:border-emerald-800">
+                                                            {formatCurrency(groupSubtotal)}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </label>
+
+                                            {isGroupSelected && group.heads && group.heads.length > 0 && (
+                                                <div className="px-4 pb-4 space-y-2 border-t border-primary-100 dark:border-primary-800/50 pt-3 bg-primary-50/20 dark:bg-primary-900/5">
+                                                    <div className="flex items-center justify-between gap-3 mb-2">
+                                                        <p className="text-[10px] font-bold text-primary-600/60 dark:text-primary-400/60 uppercase tracking-widest">Assign Individual Heads</p>
+                                                        {groupExclusions.length > 0 && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleResetFeeGroupExclusions(group.id)}
+                                                                className="text-[10px] font-bold uppercase tracking-widest text-primary-600 hover:text-primary-700"
+                                                            >
+                                                                Reset Exclusions
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    <div className="grid grid-cols-1 gap-2">
+                                                        {group.heads.map((head: any) => {
+                                                            const isExcluded = groupExclusions.includes(head.id);
+                                                            const isMandatory = !head.isOptional;
+                                                            const isLockedHead = feeAssignmentProtection.lockedHeadIds.includes(head.id);
+
+                                                            return (
+                                                                <label
+                                                                    key={head.id}
+                                                                    className={clsx(
+                                                                        "flex items-center justify-between p-2 rounded-lg border transition-all",
+                                                                        isExcluded
+                                                                            ? "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 opacity-60"
+                                                                            : "bg-white dark:bg-gray-800 border-primary-200 dark:border-primary-800 shadow-sm"
+                                                                    )}
+                                                                >
+                                                                    <div className="flex items-center gap-2">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 disabled:opacity-50"
+                                                                            checked={!isExcluded}
+                                                                            disabled={isMandatory || isLockedHead}
+                                                                            onChange={() => handleToggleFeeHead(group.id, head.id)}
+                                                                        />
+                                                                        <div className="flex flex-col">
+                                                                            <span className={clsx("text-xs font-medium", isExcluded ? "text-gray-500 line-through" : "text-gray-700 dark:text-gray-200")}>
+                                                                                {head.name}
+                                                                            </span>
+                                                                            {isMandatory && (
+                                                                                <span className="text-[8px] text-primary-500 font-bold uppercase tracking-tighter">Mandatory</span>
+                                                                            )}
+                                                                            {isLockedHead && (
+                                                                                <span className="text-[8px] text-amber-600 font-bold uppercase tracking-tighter">Paid / Locked</span>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                    <span className="text-xs font-bold text-gray-500 dark:text-gray-400">
+                                                                        {formatCurrency(head.defaultAmount || 0)}
+                                                                    </span>
+                                                                </label>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })
+                            ) : (
+                                <div className="col-span-full py-12 text-center bg-gray-50 dark:bg-gray-900/50 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700">
+                                    <p className="text-gray-500 text-sm">No fee groups found. Please create them in Fee Structure first.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                        )}
+                </div>
+            </div>
+        </div>
+
+            {/* Sibling Search Modal */ }
+    {
+        showSiblingSearch && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+                    {/* Modal Header */}
+                    <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/50">
+                        <div>
+                            <h4 className="text-xl font-bold text-gray-900 dark:text-white">Search Sibling</h4>
+                            <p className="text-sm text-gray-500">Find an existing student to link parent details</p>
+                        </div>
+                        <button onClick={() => setShowSiblingSearch(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
+                            <X className="w-5 h-5 text-gray-400" />
+                        </button>
+                    </div>
+
+                    {/* Search & Filters */}
+                    <div className="p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div className="md:col-span-2 relative">
+                                <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Search by Name, ID, or Parent Name..."
+                                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 transition-all outline-none"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    autoFocus
+                                />
+                            </div>
+                            <div>
+                                <select
+                                    value={searchClassId}
+                                    onChange={(e) => setSearchClassId(e.target.value)}
+                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 transition-all outline-none text-sm"
+                                >
+                                    <option value="">All Classes</option>
+                                    {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <select
+                                    value={searchSectionId}
+                                    onChange={(e) => setSearchSectionId(e.target.value)}
+                                    disabled={!searchClassId}
+                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 transition-all outline-none text-sm disabled:opacity-50"
+                                >
+                                    <option value="">All Sections</option>
+                                    {sections.filter(s => s.classId === searchClassId).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Results Area */}
+                    <div className="flex-1 overflow-y-auto p-6 bg-gray-50/30 dark:bg-gray-900/30">
+                        {searchingSibling ? (
+                            <div className="flex flex-col items-center justify-center py-12 gap-3">
+                                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
+                                <p className="text-gray-500 font-medium">Searching students...</p>
+                            </div>
+                        ) : siblingResults.length > 0 ? (
+                            <div className="grid grid-cols-1 gap-3">
+                                {siblingResults
+                                    .filter(s => s.id !== id) // Prevent self-linking
+                                    .map(sibling => {
+                                        const isAlreadyLinked = Boolean(formData.parentId && (sibling.parent?.id === formData.parentId || sibling.parentId === formData.parentId));
+
+                                        return (
+                                            <button
+                                                key={sibling.id}
+                                                onClick={() => !isAlreadyLinked && handleSelectSibling(sibling)}
+                                                disabled={isAlreadyLinked}
+                                                className={clsx(
+                                                    "group w-full text-left p-4 border rounded-xl transition-all flex items-center gap-4",
+                                                    isAlreadyLinked
+                                                        ? "bg-gray-50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-800 cursor-not-allowed opacity-75"
+                                                        : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-md"
+                                                )}
+                                            >
+                                                <div className={clsx(
+                                                    "w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg shadow-sm transition-transform",
+                                                    isAlreadyLinked ? "bg-gray-200 dark:bg-gray-800 text-gray-400" : "bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 group-hover:scale-110"
+                                                )}>
+                                                    {sibling.firstName[0]}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center justify-between mb-0.5">
+                                                        <p className={clsx("font-bold truncate", isAlreadyLinked ? "text-gray-500" : "text-gray-900 dark:text-white")}>
+                                                            {sibling.firstName} {sibling.lastName}
+                                                        </p>
+                                                        <div className="flex items-center gap-2">
+                                                            {isAlreadyLinked && (
+                                                                <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-400 border border-gray-200 dark:border-gray-800/50">
+                                                                    Already Linked
+                                                                </span>
+                                                            )}
+                                                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 border border-primary-100 dark:border-primary-800">
+                                                                {sibling.class?.name} - {sibling.section?.name}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+                                                        <span className="flex items-center gap-1"><span className="font-semibold text-gray-700 dark:text-gray-300">ID:</span> {sibling.admissionNo}</span>
+                                                        <span className="flex items-center gap-1"><span className="font-semibold text-gray-700 dark:text-gray-300">Father:</span> {sibling.fatherName || 'N/A'}</span>
+                                                    </div>
+                                                </div>
+                                                <div className={clsx(
+                                                    "w-8 h-8 rounded-full flex items-center justify-center transition-all",
+                                                    isAlreadyLinked ? "bg-gray-100 dark:bg-gray-800 text-gray-300" : "bg-gray-50 dark:bg-gray-800 text-gray-400 group-hover:bg-primary-600 group-hover:text-white"
+                                                )}>
+                                                    <Users className="w-4 h-4" />
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                            </div>
+                        ) : (searchQuery || searchClassId) ? (
+                            <div className="text-center py-12">
+                                <div className="bg-gray-100 dark:bg-gray-800 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <Search className="w-8 h-8 text-gray-400" />
+                                </div>
+                                <h5 className="text-lg font-semibold text-gray-900 dark:text-white">No students found</h5>
+                                <p className="text-gray-500">Try adjusting your search terms or filters</p>
+                            </div>
+                        ) : (
+                            <div className="text-center py-12">
+                                <div className="bg-primary-50 dark:bg-primary-900/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <Users className="w-8 h-8 text-primary-500" />
+                                </div>
+                                <h5 className="text-lg font-semibold text-gray-900 dark:text-white">Search Existing Students</h5>
+                                <p className="text-gray-500 max-w-xs mx-auto">Start typing a name or select a class to find a sibling and auto-fill parent details.</p>
                             </div>
                         )}
                     </div>
                 </div>
             </div>
-
-            {/* Sibling Search Modal */}
-            {showSiblingSearch && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
-                        {/* Modal Header */}
-                        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/50">
-                            <div>
-                                <h4 className="text-xl font-bold text-gray-900 dark:text-white">Search Sibling</h4>
-                                <p className="text-sm text-gray-500">Find an existing student to link parent details</p>
-                            </div>
-                            <button onClick={() => setShowSiblingSearch(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
-                                <X className="w-5 h-5 text-gray-400" />
-                            </button>
-                        </div>
-
-                        {/* Search & Filters */}
-                        <div className="p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                <div className="md:col-span-2 relative">
-                                    <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        placeholder="Search by Name, ID, or Parent Name..."
-                                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 transition-all outline-none"
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        autoFocus
-                                    />
-                                </div>
-                                <div>
-                                    <select
-                                        value={searchClassId}
-                                        onChange={(e) => setSearchClassId(e.target.value)}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 transition-all outline-none text-sm"
-                                    >
-                                        <option value="">All Classes</option>
-                                        {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                    </select>
-                                </div>
-                                <div>
-                                    <select
-                                        value={searchSectionId}
-                                        onChange={(e) => setSearchSectionId(e.target.value)}
-                                        disabled={!searchClassId}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 transition-all outline-none text-sm disabled:opacity-50"
-                                    >
-                                        <option value="">All Sections</option>
-                                        {sections.filter(s => s.classId === searchClassId).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Results Area */}
-                        <div className="flex-1 overflow-y-auto p-6 bg-gray-50/30 dark:bg-gray-900/30">
-                            {searchingSibling ? (
-                                <div className="flex flex-col items-center justify-center py-12 gap-3">
-                                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
-                                    <p className="text-gray-500 font-medium">Searching students...</p>
-                                </div>
-                            ) : siblingResults.length > 0 ? (
-                                <div className="grid grid-cols-1 gap-3">
-                                    {siblingResults
-                                        .filter(s => s.id !== id) // Prevent self-linking
-                                        .map(sibling => {
-                                            const isAlreadyLinked = Boolean(formData.parentId && (sibling.parent?.id === formData.parentId || sibling.parentId === formData.parentId));
-
-                                            return (
-                                                <button
-                                                    key={sibling.id}
-                                                    onClick={() => !isAlreadyLinked && handleSelectSibling(sibling)}
-                                                    disabled={isAlreadyLinked}
-                                                    className={clsx(
-                                                        "group w-full text-left p-4 border rounded-xl transition-all flex items-center gap-4",
-                                                        isAlreadyLinked
-                                                            ? "bg-gray-50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-800 cursor-not-allowed opacity-75"
-                                                            : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-md"
-                                                    )}
-                                                >
-                                                    <div className={clsx(
-                                                        "w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg shadow-sm transition-transform",
-                                                        isAlreadyLinked ? "bg-gray-200 dark:bg-gray-800 text-gray-400" : "bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 group-hover:scale-110"
-                                                    )}>
-                                                        {sibling.firstName[0]}
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex items-center justify-between mb-0.5">
-                                                            <p className={clsx("font-bold truncate", isAlreadyLinked ? "text-gray-500" : "text-gray-900 dark:text-white")}>
-                                                                {sibling.firstName} {sibling.lastName}
-                                                            </p>
-                                                            <div className="flex items-center gap-2">
-                                                                {isAlreadyLinked && (
-                                                                    <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-400 border border-gray-200 dark:border-gray-800/50">
-                                                                        Already Linked
-                                                                    </span>
-                                                                )}
-                                                                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 border border-primary-100 dark:border-primary-800">
-                                                                    {sibling.class?.name} - {sibling.section?.name}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
-                                                            <span className="flex items-center gap-1"><span className="font-semibold text-gray-700 dark:text-gray-300">ID:</span> {sibling.admissionNo}</span>
-                                                            <span className="flex items-center gap-1"><span className="font-semibold text-gray-700 dark:text-gray-300">Father:</span> {sibling.fatherName || 'N/A'}</span>
-                                                        </div>
-                                                    </div>
-                                                    <div className={clsx(
-                                                        "w-8 h-8 rounded-full flex items-center justify-center transition-all",
-                                                        isAlreadyLinked ? "bg-gray-100 dark:bg-gray-800 text-gray-300" : "bg-gray-50 dark:bg-gray-800 text-gray-400 group-hover:bg-primary-600 group-hover:text-white"
-                                                    )}>
-                                                        <Users className="w-4 h-4" />
-                                                    </div>
-                                                </button>
-                                            );
-                                        })}
-                                </div>
-                            ) : (searchQuery || searchClassId) ? (
-                                <div className="text-center py-12">
-                                    <div className="bg-gray-100 dark:bg-gray-800 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                                        <Search className="w-8 h-8 text-gray-400" />
-                                    </div>
-                                    <h5 className="text-lg font-semibold text-gray-900 dark:text-white">No students found</h5>
-                                    <p className="text-gray-500">Try adjusting your search terms or filters</p>
-                                </div>
-                            ) : (
-                                <div className="text-center py-12">
-                                    <div className="bg-primary-50 dark:bg-primary-900/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                                        <Users className="w-8 h-8 text-primary-500" />
-                                    </div>
-                                    <h5 className="text-lg font-semibold text-gray-900 dark:text-white">Search Existing Students</h5>
-                                    <p className="text-gray-500 max-w-xs mx-auto">Start typing a name or select a class to find a sibling and auto-fill parent details.</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
+        )
+    }
+        </div >
     );
 }

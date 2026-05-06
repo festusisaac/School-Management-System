@@ -284,6 +284,7 @@ export class StudentsController {
         { name: 'passportPhoto', maxCount: 1 },
         { name: 'birthCertificate', maxCount: 1 },
         { name: 'guardianPhoto', maxCount: 1 },
+        { name: 'documentFiles', maxCount: 10 },
     ], {
         storage: diskStorage({
             destination: './uploads/admissions',
@@ -295,7 +296,12 @@ export class StudentsController {
     }))
     async createOnlineAdmission(
         @Body() dto: CreateOnlineAdmissionDto, 
-        @UploadedFiles() files: { passportPhoto?: Express.Multer.File[], birthCertificate?: Express.Multer.File[], guardianPhoto?: Express.Multer.File[] },
+        @UploadedFiles() files: { 
+            passportPhoto?: Express.Multer.File[], 
+            birthCertificate?: Express.Multer.File[], 
+            guardianPhoto?: Express.Multer.File[],
+            documentFiles?: Express.Multer.File[]
+        },
         @Request() req: any
     ) {
         let tenantId = req.user?.tenantId;
@@ -330,7 +336,7 @@ export class StudentsController {
         }
 
 
-        return this.studentsService.createOnlineAdmission(dto, tenantId);
+        return this.studentsService.createOnlineAdmission(dto, tenantId, files?.documentFiles);
     }
 
     @Public()

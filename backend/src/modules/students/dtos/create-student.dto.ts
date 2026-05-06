@@ -228,4 +228,55 @@ export class CreateStudentDto {
 
     @IsOptional()
     mustChangePassword?: boolean;
+
+    // Medical & Health Records
+    @IsString()
+    @IsOptional()
+    specialPhysicalHealthProblems?: string;
+
+    @IsOptional()
+    hasDisability?: boolean;
+
+    @IsOptional()
+    hasAllergies?: boolean;
+
+    @IsString()
+    @IsOptional()
+    allergyDetails?: string;
+
+    @IsString()
+    @IsOptional()
+    familyDoctorName?: string;
+
+    @IsString()
+    @IsOptional()
+    familyDoctorClinicAddress?: string;
+
+    @IsString()
+    @IsOptional()
+    familyDoctorPhone?: string;
+
+    @IsOptional()
+    firstAidConsent?: boolean;
+
+    // Faith & Religious Participation
+    @IsOptional()
+    catholicFaithConsent?: boolean;
+
+    @IsOptional()
+    isBaptized?: boolean;
+
+    @IsOptional()
+    isCommunicant?: boolean;
+
+    // Legal & Finalization
+    @IsString()
+    @IsOptional()
+    applicationFeeReference?: string;
+
+    @IsOptional()
+    undertakingAccepted?: boolean;
+
+    @IsOptional()
+    parentSignature?: boolean;
 }

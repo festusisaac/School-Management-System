@@ -12,10 +12,14 @@ import {
     ChevronRight, 
     ChevronLeft, 
     Upload,
+    Loader2,
     Stethoscope,
     AlertCircle,
     Info,
-    ArrowRight
+    ArrowRight,
+    Heart,
+    Plus,
+    Trash2
 } from 'lucide-react';
 import { twMerge } from 'tailwind-merge';
 
@@ -23,6 +27,7 @@ const STEPS = [
     { title: 'Student Biodata', icon: User, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20' },
     { title: 'Parent & Medical', icon: Users, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-900/20' },
     { title: 'Academic Info', icon: GraduationCap, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20' },
+    { title: 'Faith & Legal', icon: Heart, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-900/20' },
     { title: 'Documents', icon: FileText, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
     { title: 'Submit', icon: CheckCircle2, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-900/20' }
 ];
@@ -68,7 +73,29 @@ const AdmissionFormPage = () => {
         motherOccupation: '',
         emergencyContact: '',
         permanentAddress: '',
+        
+        // Medical & Health Records
+        specialPhysicalHealthProblems: '',
+        hasDisability: false,
+        hasAllergies: false,
+        allergyDetails: '',
+        familyDoctorName: '',
+        familyDoctorClinicAddress: '',
+        familyDoctorPhone: '',
+        firstAidConsent: false,
+
+        // Faith & Religious Participation
+        catholicFaithConsent: false,
+        isBaptized: false,
+        isCommunicant: false,
+
+        // Legal & Finalization
+        undertakingAccepted: false,
+        parentSignature: false,
+        applicationFeeReference: '',
     });
+
+    const [documents, setDocuments] = useState<Array<{ title: string; file: File }>>([]);
 
     // File State
     const [files, setFiles] = useState<{ passportPhoto: File | null; birthCertificate: File | null; guardianPhoto: File | null }>({
@@ -95,7 +122,8 @@ const AdmissionFormPage = () => {
             setFormData(prev => ({
                 ...prev,
                 guardianEmail: prev.guardianEmail || payEmail,
-                guardianName: prev.guardianName || payName || ''
+                guardianName: prev.guardianName || payName || '',
+                applicationFeeReference: payRef
             }));
         }
 
@@ -178,6 +206,18 @@ const AdmissionFormPage = () => {
         setFiles(prev => ({ ...prev, [field]: file }));
     };
 
+    const handleAddDocument = () => {
+        setDocuments(prev => [...prev, { title: '', file: null as any }]);
+    };
+
+    const handleRemoveDocument = (index: number) => {
+        setDocuments(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const handleDocumentChange = (index: number, field: 'title' | 'file', value: any) => {
+        setDocuments(prev => prev.map((doc, i) => i === index ? { ...doc, [field]: value } : doc));
+    };
+
     const validateStep = (step: number) => {
         switch (step) {
             case 0:
@@ -186,6 +226,10 @@ const AdmissionFormPage = () => {
                 return formData.guardianName && formData.guardianPhone && formData.guardianRelation;
             case 2:
                 return formData.preferredClassId;
+            case 3:
+                return formData.undertakingAccepted && formData.parentSignature;
+            case 4:
+                return files.passportPhoto && files.birthCertificate && files.guardianPhoto;
             default:
                 return true;
         }
@@ -219,6 +263,12 @@ const AdmissionFormPage = () => {
             if (files.passportPhoto) finalData.append('passportPhoto', files.passportPhoto);
             if (files.birthCertificate) finalData.append('birthCertificate', files.birthCertificate);
             if (files.guardianPhoto) finalData.append('guardianPhoto', files.guardianPhoto);
+
+            // Additional Documents
+            documents.forEach((doc, index) => {
+                finalData.append('documentFiles', doc.file);
+                finalData.append('documentTitles', doc.title);
+            });
 
             const paymentRef = localStorage.getItem('admission_payment_ref');
             if (paymentRef) {
@@ -373,11 +423,102 @@ const AdmissionFormPage = () => {
                                     </div>
                                 </div>
 
-                                <div className="md:col-span-2 mt-4 space-y-4">
+                                <div className="md:col-span-2 mt-4 space-y-6">
                                     <div className="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">
-                                        <Stethoscope className="w-4 h-4 text-rose-500" /> Medical History
+                                        <Stethoscope className="w-4 h-4 text-rose-500" /> Medical & Health Records
                                     </div>
-                                    <FormTextarea label="Describe any medical conditions or allergies" name="medicalConditions" value={formData.medicalConditions || ''} onChange={handleChange} rows={3} placeholder="Enter N/A if none" />
+                                    
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
+                                                        <Info className="w-4 h-4" />
+                                                    </div>
+                                                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Disability Status</span>
+                                                </div>
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => setFormData(prev => ({ ...prev, hasDisability: !prev.hasDisability }))}
+                                                    className={twMerge(
+                                                        "w-12 h-6 rounded-full transition-all relative",
+                                                        formData.hasDisability ? "bg-primary-600" : "bg-slate-300 dark:bg-slate-700"
+                                                    )}
+                                                >
+                                                    <div className={twMerge(
+                                                        "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
+                                                        formData.hasDisability ? "left-7" : "left-1"
+                                                    )} />
+                                                </button>
+                                            </div>
+
+                                            <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600">
+                                                        <AlertCircle className="w-4 h-4" />
+                                                    </div>
+                                                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Allergies?</span>
+                                                </div>
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => setFormData(prev => ({ ...prev, hasAllergies: !prev.hasAllergies }))}
+                                                    className={twMerge(
+                                                        "w-12 h-6 rounded-full transition-all relative",
+                                                        formData.hasAllergies ? "bg-primary-600" : "bg-slate-300 dark:bg-slate-700"
+                                                    )}
+                                                >
+                                                    <div className={twMerge(
+                                                        "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
+                                                        formData.hasAllergies ? "left-7" : "left-1"
+                                                    )} />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            {formData.hasAllergies && (
+                                                <FormTextarea 
+                                                    label="Specify Allergy Details" 
+                                                    name="allergyDetails" 
+                                                    value={formData.allergyDetails} 
+                                                    onChange={handleChange} 
+                                                    rows={2}
+                                                    placeholder="Food, flowers, insects, animals, etc."
+                                                />
+                                            )}
+                                            <FormTextarea 
+                                                label="Special Physical or Health Problems" 
+                                                name="specialPhysicalHealthProblems" 
+                                                value={formData.specialPhysicalHealthProblems} 
+                                                onChange={handleChange} 
+                                                rows={2}
+                                                placeholder="Describe any other health concerns..."
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-6 space-y-4">
+                                        <div className="flex items-center gap-2 text-[10px] font-black text-primary-600 uppercase tracking-widest">
+                                            Family Doctor Details
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            <FormInput label="Doctor Name" name="familyDoctorName" value={formData.familyDoctorName} onChange={handleChange} />
+                                            <FormInput label="Clinic Address" name="familyDoctorClinicAddress" value={formData.familyDoctorClinicAddress} onChange={handleChange} />
+                                            <FormInput label="Doctor Phone" name="familyDoctorPhone" value={formData.familyDoctorPhone} onChange={handleChange} />
+                                        </div>
+                                    </div>
+
+                                    <div className="p-4 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl">
+                                        <label className="flex items-center gap-3 cursor-pointer">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={formData.firstAidConsent}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, firstAidConsent: e.target.checked }))}
+                                                className="w-5 h-5 rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500"
+                                            />
+                                            <span className="text-sm font-bold text-emerald-900 dark:text-emerald-400">I give consent for First Aid treatment if required</span>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -412,29 +553,173 @@ const AdmissionFormPage = () => {
 
                     {currentStep === 3 && (
                         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <StepHeader title="Faith & Legal" desc="Religious background and legal declarations." icon={Heart} color="bg-rose-50 text-rose-500" />
+                            <div className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                            <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Consent for Catholic Faith Practice</span>
+                                            <button 
+                                                type="button"
+                                                onClick={() => setFormData(prev => ({ ...prev, catholicFaithConsent: !prev.catholicFaithConsent }))}
+                                                className={twMerge(
+                                                    "w-12 h-6 rounded-full transition-all relative",
+                                                    formData.catholicFaithConsent ? "bg-rose-600" : "bg-slate-300 dark:bg-slate-700"
+                                                )}
+                                            >
+                                                <div className={twMerge(
+                                                    "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
+                                                    formData.catholicFaithConsent ? "left-7" : "left-1"
+                                                )} />
+                                            </button>
+                                        </div>
+
+                                        <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                            <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Is the child Baptized?</span>
+                                            <button 
+                                                type="button"
+                                                onClick={() => setFormData(prev => ({ ...prev, isBaptized: !prev.isBaptized }))}
+                                                className={twMerge(
+                                                    "w-12 h-6 rounded-full transition-all relative",
+                                                    formData.isBaptized ? "bg-blue-600" : "bg-slate-300 dark:bg-slate-700"
+                                                )}
+                                            >
+                                                <div className={twMerge(
+                                                    "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
+                                                    formData.isBaptized ? "left-7" : "left-1"
+                                                )} />
+                                            </button>
+                                        </div>
+
+                                        <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                            <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Is the child a Communicant?</span>
+                                            <button 
+                                                type="button"
+                                                onClick={() => setFormData(prev => ({ ...prev, isCommunicant: !prev.isCommunicant }))}
+                                                className={twMerge(
+                                                    "w-12 h-6 rounded-full transition-all relative",
+                                                    formData.isCommunicant ? "bg-amber-600" : "bg-slate-300 dark:bg-slate-700"
+                                                )}
+                                            >
+                                                <div className={twMerge(
+                                                    "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
+                                                    formData.isCommunicant ? "left-7" : "left-1"
+                                                )} />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-amber-50/50 dark:bg-amber-900/10 p-6 rounded-3xl border border-amber-100 dark:border-amber-900/20 space-y-4">
+                                        <div className="flex items-center gap-2 text-amber-800 dark:text-amber-400 font-bold text-sm">
+                                            <AlertCircle className="w-4 h-4" /> Parental Undertaking
+                                        </div>
+                                        <p className="text-[11px] leading-relaxed text-amber-900/70 dark:text-amber-400/70 font-medium">
+                                            I <strong>{formData.guardianName || '[Parent Name]'}</strong>, Parent/Guardian of <strong>{formData.firstName || '[Student Name]'}</strong> hereby accept to abide by the conditions set to help the child and will assist the school where possible in furtherance of the child's holistic education if the child is admitted.
+                                        </p>
+                                        <div className="space-y-3 pt-2">
+                                            <label className="flex items-center gap-3 cursor-pointer">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={formData.undertakingAccepted}
+                                                    onChange={(e) => setFormData(prev => ({ ...prev, undertakingAccepted: e.target.checked }))}
+                                                    className="w-5 h-5 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                                                />
+                                                <span className="text-xs font-bold text-amber-900 dark:text-amber-400">I Agree to the undertaking</span>
+                                            </label>
+                                            <label className="flex items-center gap-3 cursor-pointer">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={formData.parentSignature}
+                                                    onChange={(e) => setFormData(prev => ({ ...prev, parentSignature: e.target.checked }))}
+                                                    className="w-5 h-5 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                                                />
+                                                <span className="text-xs font-bold text-amber-900 dark:text-amber-400">Digital Signature (By checking, I signify my legal signature)</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {currentStep === 4 && (
+                        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <StepHeader title="Document Upload" desc="Attach mandatory identification files." icon={FileText} color="bg-emerald-50 text-emerald-500" />
                             <div className="space-y-6">
-                                                                <FileUpload 
-                                    label="Guardian's Passport Photograph" 
-                                    desc={`Required for portal access and identification. Max ${settings?.maxFileUploadSizeMb || 5}MB.`} 
-                                    file={files.guardianPhoto} 
-                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFileChange(e, 'guardianPhoto' as any)} 
-                                    id="guardian_photo"
-                                />
-<FileUpload 
-                                    label="Passport Photograph" 
-                                    desc={`A clear colored passport with clean background. Max ${settings?.maxFileUploadSizeMb || 5}MB.`} 
-                                    file={files.passportPhoto} 
-                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFileChange(e, 'passportPhoto')} 
-                                    id="passport"
-                                />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <FileUpload 
+                                        label="Guardian's Photo" 
+                                        desc="Required for portal access." 
+                                        file={files.guardianPhoto} 
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFileChange(e, 'guardianPhoto' as any)} 
+                                        id="guardian_photo"
+                                    />
+                                    <FileUpload 
+                                        label="Passport Photograph" 
+                                        desc="Colored with clean background." 
+                                        file={files.passportPhoto} 
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFileChange(e, 'passportPhoto')} 
+                                        id="passport"
+                                    />
+                                </div>
                                 <FileUpload 
                                     label="Birth Certificate" 
-                                    desc={`Government issued or hospital record. Max ${settings?.maxFileUploadSizeMb || 5}MB.`} 
+                                    desc="Government issued or hospital record." 
                                     file={files.birthCertificate} 
                                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFileChange(e, 'birthCertificate')} 
                                     id="birthcert"
                                 />
+
+                                {/* Additional Documents */}
+                                <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Additional Documents</h4>
+                                        <button 
+                                            type="button"
+                                            onClick={handleAddDocument}
+                                            className="px-3 py-1.5 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-lg text-xs font-bold flex items-center gap-1.5 hover:bg-primary-100 transition-all"
+                                        >
+                                            <Plus className="w-3.5 h-3.5" /> Add More
+                                        </button>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        {documents.map((doc, idx) => (
+                                            <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row gap-4 items-start sm:items-end">
+                                                <div className="flex-1 w-full">
+                                                    <FormInput 
+                                                        label="Document Title" 
+                                                        placeholder="e.g. Immunization Record, Previous Results"
+                                                        value={doc.title}
+                                                        onChange={(e: any) => handleDocumentChange(idx, 'title', e.target.value)}
+                                                    />
+                                                </div>
+                                                <div className="shrink-0">
+                                                    <label className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:border-primary-500 transition-all">
+                                                        <Upload className="w-4 h-4 text-slate-400" />
+                                                        <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{doc.file ? doc.file.name : 'Choose File'}</span>
+                                                        <input 
+                                                            type="file" 
+                                                            className="hidden" 
+                                                            onChange={(e) => {
+                                                                const file = e.target.files?.[0];
+                                                                if (file) handleDocumentChange(idx, 'file', file);
+                                                            }}
+                                                        />
+                                                    </label>
+                                                </div>
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => handleRemoveDocument(idx)}
+                                                    className="p-2.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
                                 <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 rounded-2xl flex gap-3 text-sm text-blue-800 dark:text-blue-300">
                                     <Info className="w-5 h-5 shrink-0" />
                                     <p>Ensure documents are clear and legible. Only PDF or Image formats are accepted.</p>
@@ -443,33 +728,90 @@ const AdmissionFormPage = () => {
                         </div>
                     )}
 
-                    {currentStep === 4 && (
+                    {currentStep === 5 && (
                         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <StepHeader title="Final Review" desc="Check your details before final submission." icon={CheckCircle2} color="bg-indigo-50 text-indigo-500" />
+                            
                             <div className="space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <ReviewItem label="Student Name" value={`${formData.firstName} ${formData.middleName ? formData.middleName + ' ' : ''}${formData.lastName}`} />
-                                    <ReviewItem label="Target Class" value={classes.find(c => c.id === formData.preferredClassId)?.name || 'Not selected'} />
-                                    <ReviewItem label="Guardian" value={`${formData.guardianName} (${formData.guardianRelation})`} />
-                                    <ReviewItem label="Phone" value={formData.guardianPhone} />
-                                    <ReviewItem label="Email" value={formData.guardianEmail} />
-                                    <ReviewItem label="Address" value={formData.currentAddress} />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* Core Info */}
+                                    <div className="space-y-4">
+                                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Student & Guardian</h4>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <ReviewItem label="Student Name" value={`${formData.firstName} ${formData.lastName}`} />
+                                            <ReviewItem label="Target Class" value={classes.find(c => c.id === formData.preferredClassId)?.name} />
+                                            <ReviewItem label="Guardian" value={formData.guardianName} />
+                                            <ReviewItem label="Relationship" value={formData.guardianRelation} />
+                                            <ReviewItem label="Contact Phone" value={formData.guardianPhone} />
+                                            <ReviewItem label="Contact Email" value={formData.guardianEmail} />
+                                        </div>
+                                    </div>
+
+                                    {/* Medical & Health */}
+                                    <div className="space-y-4">
+                                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Medical & Health</h4>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <ReviewItem label="Disability" value={formData.hasDisability ? 'Yes' : 'No'} />
+                                            <ReviewItem label="Allergies" value={formData.hasAllergies ? formData.allergyDetails : 'None'} />
+                                            <ReviewItem label="Family Doctor" value={formData.familyDoctorName} />
+                                            <ReviewItem label="First Aid Consent" value={formData.firstAidConsent ? 'Granted' : 'Denied'} />
+                                        </div>
+                                    </div>
+
+                                    {/* Faith & Legal */}
+                                    <div className="space-y-4">
+                                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Faith & Legal</h4>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <ReviewItem label="Catholic Faith" value={formData.catholicFaithConsent ? 'Consented' : 'No'} />
+                                            <ReviewItem label="Baptized" value={formData.isBaptized ? 'Yes' : 'No'} />
+                                            <ReviewItem label="Communicant" value={formData.isCommunicant ? 'Yes' : 'No'} />
+                                            <ReviewItem label="Undertaking" value={formData.undertakingAccepted ? 'Accepted' : 'Pending'} />
+                                        </div>
+                                    </div>
+
+                                    {/* Documents */}
+                                    <div className="space-y-4">
+                                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Documents Uploaded</h4>
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-100 dark:border-slate-800">
+                                                <span className="text-xs font-bold text-slate-600 dark:text-slate-400">Mandatory Files</span>
+                                                <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded uppercase">3/3</span>
+                                            </div>
+                                            {documents.length > 0 && (
+                                                <div className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-100 dark:border-slate-800">
+                                                    <span className="text-xs font-bold text-slate-600 dark:text-slate-400">Supplementary Files</span>
+                                                    <span className="text-[10px] font-black text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded uppercase">{documents.length} Files</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="p-6 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-3xl space-y-4">
-                                    <p className="text-sm text-center text-gray-500 dark:text-gray-400">By submitting this form, you certify that all information provided is accurate and you agree to the school's online admission policy.</p>
-                                    <button 
-                                        onClick={handleSubmit} 
-                                        disabled={isSubmitting}
-                                        className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50 shadow-sm"
-                                    >
-                                        {isSubmitting ? (
-                                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                                        ) : (
-                                            <>
-                                                Submit Application <ArrowRight className="w-4 h-4" />
-                                            </>
-                                        )}
-                                    </button>
+
+                                <div className="mt-8 bg-primary-600 rounded-3xl p-8 text-white space-y-6 shadow-lg shadow-primary-500/20 relative overflow-hidden">
+                                    <div className="relative z-10">
+                                        <h4 className="text-xl font-black mb-2 uppercase tracking-tighter italic">Final Commitment</h4>
+                                        <p className="text-primary-100 text-sm font-medium leading-relaxed mb-6">
+                                            By clicking the button below, I certify that all information provided is accurate and I am ready to complete my application.
+                                        </p>
+                                        <button 
+                                            onClick={handleSubmit}
+                                            disabled={isSubmitting}
+                                            className="w-full bg-white text-primary-600 hover:bg-primary-50 px-8 py-5 rounded-2xl font-black text-sm uppercase tracking-widest transition-all shadow-xl disabled:opacity-50 flex items-center justify-center gap-3"
+                                        >
+                                            {isSubmitting ? (
+                                                <>
+                                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                                    Processing...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    Complete Submission
+                                                    <ArrowRight className="w-5 h-5" />
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32" />
                                 </div>
                             </div>
                         </div>

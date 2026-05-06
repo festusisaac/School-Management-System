@@ -206,9 +206,54 @@ export class Student {
   @Column({ nullable: true })
   lastClassPassed?: string;
 
-  // Status
-  @Column({ default: true })
-  isActive!: boolean;
+    // Medical & Health Records
+    @Column({ type: 'text', nullable: true })
+    specialPhysicalHealthProblems?: string;
+
+    @Column({ default: false })
+    hasDisability!: boolean;
+
+    @Column({ default: false })
+    hasAllergies!: boolean;
+
+    @Column({ type: 'text', nullable: true })
+    allergyDetails?: string;
+
+    @Column({ nullable: true })
+    familyDoctorName?: string;
+
+    @Column({ type: 'text', nullable: true })
+    familyDoctorClinicAddress?: string;
+
+    @Column({ nullable: true })
+    familyDoctorPhone?: string;
+
+    @Column({ default: false })
+    firstAidConsent!: boolean;
+
+    // Faith & Religious Participation
+    @Column({ default: false })
+    catholicFaithConsent!: boolean;
+
+    @Column({ default: false })
+    isBaptized!: boolean;
+
+    @Column({ default: false })
+    isCommunicant!: boolean;
+
+    // Legal & Finalization
+    @Column({ nullable: true })
+    applicationFeeReference?: string;
+
+    @Column({ default: false })
+    undertakingAccepted!: boolean;
+
+    @Column({ default: false })
+    parentSignature!: boolean;
+
+    // Status
+    @Column({ default: true })
+    isActive!: boolean;
 
   @Column({ nullable: true, type: 'date' })
   deactivatedAt?: Date;
