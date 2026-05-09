@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, In } from 'typeorm';
+import { Repository, IsNull, In, Raw } from 'typeorm';
 import { SystemSettingsService } from '../../system/services/system-settings.service';
 import { ExamResult } from '../entities/exam-result.entity';
 import { Exam } from '../entities/exam.entity';
@@ -258,12 +258,16 @@ export class ScoreEntryService {
         assessmentTypeId?: string;
         score: number;
         tenantId: string;
+        status?: string;
     }) {
         const sessionId = await this.systemSettingsService.getActiveSessionId();
         
-        // 1. Resolve student
+        // 1. Resolve student (Case-Insensitive)
         const student = await this.studentRepo.findOne({
-            where: { admissionNo: data.admissionNo, tenantId: data.tenantId }
+            where: { 
+                admissionNo: Raw((alias: string) => `LOWER(${alias}) = LOWER(:val)`, { val: data.admissionNo }),
+                tenantId: data.tenantId 
+            }
         });
         if (!student) throw new Error(`Student ${data.admissionNo} not found`);
 
@@ -295,8 +299,14 @@ export class ScoreEntryService {
             });
         }
 
+        // Safety Lock: Don't downgrade a PRESENT student to ABSENT
+        const incomingStatus = data.status || 'PRESENT';
+        if (result.status === 'PRESENT' && incomingStatus === 'ABSENT') {
+            return result; // Keep the existing score and status
+        }
+
         result.score = data.score;
-        result.status = 'PRESENT';
+        result.status = incomingStatus;
         
         if (data.assessmentTypeId) {
             const at = await this.assessmentTypeRepo.findOne({ where: { id: data.assessmentTypeId } });

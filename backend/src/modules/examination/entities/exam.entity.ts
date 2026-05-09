@@ -66,6 +66,9 @@ export class Exam {
     @Column({ nullable: true })
     cbtAssessmentTypeId?: string;
 
+    @Column({ type: 'int', default: 60 })
+    durationMinutes!: number;
+
     @ManyToOne(() => AcademicSession)
     @JoinColumn({ name: 'sessionId' })
     session?: AcademicSession;

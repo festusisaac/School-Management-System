@@ -76,6 +76,9 @@ export class CbtQuestionService {
         };
 
         await this.dataSource.transaction(async manager => {
+            // Wipe existing questions for this exam to prevent accumulation
+            await manager.delete(CbtQuestion, { examId, tenantId });
+
             for (let i = 0; i < data.length; i++) {
                 const row = data[i];
                 try {

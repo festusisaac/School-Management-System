@@ -37,6 +37,7 @@ export class CbtSyncController {
         @Param('syncKey') syncKey: string,
         @Body() body: { data: any[], assessmentTypeId?: string }
     ) {
+        console.log(`[CBT Sync] Incoming results for syncKey: ${syncKey}, items: ${body.data?.length}`);
         // Fetch manifest and grade the raw CBT answers
         const manifest = await this.manifestService.getManifest(syncKey);
         const gradedData = await this.manifestService.gradeCbtPayload(syncKey, body.data);
@@ -101,5 +102,15 @@ export class CbtSyncController {
             assessmentTypeId,
             assessmentTypeName
         };
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get('absentees/:examId/:assessmentTypeId')
+    async getAbsentees(
+        @Param('examId') examId: string,
+        @Param('assessmentTypeId') assessmentTypeId: string,
+        @Request() req: any
+    ) {
+        return this.manifestService.getAbsentees(examId, assessmentTypeId, req.user.tenantId);
     }
 }

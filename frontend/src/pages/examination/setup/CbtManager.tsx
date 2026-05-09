@@ -49,6 +49,7 @@ export default function CbtManager() {
     const [searchTerm, setSearchTerm] = useState('');
     const [marksValidation, setMarksValidation] = useState<any | null>(null);
     const [validationLoading, setValidationLoading] = useState(false);
+    const [absentees, setAbsentees] = useState<any[]>([]);
 
     // Initialize selectedTerm when settings load
     useEffect(() => {
@@ -115,6 +116,25 @@ export default function CbtManager() {
         };
         fetchValidation();
     }, [selectedExamId, selectedAssessmentTypeId, questions.length]);
+
+    useEffect(() => {
+        const fetchAbsentees = async () => {
+            if (!selectedExamId || !selectedAssessmentTypeId) {
+                setAbsentees([]);
+                return;
+            }
+            try {
+                const res = await api.get<any[]>(`/examination/cbt/sync/absentees/${selectedExamId}/${selectedAssessmentTypeId}`);
+                setAbsentees(res || []);
+            } catch {
+                setAbsentees([]);
+            }
+        };
+        fetchAbsentees();
+        // Refresh every 30 seconds if we have absentees
+        const interval = setInterval(fetchAbsentees, 30000);
+        return () => clearInterval(interval);
+    }, [selectedExamId, selectedAssessmentTypeId]);
 
     const fetchAssessmentTypes = async () => {
         const exam = exams.find(e => e.id === selectedExamId);
@@ -371,6 +391,30 @@ export default function CbtManager() {
                             </div>
                         )}
                     </div>
+
+                    {selectedExamId && selectedAssessmentTypeId && absentees.length > 0 && (
+                        <div className="bg-white dark:bg-gray-800 rounded-xl border border-rose-200 dark:border-rose-900 shadow-sm p-5 animate-pulse-subtle">
+                            <h4 className="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                <AlertTriangle className="w-3.5 h-3.5" />
+                                Makeup Pending ({absentees.length})
+                            </h4>
+                            <p className="text-[10px] text-gray-500 mb-4 leading-relaxed">
+                                The following students were marked as <strong>Absent</strong>. They must re-sync and write to clear this list.
+                            </p>
+                            <div className="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
+                                {absentees.map(st => (
+                                    <div key={st.studentId} className="flex flex-col p-2 bg-rose-50 dark:bg-rose-900/20 rounded border border-rose-100 dark:border-rose-800">
+                                        <p className="text-xs font-bold text-gray-800 dark:text-gray-200">{st.fullName}</p>
+                                        <p className="text-[10px] font-mono text-rose-600 dark:text-rose-400">{st.admissionNo}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {selectedExamId && selectedAssessmentTypeId && absentees.length === 0 && (
+                        <p className="text-[10px] text-gray-400 px-5 italic">No pending makeup exams detected for this column.</p>
+                    )}
 
                     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
                         <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Question Stats</h4>

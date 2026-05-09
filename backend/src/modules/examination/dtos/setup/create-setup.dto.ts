@@ -94,6 +94,10 @@ export class CreateExamDto {
     @IsNumber()
     @IsOptional()
     totalMarks?: number;
+
+    @IsNumber()
+    @IsOptional()
+    durationMinutes?: number;
 }
 
 export class CreateExamScheduleDto {
@@ -120,6 +124,10 @@ export class CreateExamScheduleDto {
     @IsString()
     @IsOptional()
     invigilatorName?: string;
+
+    @IsNumber()
+    @IsOptional()
+    durationMinutes?: number;
 }
 
 export class CreateAdmitCardTemplateDto {

@@ -74,7 +74,8 @@ export class ScoreImportProcessor {
                 examId,
                 assessmentTypeId,
                 score: scoreValue,
-                tenantId
+                tenantId,
+                status: item.status || 'PRESENT'
             });
 
             results.success++;

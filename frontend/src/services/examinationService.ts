@@ -426,6 +426,7 @@ export interface Exam {
     id: string;
     name: string;
     totalMarks: number;
+    durationMinutes?: number;
     subjectId: string;
     subject?: {
         id: string;
@@ -443,6 +444,7 @@ export interface ExamSchedule {
     startTime: string; // HH:mm
     endTime: string;
     venue: string;
+    durationMinutes?: number;
     invigilatorName?: string;
     exam?: Exam;
 }
@@ -450,6 +452,7 @@ export interface ExamSchedule {
 export interface CreateExamDto {
     name: string;
     totalMarks: number;
+    durationMinutes?: number;
     subjectId: string;
     classId: string;
     examGroupId: string;
@@ -461,6 +464,7 @@ export interface CreateExamScheduleDto {
     startTime: string;
     endTime: string;
     venue: string;
+    durationMinutes?: number;
     invigilatorName?: string;
 }
 

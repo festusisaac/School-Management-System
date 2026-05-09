@@ -48,6 +48,7 @@ const ExamSchedulePage = () => {
     // Modal Form State
     const [formData, setFormData] = useState({
         totalMarks: 100,
+        durationMinutes: 60,
         date: '',
         startTime: '',
         endTime: '',
@@ -174,6 +175,7 @@ const ExamSchedulePage = () => {
 
         setFormData({
             totalMarks: suggestedMarks,
+            durationMinutes: row.details?.durationMinutes || 60,
             date: row.details?.date ? new Date(row.details.date).toISOString().split('T')[0] : '',
             startTime: row.details?.startTime || '',
             endTime: row.details?.endTime || '',
@@ -195,6 +197,7 @@ const ExamSchedulePage = () => {
                 const newExam = await examinationService.createExam({
                     name: `${currentSubject.subjectName} Exam`,
                     totalMarks: formData.totalMarks,
+                    durationMinutes: formData.durationMinutes,
                     subjectId: currentSubject.subjectId,
                     classId: selectedClass,
                     examGroupId: selectedGroup
@@ -203,7 +206,8 @@ const ExamSchedulePage = () => {
             } else {
                 // Update total marks in case they changed in Assessment Structure
                 await examinationService.updateExam(examId, {
-                    totalMarks: formData.totalMarks
+                    totalMarks: formData.totalMarks,
+                    durationMinutes: formData.durationMinutes
                 });
             }
 
@@ -214,6 +218,7 @@ const ExamSchedulePage = () => {
                     startTime: formData.startTime,
                     endTime: formData.endTime,
                     venue: formData.venue,
+                    durationMinutes: formData.durationMinutes,
                     invigilatorName: formData.invigilatorName
                 });
                 showSuccess('Exam schedule updated');
@@ -224,6 +229,7 @@ const ExamSchedulePage = () => {
                     startTime: formData.startTime,
                     endTime: formData.endTime,
                     venue: formData.venue,
+                    durationMinutes: formData.durationMinutes,
                     invigilatorName: formData.invigilatorName
                 });
                 showSuccess('Exam scheduled successfully');
@@ -305,7 +311,7 @@ const ExamSchedulePage = () => {
                         </div>
                         <div className="flex items-center gap-2 text-gray-500">
                             <Clock className="w-3.5 h-3.5 text-secondary-500" />
-                            <span>{startTime} - {endTime}</span>
+                            <span>{startTime} - {endTime} <span className="text-primary-600 font-bold ml-1">({row.original.details.durationMinutes || 60} mins)</span></span>
                         </div>
                         <div className="flex items-center gap-2 text-gray-500">
                             <MapPin className="w-3.5 h-3.5 text-red-500" />
@@ -494,7 +500,22 @@ const ExamSchedulePage = () => {
                                 />
                             </div>
                         </div>
-                        <div className="md:col-span-2">
+                        <div className="md:col-span-1">
+                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Duration (Minutes)</label>
+                            <div className="relative">
+                                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <input
+                                    type="number"
+                                    required
+                                    min="1"
+                                    placeholder="e.g. 60"
+                                    className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+                                    value={formData.durationMinutes}
+                                    onChange={(e) => setFormData({ ...formData, durationMinutes: parseInt(e.target.value) || 0 })}
+                                />
+                            </div>
+                        </div>
+                        <div className="md:col-span-1">
                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Invigilator / Supervisor</label>
                             <div className="relative">
                                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />

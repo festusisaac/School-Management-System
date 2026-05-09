@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Raw } from 'typeorm';
+import { Repository, Raw, IsNull } from 'typeorm';
 import { Exam } from '../entities/exam.entity';
 import { Student } from '../../students/entities/student.entity';
 import { CbtQuestion } from '../entities/cbt-question.entity';
@@ -8,6 +8,7 @@ import { randomBytes } from 'crypto';
 
 import { ExamSchedule } from '../entities/exam-schedule.entity';
 import { AssessmentType } from '../entities/assessment-type.entity';
+import { ExamResult } from '../entities/exam-result.entity';
 
 @Injectable()
 export class CbtManifestService {
@@ -22,6 +23,8 @@ export class CbtManifestService {
         private scheduleRepository: Repository<ExamSchedule>,
         @InjectRepository(AssessmentType)
         private assessmentTypeRepository: Repository<AssessmentType>,
+        @InjectRepository(ExamResult)
+        private examResultRepo: Repository<ExamResult>,
     ) { }
 
     private async getMarksValidationPayload(examId: string, tenantId: string, assessmentTypeId?: string) {
@@ -127,14 +130,15 @@ export class CbtManifestService {
             relations: ['options']
         });
 
-        // Strip correct answers
+        // Include answers for local grading on the node
         const secureQuestions = questions.map(q => ({
             id: q.id,
             content: q.content,
             marks: q.marks,
             options: q.options.map(o => ({
                 id: o.id,
-                content: o.content
+                content: o.content,
+                isCorrect: o.isCorrect
             }))
         }));
 
@@ -155,7 +159,7 @@ export class CbtManifestService {
                 subject: exam.subject?.name,
                 className: exam.class?.name,
                 totalMarks: exam.totalMarks,
-                durationMinutes: 60, 
+                durationMinutes: schedule?.durationMinutes || exam.durationMinutes || 60, 
                 startTime: schedule?.startTime,
                 endTime: schedule?.endTime,
                 examDate: schedule?.date,
@@ -214,5 +218,58 @@ export class CbtManifestService {
         });
 
         return gradedPayload;
+    }
+
+    async getAbsentees(examId: string, assessmentTypeId: string, tenantId: string) {
+        console.log(`[CBT Absentees] Aggressive check for Exam: ${examId}, Type: ${assessmentTypeId}, Tenant: ${tenantId}`);
+        
+        // 1. Get the exam details to find the classId
+        const exam = await this.examRepository.findOne({ where: { id: examId, tenantId } });
+        if (!exam) return [];
+
+        // 2. Get all active students in this class
+        const classStudents = await this.studentRepository.find({
+            where: { classId: exam.classId, isActive: true, tenantId },
+            select: ['id', 'admissionNo', 'firstName', 'lastName']
+        });
+
+        // 3. Get all students who HAVE a 'PRESENT' result for this exam and type
+        const criteria: any = { examId, tenantId, status: 'PRESENT' };
+        if (assessmentTypeId && assessmentTypeId !== 'all' && assessmentTypeId !== 'null') {
+            criteria.assessmentTypeId = assessmentTypeId;
+        } else if (assessmentTypeId === 'null') {
+            criteria.assessmentTypeId = IsNull();
+        }
+
+        const presentResults = await this.examResultRepo.find({
+            where: criteria,
+            select: ['studentId']
+        });
+
+        // NEW: Only show the makeup list if at least one person has a result (PRESENT or ABSENT)
+        // This ensures the list doesn't clutter up before you've even started pushing for this column.
+        const anyResult = await this.examResultRepo.findOne({
+            where: { examId, tenantId, assessmentTypeId: criteria.assessmentTypeId }
+        });
+
+        if (!anyResult) {
+            console.log(`[CBT Absentees] No results pushed yet for this column. Hiding list.`);
+            return [];
+        }
+
+        const presentStudentIds = new Set(presentResults.map(r => r.studentId));
+
+        // 4. Identify who is missing (in class but not 'PRESENT')
+        const absentees = classStudents.filter(s => !presentStudentIds.has(s.id));
+
+        console.log(`[CBT Absentees] Class total: ${classStudents.length}, Present: ${presentStudentIds.size}, Missing: ${absentees.length}`);
+
+        return absentees.map(s => ({
+            studentId: s.id,
+            admissionNo: s.admissionNo,
+            fullName: `${s.firstName} ${s.lastName}`,
+            status: 'PENDING',
+            updatedAt: new Date()
+        }));
     }
 }

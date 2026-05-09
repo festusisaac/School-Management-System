@@ -36,6 +36,9 @@ export class ExamSchedule {
     @Column({ nullable: true })
     invigilatorName?: string;
 
+    @Column({ type: 'int', default: 60 })
+    durationMinutes!: number;
+
     @Column({ nullable: true })
     tenantId?: string;
 
