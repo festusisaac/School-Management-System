@@ -67,9 +67,16 @@ function AppRoutes() {
   const isInitialized = settings?.isInitialized;
   const isSetupRoute = window.location.pathname === '/setup';
 
+  // Force redirect to setup if not initialized
   if (isInitialized === false && !isSetupRoute) {
-    // Force redirect to setup if not initialized
-    return <Router><ScrollToTop /><Routes><Route path="*" element={<SetupWizard />} /></Routes></Router>;
+    return (
+      <Router>
+        <ScrollToTop />
+        <Routes>
+          <Route path="*" element={<SetupWizard />} />
+        </Routes>
+      </Router>
+    );
   }
 
   // Check if user is admin (from stored token payload)

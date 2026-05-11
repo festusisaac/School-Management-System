@@ -49,6 +49,7 @@ export class SystemSettingsService {
             seoDescription: settings.seoDescription,
             seoKeywords: settings.seoKeywords,
             ogImage: settings.ogImage,
+            isInitialized: settings.isInitialized,
         };
     }
 
