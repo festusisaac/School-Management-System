@@ -153,6 +153,11 @@ export class FeesController {
     return this.feesService.refundTransaction(id, reason, req.user.tenantId);
   }
 
+  @Post('payments/:id/email-receipt')
+  async emailReceipt(@Param('id') id: string, @Request() req: any) {
+    return this.feesService.emailReceipt(id, req.user.tenantId);
+  }
+
   // --- Debtors List ---
   @Get('debtors')
   debtors(

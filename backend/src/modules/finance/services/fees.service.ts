@@ -453,6 +453,14 @@ export class FeesService {
     }
   }
 
+  async emailReceipt(transactionId: string, tenantId: string) {
+    const tx = await this.transactionRepo.findOne({ where: { id: transactionId, tenantId } });
+    if (!tx) throw new NotFoundException('Transaction not found');
+    if (!tx.studentId) throw new BadRequestException('Transaction is not linked to a student');
+    
+    await this.sendPaymentNotifications(tx.studentId, tenantId, tx.amount, tx.reference || 'N/A', tx.paymentMethod, tx.meta);
+    return { success: true, message: 'Receipt email queued successfully.' };
+  }
 
   async getStudentStatement(studentId: string, tenantId: string) {
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(studentId);

@@ -1,6 +1,18 @@
 import { Construction, Settings, ShieldAlert } from 'lucide-react';
+import { useEffect } from 'react';
 
 export default function MaintenancePage() {
+    useEffect(() => {
+        // Tell search engines not to index this page when in maintenance mode
+        const meta = document.createElement('meta');
+        meta.name = 'robots';
+        meta.content = 'noindex, nofollow';
+        document.head.appendChild(meta);
+        return () => {
+            document.head.removeChild(meta);
+        };
+    }, []);
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center p-6">
             <div className="max-w-lg w-full text-center space-y-8">

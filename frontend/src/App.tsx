@@ -53,6 +53,7 @@ import {
 import ScrollToTop from './components/common/ScrollToTop';
 import { Toaster } from 'react-hot-toast';
 import LoadingScreen from './components/common/LoadingScreen';
+import NotFoundPage from './pages/NotFoundPage';
 import './App.css'
 
 function AppRoutes() {
@@ -328,6 +329,9 @@ function AppRoutes() {
           </Route>
           </>
         )}
+        
+        {/* Catch-all 404 Route */}
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Router>
   );

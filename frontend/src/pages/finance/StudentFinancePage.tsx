@@ -169,9 +169,10 @@ export default function StudentFinancePage() {
 
   const handleEmailReceipt = async (tx: any) => {
     try {
-      // TODO: Implement backend endpoint for emailing receipts
-      showSuccess('Receipt sent to your email!');
+      await api.post(`/finance/payments/${tx.id}/email-receipt`, {});
+      showSuccess('Receipt sent to your email successfully!');
     } catch (error) {
+      console.error('Error emailing receipt:', error);
       showError('Failed to send receipt email');
     }
   };
