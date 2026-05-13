@@ -79,8 +79,10 @@ const COLORS = ['#3B82F6', '#EC4899', '#10B981', '#F59E0B'];
 const DashboardPage: React.FC = () => {
   const { user, selectedChildId } = useAuthStore()
   const userRole = (user?.roleObject?.name || user?.role || '').toLowerCase()
+  const isViewingChildPortal = Boolean(selectedChildId)
   const isStudentOrParent = userRole === 'student' || userRole === 'parent'
   const hasDedicatedDashboard =
+    isViewingChildPortal ||
     isStudentOrParent ||
     userRole === 'teacher' ||
     userRole === 'accountant' ||
@@ -138,14 +140,14 @@ const DashboardPage: React.FC = () => {
     )
   }
 
-  if (userRole === 'parent' || (selectedChildId && isStudentOrParent)) {
+  if (userRole === 'parent') {
     if (!selectedChildId) {
       return <ParentDashboard />;
     }
     return <StudentDashboard />;
   }
 
-  if (userRole === 'student') {
+  if (isViewingChildPortal || userRole === 'student') {
     return <StudentDashboard />;
   }
 

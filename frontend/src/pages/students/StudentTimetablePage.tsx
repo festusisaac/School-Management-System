@@ -77,7 +77,7 @@ const getSubjectAbbreviation = (name: string): string => {
 
 export default function StudentTimetablePage() {
     const { user, selectedChildId, childrenList } = useAuthStore();
-    const isParent = (user?.role || user?.roleObject?.name || '').toLowerCase() === 'parent';
+    const isViewingChildPortal = Boolean(selectedChildId);
     
     const [student, setStudent] = useState<any>(null);
     const [periods, setPeriods] = useState<Period[]>([]);
@@ -86,25 +86,31 @@ export default function StudentTimetablePage() {
     const [activeTab, setActiveTab] = useState<number>(new Date().getDay() || 1); 
     const [currentTime, setCurrentTime] = useState(new Date());
 
+    const getStudentClassId = (studentData: any) => studentData?.classId || studentData?.class?.id;
+    const getStudentSectionId = (studentData: any) => studentData?.sectionId || studentData?.section?.id;
+
     const fetchData = useCallback(async () => {
-        const studentId = isParent ? selectedChildId : user?.id;
+        const studentId = selectedChildId || user?.studentId || user?.id;
         if (!studentId) return;
-        if (isParent && childrenList.length === 0) return;
+        if (isViewingChildPortal && childrenList.length === 0) return;
 
         setLoading(true);
         try {
             let studentData: any;
-            if (isParent) {
+            if (isViewingChildPortal) {
                 studentData = childrenList.find((c: any) => c.id === selectedChildId);
             } else {
                 studentData = await api.getStudentProfile();
             }
             setStudent(studentData);
 
-            if (studentData?.classId) {
+            const classId = getStudentClassId(studentData);
+            const sectionId = getStudentSectionId(studentData);
+
+            if (classId) {
                 const [periodsData, timetableData] = await Promise.all([
                     api.getPeriods(),
-                    api.getTimetable(studentData.classId, studentData.sectionId)
+                    api.getTimetable(classId, sectionId, selectedChildId || undefined)
                 ]);
                 
                 const sortedPeriods = [...periodsData].sort((a, b) => a.periodOrder - b.periodOrder);
@@ -116,7 +122,7 @@ export default function StudentTimetablePage() {
         } finally {
             setLoading(false);
         }
-    }, [user?.id, isParent, selectedChildId, childrenList]);
+    }, [user?.id, user?.studentId, isViewingChildPortal, selectedChildId, childrenList]);
 
     useEffect(() => {
         fetchData();
@@ -162,7 +168,9 @@ export default function StudentTimetablePage() {
         );
     }
 
-    if (!student?.classId) {
+    const classId = getStudentClassId(student);
+
+    if (!classId) {
         return (
             <div className="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center shadow-sm border border-gray-100 dark:border-gray-700">
                 <Info className="w-16 h-16 text-blue-500 mx-auto mb-4 opacity-50" />
@@ -184,7 +192,7 @@ export default function StudentTimetablePage() {
                         <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Class Timetable</h1>
                         <div className="mt-3 flex flex-wrap items-center gap-3">
                             <span className="px-3 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-xs font-bold rounded-full border border-primary-200 dark:border-primary-800 uppercase tracking-wider">
-                                {student.class?.name} {student.section?.name}
+                                {student.className || student.class?.name || 'Current Class'} {student.sectionName || student.section?.name || ''}
                             </span>
                             <span className="text-gray-300 dark:text-gray-600">|</span>
                             <span className="flex items-center text-sm font-medium text-gray-500 dark:text-gray-400">

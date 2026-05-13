@@ -8,7 +8,6 @@ import BatchPrintView from '../examination/setup/admit-cards/BatchPrintView';
 
 const StudentAdmitCardPage = () => {
     const { user, selectedChildId } = useAuthStore();
-    const isParent = (user?.role || user?.roleObject?.name || '').toLowerCase() === 'parent';
     const { showError } = useToast();
     const [loading, setLoading] = useState(true);
     const [dashboardData, setDashboardData] = useState<any>(null);
@@ -20,8 +19,8 @@ const StudentAdmitCardPage = () => {
     useEffect(() => {
         const fetchDashboard = async () => {
             try {
-                const targetId = isParent ? selectedChildId : (user?.id || 'me');
-                if (isParent && !targetId) {
+                const targetId = selectedChildId || user?.studentId || user?.id || 'me';
+                if (!targetId) {
                     setDashboardData(null);
                     setLoading(false);
                     return;
@@ -49,7 +48,7 @@ const StudentAdmitCardPage = () => {
         };
 
         if (user) fetchDashboard();
-    }, [user, selectedChildId, showError, isParent]);
+    }, [user, selectedChildId, showError]);
 
     if (loading) {
         return (

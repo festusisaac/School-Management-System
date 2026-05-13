@@ -11,17 +11,28 @@ import { useAuthStore } from '../../stores/authStore';
  * school-wide notices and alerts the user with a toast.
  */
 export default function NoticeNotification() {
-    const { user } = useAuthStore();
+    const { user, selectedChildId } = useAuthStore();
     const navigate = useNavigate();
 
     useEffect(() => {
         const userRole = (user?.role || user?.roleObject?.name || '').toLowerCase();
-        if (!user?.id || userRole === 'super administrator') return;
+        const userPermissions = [
+            ...(user?.permissions || []),
+            ...(user?.roleObject?.permissions?.map((permission: any) => permission.slug) || []),
+        ];
+        const canViewNotices =
+            userRole === 'super administrator' ||
+            userRole === 'student' ||
+            userRole === 'parent' ||
+            userPermissions.includes('communication:view_notices') ||
+            userPermissions.includes('communication:manage_notices');
+
+        if (!user?.id || !canViewNotices) return;
 
         const checkNewNotices = async () => {
             try {
                 const role = (user?.role || user?.roleObject?.name || 'student').toLowerCase();
-                const audience = role === 'student' || role === 'parent' 
+                const audience = selectedChildId || role === 'student' || role === 'parent' 
                     ? NoticeAudience.STUDENTS 
                     : NoticeAudience.STAFF;
 
@@ -97,7 +108,7 @@ export default function NoticeNotification() {
         // Small delay to let the dashboard render first
         const timer = setTimeout(checkNewNotices, 2000);
         return () => clearTimeout(timer);
-    }, [user, navigate]);
+    }, [user, selectedChildId, navigate]);
 
     return null;
 }

@@ -84,6 +84,7 @@ export class TimetableController {
     async getTimetable(
         @Query('classId') classId: string,
         @Query('sectionId') sectionId: string,
+        @Query('studentId') studentId: string,
         @Request() req: any
     ) {
         let resolvedClassId = classId;
@@ -105,12 +106,8 @@ export class TimetableController {
             }
         }
 
-        // Data scoping for Parents: Force the selected child's class & section
-        if (req.user.role === UserRole.PARENT) {
-            const studentId = (req.query as any).studentId;
-            if (!studentId) return [];
-
-            // Verify parent-child relationship
+        // Data scoping for child portal: Force the selected child's class & section
+        if (req.user.role !== UserRole.STUDENT && studentId) {
             const children = await this.studentsService.getMyChildren(req.user.id, req.user.tenantId);
             const student = children.find(c => c.id === studentId);
             
@@ -123,7 +120,7 @@ export class TimetableController {
         }
 
         // Data scoping for Teachers: Can only view timetables for assigned classes
-        if (req.user.role === 'teacher' || req.user.role === UserRole.TEACHER) {
+        if ((req.user.role === 'teacher' || req.user.role === UserRole.TEACHER) && !studentId) {
             const staffResult = await this.staffRepository.findOne({
                 where: { email: req.user.email, tenantId: req.user.tenantId },
                 select: ['id']

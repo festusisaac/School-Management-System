@@ -35,10 +35,9 @@ export class PermissionsGuard implements CanActivate {
       return true;
     }
 
-    // Automatically allow students and parents to view notices and download center resources
+    // These permissions are open to ALL authenticated users regardless of role
     const publicPermissions = ['communication:view_notices', 'download_center:view'];
-    if (requiredPermissions.some(p => publicPermissions.includes(p)) && 
-        (userRole === 'student' || userRole === 'parent')) {
+    if (requiredPermissions.every(p => publicPermissions.includes(p))) {
       return true;
     }
 

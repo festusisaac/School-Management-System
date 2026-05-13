@@ -5,7 +5,7 @@ import { Roles } from '../../../decorators/roles.decorator';
 
 @Controller('reporting/dashboard/admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('super admin', 'admin')
+@Roles('super admin', 'admin', 'accountant')
 export class DashboardController {
     constructor(private readonly dashboardService: DashboardService) { }
 

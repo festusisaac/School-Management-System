@@ -62,6 +62,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
     }, []);
 
     const rawRole = (user?.roleObject?.name || user?.role || '').toLowerCase().trim();
+    const isViewingChildPortal = Boolean(selectedChildId);
     const isSuperAdmin = rawRole === 'super administrator' || rawRole === 'super admin';
     const isScopedFinanceUser = rawRole === 'accountant' || rawRole === 'bursar';
     const canShowSectionSwitcher = isSuperAdmin || isScopedFinanceUser;
@@ -82,7 +83,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
 
         let cancelled = false;
         const role = (user?.role || user?.roleObject?.name || '').toLowerCase();
-        const audience = role === 'student' || role === 'parent'
+        const audience = isViewingChildPortal || role === 'student' || role === 'parent'
             ? NoticeAudience.STUDENTS
             : NoticeAudience.STAFF;
 
@@ -115,7 +116,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
             cancelled = true;
             clearInterval(interval);
         };
-    }, [activeSectionId, canViewNotices, user]);
+    }, [activeSectionId, canViewNotices, isViewingChildPortal, user]);
 
     const handleOpenNotifications = () => {
         const nextOpen = !isNotificationsOpen;
@@ -205,7 +206,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
                             className="bg-transparent border-none text-sm font-bold text-primary-800 dark:text-primary-200 focus:ring-0 cursor-pointer outline-none pl-0 pr-6 hover:text-primary-900 transition-colors w-full max-w-[150px] truncate"
                         >
                             {/* If staff/admin, allow switching back to their own portal */}
-                            {['super administrator', 'admin', 'teacher', 'staff'].includes(rawRole) && (
+                            {!['student', 'parent', 'member'].includes(rawRole) && (
                                 <option value="">My Portal</option>
                             )}
                             {childrenList.map((child: any) => (

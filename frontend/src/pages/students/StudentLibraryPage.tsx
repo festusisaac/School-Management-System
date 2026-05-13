@@ -7,7 +7,6 @@ import { useSystem } from '../../context/SystemContext';
 
 const StudentLibraryPage = () => {
     const { user, selectedChildId } = useAuthStore();
-    const isParent = (user?.role || user?.roleObject?.name || '').toLowerCase() === 'parent';
     const { showError } = useToast();
     const { getFullUrl } = useSystem();
     const [loading, setLoading] = useState(true);
@@ -17,8 +16,8 @@ const StudentLibraryPage = () => {
     useEffect(() => {
         const fetchLoans = async () => {
             try {
-                const targetId = isParent ? selectedChildId : (user?.studentId || user?.id || 'me');
-                if (isParent && !targetId) {
+                const targetId = selectedChildId || user?.studentId || user?.id || 'me';
+                if (!targetId) {
                     setLoans([]);
                     setLoading(false);
                     return;
@@ -34,7 +33,7 @@ const StudentLibraryPage = () => {
             }
         };
         if (user) fetchLoans();
-    }, [user, isParent, selectedChildId]);
+    }, [user, selectedChildId]);
 
     const activeLoans = loans.filter(l => l.status === 'active');
     const returnedLoans = loans.filter(l => l.status === 'returned');

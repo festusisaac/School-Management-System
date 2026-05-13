@@ -33,6 +33,15 @@ export class PayrollController {
         });
     }
 
+    @Get('analytics')
+    getAnalytics(
+        @Query('month') month: number,
+        @Query('year') year: number,
+        @Query('sectionId') sectionId?: string,
+    ) {
+        return this.payrollService.getAnalytics(Number(month), Number(year), sectionId);
+    }
+
     @Get(':id')
     findOne(@Param('id') id: string) {
         return this.payrollService.findOne(id);
@@ -44,15 +53,6 @@ export class PayrollController {
         @Body() updateDto: UpdatePayrollStatusDto,
     ) {
         return this.payrollService.updateStatus(id, updateDto);
-    }
-
-    @Get('analytics')
-    getAnalytics(
-        @Query('month') month: number,
-        @Query('year') year: number,
-        @Query('sectionId') sectionId?: string,
-    ) {
-        return this.payrollService.getAnalytics(Number(month), Number(year), sectionId);
     }
 
     @Delete(':id')

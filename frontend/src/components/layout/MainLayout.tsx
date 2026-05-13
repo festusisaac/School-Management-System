@@ -31,7 +31,7 @@ export function MainLayout() {
     useEffect(() => {
         const loadChildren = async () => {
             const userRole = (user?.roleObject?.name || user?.role || 'student').toLowerCase().trim();
-            const isStaffOrAdmin = ['super administrator', 'admin', 'teacher', 'staff'].includes(userRole);
+            const isStaffOrAdmin = ['super administrator', 'super admin', 'administrator', 'admin', 'teacher', 'staff', 'accountant', 'bursar'].includes(userRole) || userRole.includes('admin');
             
             if ((userRole === 'parent' || isStaffOrAdmin) && childrenList.length === 0) {
                 try {

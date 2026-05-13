@@ -36,7 +36,7 @@ export default function HomeworkPage() {
     
     // Check if user is staff (Admin/Teacher)
     const userRole = (user?.role || user?.roleObject?.name || 'student').toLowerCase();
-    const isStaff = ['admin', 'teacher', 'super admin', 'super administrator'].includes(userRole) || userRole.includes('admin');
+    const isStaff = !selectedChildId && (['admin', 'teacher', 'super admin', 'super administrator'].includes(userRole) || userRole.includes('admin'));
     const isOverdue = (dueDate: string) => isBefore(new Date(dueDate), new Date()) && format(new Date(dueDate), 'yyyy-MM-dd') !== format(new Date(), 'yyyy-MM-dd');
 
     useEffect(() => {
@@ -47,8 +47,11 @@ export default function HomeworkPage() {
         try {
             setLoading(true);
             const params: any = {};
-            if (isParent) {
-                if (!selectedChildId) return;
+            if (selectedChildId || isParent) {
+                if (!selectedChildId) {
+                    setHomeworkList([]);
+                    return;
+                }
                 params.studentId = selectedChildId;
             }
             const response = await homeworkService.getHomework(params);

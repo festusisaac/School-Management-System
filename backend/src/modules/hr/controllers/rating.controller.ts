@@ -31,6 +31,37 @@ export class RatingController {
         private readonly subjectTeacherService: SubjectTeacherService,
     ) { }
 
+    private isParentRole(role: string) {
+        return ['parent', 'member'].includes((role || '').toLowerCase().trim());
+    }
+
+    private async resolveRatingStudent(userId: string, role: string, tenantId: string, studentId?: string) {
+        const normalizedRole = (role || '').toLowerCase().trim();
+
+        if (normalizedRole === 'student') {
+            const student = await this.studentsService.findByUserId(userId);
+            if (!student) {
+                throw new NotFoundException('Student record not found');
+            }
+            return student;
+        }
+
+        if (!studentId) {
+            if (this.isParentRole(normalizedRole)) {
+                throw new BadRequestException('Student ID is required for parents');
+            }
+            throw new BadRequestException('Student ID is required when viewing a child portal.');
+        }
+
+        const children = await this.studentsService.getMyChildren(userId, tenantId);
+        const child = children.find(c => c.id === studentId);
+        if (!child) {
+            throw new ForbiddenException('You can only access teacher ratings for your own children.');
+        }
+
+        return child;
+    }
+
     @Get('my-teachers')
     async getMyTeachers(
         @CurrentUser('id') userId: string,
@@ -39,26 +70,7 @@ export class RatingController {
         @Query('studentId') studentId?: string,
         @Query('sessionId') sessionId?: string,
     ) {
-        let student: any;
-
-        if (role === 'parent') {
-            if (!studentId) {
-                throw new BadRequestException('Student ID is required for parents');
-            }
-            // Verify parent-child relationship
-            const children = await this.studentsService.getMyChildren(userId, tenantId);
-            student = children.find(c => c.id === studentId);
-            if (!student) {
-                throw new ForbiddenException('You can only view teachers for your own children.');
-            }
-        } else if (role === 'student') {
-            student = await this.studentsService.findByUserId(userId);
-            if (!student) {
-                throw new NotFoundException('Student record not found');
-            }
-        } else {
-            throw new ForbiddenException('Only students and parents can view assigned teachers for rating.');
-        }
+        const student = await this.resolveRatingStudent(userId, role, tenantId, studentId);
 
         const classId = student.classId;
         const sectionId = student.sectionId;
@@ -153,29 +165,9 @@ export class RatingController {
         @CurrentUser('role') role: string,
         @CurrentUser('tenantId') tenantId: string,
     ) {
-        let studentId = createDto.studentId;
+        const student = await this.resolveRatingStudent(userId, role, tenantId, createDto.studentId);
 
-        if (role === 'parent') {
-            if (!studentId) {
-                throw new BadRequestException('Student ID is required for parents to rate teachers');
-            }
-            // Verify parent-child relationship
-            const children = await this.studentsService.getMyChildren(userId, tenantId);
-            const child = children.find(c => c.id === studentId);
-            if (!child) {
-                throw new ForbiddenException('You can only rate teachers on behalf of your own children.');
-            }
-        } else if (role === 'student') {
-            const student = await this.studentsService.findByUserId(userId);
-            if (!student) {
-                throw new ForbiddenException('Student record not found for this user');
-            }
-            studentId = student.id;
-        } else {
-            throw new ForbiddenException('Only students and parents can rate teachers');
-        }
-
-        return this.ratingService.create(createDto, studentId);
+        return this.ratingService.create(createDto, student.id);
     }
 
     @Put(':id')

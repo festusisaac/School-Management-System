@@ -35,7 +35,6 @@ function cn(...inputs: ClassValue[]) {
 
 const StudentAttendancePage: React.FC = () => {
     const { user, selectedChildId } = useAuthStore();
-    const isParent = (user?.role || user?.roleObject?.name || '').toLowerCase() === 'parent';
     const toast = useToast();
     
     const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -51,15 +50,15 @@ const StudentAttendancePage: React.FC = () => {
     });
 
     useEffect(() => {
-        const studentId = isParent ? selectedChildId : user?.id;
+        const studentId = selectedChildId || user?.studentId || user?.id;
         if (studentId) {
             fetchAttendance();
         }
-    }, [currentMonth, user?.id, isParent, selectedChildId]);
+    }, [currentMonth, user?.id, user?.studentId, selectedChildId]);
 
     const fetchAttendance = async () => {
         try {
-            const studentId = isParent ? selectedChildId : user?.id;
+            const studentId = selectedChildId || user?.studentId || user?.id;
             if (!studentId) return;
 
             setLoading(true);

@@ -24,7 +24,7 @@ export default function NoticeboardPage() {
   const { activeSectionId } = useSystem();
 
   const userRole = (user?.role || user?.roleObject?.name || 'student').toLowerCase();
-  const audience = userRole === 'student' || userRole === 'parent' ? NoticeAudience.STUDENTS : NoticeAudience.STAFF;
+  const audience = selectedChildId || userRole === 'student' || userRole === 'parent' ? NoticeAudience.STUDENTS : NoticeAudience.STAFF;
 
   useEffect(() => {
     fetchNotices();

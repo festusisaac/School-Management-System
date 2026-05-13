@@ -31,7 +31,6 @@ import { printReceipt } from './utils/printReceipt';
 
 export default function StudentFinancePage() {
   const { user, selectedChildId } = useAuthStore();
-  const isParent = (user?.role || user?.roleObject?.name || '').toLowerCase() === 'parent';
   const { showError, showSuccess } = useToast();
   const { getSchoolInfo } = useSystem();
   
@@ -51,7 +50,7 @@ export default function StudentFinancePage() {
   const [itemsPerPage] = useState(10);
   const [showInsights, setShowInsights] = useState(false);
 
-  const studentId = isParent ? selectedChildId : user?.id;
+  const studentId = selectedChildId || user?.studentId || user?.id;
 
   const fetchData = useCallback(async () => {
     if (!studentId) return;

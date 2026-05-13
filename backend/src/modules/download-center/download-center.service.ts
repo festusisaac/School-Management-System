@@ -58,6 +58,7 @@ export class DownloadCenterService {
     this.applyFilters(qb, filters);
 
     const role = this.getRole(user);
+
     if (role === 'student') {
       const student = await this.resolveStudent(user, tenantId);
       if (!student) return [];
@@ -83,7 +84,12 @@ export class DownloadCenterService {
         scoped.where('resource.classId IS NULL OR resource.classId = :classId', { classId: student.classId || null });
         scoped.andWhere('resource.sectionId IS NULL OR resource.sectionId = :sectionId', { sectionId: student.sectionId || null });
       }));
-    } else if (!this.isStaffRole(role)) {
+    } else if (this.isStaffRole(role)) {
+      // Staff see published resources scoped to their role's visibility
+      const allowedVisibilities = this.getAllowedVisibilitiesForRole(role);
+      qb.andWhere('resource.status = :published', { published: DownloadResourceStatus.PUBLISHED });
+      qb.andWhere('resource.visibility IN (:...visibility)', { visibility: allowedVisibilities });
+    } else {
       throw new ForbiddenException('You do not have permission to view download resources.');
     }
 
@@ -113,6 +119,11 @@ export class DownloadCenterService {
       }
       const student = await this.resolveParentStudent(user.id, studentId, tenantId);
       if (!this.canAccessAsLearner(resource, student.classId, student.sectionId, [DownloadResourceVisibility.ALL, DownloadResourceVisibility.PARENTS, DownloadResourceVisibility.STUDENTS, DownloadResourceVisibility.PUBLIC])) {
+        throw new ForbiddenException('You do not have access to this resource.');
+      }
+    } else if (this.isStaffRole(role)) {
+      const allowedVisibilities = this.getAllowedVisibilitiesForRole(role);
+      if (resource.status !== DownloadResourceStatus.PUBLISHED || !allowedVisibilities.includes(resource.visibility)) {
         throw new ForbiddenException('You do not have access to this resource.');
       }
     }
@@ -205,7 +216,33 @@ export class DownloadCenterService {
   }
 
   private isStaffRole(role: string) {
-    return ['admin', 'administrator', 'super admin', 'super administrator', 'teacher', 'librarian'].includes(role) || role.includes('admin');
+    const allowedRoles = ['admin', 'administrator', 'super admin', 'super administrator', 'teacher', 'librarian', 'accountant', 'staff', 'parent'];
+    return allowedRoles.includes(role) || role.includes('admin');
+  }
+
+  /**
+   * Returns the visibility values a given staff role is allowed to see.
+   * Admins/Super Admins can see all visibilities.
+   * Other staff see resources for their own role + staff + all + public.
+   */
+  private getAllowedVisibilitiesForRole(role: string): DownloadResourceVisibility[] {
+    const base = [DownloadResourceVisibility.ALL, DownloadResourceVisibility.PUBLIC, DownloadResourceVisibility.STAFF];
+
+    if (role.includes('admin')) {
+      // Admins see everything
+      return Object.values(DownloadResourceVisibility);
+    }
+    if (role === 'teacher') {
+      return [...base, DownloadResourceVisibility.TEACHERS];
+    }
+    if (role === 'accountant') {
+      return [...base, DownloadResourceVisibility.ACCOUNTANTS];
+    }
+    if (role === 'librarian') {
+      return [...base, DownloadResourceVisibility.LIBRARIANS];
+    }
+    // Generic staff
+    return base;
   }
 
   private async resolveStudent(user: any, tenantId: string) {

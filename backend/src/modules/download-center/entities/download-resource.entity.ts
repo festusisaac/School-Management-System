@@ -30,10 +30,13 @@ export enum DownloadResourceStatus {
 }
 
 export enum DownloadResourceVisibility {
-  ALL = 'all',
+  ALL = 'all',               // Students + Parents + Staff
   STUDENTS = 'students',
   PARENTS = 'parents',
-  STAFF = 'staff',
+  STAFF = 'staff',           // All staff roles
+  TEACHERS = 'teachers',
+  ACCOUNTANTS = 'accountants',
+  LIBRARIANS = 'librarians',
   PUBLIC = 'public',
 }
 

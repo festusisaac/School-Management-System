@@ -50,7 +50,7 @@ interface OnlineClassesPageProps {
 }
 
 export default function OnlineClassesPage({ view = 'active' }: OnlineClassesPageProps) {
-    const { user, selectedChildId } = useAuthStore();
+    const { user, selectedChildId, childrenList } = useAuthStore();
     const isParent = (user?.role || user?.roleObject?.name || '').toLowerCase() === 'parent';
     const toast = useToast();
     const [classes, setClasses] = useState<OnlineClass[]>([]);
@@ -61,15 +61,15 @@ export default function OnlineClassesPage({ view = 'active' }: OnlineClassesPage
     
     // Check if user is staff (Admin/Teacher)
     const userRole = (user?.role || user?.roleObject?.name || 'student').toLowerCase();
-    const isStaff = ['admin', 'teacher', 'super admin', 'super administrator'].includes(userRole) || userRole.includes('admin');
+    const isStaff = !selectedChildId && (['admin', 'teacher', 'super admin', 'super administrator'].includes(userRole) || userRole.includes('admin'));
 
     useEffect(() => {
         fetchClasses();
-    }, [view, selectedChildId]);
+    }, [view, selectedChildId, childrenList]);
 
     const fetchClasses = async () => {
         try {
-            if (isParent && !selectedChildId) {
+            if ((isParent || selectedChildId) && !selectedChildId) {
                 setClasses([]);
                 setLoading(false);
                 return;
@@ -80,9 +80,10 @@ export default function OnlineClassesPage({ view = 'active' }: OnlineClassesPage
             let endpoint = (!isStaff || view === 'all') ? '/online-classes' : 
                             (view === 'completed' ? '/online-classes?status=COMPLETED' : '/online-classes');
             
-            if (isParent) {
+            if (selectedChildId) {
+                const selectedChild = childrenList.find((child: any) => child.id === selectedChildId);
                 const separator = endpoint.includes('?') ? '&' : '?';
-                endpoint += `${separator}classId=${selectedChildId}`;
+                endpoint += `${separator}classId=${selectedChild?.classId || selectedChildId}`;
             }
 
             const response = await api.get(endpoint);

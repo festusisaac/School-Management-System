@@ -341,17 +341,6 @@ export class StaffService {
             }
         }
 
-        // Check for duplicate biometric ID if being updated
-        if (data.biometricId && data.biometricId !== staff.biometricId) {
-            const existing = await this.staffRepository.findOne({
-                where: { biometricId: data.biometricId, tenantId },
-            });
-
-            if (existing) {
-                throw new ConflictException(`Staff member with Biometric ID ${data.biometricId} already exists`);
-            }
-        }
-
         const updateData: any = { ...data };
 
         if (updateData.departmentId === '') {
@@ -360,6 +349,21 @@ export class StaffService {
 
         if (updateData.roleId === '') {
             updateData.roleId = null;
+        }
+
+        if (updateData.biometricId === '') {
+            updateData.biometricId = null;
+        }
+
+        // Check for duplicate biometric ID if being updated
+        if (updateData.biometricId && updateData.biometricId !== staff.biometricId) {
+            const existing = await this.staffRepository.findOne({
+                where: { biometricId: updateData.biometricId, tenantId },
+            });
+
+            if (existing) {
+                throw new ConflictException(`Staff member with Biometric ID ${updateData.biometricId} already exists`);
+            }
         }
 
         let resolvedRoleName = staff.role || 'staff';

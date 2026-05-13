@@ -132,7 +132,7 @@ export default function DownloadCenterPage() {
   
   // Legacy role check for display purposes
   const role = (user?.roleObject?.name || user?.role || 'student').toLowerCase();
-  const isStaff = ['admin', 'administrator', 'super administrator', 'teacher'].includes(role) || role.includes('admin');
+  const isStaff = !selectedChildId && (['admin', 'administrator', 'super administrator', 'teacher'].includes(role) || role.includes('admin'));
 
   const [resources, setResources] = useState<DownloadResource[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
@@ -660,11 +660,20 @@ export default function DownloadCenterPage() {
               <label>
                 <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-500">Visibility</span>
                 <select value={form.visibility} onChange={(e) => setForm({ ...form, visibility: e.target.value })} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white">
-                  <option value="students">Students</option>
-                  <option value="parents">Parents</option>
-                  <option value="all">Students and parents</option>
-                  <option value="staff">Staff</option>
-                  <option value="public">Public</option>
+                  <optgroup label="Learners">
+                    <option value="students">Students only</option>
+                    <option value="parents">Parents only</option>
+                    <option value="all">Everyone (Students &amp; Parents)</option>
+                  </optgroup>
+                  <optgroup label="Staff">
+                    <option value="staff">All Staff</option>
+                    <option value="teachers">Teachers only</option>
+                    <option value="accountants">Accountants only</option>
+                    <option value="librarians">Librarians only</option>
+                  </optgroup>
+                  <optgroup label="Other">
+                    <option value="public">Public (Anyone)</option>
+                  </optgroup>
                 </select>
               </label>
 

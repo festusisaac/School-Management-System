@@ -9,7 +9,6 @@ import { useSystem } from '../../context/SystemContext';
 
 const StudentResultPage = () => {
     const { user, selectedChildId } = useAuthStore();
-    const isParent = (user?.role || user?.roleObject?.name || '').toLowerCase() === 'parent';
     const { showError, showSuccess } = useToast();
     const { settings } = useSystem();
     const reportCardConfig = resolveReportCardConfig(settings);
@@ -32,8 +31,7 @@ const StudentResultPage = () => {
     useEffect(() => {
         const fetchDashboard = async () => {
             try {
-                const targetId = isParent ? selectedChildId : (user?.id || 'me');
-                if (isParent && !targetId) return;
+                const targetId = selectedChildId || user?.studentId || user?.id || 'me';
                 const data = await api.getStudentExamDashboard(targetId);
                 setDashboardUnavailable(false);
                 if (data.examGroups) {
@@ -58,7 +56,7 @@ const StudentResultPage = () => {
         };
 
         if (user) fetchDashboard();
-    }, [user, isParent, selectedChildId]);
+    }, [user, selectedChildId]);
 
     const handleVerify = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -66,8 +64,7 @@ const StudentResultPage = () => {
         setResultData(null);
         
         try {
-            const targetId = isParent ? selectedChildId : (user?.id || 'me');
-            if (isParent && !targetId) return;
+            const targetId = selectedChildId || user?.studentId || user?.id || 'me';
 
             const result = await api.verifyStudentResult(targetId, {
                 examGroupId: form.examGroupId,

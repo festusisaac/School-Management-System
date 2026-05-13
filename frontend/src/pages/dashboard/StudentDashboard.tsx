@@ -19,7 +19,7 @@ const StudentDashboard: React.FC = () => {
     const [studentProfile, setStudentProfile] = useState<any>(null);
     const [dashboardData, setDashboardData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const isParent = (user?.role || user?.roleObject?.name || '').toLowerCase() === 'parent';
+    const isViewingChildPortal = Boolean(selectedChildId);
 
     useEffect(() => {
         const fetchDashboardInfo = async () => {
@@ -29,7 +29,7 @@ const StudentDashboard: React.FC = () => {
                     termId: currentTermId || undefined
                 };
 
-                if (isParent) {
+                if (isViewingChildPortal) {
                     if (!selectedChildId) return;
                     const childProfile = childrenList.find((c: any) => c.id === selectedChildId);
                     setStudentProfile(childProfile);
@@ -54,7 +54,7 @@ const StudentDashboard: React.FC = () => {
             }
         };
         fetchDashboardInfo();
-    }, [isParent, selectedChildId, childrenList, currentSessionId, currentTermId]);
+    }, [isViewingChildPortal, selectedChildId, childrenList, currentSessionId, currentTermId]);
     
     // Real Data from API or fallbacks
     const stats = dashboardData?.stats || {
@@ -115,7 +115,7 @@ const StudentDashboard: React.FC = () => {
                 <div className="absolute top-0 right-0 w-64 h-64 bg-primary-50 dark:bg-primary-900/10 rounded-full blur-3xl -mr-20 -mt-20"></div>
                 <div className="relative z-10">
                     <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-                         {isParent ? `Viewing ${studentProfile?.firstName}'s Portal` : `Welcome back, ${user?.firstName}!`}
+                         {isViewingChildPortal ? `Viewing ${studentProfile?.firstName}'s Portal` : `Welcome back, ${user?.firstName}!`}
                     </h1>
                     <div className="mt-2 flex flex-wrap items-center gap-4 text-sm">
                         <span className="flex items-center text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full font-medium shadow-sm">

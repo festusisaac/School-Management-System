@@ -46,7 +46,6 @@ export default function StudentProfile() {
     const [communications, setCommunications] = useState<any[]>([]);
     const [loadingCommunications, setLoadingCommunications] = useState(false);
     const { selectedChildId, user } = useAuthStore();
-    const isParent = (user?.role || user?.roleObject?.name || '').toLowerCase() === 'parent';
     const isSuperAdmin = (user?.role || user?.roleObject?.name || '').toLowerCase().includes('super');
 
     // Document States
@@ -175,7 +174,7 @@ export default function StudentProfile() {
             if (!id) return;
             try {
                 let data;
-                const targetId = (id === 'me' && isParent) ? selectedChildId : id;
+                const targetId = (id === 'me' && selectedChildId) ? selectedChildId : id;
                 
                 if (targetId === 'me') {
                     data = await api.getStudentProfile();
@@ -192,7 +191,7 @@ export default function StudentProfile() {
             }
         };
         fetchStudent();
-    }, [id, selectedChildId, isParent]);
+    }, [id, selectedChildId]);
 
     useEffect(() => {
         if (activeTab === 'Fees' && student?.id && !statement) {

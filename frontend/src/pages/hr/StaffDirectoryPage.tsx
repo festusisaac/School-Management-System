@@ -565,6 +565,17 @@ const StaffDirectoryPage = () => {
 
                                     setSubmitting(true);
                                     const formData = new FormData(e.currentTarget);
+
+                                    // Department is optional: don't send an empty value.
+                                    const departmentId = formData.get('departmentId');
+                                    if (typeof departmentId === 'string' && departmentId.trim() === '') {
+                                        formData.delete('departmentId');
+                                    }
+
+                                    const biometricId = formData.get('biometricId');
+                                    if (typeof biometricId === 'string' && biometricId.trim() === '') {
+                                        formData.delete('biometricId');
+                                    }
                                     
                                     // Append multi-select sections array
                                     selectedSectionIds.forEach(id => formData.append('sectionIds', id));
@@ -672,7 +683,7 @@ const StaffDirectoryPage = () => {
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Department</label>
                                                         <select name="departmentId" defaultValue={editingStaff?.departmentId} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 outline-none focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                                                            <option value="">Select</option>
+                                                            <option value="">Select (Optional)</option>
                                                             {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                                                         </select>
                                                     </div>

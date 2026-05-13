@@ -30,7 +30,6 @@ const StudentRatingPage: React.FC = () => {
     const currentSessionId = settings?.currentSessionId;
     const currentTermId = settings?.currentTermId;
     const { user, selectedChildId } = useAuthStore();
-    const isParent = (user?.role || user?.roleObject?.name || '').toLowerCase() === 'parent';
     const [teachers, setTeachers] = useState<Teacher[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
@@ -47,8 +46,8 @@ const StudentRatingPage: React.FC = () => {
 
     const fetchMyTeachers = async () => {
         try {
-            const targetId = isParent ? selectedChildId : undefined;
-            if (isParent && !targetId) {
+            const targetId = selectedChildId || undefined;
+            if (selectedChildId === null && (user?.role || user?.roleObject?.name || '').toLowerCase() === 'parent') {
                 setTeachers([]);
                 setLoading(false);
                 return;
@@ -78,7 +77,7 @@ const StudentRatingPage: React.FC = () => {
             await api.createRating({
                 ...data,
                 teacherId: selectedTeacher?.id,
-                studentId: isParent ? selectedChildId : undefined
+                studentId: selectedChildId || undefined
             });
             setShowModal(false);
             setSuccessMessage(true);

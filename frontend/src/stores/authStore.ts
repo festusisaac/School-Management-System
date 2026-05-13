@@ -19,7 +19,7 @@ interface AuthStore {
 
 const canRetainChildPortalContext = (user: any | null) => {
   const role = (user?.roleObject?.name || user?.role || '').toLowerCase().trim()
-  return ['parent', 'member'].includes(role)
+  return ['parent', 'member', 'teacher', 'staff', 'admin', 'administrator', 'super admin', 'super administrator', 'accountant', 'bursar'].includes(role) || role.includes('admin')
 }
 
 const syncDependentSessionState = (user: any | null, currentState: Pick<AuthStore, 'childrenList' | 'selectedChildId'>) => {
