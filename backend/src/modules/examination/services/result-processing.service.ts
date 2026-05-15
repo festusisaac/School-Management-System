@@ -148,7 +148,7 @@ export class ResultProcessingService {
                             studentId: record.studentId,
                             classId: dto.classId,
                             date: Between(new Date(examGroup.startDate).toISOString().split('T')[0], new Date(examGroup.endDate).toISOString().split('T')[0]) as any,
-                            status: In([AttendanceStatus.PRESENT, AttendanceStatus.LATE, 'Half-Day']),
+                            status: In([AttendanceStatus.PRESENT, AttendanceStatus.LATE, AttendanceStatus.HALFDAY]),
                             tenantId,
                             sessionId: sessionId || IsNull()
                         }
@@ -326,6 +326,56 @@ export class ResultProcessingService {
             });
         }
 
+        // 5.5 Fetch Real-time Attendance Data
+        const attendanceMap = new Map<string, { present: number, opened: number }>();
+        if (currentGroup?.startDate && currentGroup?.endDate) {
+            const rangeStart = new Date(currentGroup.startDate).toISOString().split('T')[0];
+            const rangeEnd = new Date(currentGroup.endDate).toISOString().split('T')[0];
+
+            // Calculate actual days opened for the class
+            const attendanceDates = await this.attendanceRepo
+                .createQueryBuilder('attendance')
+                .select('DISTINCT(attendance.date)', 'date')
+                .where('attendance.classId = :classId', { classId })
+                .andWhere('attendance.date BETWEEN :start AND :end', { start: rangeStart, end: rangeEnd })
+                .andWhere('attendance.tenantId = :tenantId', { tenantId })
+                .andWhere(sessionId ? 'attendance.sessionId = :sessionId' : 'attendance.sessionId IS NULL', sessionId ? { sessionId } : {})
+                .getRawMany();
+
+            const actualDaysOpened = attendanceDates.length;
+            const termDaysOpened = termDetails?.daysOpened || 0;
+            const finalDaysOpened = termDaysOpened > 0 ? termDaysOpened : actualDaysOpened;
+
+            // Aggregate present counts for all students in this class
+            const presenceQuery = this.attendanceRepo
+                .createQueryBuilder('attendance')
+                .select('attendance.studentId', 'studentId')
+                .addSelect('COUNT(attendance.id)', 'count')
+                .where('attendance.classId = :classId', { classId })
+                .andWhere('attendance.date BETWEEN :start AND :end', { start: rangeStart, end: rangeEnd })
+                .andWhere('attendance.status IN (:...statuses)', { statuses: [AttendanceStatus.PRESENT, AttendanceStatus.LATE, AttendanceStatus.HALFDAY] })
+                .andWhere('attendance.tenantId = :tenantId', { tenantId });
+            
+            if (sessionId) {
+                presenceQuery.andWhere('attendance.sessionId = :sessionId', { sessionId });
+            }
+
+            const presenceResults = await presenceQuery
+                .groupBy('attendance.studentId')
+                .getRawMany();
+
+            presenceResults.forEach(r => {
+                attendanceMap.set(r.studentId, { present: parseInt(r.count), opened: finalDaysOpened });
+            });
+            
+            // Ensure all students have a record in the map
+            allStudents.forEach(s => {
+                if (!attendanceMap.has(s.id)) {
+                    attendanceMap.set(s.id, { present: 0, opened: finalDaysOpened });
+                }
+            });
+        }
+
         const sortedOverallTotals = Array.from(studentOverallTotals.values()).sort((a, b) => b - a);
         const liveResults = allStudents.map(student => {
             const totalScore = studentOverallTotals.get(student.id) || 0;
@@ -341,8 +391,8 @@ export class ResultProcessingService {
                 averageScore: subjectStatsMap.size > 0 ? totalScore / subjectStatsMap.size : 0, // Approx avg
                 position,
                 status: saved ? saved.status : 'DRAFT',
-                daysPresent: saved ? saved.daysPresent : 0,
-                daysOpened: saved ? saved.daysOpened : 0,
+                daysPresent: attendanceMap.get(student.id)?.present || (saved ? saved.daysPresent : 0),
+                daysOpened: attendanceMap.get(student.id)?.opened || (saved ? saved.daysOpened : 0),
                 principalComment: saved?.principalComment || undefined,
                 teacherComment: saved?.teacherComment || undefined,
             };
