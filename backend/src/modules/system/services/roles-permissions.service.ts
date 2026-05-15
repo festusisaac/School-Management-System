@@ -129,9 +129,9 @@ export class RolesPermissionsService implements OnModuleInit {
       { slug: 'download_center:manage', name: 'Manage Resources', module: 'Download Center', description: 'Upload and organize downloadable content' },
 
       // Lesson Notes
-      { slug: 'academics:lesson_notes_view', name: 'View Lesson Notes', module: 'Academics', description: 'Read-only access to approved lesson notes and plans' },
-      { slug: 'academics:lesson_notes_manage', name: 'Manage Lesson Notes', module: 'Academics', description: 'Create, edit, and submit lesson notes and plans' },
-      { slug: 'academics:lesson_notes_approve', name: 'Approve Lesson Notes', module: 'Academics', description: 'Review, comment, and approve/reject lesson note submissions' },
+      { slug: 'lesson_notes:view', name: 'View Lesson Notes', module: 'Lesson Notes', description: 'Read-only access to approved lesson notes and plans' },
+      { slug: 'lesson_notes:manage', name: 'Manage Lesson Notes', module: 'Lesson Notes', description: 'Create, edit, and submit lesson notes and plans' },
+      { slug: 'lesson_notes:approve', name: 'Approve Lesson Notes', module: 'Lesson Notes', description: 'Review, comment, and approve/reject lesson note submissions' },
 
       // Audit & Reports
       { slug: 'audit_reports:view', name: 'Audit & Reports Module', module: 'Audit & Reports', description: 'Access audit dashboards, activity logs, communication audit, and report hub' },
@@ -213,6 +213,10 @@ export class RolesPermissionsService implements OnModuleInit {
     let permission = await this.permissionRepository.findOne({ where: { slug } });
     if (!permission) {
         permission = this.permissionRepository.create({ slug, name, module, description });
+        await this.permissionRepository.save(permission);
+    } else if (permission.module !== module || permission.description !== description) {
+        permission.module = module;
+        permission.description = description;
         await this.permissionRepository.save(permission);
     }
     return permission;

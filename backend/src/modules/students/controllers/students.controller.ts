@@ -140,11 +140,13 @@ export class StudentsController {
         if (!req.user?.tenantId) throw new ForbiddenException('Tenant context missing');
         const userPermissions = Array.isArray(req.user?.permissions) ? req.user.permissions : [];
         const canViewDirectory = userPermissions.includes('students:view_directory');
+        const canMarkAttendance = userPermissions.includes('attendance:mark');
+        const canEnterExamination = userPermissions.includes('examination:entry');
         const canAccessFinanceStudentLookup = userPermissions.some((permission: string) =>
             ['finance:collect_fees', 'finance:manage_fee_structure', 'finance:view_reports'].includes(permission),
         );
 
-        if (!canViewDirectory && !canAccessFinanceStudentLookup) {
+        if (!canViewDirectory && !canAccessFinanceStudentLookup && !canMarkAttendance && !canEnterExamination) {
             throw new ForbiddenException('Insufficient granular permissions');
         }
 

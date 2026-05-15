@@ -1,4 +1,4 @@
-import { Bell, Menu, Search, Sun, Moon, LogOut, User as UserIcon, Settings as SettingsIcon, Calendar } from 'lucide-react';
+import { Bell, Menu, Search, Sun, Moon, LogOut, User as UserIcon, Settings as SettingsIcon, Calendar, Loader2, Users, BookOpen, Layout } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useSystem } from '../../context/SystemContext';
 import { useState, useRef, useEffect } from 'react';
@@ -20,6 +20,15 @@ export function TopBar({ onMenuClick }: TopBarProps) {
     const [loadingNotifications, setLoadingNotifications] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const notificationsRef = useRef<HTMLDivElement>(null);
+    const searchRef = useRef<HTMLDivElement>(null);
+    const searchInputRef = useRef<HTMLInputElement>(null);
+
+    // Search State
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<{ students: any[], staff: any[], modules: any[] }>({ students: [], staff: [], modules: [] });
+    const [isSearching, setIsSearching] = useState(false);
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [selectedIndex, setSelectedIndex] = useState(-1);
 
     const { user, logout, childrenList, selectedChildId, setSelectedChildId } = useAuthStore();
     
@@ -56,10 +65,74 @@ export function TopBar({ onMenuClick }: TopBarProps) {
             if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
                 setIsNotificationsOpen(false);
             }
+            if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+                setIsSearchOpen(false);
+            }
         };
         document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+                event.preventDefault();
+                searchInputRef.current?.focus();
+            }
+            if (event.key === 'Escape') {
+                setIsSearchOpen(false);
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('keydown', handleKeyDown);
+        };
     }, []);
+
+    // Global Search Effect
+    useEffect(() => {
+        if (!searchQuery || searchQuery.length < 2) {
+            setSearchResults({ students: [], staff: [], modules: [] });
+            setIsSearchOpen(false);
+            return;
+        }
+
+        const timer = setTimeout(async () => {
+            setIsSearching(true);
+            setIsSearchOpen(true);
+            try {
+                const results = await api.globalSearch(searchQuery);
+                setSearchResults(results);
+                setSelectedIndex(-1);
+            } catch (error) {
+                console.error('Search failed:', error);
+            } finally {
+                setIsSearching(false);
+            }
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
+    const allResults = [
+        ...searchResults.modules,
+        ...searchResults.students,
+        ...searchResults.staff,
+    ];
+
+    const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setSelectedIndex(prev => (prev < allResults.length - 1 ? prev + 1 : prev));
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setSelectedIndex(prev => (prev > 0 ? prev - 1 : prev));
+        } else if (e.key === 'Enter' && selectedIndex >= 0) {
+            const selected = allResults[selectedIndex];
+            navigate(selected.link);
+            setIsSearchOpen(false);
+            setSearchQuery('');
+        }
+    };
 
     const rawRole = (user?.roleObject?.name || user?.role || '').toLowerCase().trim();
     const isViewingChildPortal = Boolean(selectedChildId);
@@ -167,13 +240,161 @@ export function TopBar({ onMenuClick }: TopBarProps) {
                 </div>
 
                 {/* Search Bar */}
-                <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg border border-transparent focus-within:border-primary-100 dark:focus-within:border-gray-600 focus-within:bg-white dark:focus-within:bg-gray-800 focus-within:ring-2 focus-within:ring-primary-100/50 transition-all">
-                    <Search className="w-4 h-4 text-gray-400" />
-                    <input
-                        type="text"
-                        placeholder="Search anything..."
-                        className="bg-transparent border-none outline-none text-sm placeholder:text-gray-400 text-gray-700 dark:text-gray-200 w-64"
-                    />
+                <div className="hidden md:block relative" ref={searchRef}>
+                    <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg border border-transparent focus-within:border-primary-100 dark:focus-within:border-gray-600 focus-within:bg-white dark:focus-within:bg-gray-800 focus-within:ring-2 focus-within:ring-primary-100/50 transition-all">
+                        {isSearching ? (
+                            <Loader2 className="w-4 h-4 text-primary-500 animate-spin" />
+                        ) : (
+                            <Search className="w-4 h-4 text-gray-400" />
+                        )}
+                        <input
+                            ref={searchInputRef}
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onKeyDown={handleSearchKeyDown}
+                            onFocus={() => searchQuery.length >= 2 && setIsSearchOpen(true)}
+                            placeholder="Search anything... (Ctrl + K)"
+                            className="bg-transparent border-none outline-none text-sm placeholder:text-gray-400 text-gray-700 dark:text-gray-200 w-64"
+                        />
+                    </div>
+
+                    {/* Search Results Dropdown */}
+                    {isSearchOpen && (allResults.length > 0 || isSearching) && (
+                        <div className="absolute left-0 mt-2 w-[400px] bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 z-[100]">
+                            <div className="max-h-[450px] overflow-y-auto p-2">
+                                {isSearching && allResults.length === 0 ? (
+                                    <div className="p-8 text-center">
+                                        <Loader2 className="w-8 h-8 text-primary-500 animate-spin mx-auto mb-2" />
+                                        <p className="text-sm text-gray-500">Searching the system...</p>
+                                    </div>
+                                ) : allResults.length > 0 ? (
+                                    <div className="space-y-4">
+                                        {/* Modules */}
+                                        {searchResults.modules.length > 0 && (
+                                            <div>
+                                                <h3 className="px-3 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                                                    <Layout className="w-3 h-3" /> Navigation
+                                                </h3>
+                                                {searchResults.modules.map((res, idx) => {
+                                                    const isSelected = selectedIndex === idx;
+                                                    return (
+                                                        <button
+                                                            key={`mod-${idx}`}
+                                                            onClick={() => {
+                                                                navigate(res.link);
+                                                                setIsSearchOpen(false);
+                                                                setSearchQuery('');
+                                                            }}
+                                                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${isSelected ? 'bg-primary-50 dark:bg-primary-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
+                                                        >
+                                                            <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                                                                <Layout className="w-4 h-4" />
+                                                            </div>
+                                                            <div>
+                                                                <p className={`text-sm font-bold ${isSelected ? 'text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-200'}`}>{res.title}</p>
+                                                                <p className="text-[10px] text-gray-500">{res.subtitle}</p>
+                                                            </div>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+
+                                        {/* Students */}
+                                        {searchResults.students.length > 0 && (
+                                            <div>
+                                                <h3 className="px-3 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                                                    <Users className="w-3 h-3" /> Students
+                                                </h3>
+                                                {searchResults.students.map((res, idx) => {
+                                                    const actualIdx = idx + searchResults.modules.length;
+                                                    const isSelected = selectedIndex === actualIdx;
+                                                    return (
+                                                        <button
+                                                            key={`stu-${res.id}`}
+                                                            onClick={() => {
+                                                                navigate(res.link);
+                                                                setIsSearchOpen(false);
+                                                                setSearchQuery('');
+                                                            }}
+                                                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${isSelected ? 'bg-primary-50 dark:bg-primary-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
+                                                        >
+                                                            {res.photo ? (
+                                                                <img src={getFileUrl(res.photo)} className="w-8 h-8 rounded-full object-cover" />
+                                                            ) : (
+                                                                <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-200 text-[10px] font-bold">
+                                                                    {res.title.charAt(0)}
+                                                                </div>
+                                                            )}
+                                                            <div>
+                                                                <p className={`text-sm font-bold ${isSelected ? 'text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-200'}`}>{res.title}</p>
+                                                                <p className="text-[10px] text-gray-500">{res.subtitle}</p>
+                                                            </div>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+
+                                        {/* Staff */}
+                                        {searchResults.staff.length > 0 && (
+                                            <div>
+                                                <h3 className="px-3 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                                                    <UserIcon className="w-3 h-3" /> Staff Members
+                                                </h3>
+                                                {searchResults.staff.map((res, idx) => {
+                                                    const actualIdx = idx + searchResults.modules.length + searchResults.students.length;
+                                                    const isSelected = selectedIndex === actualIdx;
+                                                    return (
+                                                        <button
+                                                            key={`sta-${res.id}`}
+                                                            onClick={() => {
+                                                                navigate(res.link);
+                                                                setIsSearchOpen(false);
+                                                                setSearchQuery('');
+                                                            }}
+                                                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${isSelected ? 'bg-primary-50 dark:bg-primary-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
+                                                        >
+                                                            {res.photo ? (
+                                                                <img src={getFileUrl(res.photo)} className="w-8 h-8 rounded-full object-cover" />
+                                                            ) : (
+                                                                <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center text-indigo-700 dark:text-indigo-200 text-[10px] font-bold">
+                                                                    {res.title.charAt(0)}
+                                                                </div>
+                                                            )}
+                                                            <div>
+                                                                <p className={`text-sm font-bold ${isSelected ? 'text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-200'}`}>{res.title}</p>
+                                                                <p className="text-[10px] text-gray-500">{res.subtitle}</p>
+                                                            </div>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="p-8 text-center">
+                                        <p className="text-sm text-gray-500">No results found for "{searchQuery}"</p>
+                                    </div>
+                                )}
+                            </div>
+                            
+                            <div className="px-4 py-2 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-1">
+                                        <kbd className="px-1.5 py-0.5 text-[10px] font-sans font-semibold text-gray-400 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md">↑↓</kbd>
+                                        <span className="text-[10px] text-gray-400">Navigate</span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <kbd className="px-1.5 py-0.5 text-[10px] font-sans font-semibold text-gray-400 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md">↵</kbd>
+                                        <span className="text-[10px] text-gray-400">Select</span>
+                                    </div>
+                                </div>
+                                <span className="text-[10px] text-gray-400">Esc to close</span>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 

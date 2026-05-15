@@ -650,13 +650,18 @@ export class StaffService {
             classesToday = parseInt(result[0]?.count || '0', 10);
         } catch (e) { console.error('Dashboard: classesToday query error', e); }
 
-        // 2. Total Students (unique students in classes this teacher teaches via timetable)
+        // 2. Total Students (unique students in classes where teacher is assigned as Class Teacher, Subject Teacher, or via Timetable)
         let totalStudents = 0;
         try {
             const result = await manager.query(
                 `SELECT COUNT(DISTINCT s.id) as count FROM "students" s 
-                 INNER JOIN "timetables" t ON s."classId" = t."classId" 
-                 WHERE t."teacherId" = $1 AND t."tenantId" = $2`,
+                 WHERE s."tenantId" = $2 AND (
+                    s."classId" IN (SELECT id FROM "classes" WHERE "classTeacherId" = $1 AND "tenantId" = $2)
+                    OR 
+                    s."classId" IN (SELECT "classId" FROM "subject_teachers" WHERE "teacherId" = $1 AND "tenantId" = $2)
+                    OR 
+                    s."classId" IN (SELECT "classId" FROM "timetables" WHERE "teacherId" = $1 AND "tenantId" = $2)
+                 )`,
                 [staffId, tenantId]
             );
             totalStudents = parseInt(result[0]?.count || '0', 10);
@@ -723,8 +728,25 @@ export class StaffService {
             pendingRequests = parseInt(pendingResult[0]?.count || '0', 10);
         } catch (e) { console.error('Dashboard: leaveSummary query error', e); }
 
+        // 7. Total Classes assigned
+        let totalClasses = 0;
+        try {
+            const result = await manager.query(
+                `SELECT COUNT(DISTINCT id) as count FROM (
+                    SELECT id FROM "classes" WHERE "classTeacherId" = $1 AND "tenantId" = $2
+                    UNION
+                    SELECT "classId" as id FROM "subject_teachers" WHERE "teacherId" = $1 AND "tenantId" = $2
+                    UNION
+                    SELECT "classId" as id FROM "timetables" WHERE "teacherId" = $1 AND "tenantId" = $2
+                ) as assigned_classes`,
+                [staffId, tenantId]
+            );
+            totalClasses = parseInt(result[0]?.count || '0', 10);
+        } catch (e) { console.error('Dashboard: totalClasses query error', e); }
+
         return {
             totalStudents,
+            totalClasses,
             classesToday,
             pendingHomework,
             attendanceMissing,

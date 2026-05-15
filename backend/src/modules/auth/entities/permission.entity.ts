@@ -18,7 +18,7 @@ export class Permission {
   name!: string; // e.g., 'View Students'
 
   @Column({ type: 'varchar', nullable: true })
-  description!: string;
+  description?: string;
 
   @Column({ type: 'varchar' })
   module!: string; // e.g., 'Students', 'Finance'

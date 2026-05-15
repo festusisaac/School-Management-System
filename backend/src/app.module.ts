@@ -35,6 +35,8 @@ import { CareerModule } from '@modules/career/career.module';
 import { DonationsModule } from '@modules/donations/donations.module';
 import { DownloadCenterModule } from '@modules/download-center/download-center.module';
 import { LessonNotesModule } from '@modules/lesson-notes/lesson-notes.module';
+import { SearchModule } from '@modules/search/search.module';
+
 
 @Module({
   imports: [
@@ -101,6 +103,7 @@ import { LessonNotesModule } from '@modules/lesson-notes/lesson-notes.module';
     forwardRef(() => DonationsModule),
     forwardRef(() => DownloadCenterModule),
     forwardRef(() => LessonNotesModule),
+    SearchModule,
   ],
   controllers: [AppController],
   providers: [

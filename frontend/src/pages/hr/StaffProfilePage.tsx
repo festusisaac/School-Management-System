@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { 
     Users, 
     Facebook, 
@@ -28,6 +29,7 @@ import { formatCurrency, CURRENCY_SYMBOL } from '../../utils/currency';
 const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 const StaffProfilePage = () => {
+    const { id } = useParams<{ id: string }>();
     const [profile, setProfile] = useState<any>(null);
     const [salaryHistory, setSalaryHistory] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -36,12 +38,12 @@ const StaffProfilePage = () => {
 
     useEffect(() => {
         fetchProfile();
-    }, []);
+    }, [id]);
 
     const fetchProfile = async () => {
         try {
             setLoading(true);
-            const data = await staffService.getMyProfile();
+            const data = id ? await staffService.getStaffById(id) : await staffService.getMyProfile();
             setProfile(data);
             
             if (data?.id) {
@@ -87,7 +89,7 @@ const StaffProfilePage = () => {
         <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-500 pb-8">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                    <Users className="text-primary-600 dark:text-primary-400 shrink-0" /> <span className="truncate">My Professional Profile</span>
+                    <Users className="text-primary-600 dark:text-primary-400 shrink-0" /> <span className="truncate">{id ? `${profile?.firstName}'s Profile` : 'My Professional Profile'}</span>
                 </h1>
             </div>
 

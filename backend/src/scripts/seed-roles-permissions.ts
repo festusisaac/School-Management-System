@@ -66,6 +66,11 @@ const permissionsData = [
   { slug: 'front_cms:manage', name: 'Manage Front CMS', module: 'Front CMS' },
   { slug: 'download_center:view', name: 'View Download Center', module: 'Download Center' },
   { slug: 'download_center:manage', name: 'Manage Resources', module: 'Download Center' },
+
+  // ── Lesson Notes ──────────────────────────
+  { slug: 'lesson_notes:view', name: 'View Lesson Notes', module: 'Lesson Notes' },
+  { slug: 'lesson_notes:manage', name: 'Manage Lesson Notes', module: 'Lesson Notes' },
+  { slug: 'lesson_notes:approve', name: 'Approve Lesson Notes', module: 'Lesson Notes' },
 ];
 
 async function seed() {
@@ -129,14 +134,15 @@ async function seed() {
         p.slug === 'attendance:view_reports' ||
         p.slug === 'students:view' ||
         p.slug === 'download_center:manage' ||
-        p.slug === 'academics:lesson_notes_manage' ||
-        p.slug === 'academics:lesson_notes_view'
+        p.slug === 'lesson_notes:manage' ||
+        p.slug === 'lesson_notes:view' ||
+        p.slug === 'lesson_notes:approve'
       ) },
       { name: 'Staff', isSystem: true, permissions: savedPermissions.filter(p => 
         p.slug.includes('view') || 
         p.slug === 'students:view' ||
         p.slug === 'attendance:view_reports' ||
-        p.slug === 'academics:lesson_notes_view'
+        p.slug === 'lesson_notes:view'
       ) },
       { name: 'Student', isSystem: true, permissions: savedPermissions.filter(p => p.slug === 'students:view' || p.slug === 'download_center:view') },
       { name: 'Parent', isSystem: true, permissions: savedPermissions.filter(p => p.slug === 'students:view' || p.slug === 'download_center:view') },

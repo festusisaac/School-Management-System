@@ -40,6 +40,11 @@ class ApiService {
     return response.data
   }
 
+  // Global Search
+  async globalSearch(query: string) {
+    return this.get<any>('/search/global', { params: { q: query } })
+  }
+
   // System Settings
   async getPublicSettings() {
     return this.get<any>('/system/settings/public')

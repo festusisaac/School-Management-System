@@ -6,6 +6,7 @@ import { useSystem } from '../../context/SystemContext';
 
 interface TeacherStats {
     totalStudents: number;
+    totalClasses: number;
     classesToday: number;
     pendingHomework: number;
     attendanceMissing: number;
@@ -99,7 +100,7 @@ const TeacherDashboard: React.FC = () => {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700">
                     <div className="flex justify-between items-start">
                         <div>
@@ -108,6 +109,18 @@ const TeacherDashboard: React.FC = () => {
                         </div>
                         <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
                             <Users className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Assigned Classes</p>
+                            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stats?.totalClasses || 0}</h3>
+                        </div>
+                        <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg">
+                            <BookOpen className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                         </div>
                     </div>
                 </div>
