@@ -146,21 +146,53 @@ export default function StudentAdmission() {
     // Documents State
     const [documents, setDocuments] = useState<any[]>([]);
 
-    // Apply Admission Number Prefix & Current Year
-    useEffect(() => {
-        if (!isEditMode && !formData.admissionNo) {
-            const currentYear = new Date().getFullYear();
-            const prefix = settings?.admissionNumberPrefix || '';
-            // Ensure year is included (e.g., PREFIX/2026/)
-            const yearStr = `${currentYear}/`;
-            const finalAutoValue = prefix.includes(yearStr) ? prefix : `${prefix}${yearStr}`;
+    // Section-aware admission prefix state
+    const [sectionPrefix, setSectionPrefix] = useState('');
 
-            setFormData(prev => ({
-                ...prev,
-                admissionNo: finalAutoValue
-            }));
+    // Section-aware admission number auto-generation
+    // When classId changes on a new admission, fetch the next admission number from the backend
+    useEffect(() => {
+        if (isEditMode || !formData.classId) {
+            // In edit mode or no class selected: use global fallback prefix
+            if (!isEditMode && !formData.classId && !formData.admissionNo) {
+                const currentYear = new Date().getFullYear();
+                const prefix = settings?.admissionNumberPrefix || '';
+                const yearStr = `${currentYear}/`;
+                const finalAutoValue = prefix.includes(yearStr) ? prefix : `${prefix}${yearStr}`;
+                setSectionPrefix(prefix);
+                setFormData(prev => ({
+                    ...prev,
+                    admissionNo: finalAutoValue
+                }));
+            }
+            return;
         }
-    }, [settings?.admissionNumberPrefix, isEditMode]);
+
+        const fetchNextAdmissionNo = async () => {
+            try {
+                const result = await api.getNextAdmissionNumber(formData.classId);
+                setSectionPrefix(result.prefix);
+                setFormData(prev => ({
+                    ...prev,
+                    admissionNo: result.admissionNo
+                }));
+            } catch (error) {
+                console.error('Failed to fetch next admission number:', error);
+                // Fallback to global prefix
+                const currentYear = new Date().getFullYear();
+                const prefix = settings?.admissionNumberPrefix || '';
+                const yearStr = `${currentYear}/`;
+                const finalAutoValue = prefix.includes(yearStr) ? prefix : `${prefix}${yearStr}`;
+                setSectionPrefix(prefix);
+                setFormData(prev => ({
+                    ...prev,
+                    admissionNo: finalAutoValue
+                }));
+            }
+        };
+
+        fetchNextAdmissionNo();
+    }, [formData.classId, isEditMode]);
 
 
     // Debounced Search Logic
@@ -577,13 +609,8 @@ export default function StudentAdmission() {
             // primaryGuardian is UI-only logic state.
             const { studentPhotoPreview, guardianPhotoPreview, siblingName, primaryGuardian, studentPhoto, guardianPhoto, ...otherData } = formData;
 
-            // Enforce Admission Prefix
-            const prefix = settings?.admissionNumberPrefix || '';
-            let finalAdmissionNo = otherData.admissionNo;
-            if (prefix && !finalAdmissionNo.startsWith(prefix)) {
-                finalAdmissionNo = prefix + finalAdmissionNo;
-                otherData.admissionNo = finalAdmissionNo;
-            }
+            // Note: admission prefix enforcement is now handled by the backend auto-generation.
+            // The section prefix is already embedded in formData.admissionNo from the API call.
 
             // We'll use FormData if there are ANY files (photo or documents)
             const hasDocuments = documents.some(d => d.isNew && d.file);
@@ -797,26 +824,29 @@ export default function StudentAdmission() {
                                     <div className="space-y-1.5">
                                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Admission No *</label>
                                         <div className="flex">
-                                            {settings?.admissionNumberPrefix && (
+                                            {(sectionPrefix || settings?.admissionNumberPrefix) && (
                                                 <span className="inline-flex items-center px-3 py-2 rounded-l-lg border border-r-0 border-gray-300 dark:border-gray-800/50 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-sm font-bold select-none whitespace-nowrap">
-                                                    {settings.admissionNumberPrefix}
+                                                    {sectionPrefix || settings.admissionNumberPrefix}
                                                 </span>
                                             )}
                                             <input
                                                 name="admissionNo"
-                                                value={settings?.admissionNumberPrefix ? formData.admissionNo.replace(settings.admissionNumberPrefix, '') : formData.admissionNo}
+                                                value={(sectionPrefix || settings?.admissionNumberPrefix) ? formData.admissionNo.replace(sectionPrefix || settings?.admissionNumberPrefix || '', '') : formData.admissionNo}
                                                 onChange={(e) => {
-                                                    const prefix = settings?.admissionNumberPrefix || '';
+                                                    const prefix = sectionPrefix || settings?.admissionNumberPrefix || '';
                                                     setFormData(prev => ({
                                                         ...prev,
                                                         admissionNo: prefix + e.target.value
                                                     }));
                                                 }}
                                                 type="text"
-                                                placeholder="e.g. 001"
-                                                className={`w-full px-3 py-2 border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 ${settings?.admissionNumberPrefix ? 'rounded-r-lg' : 'rounded-lg'}`}
+                                                placeholder="e.g. 2026/0001"
+                                                className={`w-full px-3 py-2 border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 ${(sectionPrefix || settings?.admissionNumberPrefix) ? 'rounded-r-lg' : 'rounded-lg'}`}
                                             />
                                         </div>
+                                        {!isEditMode && formData.classId && sectionPrefix && (
+                                            <p className="text-[10px] text-gray-400 mt-1">Auto-generated from section prefix. You can override this.</p>
+                                        )}
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Roll No</label>

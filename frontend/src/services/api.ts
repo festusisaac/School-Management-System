@@ -846,6 +846,10 @@ class ApiService {
     return this.post<any>('/students', data)
   }
 
+  async getNextAdmissionNumber(classId: string) {
+    return this.get<{ admissionNo: string; prefix: string }>('/students/next-admission-number', { params: { classId } })
+  }
+
   async getStudentCategories() {
     return this.get<any[]>('/students/categories')
   }

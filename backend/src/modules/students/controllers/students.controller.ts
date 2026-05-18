@@ -394,6 +394,16 @@ export class StudentsController {
         return this.studentsService.approveOnlineAdmission(id, req.user.tenantId, body.feeGroupIds, body.feeExclusions);
     }
 
+    // --- Next Admission Number (Section-Aware Auto-Generation) ---
+
+    @Get('next-admission-number')
+    @Permissions('students:create')
+    async getNextAdmissionNumber(@Query('classId') classId: string, @Request() req: any) {
+        if (!req.user?.tenantId) throw new ForbiddenException('Tenant context missing');
+        if (!classId) throw new BadRequestException('classId query parameter is required');
+        return this.studentsService.getNextAdmissionNumber(classId, req.user.tenantId);
+    }
+
     // --- Students (Generic Routes) ---
 
 

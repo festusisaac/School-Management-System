@@ -26,6 +26,8 @@ import { StudentAttendance } from '../entities/student-attendance.entity';
 import { MarkAttendanceDto, BulkMarkAttendanceDto } from '../dtos/student-attendance.dto';
 import { SystemSettingsService } from '../../system/services/system-settings.service';
 import { MessageTemplatesService } from '../../communication/services/message-templates.service';
+import { Class } from '../../academics/entities/class.entity';
+import { SchoolSection } from '../../academics/entities/school-section.entity';
 
 @Injectable()
 export class StudentsService {
@@ -48,6 +50,10 @@ export class StudentsService {
         private roleRepository: Repository<Role>,
         @InjectRepository(StudentAttendance)
         private attendanceRepo: Repository<StudentAttendance>,
+        @InjectRepository(Class)
+        private classRepository: Repository<Class>,
+        @InjectRepository(SchoolSection)
+        private schoolSectionRepository: Repository<SchoolSection>,
         private smsService: SmsService,
         private systemSettingsService: SystemSettingsService,
         private feesService: FeesService,
@@ -861,16 +867,63 @@ export class StudentsService {
         return this.onlineAdmissionRepository.save(admission);
     }
 
-    private async generateNextAdmissionNumber(tenantId: string): Promise<string> {
+    /**
+     * Resolves the admission prefix for a given class by looking up its school section.
+     * Falls back to the global admissionNumberPrefix from system settings.
+     */
+    private async resolveAdmissionPrefix(classId?: string, tenantId?: string): Promise<string> {
+        // Try to resolve from class → school section → admissionPrefix
+        if (classId) {
+            const cls = await this.classRepository.findOne({
+                where: { id: classId },
+                relations: ['schoolSection'],
+            });
+            if (cls?.schoolSection?.admissionPrefix) {
+                return cls.schoolSection.admissionPrefix;
+            }
+        }
+
+        // Fallback to global system setting
         const settings = await this.systemSettingsService.getSettings();
-        const prefix = settings?.admissionNumberPrefix || 'SCH/';
+        return settings?.admissionNumberPrefix || 'SCH/';
+    }
+
+    private async generateNextAdmissionNumber(tenantId: string, classId?: string): Promise<string> {
+        const prefix = await this.resolveAdmissionPrefix(classId, tenantId);
         const year = new Date().getFullYear().toString();
+        const searchPattern = `${prefix}${year}/`;
         
-        // Count total students to get the next sequence
-        const count = await this.studentsRepository.count({ where: { tenantId } });
+        // Count students whose admissionNo starts with this prefix+year to get the next sequence
+        const count = await this.studentsRepository
+            .createQueryBuilder('s')
+            .where('s."tenantId" = :tenantId', { tenantId })
+            .andWhere('s."admissionNo" LIKE :pattern', { pattern: `${searchPattern}%` })
+            .getCount();
+
         const sequence = (count + 1).toString().padStart(4, '0');
-        
         return `${prefix}${year}/${sequence}`;
+    }
+
+    /**
+     * Public method: returns the suggested next admission number for a given class.
+     * Used by the frontend to auto-fill the admission number field.
+     */
+    async getNextAdmissionNumber(classId: string, tenantId: string): Promise<{ admissionNo: string; prefix: string }> {
+        const prefix = await this.resolveAdmissionPrefix(classId, tenantId);
+        const year = new Date().getFullYear().toString();
+        const searchPattern = `${prefix}${year}/`;
+
+        const count = await this.studentsRepository
+            .createQueryBuilder('s')
+            .where('s."tenantId" = :tenantId', { tenantId })
+            .andWhere('s."admissionNo" LIKE :pattern', { pattern: `${searchPattern}%` })
+            .getCount();
+
+        const sequence = (count + 1).toString().padStart(4, '0');
+        return {
+            admissionNo: `${prefix}${year}/${sequence}`,
+            prefix,
+        };
     }
 
     async approveOnlineAdmission(id: string, tenantId: string, feeGroupIds?: string[], feeExclusions?: Record<string, string[]>): Promise<Student> {
@@ -880,7 +933,7 @@ export class StudentsService {
         }
 
         const settings = await this.systemSettingsService.getSettings();
-        const admissionNo = await this.generateNextAdmissionNumber(tenantId);
+        const admissionNo = await this.generateNextAdmissionNumber(tenantId, admission.preferredClassId || undefined);
 
         // Automated Sibling/Parent Matching:
         // Try to find an existing parent with the same guardian phone or email to link siblings automatically

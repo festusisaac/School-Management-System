@@ -22,6 +22,9 @@ export class SchoolSection {
     @Column({ type: 'text', nullable: true })
     description?: string;
 
+    @Column({ type: 'varchar', nullable: true })
+    admissionPrefix?: string; // e.g., "PHJCSS/", "PHJCNPS/"
+
     @Column({ type: 'boolean', default: true })
     isActive!: boolean;
 

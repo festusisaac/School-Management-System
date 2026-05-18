@@ -9,6 +9,7 @@ interface SchoolSection {
     id: string;
     name: string;
     code?: string;
+    admissionPrefix?: string;
     description?: string;
     isActive: boolean;
     classes?: any[];
@@ -19,7 +20,7 @@ const SchoolSectionsPage = () => {
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editingSection, setEditingSection] = useState<SchoolSection | null>(null);
-    const [formData, setFormData] = useState({ name: '', code: '', description: '', isActive: true });
+    const [formData, setFormData] = useState({ name: '', code: '', admissionPrefix: '', description: '', isActive: true });
     const [submitting, setSubmitting] = useState(false);
     const toast = useToast();
 
@@ -45,12 +46,13 @@ const SchoolSectionsPage = () => {
             setFormData({
                 name: section.name,
                 code: section.code || '',
+                admissionPrefix: section.admissionPrefix || '',
                 description: section.description || '',
                 isActive: section.isActive
             });
         } else {
             setEditingSection(null);
-            setFormData({ name: '', code: '', description: '', isActive: true });
+            setFormData({ name: '', code: '', admissionPrefix: '', description: '', isActive: true });
         }
         setShowModal(true);
     };
@@ -113,6 +115,19 @@ const SchoolSectionsPage = () => {
             cell: ({ row }) => (
                 <span className="px-2.5 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded text-xs font-black uppercase tracking-tight">
                     {row.original.code || 'N/A'}
+                </span>
+            )
+        },
+        {
+            accessorKey: 'admissionPrefix',
+            header: 'Admission Prefix',
+            cell: ({ row }) => (
+                <span className={`px-2.5 py-1 rounded text-xs font-bold tracking-tight ${
+                    row.original.admissionPrefix
+                        ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 italic'
+                }`}>
+                    {row.original.admissionPrefix || 'Using global'}
                 </span>
             )
         },
@@ -231,6 +246,17 @@ const SchoolSectionsPage = () => {
                                     className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all placeholder:text-gray-400"
                                     placeholder="e.g., PRI"
                                 />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Admission Prefix</label>
+                                <input
+                                    type="text"
+                                    value={formData.admissionPrefix}
+                                    onChange={(e) => setFormData({ ...formData, admissionPrefix: e.target.value })}
+                                    className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all placeholder:text-gray-400"
+                                    placeholder="e.g., PHJCSS/"
+                                />
+                                <p className="text-[10px] text-gray-400 mt-1 ml-1">Students admitted to this section will have admission numbers starting with this prefix (e.g., PHJCSS/2026/0001)</p>
                             </div>
                             <div>
                                 <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Description</label>

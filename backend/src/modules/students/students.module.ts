@@ -11,6 +11,8 @@ import { Parent } from './entities/parent.entity';
 import { StudentDocument } from './entities/student-document.entity';
 import { StudentAttendance } from './entities/student-attendance.entity';
 import { Role } from '../auth/entities/role.entity';
+import { Class } from '../academics/entities/class.entity';
+import { SchoolSection } from '../academics/entities/school-section.entity';
 import { FinanceModule } from '../finance/finance.module';
 import { SystemModule } from '../system/system.module';
 import { InternalCommunicationModule } from '../internal-communication/internal-communication.module';
@@ -29,7 +31,9 @@ import { StudentImportProcessor } from './processors/student-import.processor';
       DeactivateReason,
       OnlineAdmission,
       StudentAttendance,
-      Role
+      Role,
+      Class,
+      SchoolSection
     ]),
     forwardRef(() => FinanceModule),
     forwardRef(() => CommunicationModule),

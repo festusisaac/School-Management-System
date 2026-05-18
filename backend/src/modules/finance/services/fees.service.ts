@@ -462,6 +462,23 @@ export class FeesService {
     return { success: true, message: 'Receipt email queued successfully.' };
   }
 
+  private calculateDiscountedAmount(headAmount: string | number, feeHeadId: string, discountProfile: any | null): number {
+    const amount = typeof headAmount === 'string' ? parseFloat(headAmount || '0') : headAmount;
+    if (!discountProfile || !discountProfile.rules) return amount;
+
+    const rule = discountProfile.rules.find((r: any) => r.feeHeadId === feeHeadId);
+    if (!rule) return amount;
+
+    if (rule.percentage) {
+      const discount = (amount * parseFloat(rule.percentage)) / 100;
+      return Math.max(0, amount - discount);
+    } else if (rule.fixedAmount) {
+      return Math.max(0, amount - parseFloat(rule.fixedAmount));
+    }
+
+    return amount;
+  }
+
   async getStudentStatement(studentId: string, tenantId: string) {
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(studentId);
 
@@ -557,12 +574,13 @@ export class FeesService {
       return (a.feeGroup?.heads || [])
         .filter(h => !excludedIds.includes(h.id)) // Filter out excluded heads
         .map(h => {
-          const totalAmount = parseFloat(h.defaultAmount || '0');
+          const totalAmount = this.calculateDiscountedAmount(h.defaultAmount || '0', h.id, discountProfile);
           const paidAmount = paidByHead[h.id] || 0;
           return {
             id: h.id,
             name: h.name,
-            amount: h.defaultAmount, // Original total amount
+            amount: totalAmount.toFixed(2), // Now reflects the discounted amount
+            originalAmount: h.defaultAmount, // Added for UI reference
             paid: paidAmount.toFixed(2),
             balance: Math.max(0, totalAmount - paidAmount).toFixed(2),
             group: a.feeGroup?.name
@@ -637,6 +655,19 @@ export class FeesService {
       relations: ['feeGroup', 'feeGroup.heads'],
     }));
 
+    // Get Discount Profile
+    const student = await this.studentRepo.findOne({ where: { id: studentId, tenantId } });
+    let discountProfile = null;
+    if (student?.discountProfileId) {
+      discountProfile = await this.discountProfileRepo.findOne({
+        where: { id: student.discountProfileId, isActive: true, tenantId },
+        relations: ['rules']
+      });
+      if (discountProfile?.expiryDate && new Date() > new Date(discountProfile.expiryDate)) {
+        discountProfile = null;
+      }
+    }
+
     // 4. Sum up
     const totalPaid = transactions.reduce((acc, curr) => acc + parseFloat(curr.amount || '0'), 0);
     const totalCarryForward = carryForwards.reduce((acc, curr) => acc + parseFloat(curr.amount || '0'), 0);
@@ -645,7 +676,7 @@ export class FeesService {
       const excludedIds = a.excludedHeadIds || [];
       return (a.feeGroup?.heads || []).filter(h => !excludedIds.includes(h.id));
     });
-    const totalDue = assignedHeads.reduce((acc, curr) => acc + parseFloat(curr.defaultAmount || '0'), 0) + totalCarryForward;
+    const totalDue = assignedHeads.reduce((acc, curr) => acc + this.calculateDiscountedAmount(curr.defaultAmount || '0', curr.id, discountProfile), 0) + totalCarryForward;
 
     return Math.max(0, totalDue - totalPaid);
   }
@@ -687,6 +718,19 @@ export class FeesService {
       }
     });
 
+    // Get Discount Profile
+    const student = await this.studentRepo.findOne({ where: { id: studentId, tenantId } });
+    let discountProfile = null;
+    if (student?.discountProfileId) {
+      discountProfile = await this.discountProfileRepo.findOne({
+        where: { id: student.discountProfileId, isActive: true, tenantId },
+        relations: ['rules']
+      });
+      if (discountProfile?.expiryDate && new Date() > new Date(discountProfile.expiryDate)) {
+        discountProfile = null;
+      }
+    }
+
     const results: any[] = [];
     const processedHeadIds = new Set<string>();
 
@@ -695,7 +739,7 @@ export class FeesService {
       const excludedIds = a.excludedHeadIds || [];
       const heads = a.feeGroup?.heads || [];
       heads.filter(h => !excludedIds.includes(h.id)).forEach(h => {
-        const headDue = parseFloat(h.defaultAmount || '0');
+        const headDue = this.calculateDiscountedAmount(h.defaultAmount || '0', h.id, discountProfile);
         const headPaid = paidByHead[h.id] || 0;
         const headCf = cfByHead[h.id] || 0;
         const headBalance = (headDue + headCf) - headPaid;
