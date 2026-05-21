@@ -416,22 +416,19 @@ const PublicDonations = () => {
                                 </p>
                             </div>
 
+                            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/30 rounded-xl p-4 text-center mb-2">
+                                <p className="text-[10px] font-bold text-amber-800 dark:text-amber-500 uppercase tracking-widest">
+                                    Online donations are temporarily disabled pending payment gateway verification.
+                                </p>
+                            </div>
+
                             <button 
-                                type="submit"
-                                disabled={isSubmitting}
-                                className="w-full py-4 bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-primary-500/20 active:scale-[0.98] flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
+                                type="button"
+                                disabled={true}
+                                className="w-full py-4 bg-gray-300 dark:bg-gray-700 text-gray-500 font-bold text-xs uppercase tracking-widest rounded-xl flex items-center justify-center gap-2 cursor-not-allowed"
                             >
-                                {isSubmitting ? (
-                                    <>
-                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                        <span>Processing...</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <span>Proceed to Payment</span>
-                                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                                    </>
-                                )}
+                                Temporarily Disabled
+                                <ShieldCheck className="w-4 h-4" />
                             </button>
                         </form>
                     </div>

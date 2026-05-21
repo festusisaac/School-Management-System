@@ -174,48 +174,17 @@ const AdmissionIntroPage = () => {
                                 <div className="space-y-6">
                                     {showPaymentForm ? (
                                         <div className="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-xl border border-slate-200 dark:border-slate-800 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                                            <div className="space-y-4">
-                                                <div className="space-y-2">
-                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Applicant Full Name</label>
-                                                    <input 
-                                                        type="text"
-                                                        value={applicantName}
-                                                        onChange={(e) => setApplicantName(e.target.value)}
-                                                        className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-medium text-sm"
-                                                        placeholder="Enter your full name"
-                                                        disabled={isVerifying}
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Email Address</label>
-                                                    <input 
-                                                        type="email"
-                                                        value={applicantEmail}
-                                                        onChange={(e) => setApplicantEmail(e.target.value)}
-                                                        className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-medium text-sm"
-                                                        placeholder="Enter your email address"
-                                                        disabled={isVerifying}
-                                                    />
-                                                </div>
+                                            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/30 rounded-xl p-4 text-center">
+                                                <p className="text-xs font-bold text-amber-800 dark:text-amber-500">
+                                                    Online payment is temporarily disabled pending payment gateway verification. Please contact the school office for alternative payment methods.
+                                                </p>
                                             </div>
-
                                             <div className="flex items-center gap-3 pt-2">
                                                 <button 
-                                                    onClick={handlePayment}
-                                                    disabled={isVerifying || !applicantName || !applicantEmail}
-                                                    className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-bold text-sm transition-all shadow-md active:scale-[0.98] disabled:opacity-50"
+                                                    disabled={true}
+                                                    className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-lg font-bold text-sm cursor-not-allowed"
                                                 >
-                                                    {isVerifying ? (
-                                                        <>
-                                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                                            Verifying Payment...
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            Pay {formatCurrency(fee)} & Start
-                                                            <ArrowRight className="w-4 h-4" />
-                                                        </>
-                                                    )}
+                                                    Payment Temporarily Disabled
                                                 </button>
                                                 <button 
                                                     onClick={() => setShowPaymentForm(false)}
@@ -224,9 +193,6 @@ const AdmissionIntroPage = () => {
                                                     Cancel
                                                 </button>
                                             </div>
-                                            <p className="text-[10px] text-slate-400 font-medium text-center italic">
-                                                * You'll be redirected to pay via Paystack secure gateway
-                                            </p>
                                         </div>
                                     ) : (
                                         <>

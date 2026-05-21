@@ -330,14 +330,18 @@ export function PaymentModal({ isOpen, onClose, student, feeHead, onSuccess, isB
                             </div>
                         </div>
 
-                        <div className="p-6 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700">
+                        <div className="p-6 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 space-y-4">
+                            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/30 rounded-xl p-4 text-center">
+                                <p className="text-xs font-bold text-amber-800 dark:text-amber-500">
+                                    Online payment is temporarily disabled pending verification. Please use offline bank transfer for now.
+                                </p>
+                            </div>
                             <button
-                                onClick={handleProceed}
-                                disabled={!amount || parseFloat(amount) <= 0}
-                                className="w-full py-4 bg-primary-600 text-white rounded-xl text-sm font-black uppercase tracking-widest shadow-lg shadow-primary-500/30 hover:bg-primary-700 hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                disabled={true}
+                                className="w-full py-4 bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-xl text-sm font-black uppercase tracking-widest flex items-center justify-center gap-2 cursor-not-allowed"
                             >
-                                Proceed to Select Gateway
-                                <ArrowRight size={16} />
+                                Temporarily Disabled
+                                <ShieldCheck size={16} />
                             </button>
                         </div>
                     </>
