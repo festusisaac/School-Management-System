@@ -1,10 +1,12 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, EntityManager } from 'typeorm';
 import { LeaveType } from '../entities/leave-type.entity';
 import { LeaveRequest, LeaveStatus } from '../entities/leave-request.entity';
 import { LeaveApproval, ApprovalAction } from '../entities/leave-approval.entity';
 import { CreateLeaveTypeDto, UpdateLeaveTypeDto, CreateLeaveRequestDto } from '../dto/leave.dto';
+import { EmailService } from '@modules/internal-communication/email.service';
+import { User } from '@modules/auth/entities/user.entity';
 
 @Injectable()
 export class LeaveService {
@@ -15,6 +17,8 @@ export class LeaveService {
         private leaveRequestRepository: Repository<LeaveRequest>,
         @InjectRepository(LeaveApproval)
         private leaveApprovalRepository: Repository<LeaveApproval>,
+        private readonly entityManager: EntityManager,
+        private readonly emailService: EmailService,
     ) { }
 
     // Leave Types
@@ -85,7 +89,47 @@ export class LeaveService {
             supportingDocument: file ? `/uploads/leaves/${file.filename}` : undefined
         });
 
-        return this.leaveRequestRepository.save(request);
+        const savedRequest = await this.leaveRequestRepository.save(request);
+
+        try {
+            // Load staff details and leave type details to enrich notification
+            const fullRequest = await this.leaveRequestRepository.findOne({
+                where: { id: savedRequest.id },
+                relations: ['staff', 'leaveType']
+            });
+
+            if (fullRequest && fullRequest.staff) {
+                const tenantId = fullRequest.staff.tenantId;
+
+                // Find active super administrators for the same tenant
+                const superAdmins = await this.entityManager.find(User, {
+                    where: {
+                        role: 'super administrator',
+                        tenantId,
+                        isActive: true
+                    }
+                });
+
+                // Send notification email to each super administrator
+                for (const admin of superAdmins) {
+                    await this.emailService.sendNotificationEmail(
+                        admin.email,
+                        `New Leave Request: ${fullRequest.staff.firstName} ${fullRequest.staff.lastName}`,
+                        `A new leave application has been submitted by teacher/staff <strong>${fullRequest.staff.firstName} ${fullRequest.staff.lastName}</strong>.<br/><br/>` +
+                            `<strong>Leave Type:</strong> ${fullRequest.leaveType?.name || 'N/A'}<br/>` +
+                            `<strong>Duration:</strong> ${fullRequest.numberOfDays} day(s) (${dto.startDate} to ${dto.endDate})<br/>` +
+                            `<strong>Reason:</strong> ${fullRequest.reason}<br/><br/>` +
+                            `Please login to the portal to review and approve/reject this request.`,
+                        'Leave Application Submitted'
+                    );
+                }
+            }
+        } catch (error) {
+            // Log the error but do not block leave application creation if email fails
+            console.error('Failed to send leave application notification email:', error);
+        }
+
+        return savedRequest;
     }
 
     async getStaffLeaveRequests(staffId: string): Promise<LeaveRequest[]> {

@@ -1,15 +1,18 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Brackets } from 'typeorm';
+import { Repository, Brackets, EntityManager } from 'typeorm';
 import { LessonNote } from '../entities/lesson-note.entity';
 import { CreateLessonNoteDto, UpdateLessonNoteDto, LessonNoteFilterDto } from '../dto/lesson-note.dto';
 import { User } from '../../auth/entities/user.entity';
+import { EmailService } from '@modules/internal-communication/email.service';
 
 @Injectable()
 export class LessonNotesService {
     constructor(
         @InjectRepository(LessonNote)
         private lessonNoteRepository: Repository<LessonNote>,
+        private readonly entityManager: EntityManager,
+        private readonly emailService: EmailService,
     ) {}
 
     async create(createDto: CreateLessonNoteDto, teacher: User, tenantId: string): Promise<LessonNote> {
@@ -114,7 +117,37 @@ export class LessonNotesService {
             throw new ForbiddenException('Only the owner can submit this lesson note');
         }
         lessonNote.status = 'submitted';
-        return this.lessonNoteRepository.save(lessonNote);
+        const savedNote = await this.lessonNoteRepository.save(lessonNote);
+
+        try {
+            // Find active super administrators for the same tenant
+            const superAdmins = await this.entityManager.find(User, {
+                where: {
+                    role: 'super administrator',
+                    tenantId,
+                    isActive: true,
+                },
+            });
+
+            // Send notification email to each super administrator
+            for (const admin of superAdmins) {
+                await this.emailService.sendNotificationEmail(
+                    admin.email,
+                    `New Lesson Note Submitted: ${savedNote.topic}`,
+                    `A new lesson note has been submitted for review by teacher <strong>${user.firstName} ${user.lastName}</strong>.<br/><br/>` +
+                        `<strong>Topic:</strong> ${savedNote.topic}<br/>` +
+                        `<strong>Subject:</strong> ${savedNote.subject?.name || 'N/A'}<br/>` +
+                        `<strong>Class:</strong> ${savedNote.class?.name || 'N/A'}<br/><br/>` +
+                        `Please login to the portal to review and approve/reject this lesson note.`,
+                    'Lesson Note Submitted',
+                );
+            }
+        } catch (error) {
+            // Log the error but do not block the submission if email fails
+            console.error('Failed to send lesson note submission notification email:', error);
+        }
+
+        return savedNote;
     }
 
     async review(id: string, status: 'approved' | 'rejected', reviewNotes: string, reviewer: User, tenantId: string): Promise<LessonNote> {
