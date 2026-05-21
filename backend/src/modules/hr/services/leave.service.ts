@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, EntityManager } from 'typeorm';
+import { Repository, In, EntityManager, ILike } from 'typeorm';
 import { LeaveType } from '../entities/leave-type.entity';
 import { LeaveRequest, LeaveStatus } from '../entities/leave-request.entity';
 import { LeaveApproval, ApprovalAction } from '../entities/leave-approval.entity';
@@ -104,10 +104,10 @@ export class LeaveService {
                 // Find active super administrators for the same tenant
                 const superAdmins = await this.entityManager.find(User, {
                     where: {
-                        role: 'super administrator',
-                        tenantId,
-                        isActive: true
-                    }
+                        role: ILike('%super administrator%'),
+                        tenantId: fullRequest.staff.tenantId,
+                        isActive: true,
+                    },
                 });
 
                 // Send notification email to each super administrator

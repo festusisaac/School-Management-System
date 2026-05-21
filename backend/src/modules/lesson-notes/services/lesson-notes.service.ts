@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Brackets, EntityManager } from 'typeorm';
+import { Repository, Brackets, EntityManager, ILike } from 'typeorm';
 import { LessonNote } from '../entities/lesson-note.entity';
 import { CreateLessonNoteDto, UpdateLessonNoteDto, LessonNoteFilterDto } from '../dto/lesson-note.dto';
 import { User } from '../../auth/entities/user.entity';
@@ -123,7 +123,7 @@ export class LessonNotesService {
             // Find active super administrators for the same tenant
             const superAdmins = await this.entityManager.find(User, {
                 where: {
-                    role: 'super administrator',
+                    role: ILike('%super administrator%'),
                     tenantId,
                     isActive: true,
                 },
@@ -134,7 +134,7 @@ export class LessonNotesService {
                 await this.emailService.sendNotificationEmail(
                     admin.email,
                     `New Lesson Note Submitted: ${savedNote.topic}`,
-                    `A new lesson note has been submitted for review by teacher <strong>${user.firstName} ${user.lastName}</strong>.<br/><br/>` +
+                    `A new lesson note has been submitted for review by teacher <strong>${lessonNote.teacher?.firstName || 'Unknown'} ${lessonNote.teacher?.lastName || 'Teacher'}</strong>.<br/><br/>` +
                         `<strong>Topic:</strong> ${savedNote.topic}<br/>` +
                         `<strong>Subject:</strong> ${savedNote.subject?.name || 'N/A'}<br/>` +
                         `<strong>Class:</strong> ${savedNote.class?.name || 'N/A'}<br/><br/>` +
