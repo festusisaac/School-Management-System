@@ -135,32 +135,29 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             ]
         },
         {
-            label: 'Lesson Notes',
-            icon: FileText,
-            path: '/lesson-notes',
-            permission: 'lesson_notes:view'
-        },
-        {
-            label: 'Online Classes',
-            icon: Video,
-            path: '/online-classes',
-            // Dedicated permission for virtual learning
+            label: 'Student Information',
+            icon: GraduationCap,
+            path: '/students',
+            permission: 'students:view_directory',
             children: [
-                { label: 'Classes Schedule', path: '/online-classes/schedule', permission: 'online_classes:manage' },
-                { label: 'Completed Classes', path: '/online-classes/history', permission: 'online_classes:history' },
+                { label: 'Student Directory', path: '/students/directory', permission: 'students:view_directory' },
+                { label: 'Student Admission', path: '/students/admission', permission: 'students:create' },
+                { label: 'Online Admission', path: '/students/online-admission', permission: 'students:create' },
+                { label: 'Deactivate Student', path: '/students/deactivated', permission: 'students:delete' },
+                { label: 'Student Categories', path: '/students/categories', permission: 'students:manage_categories' },
+                { label: 'Student House', path: '/students/houses', permission: 'students:manage_categories' },
+                { label: 'Deactivation Reason', path: '/students/deactivate-reasons', permission: 'students:manage_categories' },
             ]
         },
         {
-            label: 'Homework',
-            icon: BookOpen,
-            path: '/homework',
-            permission: 'homework:view'
-        },
-        {
-            label: 'Download Center',
-            icon: Download,
-            path: '/download-center',
-            permission: 'download_center:view'
+            label: 'Student Attendance',
+            icon: Clock,
+            path: '/students/attendance',
+            children: [
+                { label: 'Mark Attendance', path: '/students/attendance/mark', permission: 'attendance:mark' },
+                { label: 'Attendance History', path: '/students/attendance/history', permission: 'attendance:view_history' },
+                { label: 'Attendance Reports', path: '/students/attendance/reports', permission: 'attendance:view_reports' },
+            ]
         },
         {
             label: 'Human Resource',
@@ -184,66 +181,56 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             ]
         },
         {
-            label: 'Student Attendance',
-            icon: Clock,
-            path: '/students/attendance',
-            children: [
-                { label: 'Mark Attendance', path: '/students/attendance/mark', permission: 'attendance:mark' },
-                { label: 'Attendance History', path: '/students/attendance/history', permission: 'attendance:view_history' },
-                { label: 'Attendance Reports', path: '/students/attendance/reports', permission: 'attendance:view_reports' },
-            ]
+            label: 'Lesson Notes',
+            icon: FileText,
+            path: '/lesson-notes',
+            permission: 'lesson_notes:view'
         },
         {
-            label: 'Student Information',
-            icon: GraduationCap,
-            path: '/students',
-            permission: 'students:view_directory', // Parent now explicitly requires directory view
-            children: [
-                { label: 'Student Directory', path: '/students/directory', permission: 'students:view_directory' },
-                { label: 'Student Admission', path: '/students/admission', permission: 'students:create' },
-                { label: 'Online Admission', path: '/students/online-admission', permission: 'students:create' },
-                { label: 'Deactivate Student', path: '/students/deactivated', permission: 'students:delete' },
-                { label: 'Student Categories', path: '/students/categories', permission: 'students:manage_categories' },
-                { label: 'Student House', path: '/students/houses', permission: 'students:manage_categories' },
-                { label: 'Deactivation Reason', path: '/students/deactivate-reasons', permission: 'students:manage_categories' },
-            ]
-        },
-        {
-            label: 'Alumni',
-            icon: GraduationCap,
-            path: '/alumni',
-            children: [
-                { label: 'Alumni Directory', path: '/alumni/directory', permission: 'alumni:view' },
-                { label: 'Alumni Events', path: '/alumni/events', permission: 'alumni:view' },
-                { label: 'Job Board', path: '/alumni/job-board', permission: 'career:view' },
-                { label: 'Job Management', path: '/alumni/job-management', permission: 'career:manage' },
-            ]
-        },
-        {
-            label: 'Donations',
-            icon: Heart,
-            path: '/donations',
-            permission: 'donations:view',
-            children: [
-                { label: 'Fundraising Campaigns', path: '/donations/campaigns', permission: 'donations:manage_projects' },
-                { label: 'Contribution History', path: '/donations/history', permission: 'donations:view' },
-            ]
-        },
-        {
-            label: 'Library',
+            label: 'Homework',
             icon: BookOpen,
-            path: '/library',
+            path: '/homework',
+            permission: 'homework:view'
+        },
+        {
+            label: 'Online Classes',
+            icon: Video,
+            path: '/online-classes',
             children: [
-                { label: 'Dashboard', path: '/library/dashboard', permission: 'library:manage_books' },
-                { label: 'Books Catalog', path: '/library', permission: 'library:view_books' },
-                { label: 'Authors', path: '/library/authors', permission: 'library:view_books' },
-                { label: 'Categories', path: '/library/categories', permission: 'library:view_books' },
-                { type: 'header', label: 'Circulation' },
-                { label: 'Issue Book', path: '/library/issue', permission: 'library:issue_return' },
-                { label: 'Return Book', path: '/library/return', permission: 'library:issue_return' },
-                { label: 'Overdue Loans', path: '/library/overdues', permission: 'library:view_reports' },
-                { type: 'header', label: 'Setup' },
-                { label: 'Library Settings', path: '/library/settings', permission: 'settings:general' },
+                { label: 'Classes Schedule', path: '/online-classes/schedule', permission: 'online_classes:manage' },
+                { label: 'Completed Classes', path: '/online-classes/history', permission: 'online_classes:history' },
+            ]
+        },
+        {
+            label: 'Examination',
+            icon: BookOpen,
+            path: '/examination',
+            children: [
+                // Setup
+                { type: 'header', label: 'Exam Setup' },
+                { label: 'Exam Groups', path: '/examination/setup/groups', permission: 'exams:manage_setup' },
+                { label: 'Assessment Structure', path: '/examination/setup/structure', permission: 'exams:manage_setup' },
+                { label: 'Grading System', path: '/examination/setup/grading', permission: 'exams:manage_setup' },
+                { label: 'Exam Schedules', path: '/examination/setup/schedules', permission: 'exams:manage_schedule' },
+                { label: 'Admit Cards', path: '/examination/setup/admit-cards', permission: 'exams:manage_admit_cards' },
+                { label: 'CBT Manager', path: '/examination/setup/cbt', permission: 'exams:manage_setup' },
+
+                // Entry
+                { type: 'header', label: 'Score Entry', permission: 'exams:enter_marks' },
+                { label: 'Scoresheet Entry', path: '/examination/entry/scoresheet', permission: 'exams:enter_marks' },
+                { label: 'Skills & Attributes', path: '/examination/entry/skills', permission: 'exams:manage_domains' },
+                { label: 'Psychomotor Skills', path: '/examination/entry/psychomotor', permission: 'exams:manage_domains' },
+
+                // Reports
+                { type: 'header', label: 'Reports', permission: 'exams:view_reports' },
+                { label: 'Class Broadsheet', path: '/examination/reports/class-broadsheet', permission: 'exams:view_reports' },
+                { label: 'Subject Broadsheet', path: '/examination/reports/subject-broadsheet', permission: 'exams:view_reports' },
+                { label: 'Report Card', path: '/examination/reports/report-card', permission: 'exams:view_reports' },
+
+                // Control
+                { type: 'header', label: 'Control', permission: 'exams:process_results' },
+                { label: 'Result Management', path: '/examination/control/results', permission: 'exams:process_results' },
+                { label: 'Manage Scratch Cards', path: '/examination/control/scratch-cards', permission: 'exams:process_results' },
             ]
         },
         {
@@ -284,6 +271,50 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             ]
         },
         {
+            label: 'Library',
+            icon: BookOpen,
+            path: '/library',
+            children: [
+                { label: 'Dashboard', path: '/library/dashboard', permission: 'library:manage_books' },
+                { label: 'Books Catalog', path: '/library', permission: 'library:view_books' },
+                { label: 'Authors', path: '/library/authors', permission: 'library:view_books' },
+                { label: 'Categories', path: '/library/categories', permission: 'library:view_books' },
+                { type: 'header', label: 'Circulation' },
+                { label: 'Issue Book', path: '/library/issue', permission: 'library:issue_return' },
+                { label: 'Return Book', path: '/library/return', permission: 'library:issue_return' },
+                { label: 'Overdue Loans', path: '/library/overdues', permission: 'library:view_reports' },
+                { type: 'header', label: 'Setup' },
+                { label: 'Library Settings', path: '/library/settings', permission: 'settings:general' },
+            ]
+        },
+        {
+            label: 'Download Center',
+            icon: Download,
+            path: '/download-center',
+            permission: 'download_center:view'
+        },
+        {
+            label: 'Alumni',
+            icon: GraduationCap,
+            path: '/alumni',
+            children: [
+                { label: 'Alumni Directory', path: '/alumni/directory', permission: 'alumni:view' },
+                { label: 'Alumni Events', path: '/alumni/events', permission: 'alumni:view' },
+                { label: 'Job Board', path: '/alumni/job-board', permission: 'career:view' },
+                { label: 'Job Management', path: '/alumni/job-management', permission: 'career:manage' },
+            ]
+        },
+        {
+            label: 'Donations',
+            icon: Heart,
+            path: '/donations',
+            permission: 'donations:view',
+            children: [
+                { label: 'Fundraising Campaigns', path: '/donations/campaigns', permission: 'donations:manage_projects' },
+                { label: 'Contribution History', path: '/donations/history', permission: 'donations:view' },
+            ]
+        },
+        {
             label: 'Audit & Reports',
             icon: Star,
             path: '/audit-reports',
@@ -293,38 +324,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 { label: 'Activity Logs', path: '/audit-reports/activity', permission: 'audit_reports:view' },
                 { label: 'Communication Audit', path: '/audit-reports/communication', permission: 'audit_reports:view' },
                 { label: 'Report Hub', path: '/audit-reports/reports-hub', permission: 'audit_reports:view' },
-            ]
-        },
-        {
-            label: 'Examination',
-            icon: BookOpen,
-            path: '/examination',
-            children: [
-                // Setup
-                { type: 'header', label: 'Exam Setup' },
-                { label: 'Exam Groups', path: '/examination/setup/groups', permission: 'exams:manage_setup' },
-                { label: 'Assessment Structure', path: '/examination/setup/structure', permission: 'exams:manage_setup' },
-                { label: 'Grading System', path: '/examination/setup/grading', permission: 'exams:manage_setup' },
-                { label: 'Exam Schedules', path: '/examination/setup/schedules', permission: 'exams:manage_schedule' },
-                { label: 'Admit Cards', path: '/examination/setup/admit-cards', permission: 'exams:manage_admit_cards' },
-                { label: 'CBT Manager', path: '/examination/setup/cbt', permission: 'exams:manage_setup' },
-
-                // Entry
-                { type: 'header', label: 'Score Entry', permission: 'exams:enter_marks' },
-                { label: 'Scoresheet Entry', path: '/examination/entry/scoresheet', permission: 'exams:enter_marks' },
-                { label: 'Skills & Attributes', path: '/examination/entry/skills', permission: 'exams:manage_domains' },
-                { label: 'Psychomotor Skills', path: '/examination/entry/psychomotor', permission: 'exams:manage_domains' },
-
-                // Reports
-                { type: 'header', label: 'Reports', permission: 'exams:view_reports' },
-                { label: 'Class Broadsheet', path: '/examination/reports/class-broadsheet', permission: 'exams:view_reports' },
-                { label: 'Subject Broadsheet', path: '/examination/reports/subject-broadsheet', permission: 'exams:view_reports' },
-                { label: 'Report Card', path: '/examination/reports/report-card', permission: 'exams:view_reports' },
-
-                // Control
-                { type: 'header', label: 'Control', permission: 'exams:process_results' },
-                { label: 'Result Management', path: '/examination/control/results', permission: 'exams:process_results' },
-                { label: 'Manage Scratch Cards', path: '/examination/control/scratch-cards', permission: 'exams:process_results' },
             ]
         },
         {
