@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, Not, Between, IsNull } from 'typeorm';
 import { ExamResult } from '../entities/exam-result.entity';
@@ -28,186 +30,20 @@ export class ResultProcessingService {
         @InjectRepository(StudentAttendance)
         private attendanceRepo: Repository<StudentAttendance>,
         private systemSettingsService: SystemSettingsService,
+        @InjectQueue('result-processing') 
+        private resultQueue: Queue,
     ) { }
 
     async processResults(dto: ProcessResultDto, tenantId: string) {
-        // 1. Aggregate scores per student (Simple Sum)
-        const sessionId = await this.systemSettingsService.getActiveSessionId();
-        
-        // --- Added: Fetch all students in the class to ensure everyone is processed ---
-        const allStudents = await this.examResultRepo.manager.getRepository('Student').find({
-            where: { classId: dto.classId, tenantId },
-            select: ['id']
-        });
-        const aggregationMap = new Map();
-        
-        const aggregationQuery = this.examResultRepo
-            .createQueryBuilder('result')
-            .leftJoin('result.exam', 'exam')
-            .select('result.studentId', 'studentId')
-            .addSelect('SUM(result.score)', 'totalScore')
-            .addSelect('COUNT(DISTINCT exam.subjectId)', 'subjectCount')
-            .where('exam.examGroupId = :groupId', { groupId: dto.examGroupId })
-            .andWhere('exam.classId = :classId', { classId: dto.classId })
-            .andWhere('result.tenantId = :tenantId', { tenantId });
-        
-        if (sessionId) {
-            aggregationQuery.andWhere('result.sessionId = :sessionId', { sessionId });
-        }
-
-        const aggregation = await aggregationQuery
-            .groupBy('result.studentId')
-            .getRawMany();
-
-        for (const res of aggregation) {
-            aggregationMap.set(res.studentId, res);
-        }
-
-        // 2. Save to StudentTermResult
-        
-        // --- Fetch Context: Group and Term Settings ---
-        const currentGroup = await this.examResultRepo.manager.getRepository(ExamGroup).findOne({ 
-            where: { id: dto.examGroupId, tenantId } 
+        // Enqueue the heavy processing job in the background
+        await this.resultQueue.add('process-class-results', {
+            dto,
+            tenantId
         });
 
-        let termDaysOpened = 0;
-        if (currentGroup) {
-            const termDetails = await this.examResultRepo.manager.getRepository(AcademicTerm).findOne({
-                where: { 
-                    name: currentGroup.term,
-                    session: { name: currentGroup.academicYear }
-                },
-                relations: ['session']
-            });
-            termDaysOpened = termDetails?.daysOpened || 0;
-        }
-
-        for (const student of allStudents) {
-            const record = aggregationMap.get(student.id) || { studentId: student.id, totalScore: 0, subjectCount: 0 };
-            
-            const termResultWhere: any = {
-                studentId: record.studentId,
-                examGroupId: dto.examGroupId,
-                tenantId
-            };
-            if (sessionId) termResultWhere.sessionId = sessionId;
-
-            let termResult = await this.termResultRepo.findOne({
-                where: termResultWhere,
-            });
-
-            if (!termResult) {
-                termResult = this.termResultRepo.create({
-                    studentId: record.studentId,
-                    examGroupId: dto.examGroupId,
-                    classId: dto.classId,
-                    tenantId,
-                    sessionId: sessionId || undefined
-                });
-            }
-
-            const total = parseFloat(record.totalScore);
-            const count = parseInt(record.subjectCount, 10);
-
-            termResult.totalScore = total;
-            termResult.averageScore = count > 0 ? total / count : 0;
-            termResult.totalStudents = allStudents.length;
-
-            
-            // --- Synchronization: Pull Real Attendance Data ---
-            try {
-                const examGroup = await this.examResultRepo.manager.getRepository(ExamGroup).findOne({
-                    where: { id: dto.examGroupId, tenantId }
-                });
-
-                if (examGroup) {
-                    // 1. Calculate Days School Opened (Unique dates where attendance was taken for this class)
-                    const attendanceQuery = this.attendanceRepo
-                        .createQueryBuilder('attendance')
-                        .select('DISTINCT(attendance.date)', 'date')
-                        .where('attendance.classId = :classId', { classId: dto.classId })
-                        .andWhere('attendance.date BETWEEN :start AND :end', {
-                            start: new Date(examGroup.startDate).toISOString().split('T')[0],
-                            end: new Date(examGroup.endDate).toISOString().split('T')[0]
-                        })
-                        .andWhere('attendance.tenantId = :tenantId', { tenantId });
-                    
-                    if (sessionId) {
-                        attendanceQuery.andWhere('attendance.sessionId = :sessionId', { sessionId });
-                    }
-
-                    const attendanceDates = await attendanceQuery.getRawMany();
-
-                    const actualDaysOpened = attendanceDates.length;
-                    // --- User Preference: Use fixed number from term settings if available ---
-                    const daysOpened = termDaysOpened > 0 ? termDaysOpened : actualDaysOpened;
-
-                    // 2. Calculate Student's Presence (present, late, halfday)
-                    const presentCount = await this.attendanceRepo.count({
-                        where: {
-                            studentId: record.studentId,
-                            classId: dto.classId,
-                            date: Between(new Date(examGroup.startDate).toISOString().split('T')[0], new Date(examGroup.endDate).toISOString().split('T')[0]) as any,
-                            status: In([AttendanceStatus.PRESENT, AttendanceStatus.LATE, AttendanceStatus.HALFDAY]),
-                            tenantId,
-                            sessionId: sessionId || IsNull()
-                        }
-                    });
-
-                    termResult.daysOpened = daysOpened;
-                    termResult.daysPresent = presentCount;
-                }
-            } catch (err) {
-                console.error(`Failed to sync attendance for student ${record.studentId}:`, err);
-            }
-
-            await this.termResultRepo.save(termResult);
-        }
-
-        // 3. Calculate and Save Positions (Competition Ranking)
-        const allResults = await this.termResultRepo.find({
-            where: { examGroupId: dto.examGroupId, classId: dto.classId, tenantId, sessionId: sessionId || IsNull() },
-            order: { totalScore: 'DESC' }
-        });
-
-        let currentRank = 1;
-        for (let i = 0; i < allResults.length; i++) {
-            if (i > 0 && allResults[i].totalScore < allResults[i - 1].totalScore) {
-                currentRank = i + 1;
-            }
-            allResults[i].position = currentRank;
-            await this.termResultRepo.save(allResults[i]);
-        }
-
-        // 4. Calculate and Save Subject-Level Statistics (Performance Benchmarking)
-        const subjectStatsQuery = this.examResultRepo
-            .createQueryBuilder('result')
-            .leftJoin('result.exam', 'exam')
-            .select('exam.id', 'examId')
-            .addSelect('MAX(result.score)', 'highest')
-            .addSelect('MIN(result.score)', 'lowest')
-            .addSelect('AVG(result.score)', 'average')
-            .where('exam.examGroupId = :groupId', { groupId: dto.examGroupId })
-            .andWhere('exam.classId = :classId', { classId: dto.classId })
-            .andWhere('result.tenantId = :tenantId', { tenantId });
-
-        if (sessionId) {
-            subjectStatsQuery.andWhere('result.sessionId = :sessionId', { sessionId });
-        }
-
-        const subjectStatsRaw = await subjectStatsQuery
-            .groupBy('exam.id')
-            .getRawMany();
-
-        for (const stat of subjectStatsRaw) {
-            await this.examRepo.update(stat.examId, {
-                highestScore: parseFloat(stat.highest),
-                lowestScore: parseFloat(stat.lowest),
-                averageScore: parseFloat(stat.average)
-            });
-        }
-
-        return { message: 'Processing complete', studentsProcessed: aggregation.length };
+        return { 
+            message: 'Result processing has been queued and is running in the background. Please check back in a few minutes.' 
+        };
     }
 
     async getBroadsheet(examGroupId: string, classId: string, tenantId: string) {

@@ -94,21 +94,25 @@ const ResultManagementPage = () => {
     useEffect(() => {
         if (selectedGroup) {
             fetchGlobalSummary();
+            const interval = setInterval(() => {
+                fetchGlobalSummary(true);
+            }, 5000); // Poll every 5 seconds silently
+            return () => clearInterval(interval);
         } else {
             setGlobalSummary([]);
         }
     }, [selectedGroup]);
 
-    const fetchGlobalSummary = async () => {
-        setLoading(true);
+    const fetchGlobalSummary = async (silent = false) => {
+        if (!silent) setLoading(true);
         try {
             const res = await examinationService.getGlobalSummary(selectedGroup);
             setGlobalSummary(res || []);
         } catch (error) {
             console.error('Global summary fetch error:', error);
-            showError('Failed to fetch school results status');
+            if (!silent) showError('Failed to fetch school results status');
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
         }
     };
 
@@ -121,9 +125,10 @@ const ResultManagementPage = () => {
 
         setProcessingId(`process-${classId}`);
         try {
-            await examinationService.processResults(classId, selectedGroup);
-            showSuccess('Results processed successfully');
-            fetchGlobalSummary();
+            const res: any = await examinationService.processResults(classId, selectedGroup);
+            const msg = res?.data?.message || res?.message || 'Processing queued in background. The UI will update automatically once finished.';
+            showSuccess(msg);
+            fetchGlobalSummary(true);
         } catch (error) {
             showError('Failed to process results');
         } finally {
@@ -212,7 +217,7 @@ const ResultManagementPage = () => {
                 </div>
                 <div className="flex gap-2">
                     <button 
-                        onClick={fetchGlobalSummary}
+                        onClick={() => fetchGlobalSummary(false)}
                         className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                         title="Refresh Dashboard"
                     >

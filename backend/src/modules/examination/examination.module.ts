@@ -6,6 +6,7 @@ import { ResultProcessingService } from './services/result-processing.service';
 import { ResultControlService } from './services/result-control.service';
 import { BullModule } from '@nestjs/bull';
 import { ScoreImportProcessor } from './processors/score-import.processor';
+import { ResultProcessingProcessor } from './processors/result-processing.processor';
 import { ExamSetupController } from './controllers/exam-setup.controller';
 import { ScoreEntryController } from './controllers/score-entry.controller';
 import { ResultProcessingController } from './controllers/result-processing.controller';
@@ -72,9 +73,10 @@ import { FinanceModule } from '../finance/finance.module';
         ]),
         SystemModule,
         FinanceModule,
-        BullModule.registerQueue({
-            name: 'score-import',
-        }),
+        BullModule.registerQueue(
+            { name: 'score-import' },
+            { name: 'result-processing' }
+        ),
     ],
     controllers: [
         ExamSetupController,
@@ -94,7 +96,8 @@ import { FinanceModule } from '../finance/finance.module';
         CbtManifestService,
         CbtQuestionService,
         TranscriptService,
-        ScoreImportProcessor
+        ScoreImportProcessor,
+        ResultProcessingProcessor,
     ],
     exports: [
         ExamSetupService,
