@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "School Management System",
+    "slug": "school-management-system",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.schoolmgt.sms"
+    },
+    "android": {
+      "package": "com.schoolmgt.sms",
+      "minSdkVersion": 26,
+      "adaptiveIcon": {
+        "backgroundColor": "#0f172a",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "apiUrl": "http://192.168.88.192:3000/api/v1"
+    },
+    "plugins": [
+      "expo-sqlite"
+    ]
+  }
+}
