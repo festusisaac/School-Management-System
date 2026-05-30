@@ -62,7 +62,7 @@ export class SystemSetupService {
       await seedRoles(this.dataSource);
 
       // 1. Find Super Admin Role (Created by seedRoles)
-      let superAdminRole = await queryRunner.manager.findOne(Role, {
+      const superAdminRole = await queryRunner.manager.findOne(Role, {
         where: { name: 'Super Administrator' },
       });
 

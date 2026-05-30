@@ -189,7 +189,7 @@ export class DashboardService {
         console.log(`[DashboardService] Stats: Using tenantId: ${tenantId}, sectionId: ${sectionId}, sessionId: ${sessionId}, termId: ${termId}`);
 
         // Initialize with default values for safety
-        let stats = {
+        const stats = {
             students: { total: 0, active: 0, inactive: 0 },
             staff: { total: 0, teaching: 0, nonTeaching: 0 },
             academics: { totalClasses: 0, totalSubjects: 0 },
@@ -219,7 +219,7 @@ export class DashboardService {
 
         // --- SECTION 1: STUDENTS ---
         try {
-            let studentQb = this.studentRepository.createQueryBuilder('student').where('(student.tenantId = :tenantId OR student.tenantId IS NULL)', { tenantId });
+            const studentQb = this.studentRepository.createQueryBuilder('student').where('(student.tenantId = :tenantId OR student.tenantId IS NULL)', { tenantId });
             if (isValidSection) {
                 studentQb.leftJoin('student.class', 'cls').andWhere('cls.schoolSectionId = :sectionId', { sectionId });
             }
@@ -232,7 +232,7 @@ export class DashboardService {
 
         // --- SECTION 2: STAFF ---
         try {
-            let staffQb = this.staffRepository.createQueryBuilder('staff')
+            const staffQb = this.staffRepository.createQueryBuilder('staff')
                 .where('(staff.tenantId = :tenantId OR staff.tenantId IS NULL)', { tenantId })
                 .andWhere('staff.status = :status', { status: StaffStatus.ACTIVE });
             
@@ -251,13 +251,13 @@ export class DashboardService {
 
         // --- SECTION 3: ACADEMICS ---
         try {
-            let classQb = this.classRepository.createQueryBuilder('cls').where('(cls.tenantId = :tenantId OR cls.tenantId IS NULL)', { tenantId });
+            const classQb = this.classRepository.createQueryBuilder('cls').where('(cls.tenantId = :tenantId OR cls.tenantId IS NULL)', { tenantId });
             if (isValidSection) {
                 classQb.andWhere('cls.schoolSectionId = :sectionId', { sectionId });
             }
             stats.academics.totalClasses = await classQb.getCount();
 
-            let subjectQb = this.subjectRepository.createQueryBuilder('subject').where('(subject.tenantId = :tenantId OR subject.tenantId IS NULL)', { tenantId });
+            const subjectQb = this.subjectRepository.createQueryBuilder('subject').where('(subject.tenantId = :tenantId OR subject.tenantId IS NULL)', { tenantId });
             if (isValidSection) {
                 subjectQb.innerJoin('class_subject', 'cs', 'cs.subjectId = subject.id')
                     .innerJoin('classes', 'cls', 'cls.id = cs.classId')
@@ -270,7 +270,7 @@ export class DashboardService {
 
         // --- SECTION 4: FINANCE & FEES ---
         try {
-            let transQb = this.transactionRepository.createQueryBuilder('transaction')
+            const transQb = this.transactionRepository.createQueryBuilder('transaction')
                 .where('(transaction.tenantId = :tenantId OR transaction.tenantId IS NULL)', { tenantId })
                 .andWhere('transaction.type = :type', { type: TransactionType.FEE_PAYMENT });
             if (isValidSection) {
@@ -772,9 +772,9 @@ export class DashboardService {
             const isValidSection = sectionId && sectionId !== 'undefined' && sectionId !== 'null' && sectionId !== '';
             const isValidSession = sessionId && sessionId !== 'undefined' && sessionId !== 'null' && sessionId !== '';
 
-            let maleQb = this.studentRepository.createQueryBuilder('student').where('(student.tenantId = :tenantId OR student.tenantId IS NULL)', { tenantId }).andWhere('student.gender = :gender', { gender: 'Male' });
-            let femaleQb = this.studentRepository.createQueryBuilder('student').where('(student.tenantId = :tenantId OR student.tenantId IS NULL)', { tenantId }).andWhere('student.gender = :gender', { gender: 'Female' });
-            let enrollQb = this.studentRepository.createQueryBuilder('student').where('(student.tenantId = :tenantId OR student.tenantId IS NULL)', { tenantId });
+            const maleQb = this.studentRepository.createQueryBuilder('student').where('(student.tenantId = :tenantId OR student.tenantId IS NULL)', { tenantId }).andWhere('student.gender = :gender', { gender: 'Male' });
+            const femaleQb = this.studentRepository.createQueryBuilder('student').where('(student.tenantId = :tenantId OR student.tenantId IS NULL)', { tenantId }).andWhere('student.gender = :gender', { gender: 'Female' });
+            const enrollQb = this.studentRepository.createQueryBuilder('student').where('(student.tenantId = :tenantId OR student.tenantId IS NULL)', { tenantId });
 
             if (isValidSection) {
                 maleQb.leftJoin('student.class', 'cls1').andWhere('cls1.schoolSectionId = :sectionId', { sectionId });
@@ -820,8 +820,8 @@ export class DashboardService {
             const isValidSection = sectionId && sectionId !== 'undefined' && sectionId !== 'null' && sectionId !== '';
             const isValidSession = sessionId && sessionId !== 'undefined' && sessionId !== 'null' && sessionId !== '';
 
-            let studQb = this.studentRepository.createQueryBuilder('student').where('(student.tenantId = :tenantId OR student.tenantId IS NULL)', { tenantId }).orderBy('student.createdAt', 'DESC').take(5);
-            let transQb = this.transactionRepository.createQueryBuilder('transaction').where('(transaction.tenantId = :tenantId OR transaction.tenantId IS NULL)', { tenantId }).andWhere('transaction.type = :type', { type: TransactionType.FEE_PAYMENT }).orderBy('transaction.createdAt', 'DESC').take(5);
+            const studQb = this.studentRepository.createQueryBuilder('student').where('(student.tenantId = :tenantId OR student.tenantId IS NULL)', { tenantId }).orderBy('student.createdAt', 'DESC').take(5);
+            const transQb = this.transactionRepository.createQueryBuilder('transaction').where('(transaction.tenantId = :tenantId OR transaction.tenantId IS NULL)', { tenantId }).andWhere('transaction.type = :type', { type: TransactionType.FEE_PAYMENT }).orderBy('transaction.createdAt', 'DESC').take(5);
 
             if (isValidSection) {
                 studQb.leftJoin('student.class', 'cls').andWhere('cls.schoolSectionId = :sectionId', { sectionId });
@@ -1031,7 +1031,7 @@ export class DashboardService {
         // 5. Today's Classes
         try {
             if (classId) {
-                let dayOfWeek = new Date().getDay();
+                const dayOfWeek = new Date().getDay();
                 const dow = dayOfWeek === 0 ? 7 : dayOfWeek; 
 
                 todayClasses = await this.studentRepository.manager.query(`

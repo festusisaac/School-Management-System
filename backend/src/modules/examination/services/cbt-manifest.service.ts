@@ -38,7 +38,7 @@ export class CbtManifestService {
 
         let requiredMarks = exam.totalMarks || 0;
         let source = 'exam.totalMarks';
-        let resolvedAssessmentTypeId: string | undefined = assessmentTypeId || exam.cbtAssessmentTypeId || undefined;
+        const resolvedAssessmentTypeId: string | undefined = assessmentTypeId || exam.cbtAssessmentTypeId || undefined;
         let assessmentTypeName: string | undefined;
 
         if (resolvedAssessmentTypeId) {
