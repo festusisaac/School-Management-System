@@ -10,9 +10,47 @@ import {
   Platform,
   ScrollView,
   Alert,
+  Image,
+  StatusBar,
 } from 'react-native';
 import { loginRequest } from '../services/api';
 import { useAuthStore } from '../store/authStore';
+
+// @ts-ignore
+const schoolLogo = require('../../assets/school-logo.png');
+
+/* ── Minimal icon components (no external dependency) ── */
+const UserIcon = () => (
+  <View style={iconStyles.wrap}>
+    <View style={iconStyles.userHead} />
+    <View style={iconStyles.userBody} />
+  </View>
+);
+
+const LockIcon = () => (
+  <View style={iconStyles.wrap}>
+    <View style={iconStyles.lockTop} />
+    <View style={iconStyles.lockBody}>
+      <View style={iconStyles.lockHole} />
+    </View>
+  </View>
+);
+
+const EyeIcon = ({ open }: { open: boolean }) => (
+  <View style={iconStyles.eyeWrap}>
+    <View style={[iconStyles.eyeOuter, !open && iconStyles.eyeClosed]}>
+      <View style={iconStyles.eyeInner} />
+    </View>
+    {!open && <View style={iconStyles.eyeStrike} />}
+  </View>
+);
+
+const ArrowIcon = () => (
+  <View style={iconStyles.arrowWrap}>
+    <View style={iconStyles.arrowLine} />
+    <View style={iconStyles.arrowHead} />
+  </View>
+);
 
 export default function LoginScreen() {
   const { setUser } = useAuthStore();
@@ -23,19 +61,35 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      Alert.alert('Missing Fields', 'Please enter your email and password.');
+      Alert.alert('Missing Fields', 'Please enter your User ID/Email and password.');
       return;
     }
 
     try {
       setLoading(true);
       const data = await loginRequest(email.trim(), password);
+      let rawRole = (data.user.role || data.user.roleObject?.name || '').toLowerCase();
+      let normalizedRole = rawRole;
+      if (rawRole.includes('admin') || rawRole.includes('super admin')) {
+        normalizedRole = 'admin';
+      } else if (rawRole.includes('principal')) {
+        normalizedRole = 'principal';
+      } else if (rawRole.includes('teacher')) {
+        normalizedRole = 'teacher';
+      } else if (rawRole.includes('student')) {
+        normalizedRole = 'student';
+      } else if (rawRole.includes('parent')) {
+        normalizedRole = 'parent';
+      } else if (rawRole.includes('accountant') || rawRole.includes('bursar')) {
+        normalizedRole = 'accountant';
+      }
+
       setUser({
         id: data.user.id,
         email: data.user.email,
         firstName: data.user.firstName,
         lastName: data.user.lastName,
-        role: data.user.role,
+        role: normalizedRole as any,
         tenantId: data.user.tenantId,
         token: data.access_token,
       });
@@ -51,35 +105,45 @@ export default function LoginScreen() {
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        {/* Header */}
+      <StatusBar barStyle="dark-content" backgroundColor="#f5f7fa" />
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── Header: Logo + School Name ── */}
         <View style={styles.header}>
-          <View style={styles.logoCircle}>
-            <Text style={styles.logoText}>SMS</Text>
-          </View>
-          <Text style={styles.title}>School Management</Text>
-          <Text style={styles.subtitle}>Sign in to your account</Text>
+          <Image source={schoolLogo} style={styles.logo} resizeMode="contain" />
+          <Text style={styles.schoolName}>PHJC School Azhin Kasa</Text>
+          <Text style={styles.welcomeTitle}>Welcome to PHJC School</Text>
+          <Text style={styles.welcomeSub}>Sign in to access your dashboard</Text>
         </View>
 
-        {/* Card */}
+        {/* ── Form Card ── */}
         <View style={styles.card}>
-          <Text style={styles.label}>Email Address</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="you@school.edu.ng"
-            placeholderTextColor="#94a3b8"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            value={email}
-            onChangeText={setEmail}
-          />
+          {/* Email / User ID */}
+          <Text style={styles.label}>User ID or Email</Text>
+          <View style={styles.inputWrapper}>
+            <UserIcon />
+            <TextInput
+              style={styles.input}
+              placeholder="Enter your credentials"
+              placeholderTextColor="#a0aec0"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail}
+            />
+          </View>
 
-          <Text style={styles.label}>Password</Text>
-          <View style={styles.passwordRow}>
+          {/* Password */}
+          <Text style={[styles.label, { marginTop: 16 }]}>Password</Text>
+          <View style={styles.inputWrapper}>
+            <LockIcon />
             <TextInput
               style={[styles.input, styles.passwordInput]}
-              placeholder="••••••••"
-              placeholderTextColor="#94a3b8"
+              placeholder="Enter your password"
+              placeholderTextColor="#a0aec0"
               secureTextEntry={!showPassword}
               value={password}
               onChangeText={setPassword}
@@ -87,11 +151,14 @@ export default function LoginScreen() {
             <TouchableOpacity
               style={styles.eyeBtn}
               onPress={() => setShowPassword(!showPassword)}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Text style={styles.eyeText}>{showPassword ? 'Hide' : 'Show'}</Text>
+              <EyeIcon open={showPassword} />
             </TouchableOpacity>
           </View>
 
+          {/* Sign In Button */}
           <TouchableOpacity
             style={[styles.loginBtn, loading && styles.loginBtnDisabled]}
             onPress={handleLogin}
@@ -101,142 +168,311 @@ export default function LoginScreen() {
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.loginBtnText}>Sign In</Text>
+              <View style={styles.loginBtnContent}>
+                <Text style={styles.loginBtnText}>Sign In</Text>
+                <ArrowIcon />
+              </View>
             )}
           </TouchableOpacity>
-
-          <Text style={styles.footerNote}>
-            Access is role-based. Contact your administrator if you cannot sign in.
-          </Text>
         </View>
 
-        <Text style={styles.version}>School Management System v1.0</Text>
+        {/* ── Secure Connection Indicator ── */}
+        <View style={styles.secureRow}>
+          <View style={styles.greenDot} />
+          <Text style={styles.secureText}>Secure Institutional Connection Active</Text>
+        </View>
+
+        {/* ── Footer ── */}
+        <View style={styles.footer}>
+          <Text style={styles.footerHelp}>
+            Need help? <Text style={styles.footerLink}>Contact Support</Text>
+          </Text>
+          <View style={styles.footerLinks}>
+            <Text style={styles.footerSmall}>Privacy Policy</Text>
+            <Text style={styles.footerDot}>·</Text>
+            <Text style={styles.footerSmall}>Terms of Service</Text>
+          </View>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
+/* ── Color Constants ── */
+const BLUE = '#1a56db';
+const BLUE_DARK = '#1e40af';
+const ICON_COLOR = '#94a3b8';
+
+/* ── Icon Styles ── */
+const iconStyles = StyleSheet.create({
+  wrap: {
+    width: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  /* User */
+  userHead: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderColor: ICON_COLOR,
+    marginBottom: 1,
+  },
+  userBody: {
+    width: 14,
+    height: 7,
+    borderTopLeftRadius: 7,
+    borderTopRightRadius: 7,
+    borderWidth: 1.5,
+    borderBottomWidth: 0,
+    borderColor: ICON_COLOR,
+  },
+  /* Lock */
+  lockTop: {
+    width: 10,
+    height: 6,
+    borderTopLeftRadius: 5,
+    borderTopRightRadius: 5,
+    borderWidth: 1.5,
+    borderBottomWidth: 0,
+    borderColor: ICON_COLOR,
+  },
+  lockBody: {
+    width: 14,
+    height: 9,
+    borderRadius: 2,
+    backgroundColor: ICON_COLOR,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lockHole: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: '#f7fafc',
+  },
+  /* Eye */
+  eyeWrap: {
+    width: 22,
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  eyeOuter: {
+    width: 18,
+    height: 12,
+    borderRadius: 9,
+    borderWidth: 1.5,
+    borderColor: ICON_COLOR,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  eyeClosed: {
+    opacity: 0.5,
+  },
+  eyeInner: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: ICON_COLOR,
+  },
+  eyeStrike: {
+    position: 'absolute',
+    width: 20,
+    height: 1.5,
+    backgroundColor: ICON_COLOR,
+    transform: [{ rotate: '-45deg' }],
+  },
+  /* Arrow */
+  arrowWrap: {
+    width: 18,
+    height: 18,
+    marginLeft: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+  },
+  arrowLine: {
+    width: 10,
+    height: 1.5,
+    backgroundColor: '#fff',
+  },
+  arrowHead: {
+    width: 7,
+    height: 7,
+    borderTopWidth: 1.5,
+    borderRightWidth: 1.5,
+    borderColor: '#fff',
+    transform: [{ rotate: '45deg' }],
+    marginLeft: -4,
+  },
+});
+
+/* ── Main Styles ── */
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: '#0f172a' },
+  flex: {
+    flex: 1,
+    backgroundColor: '#f5f7fa',
+  },
   container: {
     flexGrow: 1,
-    justifyContent: 'center',
-    padding: 24,
+    paddingHorizontal: 24,
+    paddingTop: 50,
+    paddingBottom: 30,
   },
+
+  /* ── Header ── */
   header: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 28,
   },
-  logoCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: '#6366f1',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-    shadowColor: '#6366f1',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
-    elevation: 10,
+  logo: {
+    width: 100,
+    height: 100,
+    marginBottom: 10,
   },
-  logoText: {
-    color: '#fff',
-    fontSize: 22,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-  title: {
-    fontSize: 26,
+  schoolName: {
+    fontSize: 20,
     fontWeight: '800',
-    color: '#f1f5f9',
-    letterSpacing: 0.5,
+    color: BLUE_DARK,
+    textAlign: 'center',
+    letterSpacing: 0.3,
   },
-  subtitle: {
+  welcomeTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1a202c',
+    marginTop: 18,
+  },
+  welcomeSub: {
     fontSize: 14,
-    color: '#94a3b8',
-    marginTop: 6,
+    color: '#718096',
+    marginTop: 4,
   },
+
+  /* ── Card ── */
   card: {
-    backgroundColor: '#1e293b',
-    borderRadius: 20,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: '#334155',
+    backgroundColor: '#ffffff',
+    borderRadius: 18,
+    padding: 22,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 24,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#e8ecf1',
   },
+
+  /* ── Form Fields ── */
   label: {
-    color: '#94a3b8',
+    color: '#2d3748',
     fontSize: 13,
     fontWeight: '600',
-    marginBottom: 6,
-    marginTop: 14,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f7fafc',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    paddingHorizontal: 14,
   },
   input: {
-    backgroundColor: '#0f172a',
-    color: '#f1f5f9',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    flex: 1,
+    color: '#1a202c',
     fontSize: 15,
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  passwordRow: {
-    position: 'relative',
+    paddingVertical: 14,
   },
   passwordInput: {
-    paddingRight: 70,
+    paddingRight: 44,
   },
   eyeBtn: {
     position: 'absolute',
-    right: 16,
-    top: 14,
+    right: 14,
+    padding: 4,
   },
-  eyeText: {
-    color: '#6366f1',
-    fontWeight: '600',
-    fontSize: 13,
-  },
+
+  /* ── Sign In Button ── */
   loginBtn: {
-    backgroundColor: '#6366f1',
-    borderRadius: 12,
+    backgroundColor: BLUE,
+    borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
-    marginTop: 28,
-    shadowColor: '#6366f1',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
+    justifyContent: 'center',
+    marginTop: 24,
+    shadowColor: BLUE,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   loginBtnDisabled: {
     opacity: 0.6,
+  },
+  loginBtnContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   loginBtnText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '700',
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
-  footerNote: {
-    color: '#475569',
-    fontSize: 12,
-    textAlign: 'center',
-    marginTop: 18,
-    lineHeight: 18,
-  },
-  version: {
-    color: '#334155',
-    textAlign: 'center',
-    fontSize: 11,
+
+  /* ── Secure Connection ── */
+  secureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 24,
+  },
+  greenDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#48bb78',
+    marginRight: 8,
+  },
+  secureText: {
+    color: '#718096',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+
+  /* ── Footer ── */
+  footer: {
+    alignItems: 'center',
+    marginTop: 'auto',
+    paddingTop: 30,
+  },
+  footerHelp: {
+    fontSize: 14,
+    color: '#4a5568',
+  },
+  footerLink: {
+    color: BLUE,
+    fontWeight: '600',
+  },
+  footerLinks: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  footerSmall: {
+    color: '#a0aec0',
+    fontSize: 13,
+  },
+  footerDot: {
+    color: '#a0aec0',
+    marginHorizontal: 8,
+    fontSize: 13,
   },
 });

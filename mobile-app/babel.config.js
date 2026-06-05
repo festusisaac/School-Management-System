@@ -3,9 +3,9 @@ module.exports = function (api) {
   return {
     presets: ['babel-preset-expo'],
     plugins: [
-      // Required for WatermelonDB decorators (@field, @date, @readonly etc.)
       ['@babel/plugin-proposal-decorators', { legacy: true }],
       ['@babel/plugin-proposal-class-properties', { loose: true }],
-    ],
+      ['@babel/plugin-transform-private-methods', { loose: true }]
+    ]
   };
 };
