@@ -90,6 +90,7 @@ export default function LoginScreen() {
         firstName: data.user.firstName,
         lastName: data.user.lastName,
         role: normalizedRole as any,
+        displayRole: data.user.role || data.user.roleObject?.name || normalizedRole,
         tenantId: data.user.tenantId,
         token: data.access_token,
       });

@@ -1,4 +1,5 @@
 import Constants from 'expo-constants';
+import { useAuthStore } from '../store/authStore';
 
 let API_BASE = Constants.expoConfig?.extra?.apiUrl ?? 'http://192.168.0.101:3000/api/v1';
 
@@ -26,6 +27,28 @@ export async function loginRequest(email: string, password: string) {
     return parsed.data;
   }
   
+  return parsed;
+}
+
+export async function apiGet(endpoint: string, token: string) {
+  const res = await fetch(`${API_BASE}${endpoint}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  if (!res.ok) {
+    if (res.status === 401) {
+      useAuthStore.getState().logout();
+    }
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message ?? `API request failed: ${res.status}`);
+  }
+
+  const parsed = await res.json();
+  if (parsed && typeof parsed === 'object' && 'data' in parsed) {
+    return parsed.data;
+  }
   return parsed;
 }
 

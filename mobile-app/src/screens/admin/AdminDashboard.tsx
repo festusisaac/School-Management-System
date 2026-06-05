@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,10 +8,12 @@ import {
   StatusBar,
   Image,
   Platform,
-  SafeAreaView
+  ActivityIndicator
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
+import { apiGet } from '../../services/api';
 
 /* --- Design System Colors --- */
 const COLORS = {
@@ -38,6 +40,50 @@ const COLORS = {
 export default function AdminDashboard() {
   const { user, logout } = useAuthStore();
   const [activeTab, setActiveTab] = useState('Home');
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [recentActivities, setRecentActivities] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user?.token) return;
+    
+    async function fetchData() {
+      try {
+        const stats = await apiGet('/reporting/dashboard/admin/stats', user!.token);
+        setDashboardData(stats);
+        
+        const acts = await apiGet('/reporting/dashboard/admin/activities', user!.token);
+        const enrolls = (acts.recentEnrollments || []).map((s: any) => ({
+          id: `stu_${s.id}`,
+          type: 'enrollment',
+          title: 'New admission:',
+          boldText: `${s.firstName} ${s.lastName}`,
+          subtitle: `Added • ${new Date(s.createdAt).toLocaleDateString()}`,
+          date: new Date(s.createdAt)
+        }));
+        const payments = (acts.recentPayments || []).map((p: any) => ({
+          id: `pay_${p.id}`,
+          type: 'payment',
+          title: 'Payment received:',
+          boldText: `₦${p.amount?.toLocaleString() || '0'}`,
+          subtitle: `Ref: ${p.reference || 'N/A'} • ${new Date(p.createdAt).toLocaleDateString()}`,
+          date: new Date(p.createdAt)
+        }));
+        
+        const combined = [...enrolls, ...payments]
+          .sort((a, b) => b.date.getTime() - a.date.getTime())
+          .slice(0, 4); // show top 4
+          
+        setRecentActivities(combined);
+      } catch (err) {
+        console.error('Failed to fetch dashboard data:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    fetchData();
+  }, [user]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -63,6 +109,7 @@ export default function AdminDashboard() {
       <ScrollView 
         showsVerticalScrollIndicator={false} 
         contentContainerStyle={styles.scrollContent}
+        style={{ flex: 1 }}
       >
         {/* --- Stat Cards --- */}
         <View style={styles.statCardsContainer}>
@@ -72,10 +119,12 @@ export default function AdminDashboard() {
               <Text style={[styles.statCardTitle, { color: '#e2e8f0' }]}>Total Students</Text>
               <Ionicons name="people-outline" size={20} color="#8293b5" />
             </View>
-            <Text style={[styles.statCardValue, { color: COLORS.onPrimary }]}>1,284</Text>
+            <Text style={[styles.statCardValue, { color: COLORS.onPrimary }]}>
+              {isLoading ? <ActivityIndicator color={COLORS.onPrimary} size="small" /> : (dashboardData?.students?.total || '0').toLocaleString()}
+            </Text>
             <View style={styles.statCardFooter}>
               <Ionicons name="trending-up" size={14} color="#4ade80" />
-              <Text style={styles.statCardSubtitleSuccess}> +12 today</Text>
+              <Text style={styles.statCardSubtitleSuccess}> +{(dashboardData?.students?.active || 0)} active</Text>
             </View>
           </View>
 
@@ -85,8 +134,10 @@ export default function AdminDashboard() {
               <Text style={[styles.statCardTitle, { color: '#94a3b8' }]}>Active Staff</Text>
               <Ionicons name="id-card-outline" size={20} color="#64748b" />
             </View>
-            <Text style={[styles.statCardValue, { color: '#cbd5e1' }]}>86</Text>
-            <Text style={styles.statCardSubtitleNeutral}>12 on leave</Text>
+            <Text style={[styles.statCardValue, { color: '#cbd5e1' }]}>
+              {isLoading ? <ActivityIndicator color="#cbd5e1" size="small" /> : (dashboardData?.staff?.total || '0').toLocaleString()}
+            </Text>
+            <Text style={styles.statCardSubtitleNeutral}>{(dashboardData?.staff?.teaching || 0)} teaching</Text>
           </View>
 
           {/* Card 3 */}
@@ -95,8 +146,10 @@ export default function AdminDashboard() {
               <Text style={[styles.statCardTitle, { color: '#e0f2fe' }]}>Fees Collected</Text>
               <Ionicons name="cash-outline" size={20} color="#bae6fd" />
             </View>
-            <Text style={[styles.statCardValue, { color: COLORS.onSecondary }]}>$42,850</Text>
-            <Text style={styles.statCardSubtitleNeutralLight}>Term 2 Progress: 68%</Text>
+            <Text style={[styles.statCardValue, { color: COLORS.onSecondary }]}>
+              {isLoading ? <ActivityIndicator color={COLORS.onSecondary} size="small" /> : `₦${(dashboardData?.finance?.totalRevenue || 0).toLocaleString()}`}
+            </Text>
+            <Text style={styles.statCardSubtitleNeutralLight}>Outstanding: ₦{(dashboardData?.finance?.outstandingFees || 0).toLocaleString()}</Text>
           </View>
         </View>
 
@@ -154,43 +207,27 @@ export default function AdminDashboard() {
           </TouchableOpacity>
         </View>
         <View style={styles.activityList}>
-          {/* Activity 1 */}
-          <View style={styles.activityItem}>
-            <View style={[styles.activityIconWrap, { backgroundColor: '#e2e8f0' }]}>
-              <Ionicons name="person-outline" size={18} color={COLORS.primary} />
-            </View>
-            <View style={styles.activityContent}>
-              <Text style={styles.activityMainText}>New admission: <Text style={styles.activityBold}>Marcus Thorne</Text></Text>
-              <Text style={styles.activitySubText}>Grade 10-A • 2 mins ago</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color="#94a3b8" />
-          </View>
-          <View style={styles.divider} />
-
-          {/* Activity 2 */}
-          <View style={styles.activityItem}>
-            <View style={[styles.activityIconWrap, { backgroundColor: '#86efac' }]}>
-              <Ionicons name="cash-outline" size={18} color="#14532d" />
-            </View>
-            <View style={styles.activityContent}>
-              <Text style={styles.activityMainText}>Payment received: <Text style={styles.activityBold}>$1,200</Text></Text>
-              <Text style={styles.activitySubText}>Sarah Jenkins • Tuition Fee • 15 mins ago</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color="#94a3b8" />
-          </View>
-          <View style={styles.divider} />
-
-          {/* Activity 3 */}
-          <View style={styles.activityItem}>
-            <View style={[styles.activityIconWrap, { backgroundColor: '#dbeafe' }]}>
-              <Ionicons name="document-text-outline" size={18} color={COLORS.secondary} />
-            </View>
-            <View style={styles.activityContent}>
-              <Text style={styles.activityMainText}>Report generated: <Text style={styles.activityBold}>Q3 Attendance Summary</Text></Text>
-              <Text style={styles.activitySubText}>Admin Office • 1 hour ago</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color="#94a3b8" />
-          </View>
+          {isLoading ? (
+             <ActivityIndicator size="small" color={COLORS.primary} style={{ padding: 20 }} />
+          ) : recentActivities.length === 0 ? (
+             <Text style={{ textAlign: 'center', color: '#64748b', padding: 20 }}>No recent activity</Text>
+          ) : (
+            recentActivities.map((act, idx) => (
+              <React.Fragment key={act.id}>
+                <View style={styles.activityItem}>
+                  <View style={[styles.activityIconWrap, { backgroundColor: act.type === 'enrollment' ? '#e2e8f0' : '#86efac' }]}>
+                    <Ionicons name={act.type === 'enrollment' ? 'person-outline' : 'cash-outline'} size={18} color={act.type === 'enrollment' ? COLORS.primary : '#14532d'} />
+                  </View>
+                  <View style={styles.activityContent}>
+                    <Text style={styles.activityMainText}>{act.title} <Text style={styles.activityBold}>{act.boldText}</Text></Text>
+                    <Text style={styles.activitySubText}>{act.subtitle}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color="#94a3b8" />
+                </View>
+                {idx < recentActivities.length - 1 && <View style={styles.divider} />}
+              </React.Fragment>
+            ))
+          )}
         </View>
 
         {/* --- System Health --- */}
@@ -225,10 +262,12 @@ export default function AdminDashboard() {
              <Ionicons name="person" size={24} color="#cbd5e1" />
           </View>
           <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>
-              {user?.firstName ? `${user.firstName} ${user.lastName}` : 'Principal Anderson'}
+            <Text style={[styles.profileName, { textTransform: 'capitalize' }]}>
+              {user?.firstName && user.firstName.trim() !== '' ? `${user.firstName} ${user.lastName || ''}` : 'System Administrator'}
             </Text>
-            <Text style={styles.profileRole}>Lead Administrator</Text>
+            <Text style={[styles.profileRole, { textTransform: 'capitalize' }]}>
+              {user?.displayRole || user?.role || 'Administrator'}
+            </Text>
           </View>
           <Ionicons name="school" size={60} color="rgba(255,255,255,0.05)" style={styles.profileBgIcon} />
         </View>
@@ -241,19 +280,27 @@ export default function AdminDashboard() {
       <View style={styles.bottomNav}>
         <TouchableOpacity style={styles.navItem} onPress={() => setActiveTab('Home')}>
           <Ionicons name={activeTab === 'Home' ? "home" : "home-outline"} size={22} color={activeTab === 'Home' ? COLORS.secondary : '#64748b'} />
-          <Text style={[styles.navText, activeTab === 'Home' && styles.navTextActive]}>Home</Text>
+          <Text style={[styles.navText, activeTab === 'Home' && styles.navTextActive]} numberOfLines={1}>Home</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem} onPress={() => setActiveTab('Students')}>
+          <Ionicons name={activeTab === 'Students' ? "people" : "people-outline"} size={22} color={activeTab === 'Students' ? COLORS.secondary : '#64748b'} />
+          <Text style={[styles.navText, activeTab === 'Students' && styles.navTextActive]} numberOfLines={1}>Students</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem} onPress={() => setActiveTab('Attendance')}>
+          <Ionicons name={activeTab === 'Attendance' ? "calendar" : "calendar-outline"} size={22} color={activeTab === 'Attendance' ? COLORS.secondary : '#64748b'} />
+          <Text style={[styles.navText, activeTab === 'Attendance' && styles.navTextActive]} numberOfLines={1}>Attendance</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={() => setActiveTab('Records')}>
           <Ionicons name={activeTab === 'Records' ? "layers" : "layers-outline"} size={22} color={activeTab === 'Records' ? COLORS.secondary : '#64748b'} />
-          <Text style={[styles.navText, activeTab === 'Records' && styles.navTextActive]}>Records</Text>
+          <Text style={[styles.navText, activeTab === 'Records' && styles.navTextActive]} numberOfLines={1}>Records</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={() => setActiveTab('Sync')}>
           <Ionicons name={activeTab === 'Sync' ? "sync-circle" : "sync-circle-outline"} size={24} color={activeTab === 'Sync' ? COLORS.secondary : '#64748b'} />
-          <Text style={[styles.navText, activeTab === 'Sync' && styles.navTextActive]}>Sync</Text>
+          <Text style={[styles.navText, activeTab === 'Sync' && styles.navTextActive]} numberOfLines={1}>Sync</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={() => setActiveTab('Profile')}>
           <Ionicons name={activeTab === 'Profile' ? "person" : "person-outline"} size={22} color={activeTab === 'Profile' ? COLORS.secondary : '#64748b'} />
-          <Text style={[styles.navText, activeTab === 'Profile' && styles.navTextActive]}>Profile</Text>
+          <Text style={[styles.navText, activeTab === 'Profile' && styles.navTextActive]} numberOfLines={1}>Profile</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -308,7 +355,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingBottom: 80, // Space for bottom nav
+    paddingBottom: 20, // Reduced padding since bottomNav is no longer absolute
   },
   
   /* --- Stat Cards --- */
@@ -607,10 +654,6 @@ const styles = StyleSheet.create({
 
   /* --- Bottom Navigation --- */
   bottomNav: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     height: 64,
     backgroundColor: COLORS.surfaceContainerLowest,
     flexDirection: 'row',

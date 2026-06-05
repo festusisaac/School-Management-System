@@ -9,6 +9,7 @@ interface User {
   firstName: string;
   lastName: string;
   role: UserRole;
+  displayRole?: string;
   tenantId: string;
   token: string;
 }
