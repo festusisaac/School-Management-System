@@ -40,8 +40,10 @@ services:
       - redis_data:/data
     networks:
       - sms-network
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
+      test: ['CMD-SHELL', 'redis-cli -a "$$REDIS_PASSWORD" ping | grep -q PONG']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -107,14 +109,9 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL}
     container_name: sms-frontend-prod
-    environment:
-      VITE_API_BASE_URL: ${API_BASE_URL}
-    ports:
-      - '80:80'
-      - '443:443'
-    volumes:
-      - ./certs:/etc/nginx/certs:ro
     depends_on:
       - backend
     networks:

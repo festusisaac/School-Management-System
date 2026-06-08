@@ -12,6 +12,10 @@ RUN npm ci
 # Copy source
 COPY . .
 
+# API URL is baked in at build time (Vite)
+ARG VITE_API_URL=https://sms.festus.com.ng/api/v1
+ENV VITE_API_URL=$VITE_API_URL
+
 # Build application
 RUN npm run build
 
