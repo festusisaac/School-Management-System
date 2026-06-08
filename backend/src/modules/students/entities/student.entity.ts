@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany, Index, OneToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, ManyToOne, JoinColumn, OneToMany, Index, OneToOne } from 'typeorm';
 import { Class } from '../../academics/entities/class.entity';
 import { Section } from '../../academics/entities/section.entity';
 import { StudentCategory } from './student-category.entity';
@@ -278,4 +278,7 @@ export class Student {
 
     @UpdateDateColumn()
     updatedAt!: Date;
+
+    @DeleteDateColumn()
+    deletedAt?: Date;
 }

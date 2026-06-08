@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { Student } from '../../students/entities/student.entity';
 import { FeeGroup } from './fee-group.entity';
 import { AcademicSession } from '../../system/entities/academic-session.entity';
@@ -80,4 +80,10 @@ export class Transaction {
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   @Index()
   createdAt!: Date;
+
+  @UpdateDateColumn()
+  updatedAt!: Date;
+
+  @DeleteDateColumn()
+  deletedAt?: Date;
 }
