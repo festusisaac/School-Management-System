@@ -40,6 +40,7 @@ export async function apiGet(endpoint: string, token: string) {
   if (!res.ok) {
     if (res.status === 401) {
       useAuthStore.getState().logout();
+      throw new Error('UNAUTHORIZED');
     }
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message ?? `API request failed: ${res.status}`);

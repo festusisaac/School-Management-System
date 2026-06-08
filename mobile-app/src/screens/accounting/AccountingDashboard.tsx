@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,15 +7,11 @@ import {
   StyleSheet,
   StatusBar,
 } from 'react-native';
+import withObservables from '@nozbe/with-observables';
 import { useAuthStore } from '../../store/authStore';
+import { database } from '../../database';
+import FeeRecord from '../../database/models/FeeRecord';
 import { NetworkListener } from '../../components/NetworkListener';
-
-const stats = [
-  { label: 'Total Collected', value: '—', color: '#10b981', icon: '💰' },
-  { label: 'Pending Fees', value: '—', color: '#ef4444', icon: '⏳' },
-  { label: "Today's Receipts", value: '—', color: '#6366f1', icon: '🧾' },
-  { label: 'Defaulters', value: '—', color: '#f59e0b', icon: '🚨' },
-];
 
 const quickActions = [
   { label: 'Record Payment', icon: '💳', color: '#10b981' },
@@ -26,8 +22,37 @@ const quickActions = [
   { label: 'Expense Entry', icon: '🏦', color: '#f59e0b' },
 ];
 
-export default function AccountingDashboard() {
+interface Props {
+  feeRecords: FeeRecord[];
+}
+
+function AccountingDashboardScreen({ feeRecords }: Props) {
   const { user, logout } = useAuthStore();
+
+  // Calculate stats from fee records
+  const stats = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const totalCollected = feeRecords
+      .filter(f => f.type === 'payment' || f.type === 'payment_received')
+      .reduce((sum, f) => sum + (f.amount || 0), 0);
+
+    const todayReceipts = feeRecords
+      .filter(f => {
+        const feeDate = f.createdAt instanceof Date ? f.createdAt : new Date(f.createdAt);
+        feeDate.setHours(0, 0, 0, 0);
+        return (f.type === 'payment' || f.type === 'payment_received') && feeDate.getTime() === today.getTime();
+      })
+      .reduce((sum, f) => sum + (f.amount || 0), 0);
+
+    return [
+      { label: 'Total Collected', value: `₦${(totalCollected || 0).toLocaleString()}`, color: '#10b981', icon: '💰' },
+      { label: 'Pending Fees', value: '—', color: '#ef4444', icon: '⏳' },
+      { label: "Today's Receipts", value: `₦${(todayReceipts || 0).toLocaleString()}`, color: '#6366f1', icon: '🧾' },
+      { label: 'Defaulters', value: '—', color: '#f59e0b', icon: '🚨' },
+    ];
+  }, [feeRecords]);
 
   return (
     <View style={styles.root}>
@@ -95,6 +120,13 @@ export default function AccountingDashboard() {
     </View>
   );
 }
+
+// Enhanced version with observables
+const EnhancedAccountingDashboard = withObservables([], () => ({
+  feeRecords: database.collections.get<FeeRecord>('fee_records').query().observe(),
+}))(AccountingDashboardScreen);
+
+export default EnhancedAccountingDashboard;
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#0f172a' },

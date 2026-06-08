@@ -29,9 +29,11 @@ export default function RootNavigator() {
   }
 
   // Logged in → route by role
+  if (user.role === 'admin') {
+    return <AdminStack />;
+  }
+
   switch (user.role) {
-    case 'admin':
-      return <AdminDashboard />;
     case 'principal':
       return <PrincipalDashboard />;
     case 'accountant':
@@ -45,6 +47,26 @@ export default function RootNavigator() {
     default:
       return <LoginScreen />;
   }
+}
+
+// --- Admin Stack ---
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import StudentManagement from '../screens/admin/StudentManagement';
+
+export type AdminStackParamList = {
+  AdminDashboard: undefined;
+  StudentManagement: undefined;
+};
+
+const Stack = createNativeStackNavigator<AdminStackParamList>();
+
+function AdminStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="AdminDashboard" component={AdminDashboard} />
+      <Stack.Screen name="StudentManagement" component={StudentManagement} />
+    </Stack.Navigator>
+  );
 }
 
 const styles = StyleSheet.create({

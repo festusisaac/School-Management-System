@@ -1,0 +1,104 @@
+import { synchronize } from '@nozbe/watermelondb/sync';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { database } from './index';
+import { getSyncBaseUrl } from '../services/api';
+import { useAuthStore } from '../store/authStore';
+
+/**
+ * Convert camelCase field names (from backend) to snake_case (for database schema)
+ */
+function convertKeysToSnakeCase(obj: any): any {
+  if (obj === null || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) {
+    return obj.map(item => convertKeysToSnakeCase(item));
+  }
+
+  const result: any = {};
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      const snakeCase = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+      result[snakeCase] = convertKeysToSnakeCase(obj[key]);
+    }
+  }
+  return result;
+}
+
+/**
+ * Performs a full WatermelonDB sync with the backend.
+ * Only meant for staff roles (admin, teacher, principal, accountant).
+ */
+export async function syncData(): Promise<void> {
+  const user = useAuthStore.getState().user;
+  if (!user || !user.token) {
+    throw new Error('Cannot sync: No authenticated user');
+  }
+
+  // Only staff roles get offline sync
+  const staffRoles = ['admin', 'principal', 'teacher', 'accountant'];
+  if (!staffRoles.includes(user.role)) {
+    return; // silently skip for students and parents
+  }
+
+  // Check if this is the first successful sync for this tenant
+  const syncKey = `first_sync_complete_${user.tenantId}`;
+  const hasCompletedFirstSync = Boolean(await AsyncStorage.getItem(syncKey));
+
+  const API_BASE = getSyncBaseUrl();
+
+  await synchronize({
+    database,
+    pullChanges: async ({ lastPulledAt }) => {
+      // Use pull-all if first sync hasn't completed, otherwise use incremental
+      const useFullPull = !hasCompletedFirstSync;
+      const endpoint = useFullPull ? '/sync/pull-all' : `/sync/pull?lastPulledAt=${lastPulledAt || 0}`;
+      
+      const response = await fetch(`${API_BASE}${endpoint}`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          useAuthStore.getState().logout();
+          throw new Error('UNAUTHORIZED');
+        }
+        throw new Error(`Sync pull failed: ${response.status}`);
+      }
+
+      const parsed = await response.json();
+      // Backend wraps in TransformInterceptor: { data: { changes, timestamp } }
+      const body = parsed.data || parsed;
+      
+      // Convert all field names from camelCase (backend) to snake_case (database schema)
+      const convertedChanges = convertKeysToSnakeCase(body.changes);
+      
+      return { changes: convertedChanges, timestamp: body.timestamp };
+    },
+    pushChanges: async ({ changes, lastPulledAt }) => {
+      const response = await fetch(`${API_BASE}/sync/push`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({ changes, lastPulledAt }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          useAuthStore.getState().logout();
+          throw new Error('UNAUTHORIZED');
+        }
+        throw new Error(`Sync push failed: ${response.status}`);
+      }
+    },
+    sendCreatedAsUpdated: !hasCompletedFirstSync,
+  });
+
+  // Mark first sync as complete after successful sync
+  if (!hasCompletedFirstSync) {
+    await AsyncStorage.setItem(syncKey, 'true');
+  }
+}

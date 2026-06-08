@@ -12,6 +12,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
+import NetInfo from '@react-native-community/netinfo';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { AdminStackParamList } from '../../navigation/RootNavigator';
+import AdminLayout from '../../components/AdminLayout';
+
+// @ts-ignore
+const schoolLogo = require('../../../assets/school-logo.png');
 import { useAuthStore } from '../../store/authStore';
 import { apiGet } from '../../services/api';
 
@@ -39,19 +47,30 @@ const COLORS = {
 
 export default function AdminDashboard() {
   const { user, logout } = useAuthStore();
-  const [activeTab, setActiveTab] = useState('Home');
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isOnline, setIsOnline] = useState(true);
+  const navigation = useNavigation<NativeStackNavigationProp<AdminStackParamList>>();
+
+  const userInitials = user ? `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`.toUpperCase() : 'U';
+
+  // Track connectivity
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      setIsOnline(!!state.isConnected);
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     if (!user?.token) return;
-    
+
     async function fetchData() {
       try {
         const stats = await apiGet('/reporting/dashboard/admin/stats', user!.token);
         setDashboardData(stats);
-        
+
         const acts = await apiGet('/reporting/dashboard/admin/activities', user!.token);
         const enrolls = (acts.recentEnrollments || []).map((s: any) => ({
           id: `stu_${s.id}`,
@@ -69,45 +88,28 @@ export default function AdminDashboard() {
           subtitle: `Ref: ${p.reference || 'N/A'} • ${new Date(p.createdAt).toLocaleDateString()}`,
           date: new Date(p.createdAt)
         }));
-        
+
         const combined = [...enrolls, ...payments]
           .sort((a, b) => b.date.getTime() - a.date.getTime())
           .slice(0, 4); // show top 4
-          
+
         setRecentActivities(combined);
-      } catch (err) {
-        console.error('Failed to fetch dashboard data:', err);
+      } catch (err: any) {
+        if (err.message !== 'UNAUTHORIZED') {
+          console.error('Failed to fetch dashboard data:', err);
+        }
       } finally {
         setIsLoading(false);
       }
     }
-    
+
     fetchData();
   }, [user]);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.surface} />
-      
-      {/* --- App Header --- */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Ionicons name="school-outline" size={24} color={COLORS.onSurface} />
-          <Text style={styles.headerTitle}>EduManage</Text>
-        </View>
-        <View style={styles.headerRight}>
-          <View style={styles.onlineBadge}>
-            <Ionicons name="swap-vertical" size={12} color={COLORS.successText} />
-            <Text style={styles.onlineText}>Online</Text>
-          </View>
-          <TouchableOpacity style={styles.iconButton}>
-            <Ionicons name="refresh" size={22} color={COLORS.onSurface} />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <ScrollView 
-        showsVerticalScrollIndicator={false} 
+    <AdminLayout activeTab="Home">
+      <ScrollView
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         style={{ flex: 1 }}
       >
@@ -173,11 +175,14 @@ export default function AdminDashboard() {
         {/* --- Quick Administration --- */}
         <Text style={styles.sectionTitle}>QUICK ADMINISTRATION</Text>
         <View style={styles.gridContainer}>
-          <TouchableOpacity style={styles.gridItem}>
+          <TouchableOpacity 
+            style={styles.gridItem}
+            onPress={() => navigation.navigate('StudentManagement')}
+          >
             <View style={[styles.gridIconWrap, { backgroundColor: '#f1f5f9' }]}>
-              <Ionicons name="person-add-outline" size={22} color={COLORS.primary} />
+              <Ionicons name="people-outline" size={22} color={COLORS.primary} />
             </View>
-            <Text style={styles.gridLabel}>Enroll Student</Text>
+            <Text style={styles.gridLabel}>Manage Students</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.gridItem}>
             <View style={[styles.gridIconWrap, { backgroundColor: '#eff6ff' }]}>
@@ -208,9 +213,9 @@ export default function AdminDashboard() {
         </View>
         <View style={styles.activityList}>
           {isLoading ? (
-             <ActivityIndicator size="small" color={COLORS.primary} style={{ padding: 20 }} />
+            <ActivityIndicator size="small" color={COLORS.primary} style={{ padding: 20 }} />
           ) : recentActivities.length === 0 ? (
-             <Text style={{ textAlign: 'center', color: '#64748b', padding: 20 }}>No recent activity</Text>
+            <Text style={{ textAlign: 'center', color: '#64748b', padding: 20 }}>No recent activity</Text>
           ) : (
             recentActivities.map((act, idx) => (
               <React.Fragment key={act.id}>
@@ -256,54 +261,11 @@ export default function AdminDashboard() {
           </View>
         </View>
 
-        {/* --- Profile Footer --- */}
-        <View style={styles.profileFooter}>
-          <View style={styles.profileAvatar}>
-             <Ionicons name="person" size={24} color="#cbd5e1" />
-          </View>
-          <View style={styles.profileInfo}>
-            <Text style={[styles.profileName, { textTransform: 'capitalize' }]}>
-              {user?.firstName && user.firstName.trim() !== '' ? `${user.firstName} ${user.lastName || ''}` : 'System Administrator'}
-            </Text>
-            <Text style={[styles.profileRole, { textTransform: 'capitalize' }]}>
-              {user?.displayRole || user?.role || 'Administrator'}
-            </Text>
-          </View>
-          <Ionicons name="school" size={60} color="rgba(255,255,255,0.05)" style={styles.profileBgIcon} />
-        </View>
-        
-        {/* Spacer for bottom tab */}
+
+
         <View style={{ height: 20 }} />
       </ScrollView>
-
-      {/* --- Bottom Navigation (Fake for mockup mapping) --- */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem} onPress={() => setActiveTab('Home')}>
-          <Ionicons name={activeTab === 'Home' ? "home" : "home-outline"} size={22} color={activeTab === 'Home' ? COLORS.secondary : '#64748b'} />
-          <Text style={[styles.navText, activeTab === 'Home' && styles.navTextActive]} numberOfLines={1}>Home</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => setActiveTab('Students')}>
-          <Ionicons name={activeTab === 'Students' ? "people" : "people-outline"} size={22} color={activeTab === 'Students' ? COLORS.secondary : '#64748b'} />
-          <Text style={[styles.navText, activeTab === 'Students' && styles.navTextActive]} numberOfLines={1}>Students</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => setActiveTab('Attendance')}>
-          <Ionicons name={activeTab === 'Attendance' ? "calendar" : "calendar-outline"} size={22} color={activeTab === 'Attendance' ? COLORS.secondary : '#64748b'} />
-          <Text style={[styles.navText, activeTab === 'Attendance' && styles.navTextActive]} numberOfLines={1}>Attendance</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => setActiveTab('Records')}>
-          <Ionicons name={activeTab === 'Records' ? "layers" : "layers-outline"} size={22} color={activeTab === 'Records' ? COLORS.secondary : '#64748b'} />
-          <Text style={[styles.navText, activeTab === 'Records' && styles.navTextActive]} numberOfLines={1}>Records</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => setActiveTab('Sync')}>
-          <Ionicons name={activeTab === 'Sync' ? "sync-circle" : "sync-circle-outline"} size={24} color={activeTab === 'Sync' ? COLORS.secondary : '#64748b'} />
-          <Text style={[styles.navText, activeTab === 'Sync' && styles.navTextActive]} numberOfLines={1}>Sync</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => setActiveTab('Profile')}>
-          <Ionicons name={activeTab === 'Profile' ? "person" : "person-outline"} size={22} color={activeTab === 'Profile' ? COLORS.secondary : '#64748b'} />
-          <Text style={[styles.navText, activeTab === 'Profile' && styles.navTextActive]} numberOfLines={1}>Profile</Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+    </AdminLayout>
   );
 }
 
@@ -324,6 +286,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  headerProfileBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.primaryContainer,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 4,
+  },
+  headerProfileText: {
+    color: '#bae6fd',
+    fontWeight: 'bold',
+    fontSize: 12,
   },
   headerTitle: {
     fontSize: 20,
@@ -357,7 +333,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 20, // Reduced padding since bottomNav is no longer absolute
   },
-  
+
   /* --- Stat Cards --- */
   statCardsContainer: {
     gap: 12,
@@ -650,31 +626,5 @@ const styles = StyleSheet.create({
     bottom: -15,
     zIndex: 1,
     transform: [{ rotate: '-15deg' }],
-  },
-
-  /* --- Bottom Navigation --- */
-  bottomNav: {
-    height: 64,
-    backgroundColor: COLORS.surfaceContainerLowest,
-    flexDirection: 'row',
-    borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
-    paddingBottom: Platform.OS === 'ios' ? 16 : 0,
-  },
-  navItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 8,
-  },
-  navText: {
-    fontSize: 10,
-    fontWeight: '500',
-    color: '#64748b',
-    marginTop: 4,
-  },
-  navTextActive: {
-    color: COLORS.secondary,
-    fontWeight: '600',
   },
 });
