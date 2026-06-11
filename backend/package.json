@@ -18,10 +18,12 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./jest-e2e.config.js",
     "db:migrate": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d ./src/data-source.ts",
+    "db:migrate:prod": "node ./node_modules/typeorm/cli.js migration:run -d ./dist/data-source.js",
     "db:generate": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate -d ./src/data-source.ts",
     "db:revert": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d ./src/data-source.ts",
     "db:seed": "ts-node -r tsconfig-paths/register src/database/seeds/seed.runner.ts",
-    "db:clear": "ts-node -r tsconfig-paths/register src/scripts/clear-db.ts"
+    "db:clear": "ts-node -r tsconfig-paths/register src/scripts/clear-db.ts",
+    "db:clear:prod": "node dist/scripts/clear-db.js"
   },
   "dependencies": {
     "@nestjs/bull": "^10.0.1",

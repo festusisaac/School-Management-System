@@ -11,7 +11,7 @@ COPY package*.json ./
 COPY tsconfig*.json ./
 
 # Install dependencies
-RUN npm ci
+RUN npm install --legacy-peer-deps
 
 # Copy source
 COPY . .
@@ -30,6 +30,9 @@ RUN apk add --no-cache dumb-init
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && adduser -S nestjs -u 1001
 
+# --- FIX: Create the absolute root backups directory and grant access to nestjs ---
+RUN mkdir /backups && chown -R nestjs:nodejs /backups
+
 # Copy built application from builder
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
@@ -39,7 +42,7 @@ COPY --from=builder /app/package*.json ./
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD node -e "require('http').get('http://localhost:3000/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
 
-# Change ownership
+# Change ownership of application directory
 RUN chown -R nestjs:nodejs /app
 
 # Switch to non-root user
@@ -48,6 +51,5 @@ USER nestjs
 EXPOSE 3000
 
 # Use dumb-init to handle signals
-ENTRYPOINT ["dumb-init", "--"]
-
-CMD ["node", "dist/main.js"]
+# Combine dumb-init and your application start command into a single execution instruction
+CMD ["dumb-init", "--", "node", "dist/main.js"]

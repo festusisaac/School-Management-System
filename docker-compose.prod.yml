@@ -54,15 +54,15 @@ services:
         max-size: '10m'
         max-file: '3'
 
-  # Backend API
+  # Backend API — image is built on your PC or GitHub Actions, then pulled on the server.
+  # Do NOT run: docker compose up --build  (will OOM on small Lightsail instances)
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: festusisaac/sms-backend:latest
     container_name: sms-backend-prod
     environment:
       NODE_ENV: production
       PORT: 3000
+      API_VERSION: v1
       DATABASE_HOST: postgres
       DATABASE_PORT: 5432
       DATABASE_USER: ${DATABASE_USER}
@@ -91,8 +91,10 @@ services:
         condition: service_healthy
     networks:
       - sms-network
+    volumes:
+      - ./uploads:/app/uploads
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:3000/health']
+      test: ['CMD', 'node', '-e', "require('http').get('http://127.0.0.1:3000/api/v1/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
       interval: 30s
       timeout: 3s
       retries: 3
@@ -104,20 +106,16 @@ services:
         max-size: '10m'
         max-file: '3'
 
-  # Frontend
+  # Frontend — built with VITE_API_URL on your PC / CI, not on Lightsail
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        VITE_API_URL: ${VITE_API_URL}
+    image: festusisaac/sms-frontend:latest
     container_name: sms-frontend-prod
     depends_on:
       - backend
     networks:
       - sms-network
     healthcheck:
-      test: ['CMD', 'wget', '--quiet', '--tries=1', '--spider', 'http://localhost:80/health']
+      test: ['CMD', 'wget', '--quiet', '--tries=1', '--spider', 'http://127.0.0.1:80/health']
       interval: 30s
       timeout: 3s
       retries: 3

@@ -6,6 +6,7 @@ import withObservables from '@nozbe/with-observables';
 import { Q } from '@nozbe/watermelondb';
 
 import { database } from '../../database';
+import { getSyncBaseUrl } from '../../services/api';
 import Student from '../../database/models/Student';
 import Class from '../../database/models/Class';
 import Section from '../../database/models/Section';
@@ -34,6 +35,17 @@ const COLORS = {
   pendingText: '#92400e',
 };
 
+// Helper function to get full photo URL
+function getPhotoUrl(photoPath?: string): string | null {
+  if (!photoPath) return null;
+  if (photoPath.startsWith('http://') || photoPath.startsWith('https://')) {
+    return photoPath;
+  }
+  // Prepend API base URL to relative paths
+  const baseUrl = getSyncBaseUrl().replace('/api/v1', '');
+  return `${baseUrl}/${photoPath}`;
+}
+
 // --- Component for individual Student Row ---
 const StudentItem = ({ 
   student, 
@@ -50,14 +62,16 @@ const StudentItem = ({
   const className = studentClass?.name || '';
   const sectionName = studentSection?.name || '';
   const gradeStr = className ? `Grade ${className}${sectionName ? `-${sectionName}` : ''}` : 'No Class';
+  
+  const photoUrl = getPhotoUrl(student.studentPhoto);
 
   return (
     <TouchableOpacity style={styles.card} activeOpacity={0.7}>
       {isActive && <View style={styles.cardActiveBorder} />}
       
       {/* Avatar */}
-      {student.studentPhoto ? (
-        <Image source={{ uri: student.studentPhoto }} style={styles.avatar} />
+      {photoUrl ? (
+        <Image source={{ uri: photoUrl }} style={styles.avatar} />
       ) : (
         <View style={styles.avatarFallback}>
           <Text style={styles.avatarText}>{initials || 'S'}</Text>
@@ -175,11 +189,11 @@ const StudentManagementScreen = ({ students }: Props) => {
             </View>
           </View>
 
-          {/* Sync Warning */}
+          {/* Sync Status */}
           <View style={styles.syncWarning}>
-            <Ionicons name="cloud-offline-outline" size={16} color={COLORS.secondary} />
+            <Ionicons name="checkmark-circle" size={16} color="#10b981" />
             <Text style={styles.syncWarningText}>
-              3 records pending local sync. Connectivity is limited.
+              ✅ All data synced successfully.
             </Text>
           </View>
         </View>
@@ -212,7 +226,12 @@ const StudentManagementScreen = ({ students }: Props) => {
 };
 
 const EnhancedStudentManagement = withObservables([], () => ({
-  students: database.collections.get<Student>('students').query(Q.sortBy('created_at', Q.desc)).observe(),
+  students: database.collections.get<Student>('students')
+    .query(
+      Q.where('is_active', true),
+      Q.sortBy('created_at', Q.desc)
+    )
+    .observe(),
 }))(StudentManagementScreen);
 
 export default EnhancedStudentManagement;

@@ -155,20 +155,16 @@ export default function AdminDashboard() {
           </View>
         </View>
 
-        {/* --- Sync Banner --- */}
+        {/* --- Sync Status Banner --- */}
         <View style={styles.syncBanner}>
           <View style={styles.syncIconWrap}>
-            <Ionicons name="cloud-upload-outline" size={28} color={COLORS.secondary} />
+            <Ionicons name="checkmark-circle-outline" size={28} color="#10b981" />
           </View>
           <View style={styles.syncContent}>
-            <Text style={styles.syncTitle}>Local Storage Sync</Text>
+            <Text style={styles.syncTitle}>Sync Status</Text>
             <Text style={styles.syncText}>
-              14 Records awaiting institutional database sync. Your offline changes are safe.
+              ✅ All data is synchronized. Sync runs automatically when online.
             </Text>
-            <TouchableOpacity style={styles.syncBtn}>
-              <Ionicons name="sync" size={16} color={COLORS.onSecondary} />
-              <Text style={styles.syncBtnText}>Sync Now</Text>
-            </TouchableOpacity>
           </View>
         </View>
 

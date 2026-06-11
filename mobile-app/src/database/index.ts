@@ -11,7 +11,7 @@ import Section from './models/Section';
 const adapter = new SQLiteAdapter({
   schema,
   jsi: true, /* recommended for performance */
-  dbName: 'edumanage_v4',
+  dbName: 'edumanage_v5',
   onSetUpError: error => {
     console.error('WatermelonDB setup error', error);
   }
