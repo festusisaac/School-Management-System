@@ -1,12 +1,9 @@
 import Constants from 'expo-constants';
 import { useAuthStore } from '../store/authStore';
 
-let API_BASE = Constants.expoConfig?.extra?.apiUrl ?? 'http://192.168.0.101:3000/api/v1';
+import { Platform } from 'react-native';
 
-if (__DEV__ && Constants.expoConfig?.hostUri) {
-  const metroIp = Constants.expoConfig.hostUri.split(':')[0];
-  API_BASE = `http://${metroIp}:3000/api/v1`;
-}
+let API_BASE = 'http://192.168.0.103:3000/api/v1';
 
 export async function loginRequest(email: string, password: string) {
   const res = await fetch(`${API_BASE}/auth/login`, {

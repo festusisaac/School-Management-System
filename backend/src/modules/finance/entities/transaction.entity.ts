@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
+import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, ManyToOne, JoinColumn, Index, BeforeInsert } from 'typeorm';
+import { v4 as uuidv4 } from 'uuid';
 import { Student } from '../../students/entities/student.entity';
 import { FeeGroup } from './fee-group.entity';
 import { AcademicSession } from '../../system/entities/academic-session.entity';
@@ -21,7 +22,7 @@ export enum PaymentMethod {
 @Entity({ name: 'transactions' })
 @Index(['tenantId', 'reference'], { unique: true })
 export class Transaction {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryColumn({ type: 'varchar', length: 36 })
   id!: string;
 
   @Column({ type: 'decimal', precision: 12, scale: 2 })
@@ -86,4 +87,11 @@ export class Transaction {
 
   @DeleteDateColumn()
   deletedAt?: Date;
+
+  @BeforeInsert()
+  generateId() {
+    if (!this.id) {
+      this.id = uuidv4();
+    }
+  }
 }

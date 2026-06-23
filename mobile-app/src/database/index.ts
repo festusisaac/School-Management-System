@@ -7,6 +7,10 @@ import Attendance from './models/Attendance';
 import FeeRecord from './models/FeeRecord';
 import Class from './models/Class';
 import Section from './models/Section';
+import ExamGroup from './models/ExamGroup';
+import StudentTermResult from './models/StudentTermResult';
+import StudentDocument from './models/StudentDocument';
+import CommunicationLog from './models/CommunicationLog';
 
 const adapter = new SQLiteAdapter({
   schema,
@@ -25,5 +29,9 @@ export const database = new Database({
     FeeRecord,
     Class,
     Section,
+    ExamGroup,
+    StudentTermResult,
+    StudentDocument,
+    CommunicationLog,
   ],
 });

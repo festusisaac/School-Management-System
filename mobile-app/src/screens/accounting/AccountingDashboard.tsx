@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,8 @@ import { useAuthStore } from '../../store/authStore';
 import { database } from '../../database';
 import FeeRecord from '../../database/models/FeeRecord';
 import { NetworkListener } from '../../components/NetworkListener';
+import RecordFeeScreen from './RecordFeeScreen';
+import { performGlobalSync } from '../../hooks/useAutoSync';
 
 const quickActions = [
   { label: 'Record Payment', icon: '💳', color: '#10b981' },
@@ -28,23 +30,30 @@ interface Props {
 
 function AccountingDashboardScreen({ feeRecords }: Props) {
   const { user, logout } = useAuthStore();
+  const [screen, setScreen] = useState<'dashboard' | 'record_fee'>('dashboard');
+
+  if (screen === 'record_fee') {
+    return <RecordFeeScreen onBack={() => { setScreen('dashboard'); performGlobalSync(); }} />;
+  }
 
   // Calculate stats from fee records
   const stats = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    const paymentTypes = ['payment', 'payment_received', 'FEE_PAYMENT', 'WAIVER'];
+
     const totalCollected = feeRecords
-      .filter(f => f.type === 'payment' || f.type === 'payment_received')
-      .reduce((sum, f) => sum + (f.amount || 0), 0);
+      .filter(f => paymentTypes.includes(f.type))
+      .reduce((sum, f) => sum + (Number(f.amount) || 0), 0);
 
     const todayReceipts = feeRecords
       .filter(f => {
         const feeDate = f.createdAt instanceof Date ? f.createdAt : new Date(f.createdAt);
         feeDate.setHours(0, 0, 0, 0);
-        return (f.type === 'payment' || f.type === 'payment_received') && feeDate.getTime() === today.getTime();
+        return paymentTypes.includes(f.type) && feeDate.getTime() === today.getTime();
       })
-      .reduce((sum, f) => sum + (f.amount || 0), 0);
+      .reduce((sum, f) => sum + (Number(f.amount) || 0), 0);
 
     return [
       { label: 'Total Collected', value: `₦${(totalCollected || 0).toLocaleString()}`, color: '#10b981', icon: '💰' },
@@ -102,6 +111,7 @@ function AccountingDashboardScreen({ feeRecords }: Props) {
               key={action.label}
               style={[styles.actionCard, { borderLeftColor: action.color }]}
               activeOpacity={0.8}
+              onPress={action.label === 'Record Payment' ? () => setScreen('record_fee') : undefined}
             >
               <Text style={styles.actionIcon}>{action.icon}</Text>
               <Text style={styles.actionLabel}>{action.label}</Text>

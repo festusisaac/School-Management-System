@@ -22,53 +22,68 @@ export const useSyncStore = create<SyncState>((set) => ({
   setError: (error) => set({ isSyncing: false, error }),
 }));
 
+export const performGlobalSync = async () => {
+  const user = useAuthStore.getState().user;
+  const staffRoles = ['admin', 'principal', 'teacher', 'accountant'];
+  if (!user || !staffRoles.includes(user.role)) return;
+
+  const { isSyncing, setSyncing, setSynced, setError } = useSyncStore.getState();
+  if (isSyncing) return; // Prevent concurrent calls
+
+  try {
+    setSyncing(true);
+    await syncData();
+    setSynced();
+  } catch (err: any) {
+    if (err.message !== 'UNAUTHORIZED') {
+      console.error('Auto-sync failed:', err.message);
+    }
+    setError(err.message);
+  }
+};
+
+// Ensure variables survive Fast Refresh
+const globalState = globalThis as any;
+if (globalState.mountedInstances === undefined) {
+  globalState.mountedInstances = 0;
+  globalState.unsubscribeNetInfo = null;
+  globalState.globalWasOffline = false;
+}
+
 /**
  * Hook that automatically triggers a sync when:
  * 1. The app comes online after being offline
  * 2. The user first logs in
  * 
- * Only activates for staff roles (admin, principal, teacher, accountant).
+ * Only activates for staff roles.
  */
 export function useAutoSync() {
   const user = useAuthStore((s) => s.user);
-  const wasOffline = useRef(false);
-  const { setSyncing, setSynced, setError } = useSyncStore();
-
-  const staffRoles = ['admin', 'principal', 'teacher', 'accountant'];
-  const isStaff = user && staffRoles.includes(user.role);
-
-  const performSync = useCallback(async () => {
-    if (!isStaff) return;
-
-    try {
-      setSyncing(true);
-      await syncData();
-      setSynced();
-    } catch (err: any) {
-      if (err.message !== 'UNAUTHORIZED') {
-        console.error('Auto-sync failed:', err.message);
-      }
-      setError(err.message);
-    }
-  }, [isStaff]);
 
   useEffect(() => {
-    if (!isStaff) return;
+    globalState.mountedInstances++;
+    const staffRoles = ['admin', 'principal', 'teacher', 'accountant'];
+    const isStaff = user && staffRoles.includes(user.role);
 
-    // Initial sync on mount
-    performSync();
+    if (globalState.mountedInstances === 1 && isStaff) {
+      performGlobalSync();
+      globalState.unsubscribeNetInfo = NetInfo.addEventListener((state) => {
+        if (state.isConnected && globalState.globalWasOffline) {
+          performGlobalSync();
+        }
+        globalState.globalWasOffline = !state.isConnected;
+      });
+    }
 
-    // Listen for connectivity changes
-    const unsubscribe = NetInfo.addEventListener((state) => {
-      if (state.isConnected && wasOffline.current) {
-        // Back online — trigger sync
-        performSync();
+    return () => {
+      globalState.mountedInstances--;
+      if (globalState.mountedInstances <= 0 && globalState.unsubscribeNetInfo) {
+        globalState.unsubscribeNetInfo();
+        globalState.unsubscribeNetInfo = null;
+        globalState.mountedInstances = 0;
       }
-      wasOffline.current = !state.isConnected;
-    });
+    };
+  }, [user]);
 
-    return () => unsubscribe();
-  }, [isStaff, performSync]);
-
-  return { performSync };
+  return { performSync: performGlobalSync };
 }

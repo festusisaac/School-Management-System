@@ -163,7 +163,7 @@ export default function AdminDashboard() {
           <View style={styles.syncContent}>
             <Text style={styles.syncTitle}>Sync Status</Text>
             <Text style={styles.syncText}>
-              ✅ All data is synchronized. Sync runs automatically when online.
+              All data is synchronized. Sync runs automatically when online.
             </Text>
           </View>
         </View>
@@ -171,7 +171,7 @@ export default function AdminDashboard() {
         {/* --- Quick Administration --- */}
         <Text style={styles.sectionTitle}>QUICK ADMINISTRATION</Text>
         <View style={styles.gridContainer}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.gridItem}
             onPress={() => navigation.navigate('StudentManagement')}
           >
@@ -180,7 +180,10 @@ export default function AdminDashboard() {
             </View>
             <Text style={styles.gridLabel}>Manage Students</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.gridItem}>
+          <TouchableOpacity
+            style={styles.gridItem}
+            onPress={() => navigation.navigate('RecordFee')}
+          >
             <View style={[styles.gridIconWrap, { backgroundColor: '#eff6ff' }]}>
               <Ionicons name="receipt-outline" size={22} color={COLORS.secondary} />
             </View>

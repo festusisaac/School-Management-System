@@ -7,10 +7,30 @@ import { Transaction } from '../finance/entities/transaction.entity';
 import { StudentAttendance } from '../students/entities/student-attendance.entity';
 import { Class } from '../academics/entities/class.entity';
 import { Section } from '../academics/entities/section.entity';
+import { CommunicationLog } from '../communication/entities/communication-log.entity';
+import { StudentDocument } from '../students/entities/student-document.entity';
+import { StudentTermResult } from '../examination/entities/student-term-result.entity';
+import { ExamGroup } from '../examination/entities/exam-group.entity';
+import { FeeAssignment } from '../finance/entities/fee-assignment.entity';
+import { DiscountProfile } from '../finance/entities/discount-profile.entity';
+import { SystemSetting } from '../system/entities/system-setting.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Student, Transaction, StudentAttendance, Class, Section]),
+    TypeOrmModule.forFeature([
+      Student,
+      Transaction,
+      StudentAttendance,
+      Class,
+      Section,
+      CommunicationLog,
+      StudentDocument,
+      StudentTermResult,
+      ExamGroup,
+      FeeAssignment,
+      DiscountProfile,
+      SystemSetting,
+    ]),
   ],
   controllers: [SyncController],
   providers: [SyncService],

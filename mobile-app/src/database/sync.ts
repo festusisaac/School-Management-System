@@ -17,88 +17,164 @@ function convertKeysToSnakeCase(obj: any): any {
   for (const key in obj) {
     if (obj.hasOwnProperty(key)) {
       const snakeCase = key.replace(/([A-Z])/g, '_$1').toLowerCase();
-      result[snakeCase] = convertKeysToSnakeCase(obj[key]);
+      let value = obj[key];
+      
+      // TypeORM returns decimals as strings to prevent precision loss. 
+      // WatermelonDB expects numbers and will silently coerce strings to 0.
+      if (['amount', 'total_score', 'average_score'].includes(snakeCase) && typeof value === 'string') {
+        value = Number(value) || 0;
+      }
+      
+      result[snakeCase] = convertKeysToSnakeCase(value);
     }
   }
   return result;
 }
+
+
+function convertKeysToCamelCase(obj: any): any {
+  if (obj === null || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) {
+    return obj.map(item => convertKeysToCamelCase(item));
+  }
+
+  const result: any = {};
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      const camelCase = key.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+      let value = obj[key];
+      
+      // Convert Unix timestamps to ISO strings for TypeORM
+      if (['createdAt', 'updatedAt', 'deletedAt'].includes(camelCase) && typeof value === 'number') {
+        value = new Date(value).toISOString();
+      }
+      
+      result[camelCase] = convertKeysToCamelCase(value);
+    }
+  }
+  return result;
+}
+
+let isSyncing = false;
 
 /**
  * Performs a full WatermelonDB sync with the backend.
  * Only meant for staff roles (admin, teacher, principal, accountant).
  */
 export async function syncData(): Promise<void> {
-  const user = useAuthStore.getState().user;
-  if (!user || !user.token) {
-    throw new Error('Cannot sync: No authenticated user');
+  if (isSyncing) {
+    console.log('[Sync] Synchronization already in progress. Skipping.');
+    return;
   }
 
-  // Only staff roles get offline sync
-  const staffRoles = ['admin', 'principal', 'teacher', 'accountant'];
-  if (!staffRoles.includes(user.role)) {
-    return; // silently skip for students and parents
-  }
+  isSyncing = true;
+  try {
+    const user = useAuthStore.getState().user;
+    if (!user || !user.token) {
+      throw new Error('Cannot sync: No authenticated user');
+    }
 
-  // Check if this is the first successful sync for this tenant
-  const syncKey = `first_sync_complete_${user.tenantId}`;
-  const hasCompletedFirstSync = Boolean(await AsyncStorage.getItem(syncKey));
+    // Only staff roles get offline sync
+    const staffRoles = ['admin', 'principal', 'teacher', 'accountant'];
+    if (!staffRoles.includes(user.role)) {
+      return; // silently skip for students and parents
+    }
 
-  const API_BASE = getSyncBaseUrl();
+    // Check if this is the first successful sync for this tenant
+    const syncKey = `first_sync_complete_${user.tenantId}`;
+    let hasCompletedFirstSync = Boolean(await AsyncStorage.getItem(syncKey));
 
-  await synchronize({
-    database,
-    pullChanges: async ({ lastPulledAt }) => {
-      // Use pull-all if first sync hasn't completed, otherwise use incremental
-      const useFullPull = !hasCompletedFirstSync;
-      const endpoint = useFullPull ? '/sync/pull-all' : `/sync/pull?lastPulledAt=${lastPulledAt || 0}`;
-      
-      const response = await fetch(`${API_BASE}${endpoint}`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${user.token}`,
-        },
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          useAuthStore.getState().logout();
-          throw new Error('UNAUTHORIZED');
-        }
-        throw new Error(`Sync pull failed: ${response.status}`);
+    // Failsafe: if schema was upgraded, WatermelonDB wipes the local DB.
+    // We must ignore the AsyncStorage flag and force a full sync if the DB is empty.
+    if (hasCompletedFirstSync) {
+      const studentCount = await database.get('students').query().fetchCount();
+      if (studentCount === 0) {
+        hasCompletedFirstSync = false;
       }
+    }
 
-      const parsed = await response.json();
-      // Backend wraps in TransformInterceptor: { data: { changes, timestamp } }
-      const body = parsed.data || parsed;
-      
-      // Convert all field names from camelCase (backend) to snake_case (database schema)
-      const convertedChanges = convertKeysToSnakeCase(body.changes);
-      
-      return { changes: convertedChanges, timestamp: body.timestamp };
-    },
-    pushChanges: async ({ changes, lastPulledAt }) => {
-      const response = await fetch(`${API_BASE}/sync/push`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`,
-        },
-        body: JSON.stringify({ changes, lastPulledAt }),
-      });
+    const API_BASE = getSyncBaseUrl();
 
-      if (!response.ok) {
-        if (response.status === 401) {
-          useAuthStore.getState().logout();
-          throw new Error('UNAUTHORIZED');
+    await synchronize({
+      database,
+      pullChanges: async ({ lastPulledAt }) => {
+        // Use pull-all if first sync hasn't completed, otherwise use incremental
+        const useFullPull = !hasCompletedFirstSync;
+        const endpoint = useFullPull ? '/sync/pull-all' : `/sync/pull?lastPulledAt=${lastPulledAt || 0}`;
+        
+        const response = await fetch(`${API_BASE}${endpoint}`, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
+        });
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            useAuthStore.getState().logout();
+            throw new Error('UNAUTHORIZED');
+          }
+          throw new Error(`Sync pull failed: ${response.status}`);
         }
-        throw new Error(`Sync push failed: ${response.status}`);
-      }
-    },
-    sendCreatedAsUpdated: !hasCompletedFirstSync,
-  });
 
-  // Mark first sync as complete after successful sync
-  if (!hasCompletedFirstSync) {
-    await AsyncStorage.setItem(syncKey, 'true');
+        const parsed = await response.json();
+        // Backend wraps in TransformInterceptor: { data: { changes, timestamp } }
+        const body = parsed.data || parsed;
+
+        // === DIAGNOSTIC LOGGING ===
+        const rawFeeRecords = body.changes?.fee_records;
+        const allRaw = [
+          ...(rawFeeRecords?.created || []),
+          ...(rawFeeRecords?.updated || []),
+        ];
+        console.log('[Sync] fee_records from backend:', JSON.stringify(allRaw.map((r: any) => ({
+          id: r.id, type: r.type, amount: r.amount, studentId: r.studentId,
+        }))));
+        // === END DIAGNOSTIC ===
+        
+        // Convert all field names from camelCase (backend) to snake_case (database schema)
+        const convertedChanges = convertKeysToSnakeCase(body.changes);
+        
+        return { changes: convertedChanges, timestamp: body.timestamp };
+      },
+      pushChanges: async ({ changes, lastPulledAt }) => {
+        const convertedChangesForPush: any = {};
+        for (const tableName in changes) {
+          if (changes.hasOwnProperty(tableName)) {
+            const tableChanges = (changes as any)[tableName];
+            convertedChangesForPush[tableName] = {
+              created: convertKeysToCamelCase(tableChanges.created),
+              updated: convertKeysToCamelCase(tableChanges.updated),
+              deleted: tableChanges.deleted,
+            };
+          }
+        }
+
+        const response = await fetch(`${API_BASE}/sync/push`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${user.token}`,
+          },
+          body: JSON.stringify({ changes: convertedChangesForPush, lastPulledAt }),
+        });
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            useAuthStore.getState().logout();
+            throw new Error('UNAUTHORIZED');
+          }
+          throw new Error(`Sync push failed: ${response.status}`);
+        }
+      },
+      sendCreatedAsUpdated: !hasCompletedFirstSync,
+    });
+
+    // Mark first sync as complete after successful sync
+    if (!hasCompletedFirstSync) {
+      await AsyncStorage.setItem(syncKey, 'true');
+    }
+  } finally {
+    isSyncing = false;
   }
 }

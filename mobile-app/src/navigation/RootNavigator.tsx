@@ -52,10 +52,14 @@ export default function RootNavigator() {
 // --- Admin Stack ---
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import StudentManagement from '../screens/admin/StudentManagement';
+import StudentProfileScreen from '../screens/student/StudentProfileScreen';
+import RecordFeeScreen from '../screens/accounting/RecordFeeScreen';
 
 export type AdminStackParamList = {
   AdminDashboard: undefined;
   StudentManagement: undefined;
+  StudentProfile: { studentId: string };
+  RecordFee: undefined;
 };
 
 const Stack = createNativeStackNavigator<AdminStackParamList>();
@@ -65,6 +69,10 @@ function AdminStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="AdminDashboard" component={AdminDashboard} />
       <Stack.Screen name="StudentManagement" component={StudentManagement} />
+      <Stack.Screen name="StudentProfile" component={StudentProfileScreen} />
+      <Stack.Screen name="RecordFee">
+        {({ navigation }) => <RecordFeeScreen onBack={() => navigation.goBack()} />}
+      </Stack.Screen>
     </Stack.Navigator>
   );
 }
