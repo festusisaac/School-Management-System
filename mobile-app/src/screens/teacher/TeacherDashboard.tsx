@@ -9,6 +9,9 @@ import {
 } from 'react-native';
 import { useAuthStore } from '../../store/authStore';
 import { NetworkListener } from '../../components/NetworkListener';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { TeacherStackParamList } from '../../navigation/RootNavigator';
 
 const quickActions = [
   { label: 'My Classes', icon: '🏫', color: '#6366f1' },
@@ -21,6 +24,11 @@ const quickActions = [
 
 export default function TeacherDashboard() {
   const { user, logout } = useAuthStore();
+  const navigation = useNavigation<NativeStackNavigationProp<TeacherStackParamList>>();
+
+  const handleAction = (label: string) => {
+    if (label === 'Take Attendance') navigation.navigate('Attendance');
+  };
 
   return (
     <View style={styles.root}>
@@ -47,6 +55,7 @@ export default function TeacherDashboard() {
               key={action.label}
               style={[styles.actionCard, { borderLeftColor: action.color }]}
               activeOpacity={0.8}
+              onPress={() => handleAction(action.label)}
             >
               <Text style={styles.actionIcon}>{action.icon}</Text>
               <Text style={styles.actionLabel}>{action.label}</Text>

@@ -444,6 +444,26 @@ export class SyncService {
   }
 
   async pushChanges(changes: any, tenantId: string) {
+    // Filter out invalid UUIDs from changes to prevent TypeORM crashes
+    // This handles old 16-char WatermelonDB IDs that might be stuck in the sync queue
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    const filterInvalidIds = (arr: any[]) => arr ? arr.filter(item => {
+        const id = typeof item === 'string' ? item : item.id;
+        if (!uuidRegex.test(id)) {
+            console.warn(`[Sync] Skipping record with invalid UUID: ${id}`);
+            return false;
+        }
+        return true;
+    }) : [];
+
+    for (const table of Object.keys(changes)) {
+        if (changes[table]) {
+            if (changes[table].created) changes[table].created = filterInvalidIds(changes[table].created);
+            if (changes[table].updated) changes[table].updated = filterInvalidIds(changes[table].updated);
+            if (changes[table].deleted) changes[table].deleted = filterInvalidIds(changes[table].deleted);
+        }
+    }
+
     // --- Students ---
     if (changes.students) {
       const { created, updated, deleted } = changes.students;

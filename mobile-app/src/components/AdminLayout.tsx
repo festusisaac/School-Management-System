@@ -65,9 +65,10 @@ export default function AdminLayout({ children, activeTab: activeTabProp = 'Home
       case 'Students':
         navigation.navigate('StudentManagement');
         break;
-      // Other tabs can be added here as screens are built
-      default:
+      case 'Attendance':
+        navigation.navigate('Attendance');
         break;
+
     }
   };
 

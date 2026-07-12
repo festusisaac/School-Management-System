@@ -39,7 +39,7 @@ export default function RootNavigator() {
     case 'accountant':
       return <AccountingDashboard />;
     case 'teacher':
-      return <TeacherDashboard />;
+      return <TeacherStack />;
     case 'student':
       return <StudentDashboard />;
     case 'parent':
@@ -56,6 +56,7 @@ import StudentProfileScreen from '../screens/student/StudentProfileScreen';
 import StudentEditScreen from '../screens/student/StudentEditScreen';
 import StudentAdmissionScreen from '../screens/student/StudentAdmissionScreen';
 import RecordFeeScreen from '../screens/accounting/RecordFeeScreen';
+import AttendanceScreen from '../screens/admin/AttendanceScreen';
 
 export type AdminStackParamList = {
   AdminDashboard: undefined;
@@ -64,6 +65,7 @@ export type AdminStackParamList = {
   StudentEdit: { studentId: string };
   StudentAdmission: undefined;
   RecordFee: undefined;
+  Attendance: undefined;
 };
 
 const Stack = createNativeStackNavigator<AdminStackParamList>();
@@ -76,10 +78,30 @@ function AdminStack() {
       <Stack.Screen name="StudentProfile" component={StudentProfileScreen} />
       <Stack.Screen name="StudentEdit" component={StudentEditScreen} />
       <Stack.Screen name="StudentAdmission" component={StudentAdmissionScreen} />
+      <Stack.Screen name="Attendance" component={AttendanceScreen} />
       <Stack.Screen name="RecordFee">
         {({ navigation }) => <RecordFeeScreen onBack={() => navigation.goBack()} />}
       </Stack.Screen>
     </Stack.Navigator>
+  );
+}
+
+// --- Teacher Stack ---
+export type TeacherStackParamList = {
+  TeacherDashboard: undefined;
+  Attendance: undefined;
+  StudentProfile: { studentId: string };
+};
+
+const TeacherStack_Nav = createNativeStackNavigator<TeacherStackParamList>();
+
+function TeacherStack() {
+  return (
+    <TeacherStack_Nav.Navigator screenOptions={{ headerShown: false }}>
+      <TeacherStack_Nav.Screen name="TeacherDashboard" component={TeacherDashboard} />
+      <TeacherStack_Nav.Screen name="Attendance" component={AttendanceScreen} />
+      <TeacherStack_Nav.Screen name="StudentProfile" component={StudentProfileScreen} />
+    </TeacherStack_Nav.Navigator>
   );
 }
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, createContext, useContext } from 'react';
 import {
   View,
   Text,
@@ -65,6 +65,15 @@ const tabList = [
   { key: 'fees', label: 'Fee Allocation', icon: 'cash-outline' },
 ] as const;
 
+// ─── Form Context (allows sub-components to be defined outside the main component
+//      so React never treats them as new component types on each keystroke) ────
+
+type EditFormContextType = {
+  form: any;
+  set: (field: string, val: any) => void;
+};
+const EditFormContext = createContext<EditFormContextType>({ form: {}, set: () => {} });
+
 // ─── Shared UI Components ────────────────────────────────────────────────────
 
 function TabBar({ activeTab, onTabChange }: { activeTab: string; onTabChange: (t: string) => void }) {
@@ -112,6 +121,79 @@ function PageTitle({ onBack, onSave, isSaving }: { onBack: () => void; onSave: (
     </View>
   );
 }
+
+/** Single text field */
+const Field = ({ label, field, placeholder, multiline }: { label: string; field: string; placeholder?: string; multiline?: boolean }) => {
+  const { form, set } = useContext(EditFormContext);
+  return (
+    <View style={styles.fieldWrap}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      <TextInput
+        style={[styles.fieldInput, multiline && { minHeight: 80, textAlignVertical: 'top' }]}
+        value={form[field] as string}
+        onChangeText={(t) => set(field, t)}
+        placeholder={placeholder || label}
+        placeholderTextColor={COLORS.outline}
+        multiline={multiline}
+        numberOfLines={multiline ? 3 : 1}
+      />
+    </View>
+  );
+};
+
+/** Read-only info field */
+const ReadonlyField = ({ label, value }: { label: string; value: string }) => (
+  <View style={styles.fieldWrap}>
+    <Text style={styles.fieldLabel}>{label}</Text>
+    <View style={[styles.fieldInput, { backgroundColor: COLORS.surfaceContainerHigh }]}>
+      <Text style={{ ...TYPOGRAPHY.bodyMd, color: COLORS.onSurface }}>{value || '—'}</Text>
+    </View>
+  </View>
+);
+
+/** Toggle switch */
+const Toggle = ({ label, desc, field }: { label: string; desc?: string; field: string }) => {
+  const { form, set } = useContext(EditFormContext);
+  return (
+    <View style={styles.toggleCard}>
+      <View style={{ flex: 1, marginRight: 12 }}>
+        <Text style={styles.toggleLabel}>{label}</Text>
+        {desc ? <Text style={styles.toggleDesc}>{desc}</Text> : null}
+      </View>
+      <Switch
+        value={!!form[field]}
+        onValueChange={(v) => set(field, v)}
+        trackColor={{ false: COLORS.surfaceContainerHighest, true: COLORS.primaryContainer }}
+        thumbColor={form[field] ? COLORS.primary : COLORS.outlineVariant}
+      />
+    </View>
+  );
+};
+
+/** Section header with icon */
+const SectionHeader = ({ icon, title }: { icon: string; title: string }) => (
+  <View style={styles.sectionHeader}>
+    <Ionicons name={icon as any} size={18} color={COLORS.onSurface} />
+    <Text style={styles.sectionHeaderText}>{title}</Text>
+  </View>
+);
+
+/** Divider with centered label */
+const Divider = ({ label }: { label: string }) => (
+  <View style={styles.dividerWrap}>
+    <View style={styles.dividerLine} />
+    <Text style={styles.dividerLabel}>{label}</Text>
+    <View style={styles.dividerLine} />
+  </View>
+);
+
+/** 2-column row helper */
+const Row2 = ({ children }: { children: React.ReactNode }) => (
+  <View style={styles.row2}>{children}</View>
+);
+const Col = ({ children }: { children?: React.ReactNode }) => (
+  <View style={styles.col}>{children}</View>
+);
 
 const FeeAllocationTab = ({ form, set }: { form: any, set: (field: any, val: any) => void }) => {
   const [feeGroups, setFeeGroups] = useState<FeeGroup[]>([]);
@@ -493,77 +575,11 @@ function StudentEditInner({ student }: { student: Student }) {
   };
 
   // ─── Render helpers ────────────────────────────────────────────────────────
-  const set = (field: keyof EditFormState, val: any) => setForm(f => ({ ...f, [field]: val }));
-
-  /** Single text field — full width by default */
-  const Field = ({ label, field, placeholder, multiline }: { label: string; field: keyof EditFormState; placeholder?: string; multiline?: boolean }) => (
-    <View style={styles.fieldWrap}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      <TextInput
-        style={[styles.fieldInput, multiline && { minHeight: 80, textAlignVertical: 'top' }]}
-        value={form[field] as string}
-        onChangeText={(t) => set(field, t)}
-        placeholder={placeholder || label}
-        placeholderTextColor={COLORS.outline}
-        multiline={multiline}
-        numberOfLines={multiline ? 3 : 1}
-      />
-    </View>
-  );
-
-  /** Read-only info field (for class/section names resolved from IDs) */
-  const ReadonlyField = ({ label, value }: { label: string; value: string }) => (
-    <View style={styles.fieldWrap}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      <View style={[styles.fieldInput, { backgroundColor: COLORS.surfaceContainerHigh }]}>
-        <Text style={{ ...TYPOGRAPHY.bodyMd, color: COLORS.onSurface }}>{value || '—'}</Text>
-      </View>
-    </View>
-  );
-
-  /** Toggle switch with label and optional description */
-  const Toggle = ({ label, desc, field }: { label: string; desc?: string; field: keyof EditFormState }) => (
-    <View style={styles.toggleCard}>
-      <View style={{ flex: 1, marginRight: 12 }}>
-        <Text style={styles.toggleLabel}>{label}</Text>
-        {desc ? <Text style={styles.toggleDesc}>{desc}</Text> : null}
-      </View>
-      <Switch
-        value={form[field] as boolean}
-        onValueChange={(v) => set(field, v)}
-        trackColor={{ false: COLORS.surfaceContainerHighest, true: COLORS.primaryContainer }}
-        thumbColor={form[field] ? COLORS.primary : COLORS.outlineVariant}
-      />
-    </View>
-  );
-
-  /** Section header with icon */
-  const SectionHeader = ({ icon, title }: { icon: string; title: string }) => (
-    <View style={styles.sectionHeader}>
-      <Ionicons name={icon as any} size={18} color={COLORS.onSurface} />
-      <Text style={styles.sectionHeaderText}>{title}</Text>
-    </View>
-  );
-
-  /** Divider with centered label */
-  const Divider = ({ label }: { label: string }) => (
-    <View style={styles.dividerWrap}>
-      <View style={styles.dividerLine} />
-      <Text style={styles.dividerLabel}>{label}</Text>
-      <View style={styles.dividerLine} />
-    </View>
-  );
-
-  /** 2-column row helper */
-  const Row2 = ({ children }: { children: React.ReactNode }) => (
-    <View style={styles.row2}>{children}</View>
-  );
-  const Col = ({ children }: { children?: React.ReactNode }) => (
-    <View style={styles.col}>{children}</View>
-  );
+  const set = (field: string, val: any) => setForm(f => ({ ...f, [field]: val }));
 
   // ─── RENDER ────────────────────────────────────────────────────────────────
   return (
+    <EditFormContext.Provider value={{ form, set }}>
     <AdminLayout activeTab="Students">
       <View style={styles.main}>
         <PageTitle onBack={() => navigation.goBack()} onSave={handleSave} isSaving={isSaving} />
@@ -765,12 +781,13 @@ function StudentEditInner({ student }: { student: Student }) {
 
             {/* ═══════════ FEE ALLOCATION ═══════════ */}
             {activeTab === 'fees' && (
-              <FeeAllocationTab form={form} set={(f: any, v: any) => set(f as keyof EditFormState, v)} />
+              <FeeAllocationTab form={form} set={set} />
             )}
           </View>
         </ScrollView>
       </View>
     </AdminLayout>
+    </EditFormContext.Provider>
   );
 }
 

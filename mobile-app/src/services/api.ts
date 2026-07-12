@@ -53,3 +53,29 @@ export async function apiGet(endpoint: string, token: string) {
 export function getSyncBaseUrl() {
   return API_BASE;
 }
+
+export async function apiPost(endpoint: string, token: string, body: any) {
+  const res = await fetch(`${API_BASE}${endpoint}`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!res.ok) {
+    if (res.status === 401) {
+      useAuthStore.getState().logout();
+      throw new Error('UNAUTHORIZED');
+    }
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message ?? `API request failed: ${res.status}`);
+  }
+
+  const parsed = await res.json();
+  if (parsed && typeof parsed === 'object' && 'data' in parsed) {
+    return parsed.data;
+  }
+  return parsed;
+}
