@@ -182,6 +182,15 @@ export default function AdminDashboard() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.gridItem}
+            onPress={() => navigation.navigate('StaffManagement')}
+          >
+            <View style={[styles.gridIconWrap, { backgroundColor: '#eff6ff' }]}>
+              <Ionicons name="id-card-outline" size={22} color={COLORS.secondary} />
+            </View>
+            <Text style={styles.gridLabel}>Manage Staff</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.gridItem}
             onPress={() => navigation.navigate('RecordFee')}
           >
             <View style={[styles.gridIconWrap, { backgroundColor: '#eff6ff' }]}>
@@ -189,7 +198,10 @@ export default function AdminDashboard() {
             </View>
             <Text style={styles.gridLabel}>Record Fee</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.gridItem}>
+          <TouchableOpacity 
+          style={styles.gridItem}
+          onPress={() => navigation.navigate('Attendance')}
+          >
             <View style={[styles.gridIconWrap, { backgroundColor: '#dcfce7' }]}>
               <Ionicons name="checkmark-done-outline" size={22} color="#16a34a" />
             </View>

@@ -25,6 +25,9 @@ import FeeRecord from '../../database/models/FeeRecord';
 import Attendance from '../../database/models/Attendance';
 import CommunicationLog from '../../database/models/CommunicationLog';
 import StudentDocument from '../../database/models/StudentDocument';
+import StudentTermResult from '../../database/models/StudentTermResult';
+import ExamGroup from '../../database/models/ExamGroup';
+import CredentialSummaryModal from './components/CredentialSummaryModal';
 
 const COLORS = {
   surface: '#f7f9fb',
@@ -199,7 +202,7 @@ function EmptyState({ icon, message }: { icon: keyof typeof Ionicons.glyphMap; m
 
 // ─── Profile Tab ──────────────────────────────────────────────────────────────
 
-function ProfileCard({ student, studentClass }: { student: Student; studentClass?: Class | null }) {
+function ProfileCard({ student, studentClass, onOpenCredentials }: { student: Student; studentClass?: Class | null; onOpenCredentials: () => void }) {
   const navigation = useNavigation<any>();
   const initials = `${student.firstName?.charAt(0) || ''}${student.lastName?.charAt(0) || ''}`.toUpperCase();
   const photoUrl = getPhotoUrl(student.studentPhoto);
@@ -244,7 +247,7 @@ function ProfileCard({ student, studentClass }: { student: Student; studentClass
           <Text style={styles.outlineActionText}>Print</Text>
         </TouchableOpacity>
       </View>
-      <TouchableOpacity style={styles.credentialsButton}>
+      <TouchableOpacity style={styles.credentialsButton} onPress={onOpenCredentials}>
         <Ionicons name="key-outline" size={16} color={COLORS.onPrimary} />
         <Text style={styles.credentialsText}>ACCESS CREDENTIALS</Text>
       </TouchableOpacity>
@@ -717,6 +720,7 @@ function StudentProfileInner({
 }: InnerProps) {
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState('Profile');
+  const [isCredentialModalOpen, setIsCredentialModalOpen] = useState(false);
 
   return (
     <AdminLayout activeTab="Students">
@@ -726,7 +730,7 @@ function StudentProfileInner({
         <ScrollView style={styles.content} contentContainerStyle={styles.contentInner} showsVerticalScrollIndicator={false}>
           {activeTab === 'Profile' && (
             <>
-              <ProfileCard student={student} studentClass={studentClass} />
+              <ProfileCard student={student} studentClass={studentClass} onOpenCredentials={() => setIsCredentialModalOpen(true)} />
               <CoreProfileSection student={student} />
               <FamilySection student={student} />
               <AddressSection student={student} />
@@ -739,6 +743,12 @@ function StudentProfileInner({
           {activeTab === 'Documents' && <DocumentsTab documents={documents} />}
         </ScrollView>
       </View>
+      
+      <CredentialSummaryModal
+        visible={isCredentialModalOpen}
+        onClose={() => setIsCredentialModalOpen(false)}
+        student={student}
+      />
     </AdminLayout>
   );
 }
