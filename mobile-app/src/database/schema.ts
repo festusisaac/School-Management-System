@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 3,
+  version: 7,
   tables: [
     tableSchema({
       name: 'students',
@@ -21,6 +21,8 @@ export default appSchema({
         { name: 'parent_id', type: 'string', isOptional: true },
         { name: 'is_active', type: 'boolean' },
         { name: 'student_photo', type: 'string', isOptional: true },
+        { name: 'selected_fee_groups', type: 'string', isOptional: true },
+        { name: 'fee_exclusions', type: 'string', isOptional: true },
         // Additional backend fields for complete sync
         { name: 'religion', type: 'string', isOptional: true },
         { name: 'caste', type: 'string', isOptional: true },
@@ -137,6 +139,28 @@ export default appSchema({
         { name: 'updated_at', type: 'number' },
       ],
     }),
+    tableSchema({
+      name: 'fee_groups',
+      columns: [
+        { name: 'tenant_id', type: 'string', isIndexed: true },
+        { name: 'name', type: 'string' },
+        { name: 'description', type: 'string', isOptional: true },
+        { name: 'is_active', type: 'boolean' },
+        { name: 'heads_json', type: 'string', isOptional: true },
+      ],
+    }),
+    tableSchema({
+      name: 'fee_heads',
+      columns: [
+        { name: 'tenant_id', type: 'string', isIndexed: true },
+        { name: 'fee_group_id', type: 'string', isIndexed: true },
+        { name: 'name', type: 'string' },
+        { name: 'description', type: 'string', isOptional: true },
+        { name: 'default_amount', type: 'string' },
+        { name: 'is_optional', type: 'boolean' },
+        { name: 'is_active', type: 'boolean' },
+      ],
+    }),
     // ─── NEW TABLES (3-month rolling sync) ─────────────────────────
     tableSchema({
       name: 'exam_groups',
@@ -207,6 +231,19 @@ export default appSchema({
         { name: 'scheduled_at', type: 'number', isOptional: true },
         { name: 'delivered_at', type: 'number', isOptional: true },
         { name: 'opened_at', type: 'number', isOptional: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'fee_groups',
+      columns: [
+        { name: 'tenant_id', type: 'string', isIndexed: true, isOptional: true },
+        { name: 'name', type: 'string' },
+        { name: 'description', type: 'string', isOptional: true },
+        { name: 'is_active', type: 'boolean' },
+        // Embedded fee heads stored as a JSON string: [{id, name, defaultAmount, isOptional, isActive}]
+        { name: 'heads_json', type: 'string', isOptional: true },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
       ],

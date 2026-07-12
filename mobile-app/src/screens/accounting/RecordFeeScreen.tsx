@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import { performGlobalSync } from '../../hooks/useAutoSync';
+import { syncData } from '../../database/sync';
 import AdminLayout from '../../components/AdminLayout';
 import { database } from '../../database';
 import FeeRecord from '../../database/models/FeeRecord';
@@ -104,13 +105,24 @@ async function loadStudentFeeHeads(studentId: string): Promise<FeeHead[]> {
     Q.where('type', 'charge'),
   ).fetch();
 
-  if (charges.length === 0) return [];
+  console.log(`[RecordFee] charges in local DB for ${studentId}:`, charges.length);
+  charges.forEach(c => {
+    let m: any = {};
+    try { m = JSON.parse(c.meta || '{}'); } catch {}
+    console.log(`[RecordFee]   charge id=${c.id} amount=${c.amount} isFeeHead=${m?.isFeeHead} name=${m?.name}`);
+  });
+
+  if (charges.length === 0) {
+    console.log('[RecordFee] No charge records found in local DB — did sync complete?');
+    return [];
+  }
 
   // 2. All payment records for this student
   const payments = await col.query(
     Q.where('student_id', studentId),
     Q.where('type', 'FEE_PAYMENT'),
   ).fetch();
+  console.log(`[RecordFee] payments in local DB for ${studentId}:`, payments.length);
 
   // 3. Build a map of amount already paid per fee-head ID.
   //    Payments store their allocations as JSON in the meta field.
@@ -127,26 +139,36 @@ async function loadStudentFeeHeads(studentId: string): Promise<FeeHead[]> {
           paidByHeadId[alloc.id] = (paidByHeadId[alloc.id] || 0) + parseFloat(alloc.amount || '0');
         }
       }
-    } else {
-      // Payment with no allocations — attribute to first charge head as a fallback
-      // (this won't happen after our fixes, but handle gracefully)
     }
   }
+  console.log('[RecordFee] paidByHeadId:', JSON.stringify(paidByHeadId));
 
   // 4. Build final fee head list
-  return charges
-    .map(charge => {
-      const totalDue = Number(charge.amount) || 0;
-      // Try to get a friendly name from meta, fall back to fee group
-      let metaObj: any = {};
-      if (charge.meta) { try { metaObj = JSON.parse(charge.meta); } catch {} }
-      const name = metaObj?.feeGroupName || metaObj?.name || charge.feeGroupId || 'Fee';
-      const feeGroupId = charge.feeGroupId || '';
-      const alreadyPaid = paidByHeadId[charge.id] || 0;
-      const outstanding = Math.max(0, totalDue - alreadyPaid);
-      return { id: charge.id, feeGroupId, name, totalDue, alreadyPaid, outstanding, payingNow: '' };
-    })
-    .filter(h => h.outstanding > 0); // Only show heads with outstanding balance
+  const withFeeHeadFlag = charges.filter(charge => {
+    let metaObj: any = {};
+    if (charge.meta) { try { metaObj = JSON.parse(charge.meta); } catch {} }
+    const passes = metaObj?.isFeeHead === true;
+    if (!passes) console.log(`[RecordFee]   FILTERED OUT (no isFeeHead): id=${charge.id}`);
+    return passes;
+  });
+  console.log(`[RecordFee] charges after isFeeHead filter: ${withFeeHeadFlag.length}`);
+
+  const mapped = withFeeHeadFlag.map(charge => {
+    const totalDue = Number(charge.amount) || 0;
+    let metaObj: any = {};
+    if (charge.meta) { try { metaObj = JSON.parse(charge.meta); } catch {} }
+    const name = metaObj?.name || metaObj?.feeGroupName || charge.feeGroupId || 'Fee';
+    const realFeeHeadId = metaObj?.feeHeadId || charge.id;
+    const feeGroupId = charge.feeGroupId || '';
+    const alreadyPaid = paidByHeadId[realFeeHeadId] || paidByHeadId[charge.id] || 0;
+    const outstanding = Math.max(0, totalDue - alreadyPaid);
+    console.log(`[RecordFee]   head=${name} totalDue=${totalDue} alreadyPaid=${alreadyPaid} outstanding=${outstanding}`);
+    return { id: realFeeHeadId, feeGroupId, name, totalDue, alreadyPaid, outstanding, payingNow: '' };
+  });
+
+  const result = mapped.filter(h => h.outstanding > 0);
+  console.log(`[RecordFee] Final fee heads with outstanding > 0: ${result.length}`);
+  return result;
 }
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
@@ -190,6 +212,10 @@ export default function RecordFeeScreen({ onBack }: { onBack?: () => void }) {
     setReference('');
     setNote('');
     setLoadingHeads(true);
+    // Force a fresh sync so newly assigned fee heads are pulled from backend.
+    // We call syncData() directly rather than performGlobalSync() to bypass
+    // the isSyncing guard (which skips the call if another sync is in progress).
+    try { await syncData(); } catch (e) { console.warn('[RecordFee] Sync before load failed:', e); }
     const heads = await loadStudentFeeHeads(student.id);
     setFeeHeads(heads);
     setLoadingHeads(false);

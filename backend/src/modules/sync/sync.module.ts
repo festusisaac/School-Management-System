@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SyncController } from './sync.controller';
 import { SyncService } from './sync.service';
@@ -14,9 +14,15 @@ import { ExamGroup } from '../examination/entities/exam-group.entity';
 import { FeeAssignment } from '../finance/entities/fee-assignment.entity';
 import { DiscountProfile } from '../finance/entities/discount-profile.entity';
 import { SystemSetting } from '../system/entities/system-setting.entity';
+import { FeeGroup } from '../finance/entities/fee-group.entity';
+import { FeeHead } from '../finance/entities/fee-head.entity';
+import { StudentsModule } from '../students/students.module';
+import { FinanceModule } from '../finance/finance.module';
 
 @Module({
   imports: [
+    forwardRef(() => StudentsModule),
+    forwardRef(() => FinanceModule),
     TypeOrmModule.forFeature([
       Student,
       Transaction,
@@ -30,10 +36,12 @@ import { SystemSetting } from '../system/entities/system-setting.entity';
       FeeAssignment,
       DiscountProfile,
       SystemSetting,
+      FeeGroup,
+      FeeHead,
     ]),
   ],
   controllers: [SyncController],
   providers: [SyncService],
   exports: [SyncService],
 })
-export class SyncModule {}
+export class SyncModule { }

@@ -25,8 +25,6 @@ import FeeRecord from '../../database/models/FeeRecord';
 import Attendance from '../../database/models/Attendance';
 import CommunicationLog from '../../database/models/CommunicationLog';
 import StudentDocument from '../../database/models/StudentDocument';
-import StudentTermResult from '../../database/models/StudentTermResult';
-import ExamGroup from '../../database/models/ExamGroup';
 
 const COLORS = {
   surface: '#f7f9fb',
@@ -92,7 +90,6 @@ const TYPOGRAPHY = {
 const tabList = [
   { key: 'Profile', icon: 'person-outline' },
   { key: 'Fees', icon: 'cash-outline' },
-  { key: 'Exam', icon: 'school-outline' },
   { key: 'Attendance', icon: 'calendar-outline' },
   { key: 'Communication', icon: 'chatbubbles-outline' },
   { key: 'Documents', icon: 'document-text-outline' },
@@ -203,6 +200,7 @@ function EmptyState({ icon, message }: { icon: keyof typeof Ionicons.glyphMap; m
 // ─── Profile Tab ──────────────────────────────────────────────────────────────
 
 function ProfileCard({ student, studentClass }: { student: Student; studentClass?: Class | null }) {
+  const navigation = useNavigation<any>();
   const initials = `${student.firstName?.charAt(0) || ''}${student.lastName?.charAt(0) || ''}`.toUpperCase();
   const photoUrl = getPhotoUrl(student.studentPhoto);
   return (
@@ -237,7 +235,7 @@ function ProfileCard({ student, studentClass }: { student: Student; studentClass
         <SummaryRow icon="shapes-outline" label="Status" value={student.isActive ? 'Active' : 'Inactive'} />
       </View>
       <View style={styles.actionRow}>
-        <TouchableOpacity style={styles.outlineAction}>
+        <TouchableOpacity style={styles.outlineAction} onPress={() => navigation.navigate('StudentEdit', { studentId: student.id })}>
           <Ionicons name="pencil-outline" size={16} color={COLORS.onSurface} />
           <Text style={styles.outlineActionText}>Edit</Text>
         </TouchableOpacity>
@@ -346,10 +344,17 @@ function AddressSection({ student }: { student: Student }) {
 // ─── Fees Tab ────────────────────────────────────────────────────────────────
 
 function FeesTab({ feeRecords }: { feeRecords: FeeRecord[] }) {
-  console.log('FEES TAB RENDER:', feeRecords.map(f => ({ id: f.id, type: f.type, amount: f.amount, reference: f.reference })));
   const paymentTypes = ['payment', 'payment_received', 'FEE_PAYMENT', 'WAIVER'];
   const payments = feeRecords.filter(r => paymentTypes.includes(r.type));
-  const charges = feeRecords.filter(r => r.type === 'charge' || r.type === 'fee');
+  // Only sum fee-head charge records (isFeeHead=true) — ignore legacy group-level charges
+  const charges = feeRecords.filter(r => {
+    if (r.type !== 'charge' && r.type !== 'fee') return false;
+    try {
+      const m = JSON.parse(r.meta || '{}');
+      return m?.isFeeHead === true;
+    } catch { return false; }
+  });
+
   const totalCharged = charges.reduce((s, r) => s + (Number(r.amount) || 0), 0);
   const totalPaid = payments.reduce((s, r) => s + (Number(r.amount) || 0), 0);
   const outstanding = Math.max(0, totalCharged - totalPaid);
@@ -372,28 +377,66 @@ function FeesTab({ feeRecords }: { feeRecords: FeeRecord[] }) {
         <Text style={{ ...TYPOGRAPHY.headlineSm, color: COLORS.onPrimary }}>₦{outstanding.toLocaleString()}</Text>
       </View>
 
-      {/* Transaction list */}
+      {/* Fee Schedule — what the student owes */}
+      <View style={styles.sectionCard}>
+        <View style={styles.simpleHeader}>
+          <Ionicons name="list-outline" size={24} color={COLORS.primary} />
+          <Text style={styles.sectionTitle}>Fee Schedule</Text>
+        </View>
+        {charges.length === 0 ? (
+          <EmptyState icon="cash-outline" message="No fees assigned" />
+        ) : (
+          charges.map((rec, idx) => {
+            let metaObj: any = {};
+            try { metaObj = JSON.parse(rec.meta || '{}'); } catch {}
+            const headName = metaObj?.name || metaObj?.feeGroupName || 'Fee';
+            const groupName = metaObj?.feeGroupName || '';
+            return (
+              <View key={rec.id} style={[styles.infoRow, idx === charges.length - 1 && styles.infoRowLast]}>
+                <View style={{ width: 40, height: 40, borderRadius: 8, backgroundColor: '#eff6ff', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                  <Ionicons name="pricetag-outline" size={18} color={COLORS.secondary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ ...TYPOGRAPHY.labelLg, color: COLORS.onSurface }}>{headName}</Text>
+                  {!!groupName && groupName !== headName && (
+                    <Text style={{ fontSize: 12, color: COLORS.onSurfaceVariant, marginTop: 2 }}>{groupName}</Text>
+                  )}
+                </View>
+                <Text style={{ ...TYPOGRAPHY.headlineSm, color: COLORS.primary, fontSize: 15 }}>
+                  ₦{(Number(rec.amount) || 0).toLocaleString()}
+                </Text>
+              </View>
+            );
+          })
+        )}
+      </View>
+
+      {/* Payment History — only actual payments */}
       <View style={styles.sectionCard}>
         <View style={styles.simpleHeader}>
           <Ionicons name="receipt-outline" size={24} color={COLORS.primary} />
-          <Text style={styles.sectionTitle}>Recent Transactions</Text>
+          <Text style={styles.sectionTitle}>Payment History</Text>
         </View>
-        {feeRecords.length === 0 ? (
-          <EmptyState icon="cash-outline" message="No fee records found" />
+        {payments.length === 0 ? (
+          <EmptyState icon="cash-outline" message="No payments recorded yet" />
         ) : (
-          feeRecords.slice(0, 15).map((rec, idx) => {
-            const isPayment = paymentTypes.includes(rec.type);
+          payments.slice(0, 15).map((rec, idx) => {
+            const isWaiver = rec.type === 'WAIVER';
             return (
-              <View key={rec.id} style={[styles.infoRow, idx === Math.min(14, feeRecords.length - 1) && styles.infoRowLast]}>
-                <View style={{ width: 40, height: 40, borderRadius: 8, backgroundColor: isPayment ? '#dcfce7' : '#fee2e2', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                  <Ionicons name={isPayment ? 'arrow-down-outline' : 'arrow-up-outline'} size={20} color={isPayment ? '#166534' : '#991b1b'} />
+              <View key={rec.id} style={[styles.infoRow, idx === Math.min(14, payments.length - 1) && styles.infoRowLast]}>
+                <View style={{ width: 40, height: 40, borderRadius: 8, backgroundColor: isWaiver ? '#fef3c7' : '#dcfce7', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                  <Ionicons name={isWaiver ? 'gift-outline' : 'arrow-down-outline'} size={20} color={isWaiver ? '#b45309' : '#166534'} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ ...TYPOGRAPHY.labelLg, color: COLORS.onSurface }}>{rec.reference || rec.type?.toUpperCase() || 'Transaction'}</Text>
-                  <Text style={{ fontSize: 12, color: COLORS.onSurfaceVariant, marginTop: 4 }}>{formatDate(rec.createdAt)} • {rec.paymentMethod || '-'}</Text>
+                  <Text style={{ ...TYPOGRAPHY.labelLg, color: COLORS.onSurface }}>
+                    {rec.reference || (isWaiver ? 'Waiver' : 'Payment')}
+                  </Text>
+                  <Text style={{ fontSize: 12, color: COLORS.onSurfaceVariant, marginTop: 4 }}>
+                    {formatDate(rec.createdAt)} • {rec.paymentMethod || '-'}
+                  </Text>
                 </View>
-                <Text style={{ ...TYPOGRAPHY.headlineSm, color: isPayment ? '#059669' : COLORS.error, fontSize: 16 }}>
-                  {isPayment ? '+' : '-'} ₦{(Number(rec.amount) || 0).toLocaleString()}
+                <Text style={{ ...TYPOGRAPHY.headlineSm, color: '#059669', fontSize: 16 }}>
+                  + ₦{(Number(rec.amount) || 0).toLocaleString()}
                 </Text>
               </View>
             );
@@ -662,8 +705,6 @@ interface InnerProps {
   attendanceRecords: Attendance[];
   commLogs: CommunicationLog[];
   documents: StudentDocument[];
-  termResults: StudentTermResult[];
-  examGroups: ExamGroup[];
 }
 
 function StudentProfileInner({
@@ -673,8 +714,6 @@ function StudentProfileInner({
   attendanceRecords,
   commLogs,
   documents,
-  termResults,
-  examGroups,
 }: InnerProps) {
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState('Profile');
@@ -694,7 +733,7 @@ function StudentProfileInner({
             </>
           )}
           {activeTab === 'Fees' && <FeesTab feeRecords={feeRecords} />}
-          {activeTab === 'Exam' && <ExamTab termResults={termResults} examGroups={examGroups} />}
+
           {activeTab === 'Attendance' && <AttendanceTab attendanceRecords={attendanceRecords} />}
           {activeTab === 'Communication' && <CommunicationTab commLogs={commLogs} />}
           {activeTab === 'Documents' && <DocumentsTab documents={documents} />}
@@ -730,8 +769,7 @@ const ConnectedProfile = withObservables(
     attendanceRecords: database.collections.get<Attendance>('attendance').query(Q.where('student_id', studentId)).observeWithColumns(['status']),
     commLogs: database.collections.get<CommunicationLog>('communication_logs').query(Q.where('recipient', studentId)).observeWithColumns(['status']),
     documents: database.collections.get<StudentDocument>('student_documents').query(Q.where('student_id', studentId)).observe(),
-    termResults: database.collections.get<StudentTermResult>('student_term_results').query(Q.where('student_id', studentId)).observeWithColumns(['status', 'total_score', 'average_score', 'position']),
-    examGroups: database.collections.get<ExamGroup>('exam_groups').query().observe(),
+
   })
 )(StudentProfileWithClass);
 

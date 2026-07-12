@@ -21,6 +21,8 @@ export default class Student extends Model {
   @text('parent_id') parentId?: string;
   @field('is_active') isActive!: boolean;
   @text('student_photo') studentPhoto?: string;
+  @text('selected_fee_groups') selectedFeeGroups?: string;
+  @text('fee_exclusions') feeExclusions?: string;
   
   // Additional fields from backend
   @text('religion') religion?: string;

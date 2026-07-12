@@ -8,7 +8,8 @@ import {
     QrCode as QrCodeIcon, Barcode as BarcodeIcon, ShieldAlert, ShieldCheck,
     History as HistoryIcon,
     KeySquare, CalendarDays, CreditCard, ArrowRight, MapPinned,
-    Trash2, Download, Upload, Info, MessageSquare, Mail
+    Trash2, Download, Upload, Info, MessageSquare, Mail,
+    Heart, Scale, AlertTriangle, CheckSquare, XSquare
 } from 'lucide-react';
 import { format, subMonths, isToday } from 'date-fns';
 import api, { getFileUrl } from '../../services/api';
@@ -619,6 +620,93 @@ export default function StudentProfile() {
                                                 {student.roomNumber ? `Room ${student.roomNumber} (${student.roomType || 'Standard'})` : 'No Hostel Room Assigned'}
                                             </p>
                                         </div>
+                                    </div>
+                                </InfoCard>
+                            </div>
+
+                            {/* Medical & Health Records */}
+                            <InfoCard>
+                                <SectionHeader title="Medical & Health Records" icon={Heart} />
+                                <div className="divide-y divide-gray-50 dark:divide-gray-800/10">
+                                    <DataRow label="Special Health Problems" value={student.specialPhysicalHealthProblems} />
+                                    <DataRow label="Medical Conditions" value={student.medicalConditions} />
+                                    <div className="flex flex-col sm:grid sm:grid-cols-[160px_1fr] sm:items-center gap-1 sm:gap-6 py-4 px-4 sm:px-6 border-b border-gray-50 dark:border-gray-700/50">
+                                        <span className="text-xs sm:text-sm font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider sm:normal-case sm:text-gray-500">Disability Status</span>
+                                        <span className={clsx("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold w-fit", student.hasDisability ? "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400" : "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400")}>
+                                            {student.hasDisability ? <AlertTriangle className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                                            {student.hasDisability ? 'Has Disability' : 'No Disability'}
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-col sm:grid sm:grid-cols-[160px_1fr] sm:items-center gap-1 sm:gap-6 py-4 px-4 sm:px-6 border-b border-gray-50 dark:border-gray-700/50">
+                                        <span className="text-xs sm:text-sm font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider sm:normal-case sm:text-gray-500">Allergy Status</span>
+                                        <span className={clsx("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold w-fit", student.hasAllergies ? "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" : "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400")}>
+                                            {student.hasAllergies ? <AlertTriangle className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                                            {student.hasAllergies ? 'Has Allergies' : 'No Known Allergies'}
+                                        </span>
+                                    </div>
+                                    {student.hasAllergies && <DataRow label="Allergy Details" value={student.allergyDetails} />}
+                                    <div className="flex flex-col sm:grid sm:grid-cols-[160px_1fr] sm:items-center gap-1 sm:gap-6 py-4 px-4 sm:px-6 border-b border-gray-50 dark:border-gray-700/50">
+                                        <span className="text-xs sm:text-sm font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider sm:normal-case sm:text-gray-500">First Aid Consent</span>
+                                        <span className={clsx("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold w-fit", student.firstAidConsent ? "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400")}>
+                                            {student.firstAidConsent ? <CheckSquare className="w-3.5 h-3.5" /> : <XSquare className="w-3.5 h-3.5" />}
+                                            {student.firstAidConsent ? 'Consent Given' : 'No Consent'}
+                                        </span>
+                                    </div>
+                                    {(student.familyDoctorName || student.familyDoctorPhone || student.familyDoctorClinicAddress) && (
+                                        <div className="px-4 sm:px-6 py-4">
+                                            <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">Family Doctor Details</p>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                {student.familyDoctorName && <div><p className="text-xs text-gray-400 mb-1">Doctor Name</p><p className="text-sm font-medium text-gray-900 dark:text-gray-100">{student.familyDoctorName}</p></div>}
+                                                {student.familyDoctorPhone && <div><p className="text-xs text-gray-400 mb-1">Phone</p><p className="text-sm font-medium text-gray-900 dark:text-gray-100">{student.familyDoctorPhone}</p></div>}
+                                                {student.familyDoctorClinicAddress && <div><p className="text-xs text-gray-400 mb-1">Clinic Address</p><p className="text-sm font-medium text-gray-900 dark:text-gray-100">{student.familyDoctorClinicAddress}</p></div>}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </InfoCard>
+
+                            {/* Faith & Religion + Legal side by side */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <InfoCard>
+                                    <SectionHeader title="Faith & Religion" icon={BookOpen} />
+                                    <div className="p-6 space-y-3">
+                                        {[
+                                            { label: 'Catholic Faith Consent', value: student.catholicFaithConsent },
+                                            { label: 'Baptism Status', value: student.isBaptized },
+                                            { label: 'Communicant Status', value: student.isCommunicant },
+                                        ].map((item, i) => (
+                                            <div key={i} className="flex items-center justify-between py-2 border-b border-gray-50 dark:border-gray-800 last:border-0">
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">{item.label}</p>
+                                                <span className={clsx("inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold", item.value ? "bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400" : "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400")}>
+                                                    {item.value ? <CheckSquare className="w-3 h-3" /> : <XSquare className="w-3 h-3" />}
+                                                    {item.value ? 'Yes' : 'No'}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </InfoCard>
+
+                                <InfoCard>
+                                    <SectionHeader title="Legal & Finalization" icon={Scale} />
+                                    <div className="p-6 space-y-3">
+                                        {student.applicationFeeReference && (
+                                            <div className="pb-4 border-b border-gray-50 dark:border-gray-800">
+                                                <p className="text-xs text-gray-400 mb-1">Application Fee Reference</p>
+                                                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{student.applicationFeeReference}</p>
+                                            </div>
+                                        )}
+                                        {[
+                                            { label: 'Undertaking Accepted', value: student.undertakingAccepted },
+                                            { label: 'Parent Signature', value: student.parentSignature },
+                                        ].map((item, i) => (
+                                            <div key={i} className="flex items-center justify-between py-2 border-b border-gray-50 dark:border-gray-800 last:border-0">
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">{item.label}</p>
+                                                <span className={clsx("inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold", item.value ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" : "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400")}>
+                                                    {item.value ? <CheckSquare className="w-3 h-3" /> : <XSquare className="w-3 h-3" />}
+                                                    {item.value ? 'Confirmed' : 'Pending'}
+                                                </span>
+                                            </div>
+                                        ))}
                                     </div>
                                 </InfoCard>
                             </div>

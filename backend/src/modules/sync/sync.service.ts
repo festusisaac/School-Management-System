@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan } from 'typeorm';
 import { Student } from '../students/entities/student.entity';
@@ -13,6 +13,10 @@ import { ExamGroup } from '../examination/entities/exam-group.entity';
 import { FeeAssignment } from '../finance/entities/fee-assignment.entity';
 import { DiscountProfile } from '../finance/entities/discount-profile.entity';
 import { SystemSetting } from '../system/entities/system-setting.entity';
+import { FeeGroup } from '../finance/entities/fee-group.entity';
+import { FeeHead } from '../finance/entities/fee-head.entity';
+import { StudentsService } from '../students/services/students.service';
+import { FeesService } from '../finance/services/fees.service';
 
 /** Records older than this many months are excluded from pull-all syncs */
 const ROLLING_MONTHS = 3;
@@ -40,35 +44,43 @@ function calculateDiscountedAmount(headAmount: string | number, feeHeadId: strin
   return amount;
 }
 
-function computeChargeAmount(assignment: FeeAssignment, discountProfile: any | null): string {
-  if (!assignment.feeGroup || !assignment.feeGroup.heads) return '0.00';
-  let total = 0;
-  for (const head of assignment.feeGroup.heads) {
-    if (!assignment.excludedHeadIds?.includes(head.id)) {
-      total += calculateDiscountedAmount(head.defaultAmount || '0', head.id, discountProfile);
-    }
-  }
-  return total.toFixed(2);
-}
+function mapAssignmentToTransactions(assignment: FeeAssignment, discountProfile: any | null): any[] {
+  if (!assignment.feeGroup || !assignment.feeGroup.heads) return [];
 
-function mapAssignmentToTransaction(assignment: FeeAssignment, discountProfile: any | null): any {
-  return {
-    id: assignment.id,
-    amount: computeChargeAmount(assignment, discountProfile),
-    type: 'charge',
-    studentId: assignment.studentId,
-    tenantId: assignment.tenantId,
-    sessionId: assignment.sessionId || null,
-    feeGroupId: assignment.feeGroupId || null,
-    paymentMethod: 'SYSTEM',
-    reference: null,
-    processedBy: null,
-    schoolSectionId: null,
-    meta: assignment.feeGroup ? { feeGroupName: assignment.feeGroup.name } : null,
-    createdAt: assignment.createdAt,
-    updatedAt: assignment.updatedAt,
-    deletedAt: null,
-  };
+  const transactions: any[] = [];
+
+  for (const head of assignment.feeGroup.heads) {
+    if (assignment.excludedHeadIds?.includes(head.id)) {
+      continue;
+    }
+
+    const discountedAmount = calculateDiscountedAmount(head.defaultAmount || '0', head.id, discountProfile);
+
+    transactions.push({
+      id: `${assignment.id}_${head.id}`, // Make it unique per student assignment + head
+      amount: discountedAmount.toFixed(2),
+      type: 'charge',
+      studentId: assignment.studentId,
+      tenantId: assignment.tenantId,
+      sessionId: assignment.sessionId || null,
+      feeGroupId: assignment.feeGroupId || null,
+      paymentMethod: 'SYSTEM',
+      reference: null,
+      processedBy: null,
+      schoolSectionId: null,
+      meta: {
+        name: head.name,
+        feeGroupName: assignment.feeGroup.name,
+        isFeeHead: true,
+        feeHeadId: head.id, // Store the real feeHeadId here so the mobile app can use it for allocations
+      },
+      createdAt: assignment.createdAt,
+      updatedAt: assignment.updatedAt,
+      deletedAt: null,
+    });
+  }
+
+  return transactions;
 }
 
 @Injectable()
@@ -98,7 +110,15 @@ export class SyncService {
     private discountProfileRepository: Repository<DiscountProfile>,
     @InjectRepository(SystemSetting)
     private systemSettingRepository: Repository<SystemSetting>,
-  ) {}
+    @InjectRepository(FeeGroup)
+    private feeGroupRepository: Repository<FeeGroup>,
+    @InjectRepository(FeeHead)
+    private feeHeadRepository: Repository<FeeHead>,
+    @Inject(forwardRef(() => StudentsService))
+    private studentsService: StudentsService,
+    @Inject(forwardRef(() => FeesService))
+    private feesService: FeesService,
+  ) { }
 
   /**
    * Auto-generates meta.allocations from the student's active fee assignments.
@@ -182,32 +202,45 @@ export class SyncService {
       where: { tenantId, isActive: true },
       relations: ['rules']
     });
-    
+
     // Filter out expired ones
     const activeProfiles = profiles.filter(p => !p.expiryDate || new Date() <= new Date(p.expiryDate));
-    
+
     // We also need all students to know their discountProfileId.
     const allStudents = await this.studentsRepository.find({
       where: { tenantId },
       select: ['id', 'discountProfileId']
     });
-    
+
     const profileMap = new Map(activeProfiles.map(p => [p.id, p]));
     const studentProfileMap = new Map<string, any>();
-    
+
     for (const student of allStudents) {
       if (student.discountProfileId && profileMap.has(student.discountProfileId)) {
         studentProfileMap.set(student.id, profileMap.get(student.discountProfileId));
       }
     }
-    
+
     return studentProfileMap;
   }
 
   async getPullChanges(lastPulledAt: Date, tenantId: string) {
     const cutoff = threeMonthsAgo();
 
-    const [students, transactions, assignments, attendance, classes, sections, commLogs, docs, termResults, examGroups, studentProfileMap] =
+    // Charge records are generated from fee assignments. The FeeGroup<->FeeHead
+    // relationship is ManyToMany via a join table (fee_group_heads) with NO timestamps.
+    // Adding/removing a fee head from a group only inserts/deletes a join table row —
+    // no updatedAt changes on FeeAssignment, FeeGroup, or FeeHead.
+    // Therefore we ALWAYS fetch ALL active assignments for the tenant so the
+    // mobile app always has a complete, up-to-date set of charge records (WatermelonDB upserts them).
+    const allAssignmentsQuery = this.feeAssignmentsRepository
+      .createQueryBuilder('fa')
+      .leftJoinAndSelect('fa.feeGroup', 'fg')
+      .leftJoinAndSelect('fg.heads', 'fh')
+      .where('fa.tenantId = :tenantId', { tenantId })
+      .andWhere('fa.isActive = true');
+
+    const [students, transactions, assignments, attendance, classes, sections, commLogs, docs, termResults, examGroups, studentProfileMap, feeGroups] =
       await Promise.all([
         // Core tables — no 3-month cap (students are master data)
         this.studentsRepository.find({
@@ -218,10 +251,7 @@ export class SyncService {
           where: { updatedAt: MoreThan(lastPulledAt), tenantId },
           withDeleted: true,
         }),
-        this.feeAssignmentsRepository.find({
-          where: { updatedAt: MoreThan(lastPulledAt), tenantId },
-          relations: ['feeGroup', 'feeGroup.heads'],
-        }),
+        allAssignmentsQuery.getMany(),
         this.attendanceRepository.find({
           where: { updatedAt: MoreThan(lastPulledAt), tenantId },
         }),
@@ -245,61 +275,78 @@ export class SyncService {
           where: { updatedAt: MoreThan(lastPulledAt), tenantId, createdAt: MoreThan(cutoff) },
         }),
         this.getStudentDiscountProfiles(tenantId),
+        this.feeGroupRepository.find({ where: { updatedAt: MoreThan(lastPulledAt), tenantId }, relations: ['heads'] }),
       ]);
 
-    // Charge records are synthetic and never exist locally — always send as 'created'
-    const chargeRecords = assignments.map(a => mapAssignmentToTransaction(a, studentProfileMap.get(a.studentId) || null));
+    // feeHeads removed — they are embedded inside fee_groups as heads_json
+
+    const chargeRecords = assignments.flatMap(a => mapAssignmentToTransactions(a, studentProfileMap.get(a.studentId) || null));
     const realTransactions = transactions;
+    const allFeeGroups = (feeGroups || []).map(g => ({
+      ...g,
+      heads_json: JSON.stringify(
+        (g.heads || []).map(h => ({
+          id: h.id,
+          name: h.name,
+          description: h.description,
+          defaultAmount: h.defaultAmount,
+          isOptional: h.isOptional,
+          isActive: h.isActive,
+        }))
+      ),
+    }));
 
     return {
       changes: {
         students: {
-          created: students.filter(s => s.createdAt > lastPulledAt && !s.deletedAt),
-          updated: students.filter(s => s.createdAt <= lastPulledAt && !s.deletedAt),
+          created: [],
+          updated: [...students.filter(s => s.createdAt > lastPulledAt && !s.deletedAt), ...students.filter(s => s.createdAt <= lastPulledAt && !s.deletedAt)],
           deleted: students.filter(s => s.deletedAt).map(s => s.id),
         },
         fee_records: {
-          // Real transactions ALWAYS go in 'updated' — WatermelonDB will upsert them safely.
-          // This prevents the "server wants to create but already exists" conflict when the mobile
-          // pushes an offline record and then receives it back in the same sync pull.
-          created: [...chargeRecords], // only synthetic charge records go in 'created'
-          updated: realTransactions.filter(t => !t.deletedAt),
+          created: [], // Send synthetic charges as updated to force upsert and avoid creation conflicts
+          updated: [...chargeRecords, ...realTransactions.filter(t => !t.deletedAt)],
           deleted: realTransactions.filter(t => t.deletedAt).map(t => t.id),
         },
         attendance: {
-          created: attendance.filter(a => a.createdAt > lastPulledAt),
-          updated: attendance.filter(a => a.createdAt <= lastPulledAt),
+          created: [],
+          updated: [...attendance.filter(a => a.createdAt > lastPulledAt), ...attendance.filter(a => a.createdAt <= lastPulledAt)],
           deleted: [] as string[],
         },
         classes: {
-          created: classes.filter(c => c.createdAt > lastPulledAt),
-          updated: classes.filter(c => c.createdAt <= lastPulledAt),
+          created: [],
+          updated: [...classes.filter(c => c.createdAt > lastPulledAt), ...classes.filter(c => c.createdAt <= lastPulledAt)],
           deleted: [] as string[],
         },
         sections: {
-          created: sections.filter(s => s.createdAt > lastPulledAt),
-          updated: sections.filter(s => s.createdAt <= lastPulledAt),
+          created: [],
+          updated: [...sections.filter(s => s.createdAt > lastPulledAt), ...sections.filter(s => s.createdAt <= lastPulledAt)],
           deleted: [] as string[],
         },
         communication_logs: {
-          created: commLogs.filter(l => l.createdAt > lastPulledAt),
-          updated: commLogs.filter(l => l.createdAt <= lastPulledAt),
+          created: [],
+          updated: [...commLogs.filter(l => l.createdAt > lastPulledAt), ...commLogs.filter(l => l.createdAt <= lastPulledAt)],
           deleted: [] as string[],
         },
         student_documents: {
-          created: docs.filter(d => d.createdAt > lastPulledAt),
-          updated: docs.filter(d => d.createdAt <= lastPulledAt),
+          created: [],
+          updated: [...docs.filter(d => d.createdAt > lastPulledAt), ...docs.filter(d => d.createdAt <= lastPulledAt)],
           deleted: [] as string[],
         },
         student_term_results: {
-          created: termResults.filter(r => r.createdAt > lastPulledAt),
-          updated: termResults.filter(r => r.createdAt <= lastPulledAt),
+          created: [],
+          updated: [...termResults.filter(r => r.createdAt > lastPulledAt), ...termResults.filter(r => r.createdAt <= lastPulledAt)],
           deleted: [] as string[],
         },
         exam_groups: {
-          created: examGroups.filter(g => g.createdAt > lastPulledAt),
-          updated: examGroups.filter(g => g.createdAt <= lastPulledAt),
+          created: [],
+          updated: [...examGroups.filter(e => e.createdAt > lastPulledAt), ...examGroups.filter(e => e.createdAt <= lastPulledAt)],
           deleted: [] as string[],
+        },
+        fee_groups: {
+          created: [],
+          updated: [...allFeeGroups.filter(g => g.createdAt > lastPulledAt), ...allFeeGroups.filter(g => g.createdAt <= lastPulledAt)],
+          deleted: [],
         },
       },
       timestamp: Date.now(),
@@ -309,7 +356,7 @@ export class SyncService {
   async getPullAllChanges(tenantId: string) {
     const cutoff = threeMonthsAgo();
 
-    const [students, transactions, assignments, attendance, classes, sections, commLogs, docs, termResults, examGroups, studentProfileMap] =
+    const [students, transactions, assignments, attendance, classes, sections, commLogs, docs, termResults, examGroups, studentProfileMap, feeGroups] =
       await Promise.all([
         this.studentsRepository.find({ where: { tenantId }, withDeleted: true }),
         this.transactionsRepository.find({ where: { tenantId }, withDeleted: true }),
@@ -332,53 +379,155 @@ export class SyncService {
           order: { createdAt: 'DESC' },
         }),
         this.getStudentDiscountProfiles(tenantId),
+        this.feeGroupRepository.find({ where: { tenantId }, relations: ['heads'] }),
       ]);
 
-    // Charge records are synthetic and never exist locally — always send as 'created'
-    const chargeRecords = assignments.map(a => mapAssignmentToTransaction(a, studentProfileMap.get(a.studentId) || null));
+    // feeHeads removed — they are embedded inside fee_groups as heads_json
+
+    const chargeRecords = assignments.flatMap(a => mapAssignmentToTransactions(a, studentProfileMap.get(a.studentId) || null));
 
     const allStudents = students.filter(s => !s.deletedAt);
     const realTransactions = transactions.filter(t => !t.deletedAt);
     const deletedStudents = students.filter(s => s.deletedAt).map(s => s.id);
     const deletedTransactions = transactions.filter(t => t.deletedAt).map(t => t.id);
+    const mappedFeeGroups = (feeGroups || []).map(g => ({
+      ...g,
+      heads_json: JSON.stringify(
+        (g.heads || []).map(h => ({
+          id: h.id,
+          name: h.name,
+          description: h.description,
+          defaultAmount: h.defaultAmount,
+          isOptional: h.isOptional,
+          isActive: h.isActive,
+        }))
+      ),
+    }));
 
     return {
       changes: {
         students: { created: [], updated: allStudents, deleted: deletedStudents },
         fee_records: {
-          created: chargeRecords, // synthetic charge records always go in 'created'
-          updated: realTransactions,
+          created: [],
+          updated: [...realTransactions, ...chargeRecords],
           deleted: deletedTransactions,
         },
         attendance: { created: [], updated: attendance, deleted: [] as string[] },
         classes: { created: [], updated: classes, deleted: [] as string[] },
         sections: { created: [], updated: sections, deleted: [] as string[] },
-        // Rolling window — return all as "updated" so client upserts cleanly
         communication_logs: { created: [], updated: commLogs, deleted: [] as string[] },
         student_documents: { created: [], updated: docs, deleted: [] as string[] },
         student_term_results: { created: [], updated: termResults, deleted: [] as string[] },
         exam_groups: { created: [], updated: examGroups, deleted: [] as string[] },
+        fee_groups: { created: [], updated: mappedFeeGroups, deleted: [] as string[] },
       },
       timestamp: Date.now(),
     };
+  }
+
+  private sanitizeRecordDates(record: any, dateFields: string[]) {
+    const sanitized = { ...record };
+    for (const field of dateFields) {
+      if (sanitized[field] !== undefined) {
+        if (sanitized[field] === 0 || sanitized[field] === '0' || sanitized[field] === null) {
+          if (['createdAt', 'updatedAt', 'dob', 'admissionDate'].includes(field)) {
+            delete sanitized[field];
+          } else {
+            sanitized[field] = null;
+          }
+        } else if (typeof sanitized[field] === 'number') {
+          sanitized[field] = new Date(sanitized[field]);
+        }
+      }
+    }
+    return sanitized;
   }
 
   async pushChanges(changes: any, tenantId: string) {
     // --- Students ---
     if (changes.students) {
       const { created, updated, deleted } = changes.students;
+      const studentDateFields = ['dob', 'admissionDate', 'asOnDate', 'deactivatedAt', 'createdAt', 'updatedAt'];
 
       if (created?.length) {
         for (const record of created) {
-          await this.studentsRepository.save({ ...record, tenantId });
+          const sanitized = this.sanitizeRecordDates(record, studentDateFields);
+
+          // Cast SQLite 0/1 to boolean for Postgres
+          const booleanFields = [
+            'hasDisability', 'hasAllergies', 'firstAidConsent', 'catholicFaithConsent',
+            'isBaptized', 'isCommunicant', 'undertakingAccepted', 'parentSignature', 'isActive'
+          ];
+          for (const field of booleanFields) {
+            if (sanitized[field] !== undefined) {
+              sanitized[field] = !!sanitized[field];
+            }
+          }
+
+          // Conflict Resolution: Ensure admissionNo is unique across the tenant
+          let admissionNo = sanitized.admissionNo;
+          let isUnique = false;
+          let conflictCount = 0;
+
+          while (!isUnique && conflictCount < 10) {
+            const existing = await this.studentsRepository.findOne({ where: { admissionNo, tenantId } });
+            if (existing) {
+              conflictCount++;
+              console.warn(`[Sync] Conflict detected for admissionNo ${admissionNo}. Regenerating...`);
+              const result = await this.studentsService.getNextAdmissionNumber(sanitized.classId, tenantId);
+              admissionNo = result.admissionNo;
+            } else {
+              isUnique = true;
+            }
+          }
+          sanitized.admissionNo = admissionNo;
+
+          let selectedFeeGroups: string[] | undefined;
+          let feeExclusions: any;
+          if (sanitized.selectedFeeGroups) {
+            try { selectedFeeGroups = JSON.parse(sanitized.selectedFeeGroups); } catch { }
+            delete sanitized.selectedFeeGroups;
+          }
+          if (sanitized.feeExclusions) {
+            try { feeExclusions = JSON.parse(sanitized.feeExclusions); } catch { }
+            delete sanitized.feeExclusions;
+          }
+
+          const savedStudent = await this.studentsRepository.save({ ...sanitized, tenantId });
+
+          // Assign fees if any were selected during offline creation
+          if (selectedFeeGroups && selectedFeeGroups.length > 0) {
+            try {
+              await this.feesService.assignFeesToStudent(savedStudent.id, selectedFeeGroups, tenantId, feeExclusions || {});
+            } catch (e) {
+              console.error(`[Sync] Failed to assign fees for offline student ${savedStudent.id}:`, e);
+            }
+          }
+
+          // Trigger offline provisioning (user accounts & welcome emails)
+          try {
+            await this.studentsService.provisionNewStudentCreatedOffline(savedStudent.id, tenantId);
+          } catch (e) {
+            console.error(`[Sync] Failed to provision users for new offline student ${savedStudent.id}:`, e);
+          }
         }
       }
 
       if (updated?.length) {
         for (const record of updated) {
-          const existing = await this.studentsRepository.findOne({ where: { id: record.id, tenantId } });
-          if (existing && new Date(record.updatedAt) > existing.updatedAt) {
-            await this.studentsRepository.save({ ...existing, ...record });
+          const sanitized = this.sanitizeRecordDates(record, studentDateFields);
+          const booleanFields = [
+            'hasDisability', 'hasAllergies', 'firstAidConsent', 'catholicFaithConsent',
+            'isBaptized', 'isCommunicant', 'undertakingAccepted', 'parentSignature', 'isActive'
+          ];
+          for (const field of booleanFields) {
+            if (sanitized[field] !== undefined) {
+              sanitized[field] = !!sanitized[field];
+            }
+          }
+          const existing = await this.studentsRepository.findOne({ where: { id: sanitized.id, tenantId } });
+          if (existing) {
+            await this.studentsRepository.save({ ...existing, ...sanitized });
           }
         }
       }
@@ -406,49 +555,51 @@ export class SyncService {
 
       if (created?.length) {
         for (const record of created) {
-          if (!record.sessionId && activeSessionId) {
-            record.sessionId = activeSessionId;
+          const sanitized = this.sanitizeRecordDates(record, ['createdAt', 'updatedAt']);
+          if (!sanitized.sessionId && activeSessionId) {
+            sanitized.sessionId = activeSessionId;
           }
           // meta is stored as a JSON string in WatermelonDB but the backend column is jsonb
-          if (record.meta && typeof record.meta === 'string') {
-            try { record.meta = JSON.parse(record.meta); } catch { record.meta = { note: record.meta }; }
+          if (sanitized.meta && typeof sanitized.meta === 'string') {
+            try { sanitized.meta = JSON.parse(sanitized.meta); } catch { sanitized.meta = { note: sanitized.meta }; }
           }
-          if (!record.meta) record.meta = {};
+          if (!sanitized.meta) sanitized.meta = {};
 
           // reference must be unique per tenant — blank it out if null/empty to avoid index conflicts
-          if (!record.reference) {
-            record.reference = null;
+          if (!sanitized.reference) {
+            sanitized.reference = null;
           }
 
           // ── Auto-generate fee-head allocations if the mobile app didn't send any ──
           // The website uses meta.allocations to show Fee Breakdown and PARTIAL/PAID status.
-          if (!record.meta?.allocations || record.meta.allocations.length === 0) {
-            record.meta = await this.buildAllocationsFromAssignments(
-              record.studentId,
+          if (!sanitized.meta?.allocations || sanitized.meta.allocations.length === 0) {
+            sanitized.meta = await this.buildAllocationsFromAssignments(
+              sanitized.studentId,
               tenantId,
               activeSessionId,
-              parseFloat(record.amount || '0'),
-              record.meta,
+              parseFloat(sanitized.amount || '0'),
+              sanitized.meta,
             );
           }
 
-          await this.transactionsRepository.save({ ...record, tenantId });
+          await this.transactionsRepository.save({ ...sanitized, tenantId });
         }
       }
 
       if (updated?.length) {
         for (const record of updated) {
-          const existing = await this.transactionsRepository.findOne({ where: { id: record.id, tenantId } });
-          if (existing && new Date(record.updatedAt) > existing.updatedAt) {
-            if (!record.sessionId && existing.sessionId) {
-              record.sessionId = existing.sessionId;
-            } else if (!record.sessionId && activeSessionId) {
-              record.sessionId = activeSessionId;
+          const sanitized = this.sanitizeRecordDates(record, ['createdAt', 'updatedAt']);
+          const existing = await this.transactionsRepository.findOne({ where: { id: sanitized.id, tenantId } });
+          if (existing) {
+            if (!sanitized.sessionId && existing.sessionId) {
+              sanitized.sessionId = existing.sessionId;
+            } else if (!sanitized.sessionId && activeSessionId) {
+              sanitized.sessionId = activeSessionId;
             }
-            if (record.meta && typeof record.meta === 'string') {
-              try { record.meta = JSON.parse(record.meta); } catch { record.meta = { note: record.meta }; }
+            if (sanitized.meta && typeof sanitized.meta === 'string') {
+              try { sanitized.meta = JSON.parse(sanitized.meta); } catch { sanitized.meta = { note: sanitized.meta }; }
             }
-            await this.transactionsRepository.save({ ...existing, ...record });
+            await this.transactionsRepository.save({ ...existing, ...sanitized });
           }
         }
       }
@@ -466,15 +617,17 @@ export class SyncService {
 
       if (created?.length) {
         for (const record of created) {
-          await this.attendanceRepository.save({ ...record, tenantId });
+          const sanitized = this.sanitizeRecordDates(record, ['date', 'createdAt', 'updatedAt']);
+          await this.attendanceRepository.save({ ...sanitized, tenantId });
         }
       }
 
       if (updated?.length) {
         for (const record of updated) {
-          const existing = await this.attendanceRepository.findOne({ where: { id: record.id, tenantId } });
-          if (existing && new Date(record.updatedAt) > existing.updatedAt) {
-            await this.attendanceRepository.save({ ...existing, ...record });
+          const sanitized = this.sanitizeRecordDates(record, ['date', 'createdAt', 'updatedAt']);
+          const existing = await this.attendanceRepository.findOne({ where: { id: sanitized.id, tenantId } });
+          if (existing) {
+            await this.attendanceRepository.save({ ...existing, ...sanitized });
           }
         }
       }
@@ -485,14 +638,16 @@ export class SyncService {
       const { created, updated } = changes.classes;
       if (created?.length) {
         for (const record of created) {
-          await this.classesRepository.save({ ...record, tenantId });
+          const sanitized = this.sanitizeRecordDates(record, ['createdAt', 'updatedAt']);
+          await this.classesRepository.save({ ...sanitized, tenantId });
         }
       }
       if (updated?.length) {
         for (const record of updated) {
-          const existing = await this.classesRepository.findOne({ where: { id: record.id, tenantId } });
-          if (existing && new Date(record.updatedAt) > existing.updatedAt) {
-            await this.classesRepository.save({ ...existing, ...record });
+          const sanitized = this.sanitizeRecordDates(record, ['createdAt', 'updatedAt']);
+          const existing = await this.classesRepository.findOne({ where: { id: sanitized.id, tenantId } });
+          if (existing) {
+            await this.classesRepository.save({ ...existing, ...sanitized });
           }
         }
       }
@@ -503,14 +658,16 @@ export class SyncService {
       const { created, updated } = changes.sections;
       if (created?.length) {
         for (const record of created) {
-          await this.sectionsRepository.save({ ...record, tenantId });
+          const sanitized = this.sanitizeRecordDates(record, ['createdAt', 'updatedAt']);
+          await this.sectionsRepository.save({ ...sanitized, tenantId });
         }
       }
       if (updated?.length) {
         for (const record of updated) {
-          const existing = await this.sectionsRepository.findOne({ where: { id: record.id, tenantId } });
-          if (existing && new Date(record.updatedAt) > existing.updatedAt) {
-            await this.sectionsRepository.save({ ...existing, ...record });
+          const sanitized = this.sanitizeRecordDates(record, ['createdAt', 'updatedAt']);
+          const existing = await this.sectionsRepository.findOne({ where: { id: sanitized.id, tenantId } });
+          if (existing) {
+            await this.sectionsRepository.save({ ...existing, ...sanitized });
           }
         }
       }

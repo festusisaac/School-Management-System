@@ -3,7 +3,7 @@ import { useAuthStore } from '../store/authStore';
 
 import { Platform } from 'react-native';
 
-let API_BASE = 'http://192.168.0.103:3000/api/v1';
+let API_BASE = 'http://192.168.0.102:3000/api/v1';
 
 export async function loginRequest(email: string, password: string) {
   const res = await fetch(`${API_BASE}/auth/login`, {
@@ -18,12 +18,12 @@ export async function loginRequest(email: string, password: string) {
   }
 
   const parsed = await res.json();
-  
+
   // The backend wraps responses in a { statusCode, message, data, timestamp } object via TransformInterceptor
   if (parsed && typeof parsed === 'object' && 'data' in parsed) {
     return parsed.data;
   }
-  
+
   return parsed;
 }
 

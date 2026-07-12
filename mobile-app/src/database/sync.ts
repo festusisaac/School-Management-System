@@ -19,13 +19,31 @@ function convertKeysToSnakeCase(obj: any): any {
       const snakeCase = key.replace(/([A-Z])/g, '_$1').toLowerCase();
       let value = obj[key];
       
-      // TypeORM returns decimals as strings to prevent precision loss. 
-      // WatermelonDB expects numbers and will silently coerce strings to 0.
+      // WatermelonDB expects numbers for amount and will silently coerce strings to 0.
       if (['amount', 'total_score', 'average_score'].includes(snakeCase) && typeof value === 'string') {
         value = Number(value) || 0;
       }
       
-      result[snakeCase] = convertKeysToSnakeCase(value);
+      // The backend sends `meta` as a JSON object, but WatermelonDB schema expects a string.
+      // Stringify it to avoid it saving as `"[object Object]"` which breaks JSON.parse locally.
+      if (snakeCase === 'meta' && value !== null && typeof value === 'object') {
+        value = JSON.stringify(value);
+      }
+      
+      // Convert ISO date strings from backend to Unix timestamps for WatermelonDB
+      const dateFields = [
+        'dob', 'admission_date', 'as_on_date', 'deactivated_at',
+        'scheduled_at', 'delivered_at', 'opened_at',
+        'created_at', 'updated_at', 'deleted_at'
+      ];
+      if (dateFields.includes(snakeCase) && typeof value === 'string') {
+        const parsedDate = Date.parse(value);
+        if (!isNaN(parsedDate)) {
+          value = parsedDate;
+        }
+      }
+      
+      result[snakeCase] = typeof value === 'object' && value !== null ? convertKeysToSnakeCase(value) : value;
     }
   }
   return result;
@@ -45,8 +63,17 @@ function convertKeysToCamelCase(obj: any): any {
       let value = obj[key];
       
       // Convert Unix timestamps to ISO strings for TypeORM
-      if (['createdAt', 'updatedAt', 'deletedAt'].includes(camelCase) && typeof value === 'number') {
-        value = new Date(value).toISOString();
+      const camelCaseDateFields = [
+        'createdAt', 'updatedAt', 'deletedAt',
+        'dob', 'admissionDate', 'asOnDate', 'deactivatedAt',
+        'scheduledAt', 'deliveredAt', 'openedAt'
+      ];
+      if (camelCaseDateFields.includes(camelCase) && typeof value === 'number') {
+        if (value === 0) {
+          value = null;
+        } else {
+          value = new Date(value).toISOString();
+        }
       }
       
       result[camelCase] = convertKeysToCamelCase(value);
@@ -167,7 +194,7 @@ export async function syncData(): Promise<void> {
           throw new Error(`Sync push failed: ${response.status}`);
         }
       },
-      sendCreatedAsUpdated: !hasCompletedFirstSync,
+      sendCreatedAsUpdated: true,
     });
 
     // Mark first sync as complete after successful sync

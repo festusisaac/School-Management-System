@@ -206,7 +206,12 @@ const StudentManagementScreen = ({ students }: Props) => {
           }
         />
 
-        <TouchableOpacity style={styles.fab} activeOpacity={0.8}>
+        <TouchableOpacity 
+          style={styles.fab} 
+          activeOpacity={0.8}
+          // @ts-ignore
+          onPress={() => navigation.navigate('StudentAdmission')}
+        >
           <Ionicons name="add" size={28} color={COLORS.onPrimary} />
         </TouchableOpacity>
       </View>

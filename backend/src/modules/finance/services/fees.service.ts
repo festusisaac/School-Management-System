@@ -139,11 +139,15 @@ export class FeesService {
     return bulkAllocations;
   }
 
-  private async getLiveOutstandingSnapshot(manager: any, studentId: string, tenantId: string, sessionId?: string) {
+  async getLiveOutstandingSnapshot(manager: any, studentId: string, tenantId: string, sessionId?: string) {
     const txWhere: any = { studentId, tenantId };
-    if (sessionId) txWhere.sessionId = sessionId;
 
-    const allTransactions = await manager.find(Transaction, { where: txWhere });
+    const allTransactions = await manager.find(Transaction, {
+      where: sessionId ? [
+        { ...txWhere, sessionId },
+        { ...txWhere, sessionId: IsNull() }
+      ] : txWhere
+    });
     const transactions = allTransactions.filter((tx: Transaction) => tx.type !== TransactionType.CARRY_FORWARD);
 
     const cfWhere: any = { studentId, tenantId };
@@ -161,11 +165,26 @@ export class FeesService {
     });
 
     const assignmentWhere: any = { studentId, isActive: true, tenantId };
-    if (sessionId) assignmentWhere.sessionId = sessionId;
     const assignments = await manager.find(FeeAssignment, {
-      where: assignmentWhere,
+      where: sessionId ? [
+        { ...assignmentWhere, sessionId },
+        { ...assignmentWhere, sessionId: IsNull() }
+      ] : assignmentWhere,
       relations: ['feeGroup', 'feeGroup.heads'],
     });
+
+    // Fetch discount profile for this student
+    const student = await manager.findOne(Student, { where: { id: studentId, tenantId } });
+    let discountProfile = null;
+    if (student?.discountProfileId) {
+      discountProfile = await manager.findOne(DiscountProfile, {
+        where: { id: student.discountProfileId, isActive: true, tenantId },
+        relations: ['rules'],
+      });
+      if (discountProfile?.expiryDate && new Date() > new Date(discountProfile.expiryDate)) {
+        discountProfile = null;
+      }
+    }
 
     const paidByItem: Record<string, number> = {};
     transactions.forEach((tx: Transaction) => {
@@ -185,7 +204,7 @@ export class FeesService {
       (assignment.feeGroup?.heads || [])
         .filter((head: FeeHead) => !excludedIds.includes(head.id))
         .forEach((head: FeeHead) => {
-          dueByItem[head.id] = (dueByItem[head.id] || 0) + parseFloat(head.defaultAmount || '0');
+          dueByItem[head.id] = (dueByItem[head.id] || 0) + this.calculateDiscountedAmount(head.defaultAmount || '0', head.id, discountProfile);
         });
     });
 
