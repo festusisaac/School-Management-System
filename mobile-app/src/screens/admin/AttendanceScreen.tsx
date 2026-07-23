@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { Q } from '@nozbe/watermelondb';
 import AdminLayout from '../../components/AdminLayout';
+import TeacherLayout from '../../components/TeacherLayout';
 import { database } from '../../database';
 import Student from '../../database/models/Student';
 import Class from '../../database/models/Class';
@@ -361,8 +362,10 @@ export default function AttendanceScreen() {
 
   const summary = STATUSES.map(st => ({ ...st, count: Object.values(attendanceMap).filter(v=>v===st.key).length }));
 
+  const Layout = user?.role === 'teacher' ? TeacherLayout : AdminLayout;
+
   return (
-    <AdminLayout activeTab="Attendance">
+    <Layout activeTab="Attendance">
       <ScrollView style={s.root} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
 
         {/* Header */}
@@ -471,7 +474,7 @@ export default function AttendanceScreen() {
       {showClassModal && <DropdownModal title="Select Class" items={classes.map(c=>({id:c.id,name:c.name}))} onSelect={id=>{setSelectedClass(classes.find(c=>c.id===id)||null);}} onClose={()=>setShowClassModal(false)}/>}
       {showSectionModal && <DropdownModal title="Select Section" items={[{id:'',name:'All Sections'},...sections.map(sec=>({id:sec.id,name:sec.name}))]} onSelect={id=>{setSelectedSection(id?(sections.find(sec=>sec.id===id)||null):null);}} onClose={()=>setShowSectionModal(false)}/>}
       {showDateModal && <DatePickerModal value={selectedDate} onConfirm={setSelectedDate} onClose={()=>setShowDateModal(false)}/>}
-    </AdminLayout>
+    </Layout>
   );
 }
 

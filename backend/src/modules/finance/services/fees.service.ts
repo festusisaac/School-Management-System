@@ -595,6 +595,7 @@ export class FeesService {
         .map(h => {
           const totalAmount = this.calculateDiscountedAmount(h.defaultAmount || '0', h.id, discountProfile);
           const paidAmount = paidByHead[h.id] || 0;
+          if (paidByHead[h.id]) paidByHead[h.id] = 0; // Consume payment
           return {
             id: h.id,
             name: h.name,
@@ -614,7 +615,15 @@ export class FeesService {
 
     const labeledCarryForwards = carryForwards.map(cf => {
       const totalAmount = parseFloat(cf.amount || '0');
-      const paidAmount = paidByHead[cf.id] || 0;
+      
+      // A payment could be made to cf.id (from web) or cf.feeHeadId (from mobile app)
+      const exactPaid = paidByHead[cf.id] || 0;
+      const fallbackPaid = cf.feeHeadId ? (paidByHead[cf.feeHeadId] || 0) : 0;
+      const paidAmount = exactPaid + fallbackPaid;
+      
+      if (cf.id && paidByHead[cf.id]) paidByHead[cf.id] = 0;
+      if (cf.feeHeadId && paidByHead[cf.feeHeadId]) paidByHead[cf.feeHeadId] = 0;
+
       const headName = cf.feeHead?.name;
       return {
         ...cf,
@@ -622,7 +631,8 @@ export class FeesService {
         amount: totalAmount.toFixed(2),
         paid: paidAmount.toFixed(2),
         balance: Math.max(0, totalAmount - paidAmount).toFixed(2),
-        type: 'CARRY_FORWARD'
+        type: 'CARRY_FORWARD',
+        group: 'Arrears'
       };
     });
 
@@ -634,7 +644,7 @@ export class FeesService {
       totalPaid: totalPaid.toFixed(2),
       balance: balance.toFixed(2),
       discountApplied: discountProfile?.name || null,
-      assignedHeads,
+      assignedHeads: [...assignedHeads, ...labeledCarryForwards],
       carryForwards: labeledCarryForwards,
       transactions,
     };
@@ -1375,31 +1385,11 @@ export class FeesService {
       );
     }
 
-    // Performance optimization: only consider students with at least one active assignment
-    query.andWhere(qb => {
-      const subQuery = qb.subQuery()
-        .select('1')
-        .from('fee_assignments', 'fa')
-        .where('fa.studentId = student.id')
-        .andWhere('fa.tenantId = :tenantId')
-        .andWhere('fa.isActive = :faActive');
-
-      return `EXISTS (${subQuery.getQuery()})`;
-    });
-
-    const sessionId = await this.systemSettingsService.getActiveSessionId();
-    if (sessionId) {
-      query.andWhere(qb => {
-        const subQuery = qb.subQuery()
-          .select('1')
-          .from('fee_assignments', 'fa2')
-          .where('fa2.studentId = student.id')
-          .andWhere('fa2.sessionId = :sessionId')
-          .getQuery();
-        return `EXISTS (${subQuery})`;
-      });
-      query.setParameter('sessionId', sessionId);
-    }
+    // Note: We intentionally skip the pre-filter subquery optimisation here because
+    // TypeORM's parameter binding causes uuid/varchar type conflicts when using raw SQL
+    // subqueries mixing student.id (uuid) with fee_assignments.studentId (varchar) and
+    // carry_forwards.studentId (varchar) plus the sessionId columns. Instead we load
+    // active students for this tenant and compute balances individually via getStudentStatement.
 
     if (options.sectionId) {
       query.andWhere(qb => {
@@ -1413,8 +1403,6 @@ export class FeesService {
       });
       query.setParameter('sectionId', options.sectionId);
     }
-
-    query.setParameters({ faActive: true, tenantId });
 
     const students = await query
       .orderBy('student.firstName', 'ASC')

@@ -7,72 +7,31 @@
     },
     "attendance": {
       "created": [],
-      "updated": [
-        {
-          "id": "5ea5150d-5ad7-4019-95cd-136bc479b669",
-          "Status": "updated",
-          "Changed": "updated_at",
-          "tenantId": "5fddf804-e861-4ffd-9f62-d8f849f7d5c8",
-          "studentId": "3353ca37-f68a-4977-a356-820eeae1ee68",
-          "classId": "2e135677-10e9-49ee-b727-5906deb99d6e",
-          "sectionId": null,
-          "date": "2026-07-12",
-          "status": "absent",
-          "remarks": null,
-          "sessionId": null,
-          "createdAt": "2026-07-12T02:24:32.903Z",
-          "updatedAt": "2026-07-12T02:26:26.517Z"
-        },
-        {
-          "id": "c1920ef5-cd19-4bf9-9e56-12468c3d25d5",
-          "Status": "updated",
-          "Changed": "updated_at",
-          "tenantId": "5fddf804-e861-4ffd-9f62-d8f849f7d5c8",
-          "studentId": "0e221745-b8d7-4d05-a112-30f38171ed21",
-          "classId": "2e135677-10e9-49ee-b727-5906deb99d6e",
-          "sectionId": null,
-          "date": "2026-07-12",
-          "status": "present",
-          "remarks": null,
-          "sessionId": null,
-          "createdAt": "2026-07-12T02:24:32.914Z",
-          "updatedAt": "2026-07-12T02:26:26.534Z"
-        },
-        {
-          "id": "09f5d568-4705-4834-a2f0-d220f7329810",
-          "Status": "updated",
-          "Changed": "updated_at",
-          "tenantId": "5fddf804-e861-4ffd-9f62-d8f849f7d5c8",
-          "studentId": "f3da0191-a77c-40bc-a604-e668c354a8d4",
-          "classId": "2e135677-10e9-49ee-b727-5906deb99d6e",
-          "sectionId": null,
-          "date": "2026-07-12",
-          "status": "present",
-          "remarks": null,
-          "sessionId": null,
-          "createdAt": "2026-07-12T02:24:32.921Z",
-          "updatedAt": "2026-07-12T02:26:26.540Z"
-        },
-        {
-          "id": "c8412f23-4b0f-45b6-bb32-2b4708d569ba",
-          "Status": "updated",
-          "Changed": "updated_at",
-          "tenantId": "5fddf804-e861-4ffd-9f62-d8f849f7d5c8",
-          "studentId": "7de2509e-9ef4-4670-8409-e6ef25d3e642",
-          "classId": "2e135677-10e9-49ee-b727-5906deb99d6e",
-          "sectionId": null,
-          "date": "2026-07-12",
-          "status": "present",
-          "remarks": null,
-          "sessionId": null,
-          "createdAt": "2026-07-12T02:24:32.926Z",
-          "updatedAt": "2026-07-12T02:26:26.546Z"
-        }
-      ],
+      "updated": [],
       "deleted": []
     },
     "fee_records": {
-      "created": [],
+      "created": [
+        {
+          "id": "a3cf9569-657b-4248-819b-6442dd979140",
+          "Status": "created",
+          "Changed": "",
+          "tenantId": "5fddf804-e861-4ffd-9f62-d8f849f7d5c8",
+          "studentId": "7de2509e-9ef4-4670-8409-e6ef25d3e642",
+          "amount": 10000,
+          "type": "FEE_PAYMENT",
+          "paymentMethod": "POS",
+          "reference": "86q99w7",
+          "feeGroupId": null,
+          "sessionId": "21829e41-7b18-4dfe-98dd-2cc98d19576d",
+          "processedBy": null,
+          "schoolSectionId": null,
+          "meta": "{\"allocations\":[{\"id\":\"354dd9ab-48c6-4b01-860a-3c5af906db4c\",\"name\":\"Arrears (Brought Forward)\",\"amount\":\"10000.00\",\"totalDue\":\"30000.00\",\"balance\":\"20000.00\",\"status\":\"PARTIAL\"}]}",
+          "createdAt": "2026-07-23T01:51:57.226Z",
+          "updatedAt": "2026-07-23T01:51:57.226Z",
+          "deletedAt": null
+        }
+      ],
       "updated": [],
       "deleted": []
     },
@@ -112,5 +71,5 @@
       "deleted": []
     }
   },
-  "lastPulledAt": 1783823192341
+  "lastPulledAt": 1784771530395
 }

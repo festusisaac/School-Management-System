@@ -12,7 +12,9 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '../../store/authStore';
+import { useSettingsStore } from '../../store/settingsStore';
 import { performGlobalSync } from '../../hooks/useAutoSync';
 import { syncData } from '../../database/sync';
 import AdminLayout from '../../components/AdminLayout';
@@ -96,16 +98,31 @@ async function searchStudentsLocal(query: string): Promise<any[]> {
  * "charge" records = synthetic fee assignments pushed from backend.
  * "FEE_PAYMENT" records = actual payments to subtract.
  */
-async function loadStudentFeeHeads(studentId: string): Promise<FeeHead[]> {
+async function loadStudentFeeHeads(studentId: string, sessionId?: string | null): Promise<FeeHead[]> {
   const col = database.collections.get<FeeRecord>('fee_records');
 
-  // 1. All charge (assignment) records for this student
-  const charges = await col.query(
+  // 1. All charge (assignment) records for this student in the current session
+  const chargeQueries: Q.Clause[] = [
     Q.where('student_id', studentId),
     Q.where('type', 'charge'),
-  ).fetch();
+  ];
+  if (sessionId) {
+    // WatermelonDB may store null session_id as '' (empty string) for text fields received via sync,
+    // even when the schema column is isOptional: true. Match both null and '' to be safe.
+    chargeQueries.push(
+      Q.or(
+        Q.where('session_id', sessionId),
+        Q.where('session_id', null),
+        Q.where('session_id', '')
+      )
+    );
+  }
 
-  console.log(`[RecordFee] charges in local DB for ${studentId}:`, charges.length);
+  const charges = await col.query(...chargeQueries).fetch();
+
+
+
+  console.log(`[RecordFee] charges in local DB for ${studentId} (sessionId=${sessionId}):`, charges.length);
   charges.forEach(c => {
     let m: any = {};
     try { m = JSON.parse(c.meta || '{}'); } catch {}
@@ -117,12 +134,25 @@ async function loadStudentFeeHeads(studentId: string): Promise<FeeHead[]> {
     return [];
   }
 
-  // 2. All payment records for this student
-  const payments = await col.query(
+  // 2. All payment records for this student in the current session
+  const paymentQueries: Q.Clause[] = [
     Q.where('student_id', studentId),
     Q.where('type', 'FEE_PAYMENT'),
-  ).fetch();
+  ];
+  if (sessionId) paymentQueries.push(Q.where('session_id', sessionId));
+
+  const payments = await col.query(...paymentQueries).fetch();
   console.log(`[RecordFee] payments in local DB for ${studentId}:`, payments.length);
+
+  // 2b. Carry-forward records — these resolve outstanding for the current session
+  //     (the fee was deferred to next term, so it should not show as outstanding here)
+  const cfQueries: Q.Clause[] = [
+    Q.where('student_id', studentId),
+    Q.where('type', 'CARRY_FORWARD'),
+  ];
+  if (sessionId) cfQueries.push(Q.where('session_id', sessionId));
+  const carryForwards = await col.query(...cfQueries).fetch();
+  console.log(`[RecordFee] carry-forwards in local DB for ${studentId}:`, carryForwards.length);
 
   // 3. Build a map of amount already paid per fee-head ID.
   //    Payments store their allocations as JSON in the meta field.
@@ -143,7 +173,12 @@ async function loadStudentFeeHeads(studentId: string): Promise<FeeHead[]> {
   }
   console.log('[RecordFee] paidByHeadId:', JSON.stringify(paidByHeadId));
 
-  // 4. Build final fee head list
+  // 4. Build final fee head list — keep ONE charge record per feeHeadId.
+  //    The sync sends ALL active fee assignments for the tenant (across sessions),
+  //    so a student may have two charge records for the same fee head:
+  //    one from a legacy assignment (sessionId=null) and one from the current session.
+  //    Summing them causes the 2× outstanding bug.
+  //    Strategy: prefer the session-scoped record; fall back to the null-session one.
   const withFeeHeadFlag = charges.filter(charge => {
     let metaObj: any = {};
     if (charge.meta) { try { metaObj = JSON.parse(charge.meta); } catch {} }
@@ -153,20 +188,83 @@ async function loadStudentFeeHeads(studentId: string): Promise<FeeHead[]> {
   });
   console.log(`[RecordFee] charges after isFeeHead filter: ${withFeeHeadFlag.length}`);
 
-  const mapped = withFeeHeadFlag.map(charge => {
-    const totalDue = Number(charge.amount) || 0;
+  // Deduplicate: one record per feeHeadId, preferring session-scoped records.
+  const bestChargeByHeadId: Record<string, any> = {};
+  withFeeHeadFlag.forEach(charge => {
+    let metaObj: any = {};
+    if (charge.meta) { try { metaObj = JSON.parse(charge.meta); } catch {} }
+    const realFeeHeadId = metaObj?.feeHeadId || charge.id;
+    const hasSession = !!charge.sessionId;
+
+    const existing = bestChargeByHeadId[realFeeHeadId];
+    if (!existing) {
+      bestChargeByHeadId[realFeeHeadId] = charge;
+    } else {
+      const existingHasSession = !!existing.sessionId;
+      // Prefer session-scoped over null-session; if both same, keep the later updatedAt
+      if (hasSession && !existingHasSession) {
+        bestChargeByHeadId[realFeeHeadId] = charge;
+      } else if (hasSession === existingHasSession) {
+        const existingTime = new Date(existing.updatedAt || 0).getTime();
+        const chargeTime = new Date(charge.updatedAt || 0).getTime();
+        if (chargeTime >= existingTime) bestChargeByHeadId[realFeeHeadId] = charge;
+      }
+    }
+  });
+
+  const chargesMap: Record<string, FeeHead> = {};
+  Object.values(bestChargeByHeadId).forEach(charge => {
+    const amountDue = Number(charge.amount) || 0;
     let metaObj: any = {};
     if (charge.meta) { try { metaObj = JSON.parse(charge.meta); } catch {} }
     const name = metaObj?.name || metaObj?.feeGroupName || charge.feeGroupId || 'Fee';
     const realFeeHeadId = metaObj?.feeHeadId || charge.id;
     const feeGroupId = charge.feeGroupId || '';
-    const alreadyPaid = paidByHeadId[realFeeHeadId] || paidByHeadId[charge.id] || 0;
-    const outstanding = Math.max(0, totalDue - alreadyPaid);
-    console.log(`[RecordFee]   head=${name} totalDue=${totalDue} alreadyPaid=${alreadyPaid} outstanding=${outstanding}`);
-    return { id: realFeeHeadId, feeGroupId, name, totalDue, alreadyPaid, outstanding, payingNow: '' };
+
+    chargesMap[realFeeHeadId] = {
+      id: realFeeHeadId,
+      feeGroupId,
+      name,
+      totalDue: amountDue,
+      alreadyPaid: 0,
+      outstanding: 0,
+      payingNow: ''
+    };
   });
 
-  const result = mapped.filter(h => h.outstanding > 0);
+  // 3b. Build a map of carry-forwarded amount per fee-head ID.
+  //     A carry-forward record signals that this fee head's outstanding was
+  //     deferred to the next term — treat it as fully resolved for this session.
+  const carryForwardByHeadId: Record<string, number> = {};
+  for (const cf of carryForwards) {
+    let cfMeta: any = {};
+    if (cf.meta) { try { cfMeta = JSON.parse(cf.meta); } catch {} }
+    const headId = cfMeta?.feeHeadId;
+    if (headId) {
+      carryForwardByHeadId[headId] = (carryForwardByHeadId[headId] || 0) + Number(cf.amount || 0);
+    } else {
+      // No specific head — mark whole student's session as cleared (generic CF)
+      // We'll handle this below by zeroing all heads if a blanket CF exists
+    }
+  }
+  const hasBlankCF = carryForwards.some(cf => {
+    let cfMeta: any = {};
+    if (cf.meta) { try { cfMeta = JSON.parse(cf.meta); } catch {} }
+    return !cfMeta?.feeHeadId;
+  });
+  console.log('[RecordFee] carryForwardByHeadId:', JSON.stringify(carryForwardByHeadId), 'hasBlankCF:', hasBlankCF);
+
+  // Apply payments + carry-forwards and calculate outstanding
+  const result = Object.values(chargesMap).map(h => {
+    const alreadyPaid = paidByHeadId[h.id] || 0;
+    const carriedForward = carryForwardByHeadId[h.id] || 0;
+    // If a blanket (no-head) carry-forward exists, treat the whole session as cleared
+    const effectivePaid = hasBlankCF ? h.totalDue : alreadyPaid + carriedForward;
+    const outstanding = Math.max(0, h.totalDue - effectivePaid);
+    console.log(`[RecordFee]   head=${h.name} totalDue=${h.totalDue} alreadyPaid=${alreadyPaid} carriedForward=${carriedForward} outstanding=${outstanding}`);
+    return { ...h, alreadyPaid, outstanding };
+  }).filter(h => h.outstanding > 0);
+
   console.log(`[RecordFee] Final fee heads with outstanding > 0: ${result.length}`);
   return result;
 }
@@ -175,6 +273,7 @@ async function loadStudentFeeHeads(studentId: string): Promise<FeeHead[]> {
 
 export default function RecordFeeScreen({ onBack }: { onBack?: () => void }) {
   const { user } = useAuthStore();
+  const { settings } = useSettingsStore();
 
   // Step 1 – Student search
   const [searchQuery, setSearchQuery] = useState('');
@@ -212,14 +311,20 @@ export default function RecordFeeScreen({ onBack }: { onBack?: () => void }) {
     setReference('');
     setNote('');
     setLoadingHeads(true);
-    // Force a fresh sync so newly assigned fee heads are pulled from backend.
-    // We call syncData() directly rather than performGlobalSync() to bypass
-    // the isSyncing guard (which skips the call if another sync is in progress).
-    try { await syncData(); } catch (e) { console.warn('[RecordFee] Sync before load failed:', e); }
-    const heads = await loadStudentFeeHeads(student.id);
+    // Force a FULL re-sync so carry-forward records and new fee heads are always pulled fresh.
+    // We clear the first_sync_complete flag so WatermelonDB does a pull-all instead of
+    // incremental — this ensures carry-forward records missed by previous syncs are inserted.
+    try {
+      const tenantId = user?.tenantId;
+      if (tenantId) {
+        await AsyncStorage.removeItem(`first_sync_complete_${tenantId}`);
+      }
+      await syncData();
+    } catch (e) { console.warn('[RecordFee] Sync before load failed:', e); }
+    const heads = await loadStudentFeeHeads(student.id, settings.currentSessionId);
     setFeeHeads(heads);
     setLoadingHeads(false);
-  }, []);
+  }, [user?.tenantId, settings.currentSessionId]);
 
   const handleClearStudent = () => {
     setSelectedStudent(null);
@@ -297,6 +402,7 @@ export default function RecordFeeScreen({ onBack }: { onBack?: () => void }) {
           record.paymentMethod = paymentMethod;
           record.reference = reference || undefined;
           record.meta = metaPayload;
+          record.sessionId = settings.currentSessionId || undefined;
         });
       });
 

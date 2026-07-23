@@ -58,6 +58,7 @@ import StudentEditScreen from '../screens/student/StudentEditScreen';
 import StudentAdmissionScreen from '../screens/student/StudentAdmissionScreen';
 import RecordFeeScreen from '../screens/accounting/RecordFeeScreen';
 import AttendanceScreen from '../screens/admin/AttendanceScreen';
+import ProfileScreen from '../screens/admin/ProfileScreen';
 
 export type AdminStackParamList = {
   AdminDashboard: undefined;
@@ -68,6 +69,7 @@ export type AdminStackParamList = {
   StudentAdmission: undefined;
   RecordFee: undefined;
   Attendance: undefined;
+  Profile: undefined;
 };
 
 const Stack = createNativeStackNavigator<AdminStackParamList>();
@@ -85,15 +87,28 @@ function AdminStack() {
       <Stack.Screen name="RecordFee">
         {({ navigation }) => <RecordFeeScreen onBack={() => navigation.goBack()} />}
       </Stack.Screen>
+      <Stack.Screen name="Profile" component={ProfileScreen} />
     </Stack.Navigator>
   );
 }
 
 // --- Teacher Stack ---
+import TeacherClassesScreen from '../screens/teacher/TeacherClassesScreen';
+import EnterScoresScreen from '../screens/teacher/EnterScoresScreen';
+import AssignmentsScreen from '../screens/teacher/AssignmentsScreen';
+import DownloadCenterScreen from '../screens/teacher/DownloadCenterScreen';
+import OnlineClassScreen from '../screens/teacher/OnlineClassScreen';
+
 export type TeacherStackParamList = {
   TeacherDashboard: undefined;
+  TeacherClasses: undefined;
   Attendance: undefined;
   StudentProfile: { studentId: string };
+  Profile: undefined;
+  EnterScores: undefined;
+  Assignments: undefined;
+  DownloadCenter: undefined;
+  OnlineClass: undefined;
 };
 
 const TeacherStack_Nav = createNativeStackNavigator<TeacherStackParamList>();
@@ -102,8 +117,14 @@ function TeacherStack() {
   return (
     <TeacherStack_Nav.Navigator screenOptions={{ headerShown: false }}>
       <TeacherStack_Nav.Screen name="TeacherDashboard" component={TeacherDashboard} />
+      <TeacherStack_Nav.Screen name="TeacherClasses" component={TeacherClassesScreen} />
       <TeacherStack_Nav.Screen name="Attendance" component={AttendanceScreen} />
       <TeacherStack_Nav.Screen name="StudentProfile" component={StudentProfileScreen} />
+      <TeacherStack_Nav.Screen name="Profile" component={ProfileScreen} />
+      <TeacherStack_Nav.Screen name="EnterScores" component={EnterScoresScreen} />
+      <TeacherStack_Nav.Screen name="Assignments" component={AssignmentsScreen} />
+      <TeacherStack_Nav.Screen name="DownloadCenter" component={DownloadCenterScreen} />
+      <TeacherStack_Nav.Screen name="OnlineClass" component={OnlineClassScreen} />
     </TeacherStack_Nav.Navigator>
   );
 }

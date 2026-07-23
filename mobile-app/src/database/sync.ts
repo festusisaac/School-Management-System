@@ -194,7 +194,6 @@ export async function syncData(): Promise<void> {
           throw new Error(`Sync push failed: ${response.status}`);
         }
       },
-      sendCreatedAsUpdated: true,
     });
 
     // Mark first sync as complete after successful sync

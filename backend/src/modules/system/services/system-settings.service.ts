@@ -4,6 +4,8 @@ import * as path from 'path';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SystemSetting } from '../entities/system-setting.entity';
+import { AcademicSession } from '../entities/academic-session.entity';
+import { AcademicTerm } from '../entities/academic-term.entity';
 import { UpdateSystemSettingDto } from '../dtos/update-system-setting.dto';
 
 @Injectable()
@@ -11,6 +13,10 @@ export class SystemSettingsService {
     constructor(
         @InjectRepository(SystemSetting)
         private readonly systemSettingRepository: Repository<SystemSetting>,
+        @InjectRepository(AcademicSession)
+        private readonly sessionRepository: Repository<AcademicSession>,
+        @InjectRepository(AcademicTerm)
+        private readonly termRepository: Repository<AcademicTerm>,
     ) { }
 
     /**
@@ -59,19 +65,33 @@ export class SystemSettingsService {
             take: 1,
         });
 
+        let setting = null;
         if (settings.length > 0) {
-            return settings[0];
+            setting = settings[0];
+        } else {
+            // Return a default new object if none exists
+            const newSettings = this.systemSettingRepository.create({
+                schoolName: 'Your School Name',
+                dateFormat: 'DD/MM/YYYY',
+                timezone: 'UTC',
+                startDayOfWeek: 1,
+                isInitialized: false,
+            });
+            setting = await this.systemSettingRepository.save(newSettings);
         }
 
-        // Return a default new object if none exists
-        const newSettings = this.systemSettingRepository.create({
-            schoolName: 'Your School Name',
-            dateFormat: 'DD/MM/YYYY',
-            timezone: 'UTC',
-            startDayOfWeek: 1,
-            isInitialized: false,
-        });
-        return this.systemSettingRepository.save(newSettings);
+        // Fetch session and term names
+        const result: any = { ...setting };
+        if (setting.currentSessionId) {
+            const session = await this.sessionRepository.findOne({ where: { id: setting.currentSessionId } });
+            if (session) result.currentSessionName = session.name;
+        }
+        if (setting.currentTermId) {
+            const term = await this.termRepository.findOne({ where: { id: setting.currentTermId } });
+            if (term) result.currentTermName = term.name;
+        }
+
+        return result;
     }
 
     async updateSettings(updateDto: UpdateSystemSettingDto): Promise<SystemSetting> {

@@ -1,146 +1,325 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  StatusBar,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
-import { useAuthStore } from '../../store/authStore';
-import { NetworkListener } from '../../components/NetworkListener';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { TeacherStackParamList } from '../../navigation/RootNavigator';
+import TeacherLayout from '../../components/TeacherLayout';
 
-const quickActions = [
-  { label: 'My Classes', icon: '🏫', color: '#6366f1' },
-  { label: 'Take Attendance', icon: '✅', color: '#10b981' },
-  { label: 'Enter Scores', icon: '📝', color: '#f59e0b' },
-  { label: 'Lesson Notes', icon: '📖', color: '#3b82f6' },
-  { label: 'Homework', icon: '📚', color: '#8b5cf6' },
-  { label: 'Messages', icon: '💬', color: '#ec4899' },
-];
+import { useAuthStore } from '../../store/authStore';
+import { useSettingsStore } from '../../store/settingsStore';
+import { apiGet } from '../../services/api';
+
+/* --- Design System Colors --- */
+const COLORS = {
+  surface: '#f7f9fb',
+  surfaceContainerLowest: '#ffffff',
+  onSurface: '#191c1e',
+  outline: '#c5c6ce',
+  primary: '#031632',          // Deep Navy
+  onPrimary: '#ffffff',
+  primaryContainer: '#1a2b48', // Lighter Navy
+  secondary: '#055db6',        // Educational Blue
+  onSecondary: '#ffffff',
+  error: '#ba1a1a',
+  successLight: '#dcfce7',
+  successText: '#166534',
+};
 
 export default function TeacherDashboard() {
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
+  const { settings } = useSettingsStore();
+  const [isLoading, setIsLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const navigation = useNavigation<NativeStackNavigationProp<TeacherStackParamList>>();
 
-  const handleAction = (label: string) => {
-    if (label === 'Take Attendance') navigation.navigate('Attendance');
-  };
+  async function fetchData() {
+    if (!user?.token) return;
+    try {
+      // In a real scenario, this endpoint might be `/reporting/dashboard/teacher/stats`
+      // For now, we mock some data or use existing academics routes
+      const classes = await apiGet('/academics/classes', user.token);
+      
+      setDashboardData({
+        assignedClasses: Array.isArray(classes) ? classes.length : 0,
+        upcomingClasses: 2,
+        pendingAssignments: 3,
+      });
+    } catch (err: any) {
+      console.error('Failed to fetch dashboard data:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    await fetchData();
+    setRefreshing(false);
+  }, [user]);
+
+  useEffect(() => {
+    fetchData();
+  }, [user]);
 
   return (
-    <View style={styles.root}>
-      <StatusBar barStyle="light-content" backgroundColor="#0f172a" />
-      <NetworkListener />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.container}>
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>Hello, Teacher 👋</Text>
-            <Text style={styles.name}>{user?.firstName} {user?.lastName}</Text>
-            <View style={styles.badgeRow}>
-              <Text style={styles.badge}>Teacher Portal</Text>
-            </View>
+    <TeacherLayout activeTab="Home">
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        style={{ flex: 1 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
+        }
+      >
+        {/* --- Welcome Area --- */}
+        <View style={styles.welcomeContainer}>
+          <Text style={styles.greeting}>Welcome back,</Text>
+          <Text style={styles.name}>{user?.firstName} {user?.lastName}</Text>
+          <View style={styles.badgeRow}>
+            <Text style={styles.badge}>Teacher Portal</Text>
           </View>
-          <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
-            <Text style={styles.logoutText}>Sign Out</Text>
+        </View>
+
+        {/* --- Stat Cards --- */}
+        <View style={styles.statCardsContainer}>
+          {/* Card 1 */}
+          <View style={[styles.statCard, { backgroundColor: COLORS.primary }]}>
+            <View style={styles.statCardHeader}>
+              <Text style={[styles.statCardTitle, { color: '#e2e8f0' }]}>Assigned Classes</Text>
+              <Ionicons name="book-outline" size={20} color="#8293b5" />
+            </View>
+            <Text style={[styles.statCardValue, { color: COLORS.onPrimary }]}>
+              {isLoading ? <ActivityIndicator color={COLORS.onPrimary} size="small" /> : dashboardData?.assignedClasses || '0'}
+            </Text>
+          </View>
+
+          {/* Card 2 */}
+          <View style={[styles.statCard, { backgroundColor: COLORS.primaryContainer }]}>
+            <View style={styles.statCardHeader}>
+              <Text style={[styles.statCardTitle, { color: '#94a3b8' }]}>Pending Assignments</Text>
+              <Ionicons name="document-text-outline" size={20} color="#64748b" />
+            </View>
+            <Text style={[styles.statCardValue, { color: '#cbd5e1' }]}>
+              {isLoading ? <ActivityIndicator color="#cbd5e1" size="small" /> : dashboardData?.pendingAssignments || '0'}
+            </Text>
+          </View>
+        </View>
+
+        {/* --- Quick Actions --- */}
+        <Text style={styles.sectionTitle}>QUICK ACTIONS</Text>
+        <View style={styles.gridContainer}>
+          <TouchableOpacity
+            style={styles.gridItem}
+            onPress={() => navigation.navigate('Attendance')}
+          >
+            <View style={[styles.gridIconWrap, { backgroundColor: '#dcfce7' }]}>
+              <Ionicons name="checkmark-done-outline" size={22} color="#16a34a" />
+            </View>
+            <Text style={styles.gridLabel}>Attendance</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={styles.gridItem}
+            onPress={() => navigation.navigate('EnterScores')}
+          >
+            <View style={[styles.gridIconWrap, { backgroundColor: '#eff6ff' }]}>
+              <Ionicons name="create-outline" size={22} color={COLORS.secondary} />
+            </View>
+            <Text style={styles.gridLabel}>Enter Scores</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={styles.gridItem}
+            onPress={() => navigation.navigate('Assignments')}
+          >
+            <View style={[styles.gridIconWrap, { backgroundColor: '#fef3c7' }]}>
+              <Ionicons name="document-text-outline" size={22} color="#d97706" />
+            </View>
+            <Text style={styles.gridLabel}>Assignments</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={styles.gridItem}
+            onPress={() => navigation.navigate('DownloadCenter')}
+          >
+            <View style={[styles.gridIconWrap, { backgroundColor: '#f3e8ff' }]}>
+              <Ionicons name="cloud-download-outline" size={22} color="#9333ea" />
+            </View>
+            <Text style={styles.gridLabel}>Downloads</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.gridItem}
+            onPress={() => navigation.navigate('OnlineClass')}
+          >
+            <View style={[styles.gridIconWrap, { backgroundColor: '#fee2e2' }]}>
+              <Ionicons name="videocam-outline" size={22} color="#dc2626" />
+            </View>
+            <Text style={styles.gridLabel}>Online Class</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.gridItem}
+            onPress={() => navigation.navigate('TeacherClasses')}
+          >
+            <View style={[styles.gridIconWrap, { backgroundColor: '#e0e7ff' }]}>
+              <Ionicons name="library-outline" size={22} color="#4f46e5" />
+            </View>
+            <Text style={styles.gridLabel}>My Subjects</Text>
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        <View style={styles.actionsGrid}>
-          {quickActions.map((action) => (
-            <TouchableOpacity
-              key={action.label}
-              style={[styles.actionCard, { borderLeftColor: action.color }]}
-              activeOpacity={0.8}
-              onPress={() => handleAction(action.label)}
-            >
-              <Text style={styles.actionIcon}>{action.icon}</Text>
-              <Text style={styles.actionLabel}>{action.label}</Text>
-            </TouchableOpacity>
-          ))}
+        {/* --- Today's Schedule --- */}
+        <Text style={[styles.sectionTitle, { marginTop: 24 }]}>TODAY'S SCHEDULE</Text>
+        <View style={styles.emptyCard}>
+          <Ionicons name="calendar-outline" size={40} color="#94a3b8" />
+          <Text style={styles.emptyText}>No classes scheduled for today.</Text>
         </View>
 
-        <Text style={styles.sectionTitle}>Today's Schedule</Text>
-        <View style={styles.emptyCard}>
-          <Text style={styles.emptyText}>No timetable loaded yet.{'\n'}Connect to sync your schedule.</Text>
-        </View>
       </ScrollView>
-    </View>
+    </TeacherLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#0f172a' },
-  container: { padding: 20, paddingBottom: 40 },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 28,
-    marginTop: 12,
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
   },
-  greeting: { color: '#94a3b8', fontSize: 14 },
-  name: { color: '#f1f5f9', fontSize: 22, fontWeight: '800', marginTop: 2 },
+  welcomeContainer: {
+    marginBottom: 20,
+    marginTop: 8,
+  },
+  greeting: {
+    color: '#64748b',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  name: {
+    color: COLORS.onSurface,
+    fontSize: 24,
+    fontWeight: '800',
+    marginTop: 2,
+    letterSpacing: -0.5,
+  },
   badgeRow: { marginTop: 6 },
   badge: {
-    backgroundColor: '#f59e0b',
-    color: '#fff',
+    backgroundColor: '#fef08a',
+    color: '#854d0e',
     fontSize: 11,
     fontWeight: '700',
     paddingHorizontal: 10,
     paddingVertical: 3,
-    borderRadius: 20,
+    borderRadius: 12,
     alignSelf: 'flex-start',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
-  logoutBtn: {
-    backgroundColor: '#1e293b',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#334155',
+
+  /* --- Stat Cards --- */
+  statCardsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 24,
   },
-  logoutText: { color: '#ef4444', fontSize: 13, fontWeight: '600' },
+  statCard: {
+    flex: 1,
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  statCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  statCardTitle: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  statCardValue: {
+    fontSize: 28,
+    fontWeight: '700',
+    marginBottom: 4,
+    letterSpacing: -0.5,
+  },
+
+  /* --- Sections --- */
   sectionTitle: {
-    color: '#94a3b8',
     fontSize: 12,
     fontWeight: '700',
-    letterSpacing: 1,
+    color: '#64748b',
+    letterSpacing: 1.2,
     textTransform: 'uppercase',
     marginBottom: 12,
   },
-  actionsGrid: {
+
+  /* --- Grid --- */
+  gridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 28,
+    gap: 12,
+    justifyContent: 'space-between',
   },
-  actionCard: {
-    backgroundColor: '#1e293b',
-    borderRadius: 14,
+  gridItem: {
+    backgroundColor: COLORS.surfaceContainerLowest,
+    width: '48%',
+    borderRadius: 12,
     padding: 16,
-    width: '47%',
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    borderLeftWidth: 3,
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#f1f5f9',
   },
-  actionIcon: { fontSize: 20 },
-  actionLabel: { color: '#e2e8f0', fontSize: 13, fontWeight: '600', flexShrink: 1 },
+  gridIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  gridLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.onSurface,
+  },
+
+  /* --- Empty State --- */
   emptyCard: {
-    backgroundColor: '#1e293b',
+    backgroundColor: COLORS.surfaceContainerLowest,
     borderRadius: 16,
-    padding: 24,
+    padding: 32,
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#f1f5f9',
+    gap: 12,
   },
-  emptyText: { color: '#475569', textAlign: 'center', lineHeight: 22, fontSize: 14 },
+  emptyText: {
+    color: '#64748b',
+    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '500',
+  },
 });

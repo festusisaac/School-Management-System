@@ -6,16 +6,19 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { apiPost, apiGet } from '../../../services/api';
 import { useAuthStore } from '../../../store/authStore';
+import { useSettingsStore } from '../../../store/settingsStore';
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 const COLORS = {
   primary: '#031632',
+  primaryContainer: '#1a3a6e',
   onPrimary: '#ffffff',
   surfaceContainerLowest: '#ffffff',
   surfaceContainerLow: '#f2f4f6',
   surfaceContainerHigh: '#e6e8ea',
   onSurface: '#191c1e',
   onSurfaceVariant: '#44474d',
+  outline: '#b0b3b8',
   outlineVariant: '#c5c6ce',
   error: '#ba1a1a',
   secondary: '#055db6',
@@ -39,29 +42,197 @@ interface PickerOption {
   name: string;
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Reusable Date Picker ─────────────────────────────────────────────────────
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+interface DatePickerProps {
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+  minYear?: number;
+  maxYear?: number;
+}
+
+function DatePickerField({ label, value, onChange, minYear, maxYear }: DatePickerProps) {
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const parsed = value ? new Date(value) : null;
+  const currentYear = new Date().getFullYear();
+  const yearMin = minYear ?? currentYear - 80;
+  const yearMax = maxYear ?? currentYear + 5;
+
+  const [selDay, setSelDay] = useState(parsed ? parsed.getDate() : 1);
+  const [selMonth, setSelMonth] = useState(parsed ? parsed.getMonth() : 0);
+  const [selYear, setSelYear] = useState(parsed ? parsed.getFullYear() : 1990);
+
+  const years = Array.from({ length: yearMax - yearMin + 1 }, (_, i) => yearMax - i);
+  const daysInMonth = new Date(selYear, selMonth + 1, 0).getDate();
+  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+  const openModal = () => {
+    if (parsed && !isNaN(parsed.getTime())) {
+      setSelDay(parsed.getDate());
+      setSelMonth(parsed.getMonth());
+      setSelYear(parsed.getFullYear());
+    }
+    setModalVisible(true);
+  };
+
+  const handleConfirm = () => {
+    const m = (selMonth + 1).toString().padStart(2, '0');
+    const d = selDay.toString().padStart(2, '0');
+    onChange(`${selYear}-${m}-${d}`);
+    setModalVisible(false);
+  };
+
+  const displayVal = value
+    ? (() => {
+        const d = new Date(value);
+        return !isNaN(d.getTime())
+          ? `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`
+          : value;
+      })()
+    : '';
+
+  return (
+    <View style={styles.formGroup}>
+      <Text style={styles.inputLabel}>{label}</Text>
+      <TouchableOpacity style={styles.selectInput} onPress={openModal}>
+        <Text style={[styles.selectText, !displayVal && styles.selectPlaceholder]}>
+          {displayVal || 'Select date'}
+        </Text>
+        <Ionicons name="calendar-outline" size={16} color={COLORS.outline} />
+      </TouchableOpacity>
+
+      <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={() => setModalVisible(false)}>
+        <TouchableOpacity style={styles.pickerOverlay} onPress={() => setModalVisible(false)} activeOpacity={1}>
+          <View style={styles.pickerContent} onStartShouldSetResponder={() => true}>
+            <Text style={styles.pickerTitle}>{label}</Text>
+
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+              {/* Day */}
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.inputLabel, { textAlign: 'center', marginBottom: 6 }]}>Day</Text>
+                <ScrollView style={{ maxHeight: 180 }} showsVerticalScrollIndicator={false}>
+                  {days.map(d => (
+                    <TouchableOpacity
+                      key={d}
+                      onPress={() => setSelDay(d)}
+                      style={[styles.dateOption, selDay === d && styles.dateOptionActive]}
+                    >
+                      <Text style={[styles.dateOptionText, selDay === d && styles.dateOptionTextActive]}>{d}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+
+              {/* Month */}
+              <View style={{ flex: 1.4 }}>
+                <Text style={[styles.inputLabel, { textAlign: 'center', marginBottom: 6 }]}>Month</Text>
+                <ScrollView style={{ maxHeight: 180 }} showsVerticalScrollIndicator={false}>
+                  {MONTHS.map((m, i) => (
+                    <TouchableOpacity
+                      key={m}
+                      onPress={() => setSelMonth(i)}
+                      style={[styles.dateOption, selMonth === i && styles.dateOptionActive]}
+                    >
+                      <Text style={[styles.dateOptionText, selMonth === i && styles.dateOptionTextActive]}>{m}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+
+              {/* Year */}
+              <View style={{ flex: 1.2 }}>
+                <Text style={[styles.inputLabel, { textAlign: 'center', marginBottom: 6 }]}>Year</Text>
+                <ScrollView style={{ maxHeight: 180 }} showsVerticalScrollIndicator={false}>
+                  {years.map(y => (
+                    <TouchableOpacity
+                      key={y}
+                      onPress={() => setSelYear(y)}
+                      style={[styles.dateOption, selYear === y && styles.dateOptionActive]}
+                    >
+                      <Text style={[styles.dateOptionText, selYear === y && styles.dateOptionTextActive]}>{y}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+
+            <TouchableOpacity style={styles.dateConfirmBtn} onPress={handleConfirm}>
+              <Text style={styles.dateConfirmText}>Confirm</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </View>
+  );
+}
+
+// ─── Dropdown picker (option list) ────────────────────────────────────────────
+interface PickerModalProps {
+  visible: boolean;
+  onClose: () => void;
+  title: string;
+  options: PickerOption[];
+  onSelect: (item: PickerOption) => void;
+}
+
+function PickerModal({ visible, onClose, title, options, onSelect }: PickerModalProps) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <TouchableOpacity style={styles.pickerOverlay} onPress={onClose} activeOpacity={1}>
+        <View style={styles.pickerContent}>
+          <Text style={styles.pickerTitle}>{title}</Text>
+          <ScrollView style={{ maxHeight: 320 }}>
+            {options.map(item => (
+              <TouchableOpacity
+                key={item.id}
+                style={styles.pickerItem}
+                onPress={() => { onSelect(item); onClose(); }}
+              >
+                <Text style={styles.pickerItemText}>{item.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
+}
+
+// ─── Field wrapper ────────────────────────────────────────────────────────────
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <View style={styles.formGroup}>
+      <Text style={styles.inputLabel}>{label}</Text>
+      {children}
+    </View>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function AddStaffModal({ visible, onClose, onSuccess }: AddStaffModalProps) {
   const { user } = useAuthStore();
   const token = user?.token;
+  const { settings } = useSettingsStore();
 
-  // Wizard step
   const [step, setStep] = useState(1);
   const TOTAL_STEPS = 3;
 
-  // Remote data for dropdowns
+  // Remote data
   const [roles, setRoles] = useState<PickerOption[]>([]);
   const [departments, setDepartments] = useState<PickerOption[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
 
-  // Picker visibility
+  // Dropdown visibility
   const [showRolePicker, setShowRolePicker] = useState(false);
   const [showDeptPicker, setShowDeptPicker] = useState(false);
   const [showGenderPicker, setShowGenderPicker] = useState(false);
   const [showMaritalPicker, setShowMaritalPicker] = useState(false);
   const [showEmploymentTypePicker, setShowEmploymentTypePicker] = useState(false);
 
-  // ── Form fields ──────────────────────────────────────────────────────────
-  // Step 1 – Basic Information
+  // ── Step 1 fields ────────────────────────────────────────────────────────
   const [employeeId, setEmployeeId] = useState('');
   const [roleId, setRoleId] = useState('');
   const [roleName, setRoleName] = useState('');
@@ -82,7 +253,7 @@ export default function AddStaffModal({ visible, onClose, onSuccess }: AddStaffM
   const [address, setAddress] = useState('');
   const [permanentAddress, setPermanentAddress] = useState('');
 
-  // Step 2 – Bank & Payroll
+  // ── Step 2 fields ────────────────────────────────────────────────────────
   const [accountTitle, setAccountTitle] = useState('');
   const [bankName, setBankName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
@@ -90,7 +261,7 @@ export default function AddStaffModal({ visible, onClose, onSuccess }: AddStaffM
   const [employmentType, setEmploymentType] = useState('Full-Time');
   const [biometricId, setBiometricId] = useState('');
 
-  // Step 3 – Qualification & Social
+  // ── Step 3 fields ────────────────────────────────────────────────────────
   const [qualifications, setQualifications] = useState('');
   const [workExperience, setWorkExperience] = useState('');
   const [note, setNote] = useState('');
@@ -99,10 +270,9 @@ export default function AddStaffModal({ visible, onClose, onSuccess }: AddStaffM
   const [linkedinUrl, setLinkedinUrl] = useState('');
   const [instagramUrl, setInstagramUrl] = useState('');
 
-  // Submission
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // ── Effects ──────────────────────────────────────────────────────────────
+  // ── Lifecycle ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (visible) {
       resetForm();
@@ -114,9 +284,10 @@ export default function AddStaffModal({ visible, onClose, onSuccess }: AddStaffM
     if (!token) return;
     setIsLoadingData(true);
     try {
-      const [fetchedRoles, fetchedDepts] = await Promise.all([
+      const [fetchedRoles, fetchedDepts, nextIdRes] = await Promise.all([
         apiGet('/system/roles', token).catch(() => []),
         apiGet('/hr/departments', token).catch(() => []),
+        apiGet('/hr/staff/next-id', token).catch(() => null),
       ]);
       setRoles(
         (fetchedRoles || []).filter(
@@ -124,17 +295,21 @@ export default function AddStaffModal({ visible, onClose, onSuccess }: AddStaffM
         )
       );
       setDepartments(fetchedDepts || []);
-    } catch (error) {
-      console.log('Failed to fetch initial data for staff modal', error);
+      
+      if (nextIdRes && nextIdRes.nextId && !employeeId) {
+        setEmployeeId(`${settings.staffIdPrefix}${nextIdRes.nextId}`);
+      }
+    } catch (e) {
+      console.log('Staff modal: failed to fetch initial data', e);
     } finally {
       setIsLoadingData(false);
     }
   };
 
-  // ── Wizard navigation ────────────────────────────────────────────────────
+  // ── Navigation ───────────────────────────────────────────────────────────
   const handleNext = () => {
     if (step === 1) {
-      if (!firstName.trim() || !lastName.trim() || !email.trim() || !dateOfJoining.trim()) {
+      if (!firstName.trim() || !lastName.trim() || !email.trim() || !dateOfJoining) {
         Alert.alert('Required Fields', 'Please fill in First Name, Last Name, Email, and Date of Joining.');
         return;
       }
@@ -142,15 +317,12 @@ export default function AddStaffModal({ visible, onClose, onSuccess }: AddStaffM
     if (step < TOTAL_STEPS) setStep(s => s + 1);
   };
 
-  const handleBack = () => {
-    if (step > 1) setStep(s => s - 1);
-  };
+  const handleBack = () => { if (step > 1) setStep(s => s - 1); };
 
-  // ── Form reset ───────────────────────────────────────────────────────────
+  // ── Reset ────────────────────────────────────────────────────────────────
   const resetForm = () => {
     setStep(1);
-    setEmployeeId('');
-    setRoleId(''); setRoleName(''); setIsTeachingStaff(false);
+    setEmployeeId(''); setRoleId(''); setRoleName(''); setIsTeachingStaff(false);
     setDepartmentId(''); setDepartmentName('');
     setFirstName(''); setLastName(''); setFatherName(''); setMotherName('');
     setEmail(''); setGender(''); setDateOfBirth(''); setDateOfJoining('');
@@ -166,8 +338,8 @@ export default function AddStaffModal({ visible, onClose, onSuccess }: AddStaffM
 
   // ── Submit ───────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
-    if (!firstName.trim() || !lastName.trim() || !email.trim() || !dateOfJoining.trim()) {
-      Alert.alert('Error', 'Required fields are missing.');
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !dateOfJoining) {
+      Alert.alert('Error', 'Required fields are missing. Please go back and fill them in.');
       return;
     }
     setIsSubmitting(true);
@@ -183,8 +355,8 @@ export default function AddStaffModal({ visible, onClose, onSuccess }: AddStaffM
         motherName: motherName.trim() || undefined,
         email: email.trim(),
         gender: gender || undefined,
-        dateOfBirth: dateOfBirth.trim() ? new Date(dateOfBirth.trim()).toISOString() : undefined,
-        dateOfJoining: new Date(dateOfJoining.trim()).toISOString(),
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth).toISOString() : undefined,
+        dateOfJoining: new Date(dateOfJoining).toISOString(),
         phone: phone.trim() || undefined,
         emergencyContactPhone: emergencyContactPhone.trim() || undefined,
         maritalStatus: maritalStatus || undefined,
@@ -216,43 +388,9 @@ export default function AddStaffModal({ visible, onClose, onSuccess }: AddStaffM
     }
   };
 
-  // ── Shared dropdown picker ────────────────────────────────────────────────
-  const PickerModal = ({
-    visible: pickerVisible,
-    onClose: onPickerClose,
-    title,
-    options,
-    onSelect,
-  }: {
-    visible: boolean;
-    onClose: () => void;
-    title: string;
-    options: PickerOption[];
-    onSelect: (item: PickerOption) => void;
-  }) => (
-    <Modal visible={pickerVisible} transparent animationType="fade" onRequestClose={onPickerClose}>
-      <TouchableOpacity style={styles.pickerOverlay} onPress={onPickerClose} activeOpacity={1}>
-        <View style={styles.pickerContent}>
-          <Text style={styles.pickerTitle}>{title}</Text>
-          <ScrollView style={{ maxHeight: 320 }}>
-            {options.map(item => (
-              <TouchableOpacity
-                key={item.id}
-                style={styles.pickerItem}
-                onPress={() => { onSelect(item); onPickerClose(); }}
-              >
-                <Text style={styles.pickerItemText}>{item.name}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      </TouchableOpacity>
-    </Modal>
-  );
-
   // ── Step renderers ────────────────────────────────────────────────────────
   const renderStep1 = () => (
-    <View style={styles.card}>
+    <View>
       <Text style={styles.sectionTitle}>Basic Information</Text>
 
       <Field label="Staff ID">
@@ -262,14 +400,14 @@ export default function AddStaffModal({ visible, onClose, onSuccess }: AddStaffM
       <Field label="Role">
         <TouchableOpacity style={styles.selectInput} onPress={() => !isSubmitting && setShowRolePicker(true)}>
           <Text style={[styles.selectText, !roleId && styles.selectPlaceholder]}>{roleName || 'Select Role'}</Text>
-          <Ionicons name="chevron-down" size={16} color={COLORS.onSurfaceVariant} />
+          <Ionicons name="chevron-down" size={16} color={COLORS.outline} />
         </TouchableOpacity>
       </Field>
 
       <Field label="Department">
         <TouchableOpacity style={styles.selectInput} onPress={() => !isSubmitting && setShowDeptPicker(true)}>
           <Text style={[styles.selectText, !departmentId && styles.selectPlaceholder]}>{departmentName || 'Select Department (Optional)'}</Text>
-          <Ionicons name="chevron-down" size={16} color={COLORS.onSurfaceVariant} />
+          <Ionicons name="chevron-down" size={16} color={COLORS.outline} />
         </TouchableOpacity>
       </Field>
 
@@ -290,36 +428,47 @@ export default function AddStaffModal({ visible, onClose, onSuccess }: AddStaffM
       </Field>
 
       <Field label="Email *">
-        <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="john.doe@example.com" keyboardType="email-address" autoCapitalize="none" editable={!isSubmitting} />
+        <TextInput
+          style={styles.input} value={email} onChangeText={setEmail}
+          placeholder="john.doe@example.com" keyboardType="email-address"
+          autoCapitalize="none" editable={!isSubmitting}
+        />
       </Field>
 
       <Field label="Gender">
         <TouchableOpacity style={styles.selectInput} onPress={() => !isSubmitting && setShowGenderPicker(true)}>
           <Text style={[styles.selectText, !gender && styles.selectPlaceholder]}>{gender || 'Select Gender'}</Text>
-          <Ionicons name="chevron-down" size={16} color={COLORS.onSurfaceVariant} />
+          <Ionicons name="chevron-down" size={16} color={COLORS.outline} />
         </TouchableOpacity>
       </Field>
 
-      <Field label="Date of Birth (YYYY-MM-DD)">
-        <TextInput style={styles.input} value={dateOfBirth} onChangeText={setDateOfBirth} placeholder="1990-01-01" editable={!isSubmitting} />
-      </Field>
+      <DatePickerField
+        label="Date of Birth"
+        value={dateOfBirth}
+        onChange={setDateOfBirth}
+        maxYear={new Date().getFullYear() - 18}
+      />
 
-      <Field label="Date of Joining (YYYY-MM-DD) *">
-        <TextInput style={styles.input} value={dateOfJoining} onChangeText={setDateOfJoining} placeholder="2023-09-01" editable={!isSubmitting} />
-      </Field>
+      <DatePickerField
+        label="Date of Joining *"
+        value={dateOfJoining}
+        onChange={setDateOfJoining}
+        minYear={2000}
+        maxYear={new Date().getFullYear() + 1}
+      />
 
       <Field label="Phone">
         <TextInput style={styles.input} value={phone} onChangeText={setPhone} placeholder="+1234567890" keyboardType="phone-pad" editable={!isSubmitting} />
       </Field>
 
-      <Field label="Emergency Contact">
+      <Field label="Emergency Contact Phone">
         <TextInput style={styles.input} value={emergencyContactPhone} onChangeText={setEmergencyContactPhone} keyboardType="phone-pad" editable={!isSubmitting} />
       </Field>
 
       <Field label="Marital Status">
         <TouchableOpacity style={styles.selectInput} onPress={() => !isSubmitting && setShowMaritalPicker(true)}>
           <Text style={[styles.selectText, !maritalStatus && styles.selectPlaceholder]}>{maritalStatus || 'Select Status'}</Text>
-          <Ionicons name="chevron-down" size={16} color={COLORS.onSurfaceVariant} />
+          <Ionicons name="chevron-down" size={16} color={COLORS.outline} />
         </TouchableOpacity>
       </Field>
 
@@ -334,7 +483,7 @@ export default function AddStaffModal({ visible, onClose, onSuccess }: AddStaffM
   );
 
   const renderStep2 = () => (
-    <View style={styles.card}>
+    <View>
       <Text style={styles.sectionTitle}>Bank & Payroll Details</Text>
 
       <Text style={styles.subTitle}>Bank Details</Text>
@@ -349,13 +498,13 @@ export default function AddStaffModal({ visible, onClose, onSuccess }: AddStaffM
       </Field>
 
       <Text style={[styles.subTitle, { marginTop: 20 }]}>Payroll Details</Text>
-      <Field label="Basic Salary">
+      <Field label={`Basic Salary (${settings.currencySymbol})`}>
         <TextInput style={styles.input} value={basicSalary} onChangeText={setBasicSalary} keyboardType="numeric" placeholder="0" editable={!isSubmitting} />
       </Field>
       <Field label="Employment Type">
         <TouchableOpacity style={styles.selectInput} onPress={() => !isSubmitting && setShowEmploymentTypePicker(true)}>
-          <Text style={[styles.selectText]}>{employmentType}</Text>
-          <Ionicons name="chevron-down" size={16} color={COLORS.onSurfaceVariant} />
+          <Text style={styles.selectText}>{employmentType}</Text>
+          <Ionicons name="chevron-down" size={16} color={COLORS.outline} />
         </TouchableOpacity>
       </Field>
       <Field label="Biometric ID">
@@ -365,7 +514,7 @@ export default function AddStaffModal({ visible, onClose, onSuccess }: AddStaffM
   );
 
   const renderStep3 = () => (
-    <View style={styles.card}>
+    <View>
       <Text style={styles.sectionTitle}>Qualification & Social Links</Text>
 
       <Field label="Qualification">
@@ -394,7 +543,7 @@ export default function AddStaffModal({ visible, onClose, onSuccess }: AddStaffM
     </View>
   );
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // ── Main render ───────────────────────────────────────────────────────────
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
       <View style={styles.modalOverlay}>
@@ -417,7 +566,9 @@ export default function AddStaffModal({ visible, onClose, onSuccess }: AddStaffM
           {/* Step indicator */}
           <View style={styles.stepIndicatorContainer}>
             {Array.from({ length: TOTAL_STEPS }, (_, i) => i + 1).map(s => (
-              <View key={s} style={[styles.stepDot, step >= s && styles.stepDotActive]} />
+              <View key={s} style={[styles.stepDot, step >= s && styles.stepDotActive]}>
+                <Text style={[styles.stepDotLabel, step >= s && styles.stepDotLabelActive]}>{s}</Text>
+              </View>
             ))}
           </View>
 
@@ -433,7 +584,7 @@ export default function AddStaffModal({ visible, onClose, onSuccess }: AddStaffM
               {step === 2 && renderStep2()}
               {step === 3 && renderStep3()}
 
-              {/* Navigation buttons */}
+              {/* Footer navigation */}
               <View style={styles.footerButtons}>
                 {step > 1 && (
                   <TouchableOpacity style={styles.backButton} onPress={handleBack} disabled={isSubmitting}>
@@ -470,13 +621,17 @@ export default function AddStaffModal({ visible, onClose, onSuccess }: AddStaffM
         </View>
       </View>
 
-      {/* Dropdown Pickers (rendered inside the outer Modal so they layer correctly) */}
+      {/* ── Dropdown pickers ── */}
       <PickerModal
         visible={showRolePicker}
         onClose={() => setShowRolePicker(false)}
         title="Select Role"
         options={roles}
-        onSelect={r => { setRoleId(r.id); setRoleName(r.name); setIsTeachingStaff(r.name.toLowerCase() === 'teacher'); }}
+        onSelect={r => {
+          setRoleId(r.id);
+          setRoleName(r.name);
+          setIsTeachingStaff(r.name.toLowerCase() === 'teacher');
+        }}
       />
       <PickerModal
         visible={showDeptPicker}
@@ -520,22 +675,11 @@ export default function AddStaffModal({ visible, onClose, onSuccess }: AddStaffM
   );
 }
 
-// ─── Small field wrapper ──────────────────────────────────────────────────────
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <View style={styles.formGroup}>
-      <Text style={styles.inputLabel}>{label}</Text>
-      {children}
-    </View>
-  );
-}
-
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  // Main modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.55)',
     justifyContent: 'flex-end',
   },
   modalContent: {
@@ -544,8 +688,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     height: '92%',
   },
-
-  // Header
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -572,28 +714,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 14,
-    gap: 8,
+    gap: 24,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.surfaceContainerHigh,
   },
   stepDot: {
-    width: 32,
-    height: 4,
-    borderRadius: 2,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: COLORS.outlineVariant,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   stepDotActive: { backgroundColor: COLORS.primary },
+  stepDotLabel: { fontSize: 12, fontWeight: '700', color: COLORS.onSurfaceVariant },
+  stepDotLabelActive: { color: COLORS.onPrimary },
 
-  // Loading
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
-  // Body / card
   body: { paddingHorizontal: 20, paddingTop: 20 },
-  card: { backgroundColor: COLORS.surfaceContainerLowest },
+
   sectionTitle: { ...TYPOGRAPHY.headlineSm, color: COLORS.primary, marginBottom: 16 },
   subTitle: { ...TYPOGRAPHY.labelLg, color: COLORS.onSurface, marginBottom: 12 },
 
-  // Form elements
   formGroup: { marginBottom: 16 },
   inputLabel: { ...TYPOGRAPHY.labelLg, color: COLORS.onSurfaceVariant, marginBottom: 6 },
   input: {
@@ -620,51 +763,30 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   selectText: { fontSize: 14, color: COLORS.onSurface, flex: 1 },
-  selectPlaceholder: { color: COLORS.onSurfaceVariant },
+  selectPlaceholder: { color: COLORS.outline },
 
-  // Footer buttons
-  footerButtons: {
-    flexDirection: 'row',
-    marginTop: 24,
-    gap: 12,
-  },
+  footerButtons: { flexDirection: 'row', marginTop: 24, gap: 12 },
   backButton: {
-    flex: 1,
-    height: 48,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.outlineVariant,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
+    flex: 1, height: 48, borderRadius: 12,
+    borderWidth: 1, borderColor: COLORS.outlineVariant,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
   },
   backButtonText: { ...TYPOGRAPHY.labelLg, color: COLORS.onSurface },
   nextButton: {
-    flex: 1,
-    height: 48,
-    borderRadius: 12,
+    flex: 1, height: 48, borderRadius: 12,
     backgroundColor: COLORS.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
   },
   nextButtonText: { ...TYPOGRAPHY.labelLg, color: COLORS.onPrimary },
   submitButton: {
-    flex: 1,
+    flex: 1, height: 48, borderRadius: 12,
     backgroundColor: COLORS.secondary,
-    height: 48,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
   },
   buttonDisabled: { opacity: 0.5 },
   submitButtonText: { ...TYPOGRAPHY.labelLg, color: COLORS.onPrimary, textTransform: 'uppercase' },
 
-  // Picker modal
+  // Picker modal (shared by both PickerModal and DatePickerField)
   pickerOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -675,7 +797,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceContainerLowest,
     borderRadius: 16,
     padding: 20,
-    maxHeight: '70%',
+    maxHeight: '80%',
   },
   pickerTitle: { ...TYPOGRAPHY.headlineSm, color: COLORS.primary, marginBottom: 12 },
   pickerItem: {
@@ -684,4 +806,24 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.surfaceContainerHigh,
   },
   pickerItemText: { ...TYPOGRAPHY.bodyMd, color: COLORS.onSurface },
+
+  // Date picker scrollable columns
+  dateOption: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  dateOptionActive: { backgroundColor: COLORS.primaryContainer },
+  dateOptionText: { ...TYPOGRAPHY.bodyMd, color: COLORS.onSurfaceVariant, fontSize: 14 },
+  dateOptionTextActive: { color: COLORS.onPrimary, fontWeight: '700' },
+  dateConfirmBtn: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  dateConfirmText: { ...TYPOGRAPHY.labelLg, color: COLORS.onPrimary, fontSize: 16 },
 });

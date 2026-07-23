@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import NetInfo from '@react-native-community/netinfo';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { AdminStackParamList } from '../navigation/RootNavigator';
+import type { TeacherStackParamList } from '../navigation/RootNavigator';
 
 // @ts-ignore
 const schoolLogo = require('../../assets/school-logo.png');
@@ -37,21 +37,21 @@ const COLORS = {
   successText: '#166534',
 };
 
-interface AdminLayoutProps {
+interface TeacherLayoutProps {
   children: React.ReactNode;
   activeTab?: string;
 }
 
-export default function AdminLayout({ children, activeTab: activeTabProp = 'Home' }: AdminLayoutProps) {
+export default function TeacherLayout({ children, activeTab: activeTabProp = 'Home' }: TeacherLayoutProps) {
   const { user, logout } = useAuthStore();
   const [isOnline, setIsOnline] = useState(true);
   const { performSync } = useAutoSync();
   const { isSyncing } = useSyncStore();
-  const navigation = useNavigation<NativeStackNavigationProp<AdminStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<TeacherStackParamList>>();
 
-  const userInitials = user ? `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`.toUpperCase() : 'U';
+  const userInitials = user ? `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`.toUpperCase() : 'T';
 
-  const { settings, setSettings, loadFromStorage, isLoaded } = useSettingsStore();
+  const { settings, setSettings, loadFromStorage } = useSettingsStore();
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {
@@ -61,12 +61,10 @@ export default function AdminLayout({ children, activeTab: activeTabProp = 'Home
   }, []);
 
   useEffect(() => {
-    // Initial load from local storage
     loadFromStorage();
   }, []);
 
   useEffect(() => {
-    // Fetch latest from API if online
     if (isOnline && user?.token) {
       apiGet('/system/settings', user.token)
         .then((data: any) => {
@@ -91,17 +89,13 @@ export default function AdminLayout({ children, activeTab: activeTabProp = 'Home
   const handleTabPress = (tab: string) => {
     switch (tab) {
       case 'Home':
-        // Navigate to dashboard (go back if we're not already there)
-        navigation.navigate('AdminDashboard');
+        navigation.navigate('TeacherDashboard');
         break;
-      case 'Students':
-        navigation.navigate('StudentManagement');
+      case 'Classes':
+        navigation.navigate('TeacherClasses');
         break;
       case 'Attendance':
         navigation.navigate('Attendance');
-        break;
-      case 'Records':
-        navigation.navigate('RecordFee');
         break;
       case 'Profile':
         navigation.navigate('Profile');
@@ -111,9 +105,8 @@ export default function AdminLayout({ children, activeTab: activeTabProp = 'Home
 
   const tabs = [
     { key: 'Home', icon: 'home', label: 'Home' },
-    { key: 'Students', icon: 'people', label: 'Students' },
-    { key: 'Attendance', icon: 'calendar', label: 'Attendance' },
-    { key: 'Records', icon: 'layers', label: 'Records' },
+    { key: 'Classes', icon: 'book', label: 'Classes' },
+    { key: 'Attendance', icon: 'checkmark-done-circle', label: 'Attendance' },
     { key: 'Profile', icon: 'person', label: 'Profile' },
   ];
 
@@ -165,8 +158,10 @@ export default function AdminLayout({ children, activeTab: activeTabProp = 'Home
           const isActive = activeTabProp === tab.key;
           const iconName = isActive ? tab.icon : `${tab.icon}-outline`;
           return (
+             // @ts-ignore
             <TouchableOpacity key={tab.key} style={styles.navItem} onPress={() => handleTabPress(tab.key)}>
-              <Ionicons name={iconName as any} size={tab.size || 22} color={isActive ? COLORS.secondary : '#64748b'} />
+              {/* @ts-ignore */}
+              <Ionicons name={iconName as any} size={22} color={isActive ? COLORS.secondary : '#64748b'} />
               <Text style={[styles.navText, isActive && styles.navTextActive]} numberOfLines={1}>{tab.label}</Text>
             </TouchableOpacity>
           );

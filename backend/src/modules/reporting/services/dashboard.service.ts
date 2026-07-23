@@ -99,7 +99,7 @@ export class DashboardService {
             allTransactions = await this.transactionRepository.createQueryBuilder('tx')
                 .where('tx.studentId = :studentId', { studentId })
                 .andWhere('(tx.tenantId = :tenantId OR tx.tenantId IS NULL)', { tenantId })
-                .andWhere('("tx"."sessionId"::text = :sessionId OR "tx"."sessionId" IS NULL)', { sessionId })
+                .andWhere('"tx"."sessionId"::text = :sessionId', { sessionId })
                 .getMany();
         } else {
             allTransactions = await this.transactionRepository.find({ where: { studentId, tenantId } });
@@ -108,26 +108,13 @@ export class DashboardService {
 
         const cfWhere: any = { studentId, tenantId };
         const carryForwards = await this.carryForwardRepository.find({
-            where: sessionId
-                ? [
-                    { ...cfWhere, sessionId },
-                    { ...cfWhere, sessionId: IsNull(), academicYear: sessionName || undefined },
-                ]
-                : cfWhere,
+            where: sessionId ? { ...cfWhere, sessionId } : cfWhere,
         });
 
         const assignmentWhere: any = { studentId, isActive: true, tenantId };
-        // NOTE: Do NOT filter fee assignments by sessionId — many legacy assignments
-        // were created before sessionId was tracked and have NULL. Filtering strictly would
-        // produce an outstandingFees of 0 for those students.
 
         const assignments = this.dedupeAssignments(await this.feeAssignmentRepository.find({
-            where: sessionId 
-                ? [
-                    { ...assignmentWhere, sessionId },
-                    { ...assignmentWhere, sessionId: IsNull() }
-                  ]
-                : assignmentWhere,
+            where: sessionId ? { ...assignmentWhere, sessionId } : assignmentWhere,
             relations: ['feeGroup', 'feeGroup.heads'],
         }));
 
@@ -292,12 +279,7 @@ export class DashboardService {
                     }));
             }
             if (isValidSession) {
-                transQb.andWhere(
-                    new Brackets((qb) => {
-                        qb.where('"transaction"."sessionId"::text = CAST(:sessionId AS text)', { sessionId })
-                          .orWhere('"transaction"."sessionId" IS NULL');
-                    })
-                );
+                transQb.andWhere('"transaction"."sessionId"::text = CAST(:sessionId AS text)', { sessionId });
             }
             const revenueResult = await transQb.select('SUM(transaction.amount::numeric)', 'total').getRawOne();
             stats.finance.totalRevenue = parseFloat(revenueResult?.total || '0') || 0;

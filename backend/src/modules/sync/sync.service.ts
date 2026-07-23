@@ -17,6 +17,7 @@ import { FeeGroup } from '../finance/entities/fee-group.entity';
 import { FeeHead } from '../finance/entities/fee-head.entity';
 import { StudentsService } from '../students/services/students.service';
 import { FeesService } from '../finance/services/fees.service';
+import { CarryForward } from '../finance/entities/carry-forward.entity';
 
 /** Records older than this many months are excluded from pull-all syncs */
 const ROLLING_MONTHS = 3;
@@ -114,6 +115,8 @@ export class SyncService {
     private feeGroupRepository: Repository<FeeGroup>,
     @InjectRepository(FeeHead)
     private feeHeadRepository: Repository<FeeHead>,
+    @InjectRepository(CarryForward)
+    private carryForwardRepository: Repository<CarryForward>,
     @Inject(forwardRef(() => StudentsService))
     private studentsService: StudentsService,
     @Inject(forwardRef(() => FeesService))
@@ -240,7 +243,7 @@ export class SyncService {
       .where('fa.tenantId = :tenantId', { tenantId })
       .andWhere('fa.isActive = true');
 
-    const [students, transactions, assignments, attendance, classes, sections, commLogs, docs, termResults, examGroups, studentProfileMap, feeGroups] =
+    const [students, transactions, assignments, attendance, classes, sections, commLogs, docs, termResults, examGroups, studentProfileMap, feeGroups, carryForwards] =
       await Promise.all([
         // Core tables — no 3-month cap (students are master data)
         this.studentsRepository.find({
@@ -276,12 +279,43 @@ export class SyncService {
         }),
         this.getStudentDiscountProfiles(tenantId),
         this.feeGroupRepository.find({ where: { updatedAt: MoreThan(lastPulledAt), tenantId }, relations: ['heads'] }),
+        // Always fetch all carry-forwards for this tenant (no timestamp cap — small table)
+        this.carryForwardRepository.find({ where: { tenantId }, relations: ['feeHead'] }),
       ]);
 
     // feeHeads removed — they are embedded inside fee_groups as heads_json
 
     const chargeRecords = assignments.flatMap(a => mapAssignmentToTransactions(a, studentProfileMap.get(a.studentId) || null));
     const realTransactions = transactions;
+
+    // Map carry-forwards as synthetic fee_records of type charge.
+    // The mobile app uses these as DEBTS brought into the new session.
+    // (The clearing transaction in the old session is synced via realTransactions).
+    const carryForwardRecords = (carryForwards || []).map((cf: CarryForward) => ({
+      id: `cf_${cf.id}`,
+      amount: parseFloat(cf.amount || '0'),
+      type: 'charge',
+      studentId: cf.studentId,
+      tenantId: cf.tenantId,
+      sessionId: cf.sessionId || null,
+      feeGroupId: null,
+      paymentMethod: 'SYSTEM',
+      reference: null,
+      processedBy: null,
+      schoolSectionId: null,
+      meta: JSON.stringify({
+        feeHeadId: cf.feeHeadId || cf.id,  // Use the actual fee head ID, fall back to cf.id
+        academicYear: cf.academicYear,
+        isCarryForward: true,
+        isFeeHead: true,
+        name: 'Arrears (Brought Forward)',
+        ...(cf.meta || {}),
+      }),
+      createdAt: cf.createdAt,
+      updatedAt: new Date(),
+      deletedAt: null,
+    }));
+
     const allFeeGroups = (feeGroups || []).map(g => ({
       ...g,
       heads_json: JSON.stringify(
@@ -299,53 +333,61 @@ export class SyncService {
     return {
       changes: {
         students: {
-          created: [],
-          updated: [...students.filter(s => s.createdAt > lastPulledAt && !s.deletedAt), ...students.filter(s => s.createdAt <= lastPulledAt && !s.deletedAt)],
+          created: students.filter(s => s.createdAt > lastPulledAt && !s.deletedAt),
+          updated: students.filter(s => s.createdAt <= lastPulledAt && !s.deletedAt),
           deleted: students.filter(s => s.deletedAt).map(s => s.id),
         },
         fee_records: {
-          created: [], // Send synthetic charges as updated to force upsert and avoid creation conflicts
-          updated: [...chargeRecords, ...realTransactions.filter(t => !t.deletedAt)],
+          created: [
+            ...chargeRecords.filter(c => c.createdAt > lastPulledAt),
+            ...carryForwardRecords.filter(c => c.createdAt > lastPulledAt),
+            ...realTransactions.filter(t => t.createdAt > lastPulledAt && !t.deletedAt)
+          ],
+          updated: [
+            ...chargeRecords.filter(c => c.createdAt <= lastPulledAt),
+            ...carryForwardRecords.filter(c => c.createdAt <= lastPulledAt),
+            ...realTransactions.filter(t => t.createdAt <= lastPulledAt && !t.deletedAt)
+          ],
           deleted: realTransactions.filter(t => t.deletedAt).map(t => t.id),
         },
         attendance: {
-          created: [],
-          updated: [...attendance.filter(a => a.createdAt > lastPulledAt), ...attendance.filter(a => a.createdAt <= lastPulledAt)],
+          created: attendance.filter(a => a.createdAt > lastPulledAt),
+          updated: attendance.filter(a => a.createdAt <= lastPulledAt),
           deleted: [] as string[],
         },
         classes: {
-          created: [],
-          updated: [...classes.filter(c => c.createdAt > lastPulledAt), ...classes.filter(c => c.createdAt <= lastPulledAt)],
+          created: classes.filter(c => c.createdAt > lastPulledAt),
+          updated: classes.filter(c => c.createdAt <= lastPulledAt),
           deleted: [] as string[],
         },
         sections: {
-          created: [],
-          updated: [...sections.filter(s => s.createdAt > lastPulledAt), ...sections.filter(s => s.createdAt <= lastPulledAt)],
+          created: sections.filter(s => s.createdAt > lastPulledAt),
+          updated: sections.filter(s => s.createdAt <= lastPulledAt),
           deleted: [] as string[],
         },
         communication_logs: {
-          created: [],
-          updated: [...commLogs.filter(l => l.createdAt > lastPulledAt), ...commLogs.filter(l => l.createdAt <= lastPulledAt)],
+          created: commLogs.filter(l => l.createdAt > lastPulledAt),
+          updated: commLogs.filter(l => l.createdAt <= lastPulledAt),
           deleted: [] as string[],
         },
         student_documents: {
-          created: [],
-          updated: [...docs.filter(d => d.createdAt > lastPulledAt), ...docs.filter(d => d.createdAt <= lastPulledAt)],
+          created: docs.filter(d => d.createdAt > lastPulledAt),
+          updated: docs.filter(d => d.createdAt <= lastPulledAt),
           deleted: [] as string[],
         },
         student_term_results: {
-          created: [],
-          updated: [...termResults.filter(r => r.createdAt > lastPulledAt), ...termResults.filter(r => r.createdAt <= lastPulledAt)],
+          created: termResults.filter(r => r.createdAt > lastPulledAt),
+          updated: termResults.filter(r => r.createdAt <= lastPulledAt),
           deleted: [] as string[],
         },
         exam_groups: {
-          created: [],
-          updated: [...examGroups.filter(e => e.createdAt > lastPulledAt), ...examGroups.filter(e => e.createdAt <= lastPulledAt)],
+          created: examGroups.filter(e => e.createdAt > lastPulledAt),
+          updated: examGroups.filter(e => e.createdAt <= lastPulledAt),
           deleted: [] as string[],
         },
         fee_groups: {
-          created: [],
-          updated: [...allFeeGroups.filter(g => g.createdAt > lastPulledAt), ...allFeeGroups.filter(g => g.createdAt <= lastPulledAt)],
+          created: allFeeGroups.filter(g => g.createdAt > lastPulledAt),
+          updated: allFeeGroups.filter(g => g.createdAt <= lastPulledAt),
           deleted: [],
         },
       },
@@ -356,7 +398,7 @@ export class SyncService {
   async getPullAllChanges(tenantId: string) {
     const cutoff = threeMonthsAgo();
 
-    const [students, transactions, assignments, attendance, classes, sections, commLogs, docs, termResults, examGroups, studentProfileMap, feeGroups] =
+    const [students, transactions, assignments, attendance, classes, sections, commLogs, docs, termResults, examGroups, studentProfileMap, feeGroups, carryForwards] =
       await Promise.all([
         this.studentsRepository.find({ where: { tenantId }, withDeleted: true }),
         this.transactionsRepository.find({ where: { tenantId }, withDeleted: true }),
@@ -380,11 +422,37 @@ export class SyncService {
         }),
         this.getStudentDiscountProfiles(tenantId),
         this.feeGroupRepository.find({ where: { tenantId }, relations: ['heads'] }),
+        this.carryForwardRepository.find({ where: { tenantId }, relations: ['feeHead'] }),
       ]);
 
     // feeHeads removed — they are embedded inside fee_groups as heads_json
 
     const chargeRecords = assignments.flatMap(a => mapAssignmentToTransactions(a, studentProfileMap.get(a.studentId) || null));
+
+    const carryForwardRecords = (carryForwards || []).map((cf: CarryForward) => ({
+      id: `cf_${cf.id}`,
+      amount: parseFloat(cf.amount || '0'),
+      type: 'charge',
+      studentId: cf.studentId,
+      tenantId: cf.tenantId,
+      sessionId: cf.sessionId || null,
+      feeGroupId: null,
+      paymentMethod: 'SYSTEM',
+      reference: null,
+      processedBy: null,
+      schoolSectionId: null,
+      meta: JSON.stringify({
+        feeHeadId: cf.feeHeadId || cf.id,  // Use the actual fee head ID, fall back to cf.id
+        academicYear: cf.academicYear,
+        isCarryForward: true,
+        isFeeHead: true,
+        name: 'Arrears (Brought Forward)',
+        ...(cf.meta || {}),
+      }),
+      createdAt: cf.createdAt,
+      updatedAt: new Date(),
+      deletedAt: null,
+    }));
 
     const allStudents = students.filter(s => !s.deletedAt);
     const realTransactions = transactions.filter(t => !t.deletedAt);
@@ -409,7 +477,7 @@ export class SyncService {
         students: { created: [], updated: allStudents, deleted: deletedStudents },
         fee_records: {
           created: [],
-          updated: [...realTransactions, ...chargeRecords],
+          updated: [...realTransactions, ...chargeRecords, ...carryForwardRecords],
           deleted: deletedTransactions,
         },
         attendance: { created: [], updated: attendance, deleted: [] as string[] },

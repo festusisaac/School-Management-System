@@ -3,7 +3,7 @@ import { useAuthStore } from '../store/authStore';
 
 import { Platform } from 'react-native';
 
-let API_BASE = 'http://192.168.0.102:3000/api/v1';
+let API_BASE = 'http://192.168.43.46:3000/api/v1';
 
 export async function loginRequest(email: string, password: string) {
   const res = await fetch(`${API_BASE}/auth/login`, {
