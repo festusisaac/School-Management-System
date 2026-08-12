@@ -45,14 +45,12 @@ export default function TeacherDashboard() {
   async function fetchData() {
     if (!user?.token) return;
     try {
-      // In a real scenario, this endpoint might be `/reporting/dashboard/teacher/stats`
-      // For now, we mock some data or use existing academics routes
-      const classes = await apiGet('/academics/classes', user.token);
+      const stats = await apiGet(`/hr/staff/dashboard/stats?sessionId=${settings?.currentSessionId || ''}&termId=${settings?.currentTermId || ''}`, user.token);
       
       setDashboardData({
-        assignedClasses: Array.isArray(classes) ? classes.length : 0,
-        upcomingClasses: 2,
-        pendingAssignments: 3,
+        assignedClasses: stats?.totalClasses || 0,
+        pendingAssignments: stats?.pendingHomework || 0,
+        upcomingClasses: stats?.classesToday || 0,
       });
     } catch (err: any) {
       console.error('Failed to fetch dashboard data:', err);

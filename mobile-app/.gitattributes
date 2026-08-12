@@ -1,0 +1,23 @@
+# Normalize line endings to avoid CRLF/LF churn across machines.
+# Git stores text with LF; tools that rewrite files won't create noise diffs.
+* text=auto eol=lf
+
+# Files that MUST stay LF (shell scripts / gradle wrapper) even on Windows
+*.sh text eol=lf
+gradlew text eol=lf
+
+# Windows batch files should stay CRLF
+*.bat text eol=crlf
+gradlew.bat text eol=crlf
+
+# Binary assets — never touch line endings
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.ttf binary
+*.otf binary
+*.keystore binary
+*.jks binary
