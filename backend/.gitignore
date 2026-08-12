@@ -41,3 +41,7 @@ pids/
 # Temp files
 tmp/
 temp/
+
+# Debug/dev data dumps (not meant for the repo)
+output.json
+sync-payload.json
