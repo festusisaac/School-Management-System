@@ -23,15 +23,16 @@ interface DateTimeFieldProps {
   onChange: (date: Date) => void;
   placeholder?: string;
   minimumDate?: Date;
+  /** 'datetime' (default) picks date + time; 'date' picks date only. */
+  mode?: 'datetime' | 'date';
 }
 
-function formatDisplay(d: Date) {
+function formatDisplay(d: Date, dateOnly: boolean) {
   return d.toLocaleString(undefined, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
+    ...(dateOnly ? {} : { hour: 'numeric', minute: '2-digit' }),
   });
 }
 
@@ -41,7 +42,9 @@ export default function DateTimeField({
   onChange,
   placeholder = 'Select date & time',
   minimumDate,
+  mode = 'datetime',
 }: DateTimeFieldProps) {
+  const dateOnly = mode === 'date';
   // Android shows date then time sequentially; iOS shows a datetime spinner in a modal.
   const [androidMode, setAndroidMode] = useState<'date' | 'time' | null>(null);
   const [iosOpen, setIosOpen] = useState(false);
@@ -62,9 +65,15 @@ export default function DateTimeField({
       return;
     }
     if (androidMode === 'date') {
-      // Keep the chosen date, carry over previous time, then ask for time
+      // Keep the chosen date, carry over previous time
       const next = new Date(temp);
       next.setFullYear(selected.getFullYear(), selected.getMonth(), selected.getDate());
+      if (dateOnly) {
+        // Date-only: finish immediately, no time step
+        setAndroidMode(null);
+        onChange(next);
+        return;
+      }
       setTemp(next);
       setAndroidMode('time');
     } else {
@@ -89,7 +98,7 @@ export default function DateTimeField({
       {label ? <Text style={styles.label}>{label}</Text> : null}
       <TouchableOpacity style={styles.control} onPress={openPicker} activeOpacity={0.7}>
         <Text style={[styles.controlText, !value && styles.placeholder]} numberOfLines={1}>
-          {value ? formatDisplay(value) : placeholder}
+          {value ? formatDisplay(value, dateOnly) : placeholder}
         </Text>
         <Ionicons name="calendar-outline" size={18} color={COLORS.outline} />
       </TouchableOpacity>
@@ -122,7 +131,7 @@ export default function DateTimeField({
               </View>
               <DateTimePicker
                 value={temp}
-                mode="datetime"
+                mode={dateOnly ? 'date' : 'datetime'}
                 display="spinner"
                 minimumDate={minimumDate}
                 onChange={onIosChange}

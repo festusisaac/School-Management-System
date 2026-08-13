@@ -147,6 +147,11 @@ export function TopBar({ onMenuClick }: TopBarProps) {
         isSuperAdmin ||
         userPermissions.includes('communication:view_notices') ||
         userPermissions.includes('communication:manage_notices');
+    // Settings is permission-driven: super admins always, plus anyone granted a
+    // settings permission (so granting a teacher/staff access actually works).
+    const canAccessSettings =
+        isSuperAdmin ||
+        userPermissions.some((p) => p && p.startsWith('settings:'));
 
     useEffect(() => {
         if (!user?.id || !canViewNotices) {
@@ -579,16 +584,18 @@ export function TopBar({ onMenuClick }: TopBarProps) {
                                 <UserIcon className="w-4 h-4" />
                                 My Profile
                             </button>
-                            <button
-                                onClick={() => {
-                                    setIsProfileOpen(false);
-                                    navigate('/settings/general');
-                                }}
-                                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                            >
-                                <SettingsIcon className="w-4 h-4" />
-                                Settings
-                            </button>
+                            {canAccessSettings && (
+                                <button
+                                    onClick={() => {
+                                        setIsProfileOpen(false);
+                                        navigate('/settings/general');
+                                    }}
+                                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                >
+                                    <SettingsIcon className="w-4 h-4" />
+                                    Settings
+                                </button>
+                            )}
 
                             <div className="h-px bg-gray-100 dark:border-gray-700 my-1 mx-2"></div>
 

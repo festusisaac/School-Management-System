@@ -21,6 +21,7 @@ import Class from '../../database/models/Class';
 import Section from '../../database/models/Section';
 import Attendance from '../../database/models/Attendance';
 import { useAuthStore } from '../../store/authStore';
+import { useSectionStore } from '../../store/sectionStore';
 import { apiGet, apiPost, getSyncBaseUrl } from '../../services/api';
 import NetInfo from '@react-native-community/netinfo';
 
@@ -196,6 +197,7 @@ const StudentRow = React.memo(({ student, status, onStatusChange }: { student:St
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function AttendanceScreen() {
   const { user } = useAuthStore();
+  const activeSectionId = useSectionStore((s) => s.activeSectionId);
   const [isOnline, setIsOnline] = useState(true);
   const [classes,  setClasses]  = useState<Class[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
@@ -223,26 +225,32 @@ export default function AttendanceScreen() {
     apiGet('/system-settings', user.token).then((s:any) => setSessionId(s?.currentSessionId||null)).catch(()=>{});
   }, [user?.token]);
 
-  // Load classes
+  // Load classes (scoped to the active school section when one is selected)
   useEffect(() => {
+    const localClauses = [Q.where('is_active', true)];
+    if (activeSectionId) localClauses.push(Q.where('school_section_id', activeSectionId));
     const load = async () => {
       try {
         if (isOnline && user?.token) {
           // Teacher: fetch from API — backend scopes to managed classes automatically
           if (user.role === 'teacher') {
             const data = await apiGet('/academics/classes', user.token);
-            if (Array.isArray(data) && data.length > 0) { setClasses(data as any); return; }
+            if (Array.isArray(data) && data.length > 0) {
+              const scoped = activeSectionId ? data.filter((c: any) => c.schoolSectionId === activeSectionId) : data;
+              setClasses(scoped as any);
+              return;
+            }
           }
         }
-        const local = await database.collections.get<Class>('classes').query(Q.where('is_active',true)).fetch();
+        const local = await database.collections.get<Class>('classes').query(...localClauses).fetch();
         setClasses(local);
       } catch {
-        const local = await database.collections.get<Class>('classes').query(Q.where('is_active',true)).fetch();
+        const local = await database.collections.get<Class>('classes').query(...localClauses).fetch();
         setClasses(local);
       }
     };
     load();
-  }, [isOnline, user?.token, user?.role]);
+  }, [isOnline, user?.token, user?.role, activeSectionId]);
 
   // Sections when class changes
   useEffect(() => {

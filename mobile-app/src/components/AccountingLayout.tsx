@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import NetInfo from '@react-native-community/netinfo';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { AdminStackParamList } from '../navigation/RootNavigator';
+import type { AccountingStackParamList } from '../navigation/RootNavigator';
 
 // @ts-ignore
 const schoolLogo = require('../../assets/school-logo.png');
@@ -40,27 +40,25 @@ const COLORS = {
   successText: '#166534',
 };
 
-interface AdminLayoutProps {
+interface AccountingLayoutProps {
   children: React.ReactNode;
   activeTab?: string;
 }
 
-export default function AdminLayout({ children, activeTab: activeTabProp = 'Home' }: AdminLayoutProps) {
-  const { user, logout } = useAuthStore();
+export default function AccountingLayout({ children, activeTab: activeTabProp = 'Home' }: AccountingLayoutProps) {
+  const { user } = useAuthStore();
   const [isOnline, setIsOnline] = useState(true);
   const { performSync } = useAutoSync();
   const { isSyncing } = useSyncStore();
-  const navigation = useNavigation<NativeStackNavigationProp<AdminStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<AccountingStackParamList>>();
 
-  const userInitials = user ? `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`.toUpperCase() : 'U';
+  const userInitials = user ? `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`.toUpperCase() : 'A';
 
-  const { settings, setSettings, loadFromStorage, isLoaded } = useSettingsStore();
+  const { settings, setSettings, loadFromStorage } = useSettingsStore();
   const { availableSections, activeSectionId, setSections, setActiveSectionId, loadFromStorage: loadSection } = useSectionStore();
   const [sectionPickerOpen, setSectionPickerOpen] = useState(false);
+
   const activeSection = availableSections.find((s) => s.id === activeSectionId);
-  // Only the super administrator overrides all sections; a normal admin is
-  // locked to the section(s) assigned to them (same as the website).
-  const isSuperAdmin = (user?.displayRole || '').toLowerCase().includes('super');
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {
@@ -70,34 +68,22 @@ export default function AdminLayout({ children, activeTab: activeTabProp = 'Home
   }, []);
 
   useEffect(() => {
-    // Initial load from local storage
     loadFromStorage();
     loadSection();
   }, []);
 
-  // Super admin → all sections (+ "All Sections" override). Normal admin →
-  // only the sections assigned to them, locked (like a section-scoped accountant).
+  // Load the accountant's assigned sections (they may only work within these).
   useEffect(() => {
     if (!isOnline || !user?.token) return;
-    if (isSuperAdmin) {
-      apiGet('/academics/school-sections', user.token)
-        .then((data: any) => {
-          const sections = Array.isArray(data) ? data.map((s: any) => ({ id: s.id, name: s.name })) : [];
-          setSections(sections, true);
-        })
-        .catch((e) => console.log('Failed to load sections', e));
-    } else {
-      apiGet('/hr/staff/profile/me', user.token)
-        .then((data: any) => {
-          const sections = Array.isArray(data?.sections) ? data.sections.map((s: any) => ({ id: s.id, name: s.name })) : [];
-          setSections(sections, false);
-        })
-        .catch((e) => console.log('Failed to load assigned sections', e));
-    }
-  }, [isOnline, user?.token, isSuperAdmin]);
+    apiGet('/hr/staff/profile/me', user.token)
+      .then((data: any) => {
+        const sections = Array.isArray(data?.sections) ? data.sections.map((s: any) => ({ id: s.id, name: s.name })) : [];
+        setSections(sections);
+      })
+      .catch((e) => console.log('Failed to load assigned sections', e));
+  }, [isOnline, user?.token]);
 
   useEffect(() => {
-    // Fetch latest from API if online
     if (isOnline && user?.token) {
       apiGet('/system/settings', user.token)
         .then((data: any) => {
@@ -122,17 +108,13 @@ export default function AdminLayout({ children, activeTab: activeTabProp = 'Home
   const handleTabPress = (tab: string) => {
     switch (tab) {
       case 'Home':
-        // Navigate to dashboard (go back if we're not already there)
-        navigation.navigate('AdminDashboard');
+        navigation.navigate('AccountingDashboard');
         break;
-      case 'Students':
-        navigation.navigate('StudentManagement');
+      case 'Payments':
+        navigation.navigate('FeesHistory');
         break;
-      case 'Attendance':
-        navigation.navigate('Attendance');
-        break;
-      case 'Records':
-        navigation.navigate('RecordFee');
+      case 'Expenses':
+        navigation.navigate('Expenses');
         break;
       case 'Profile':
         navigation.navigate('Profile');
@@ -142,9 +124,8 @@ export default function AdminLayout({ children, activeTab: activeTabProp = 'Home
 
   const tabs = [
     { key: 'Home', icon: 'home', label: 'Home' },
-    { key: 'Students', icon: 'people', label: 'Students' },
-    { key: 'Attendance', icon: 'calendar', label: 'Attendance' },
-    { key: 'Records', icon: 'layers', label: 'Records' },
+    { key: 'Payments', icon: 'receipt', label: 'Payments' },
+    { key: 'Expenses', icon: 'wallet', label: 'Expenses' },
     { key: 'Profile', icon: 'person', label: 'Profile' },
   ];
 
@@ -179,7 +160,7 @@ export default function AdminLayout({ children, activeTab: activeTabProp = 'Home
           <TouchableOpacity style={styles.iconButton} onPress={performSync} disabled={isSyncing}>
             <Ionicons name="refresh" size={22} color={isSyncing ? COLORS.outline : COLORS.onSurface} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.headerProfileBtn} onPress={() => logout()}>
+          <TouchableOpacity style={styles.headerProfileBtn} onPress={() => navigation.navigate('Profile')}>
             <Text style={styles.headerProfileText}>{userInitials}</Text>
           </TouchableOpacity>
         </View>
@@ -189,20 +170,18 @@ export default function AdminLayout({ children, activeTab: activeTabProp = 'Home
       {availableSections.length > 0 && (
         <TouchableOpacity
           style={styles.sectionBar}
-          activeOpacity={isSuperAdmin || availableSections.length > 1 ? 0.7 : 1}
-          onPress={() => (isSuperAdmin || availableSections.length > 1) && setSectionPickerOpen(true)}
+          activeOpacity={availableSections.length > 1 ? 0.7 : 1}
+          onPress={() => availableSections.length > 1 && setSectionPickerOpen(true)}
         >
           <Ionicons name="git-branch-outline" size={14} color={COLORS.secondary} />
           <Text style={styles.sectionBarLabel}>Section:</Text>
-          <Text style={styles.sectionBarValue}>{activeSection?.name || (isSuperAdmin ? 'All Sections' : 'Section')}</Text>
-          {(isSuperAdmin || availableSections.length > 1) && <Ionicons name="chevron-down" size={14} color={COLORS.secondary} />}
+          <Text style={styles.sectionBarValue}>{activeSection?.name || 'Select'}</Text>
+          {availableSections.length > 1 && <Ionicons name="chevron-down" size={14} color={COLORS.secondary} />}
         </TouchableOpacity>
       )}
 
       {/* --- Screen Content --- */}
-      <View style={styles.content}>
-        {children}
-      </View>
+      <View style={styles.content}>{children}</View>
 
       {/* --- Section Picker --- */}
       <Modal visible={sectionPickerOpen} transparent animationType="fade" onRequestClose={() => setSectionPickerOpen(false)}>
@@ -215,8 +194,8 @@ export default function AdminLayout({ children, activeTab: activeTabProp = 'Home
               </TouchableOpacity>
             </View>
             <FlatList
-              data={isSuperAdmin ? [{ id: '', name: 'All Sections' }, ...availableSections] : availableSections}
-              keyExtractor={(item) => item.id || 'all'}
+              data={availableSections}
+              keyExtractor={(item) => item.id}
               renderItem={({ item }) => {
                 const isActive = item.id === activeSectionId;
                 return (
@@ -243,8 +222,10 @@ export default function AdminLayout({ children, activeTab: activeTabProp = 'Home
           const isActive = activeTabProp === tab.key;
           const iconName = isActive ? tab.icon : `${tab.icon}-outline`;
           return (
+            // @ts-ignore
             <TouchableOpacity key={tab.key} style={styles.navItem} onPress={() => handleTabPress(tab.key)}>
-              <Ionicons name={iconName as any} size={tab.size || 22} color={isActive ? COLORS.secondary : '#64748b'} />
+              {/* @ts-ignore */}
+              <Ionicons name={iconName as any} size={22} color={isActive ? COLORS.secondary : '#64748b'} />
               <Text style={[styles.navText, isActive && styles.navTextActive]} numberOfLines={1}>{tab.label}</Text>
             </TouchableOpacity>
           );
@@ -255,10 +236,7 @@ export default function AdminLayout({ children, activeTab: activeTabProp = 'Home
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-  },
+  safeArea: { flex: 1, backgroundColor: COLORS.surface },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -267,22 +245,9 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     backgroundColor: COLORS.surface,
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: COLORS.onSurface,
-    letterSpacing: -0.5,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: COLORS.onSurface, letterSpacing: -0.5 },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   onlineBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -292,14 +257,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 4,
   },
-  onlineText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: COLORS.successText,
-  },
-  iconButton: {
-    padding: 4,
-  },
+  onlineText: { fontSize: 11, fontWeight: '600', color: COLORS.successText },
+  iconButton: { padding: 4 },
   headerProfileBtn: {
     width: 32,
     height: 32,
@@ -309,14 +268,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginLeft: 4,
   },
-  headerProfileText: {
-    color: '#bae6fd',
-    fontWeight: 'bold',
-    fontSize: 12,
-  },
-  content: {
-    flex: 1,
-  },
+  headerProfileText: { color: '#bae6fd', fontWeight: 'bold', fontSize: 12 },
+  content: { flex: 1 },
   sectionBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -349,20 +302,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#e2e8f0',
     paddingBottom: Platform.OS === 'ios' ? 16 : 0,
   },
-  navItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 8,
-  },
-  navText: {
-    fontSize: 10,
-    fontWeight: '500',
-    color: '#64748b',
-    marginTop: 4,
-  },
-  navTextActive: {
-    color: COLORS.secondary,
-    fontWeight: '600',
-  },
+  navItem: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 8 },
+  navText: { fontSize: 10, fontWeight: '500', color: '#64748b', marginTop: 4 },
+  navTextActive: { color: COLORS.secondary, fontWeight: '600' },
 });

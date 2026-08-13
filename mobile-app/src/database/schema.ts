@@ -1,8 +1,30 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 7,
+  version: 9,
   tables: [
+    tableSchema({
+      name: 'expenses',
+      columns: [
+        { name: 'tenant_id', type: 'string', isIndexed: true },
+        { name: 'title', type: 'string' },
+        { name: 'description', type: 'string', isOptional: true },
+        { name: 'amount', type: 'number' },
+        { name: 'expense_date', type: 'string', isOptional: true },
+        { name: 'status', type: 'string', isOptional: true },
+        { name: 'payment_method', type: 'string', isOptional: true },
+        { name: 'category_id', type: 'string', isOptional: true },
+        { name: 'vendor_id', type: 'string', isOptional: true },
+        { name: 'category_name', type: 'string', isOptional: true },
+        { name: 'vendor_name', type: 'string', isOptional: true },
+        { name: 'reference_number', type: 'string', isOptional: true },
+        { name: 'session_id', type: 'string', isOptional: true },
+        { name: 'school_section_id', type: 'string', isOptional: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        { name: 'deleted_at', type: 'number', isOptional: true },
+      ],
+    }),
     tableSchema({
       name: 'students',
       columns: [
@@ -124,6 +146,7 @@ export default appSchema({
         { name: 'tenant_id', type: 'string', isIndexed: true },
         { name: 'name', type: 'string' },
         { name: 'is_active', type: 'boolean' },
+        { name: 'school_section_id', type: 'string', isOptional: true },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
       ],

@@ -54,6 +54,18 @@ export function getSyncBaseUrl() {
   return API_BASE;
 }
 
+/** Host root without the /api/v1 prefix — used to build uploaded-file URLs. */
+export function getFileHostUrl() {
+  return API_BASE.replace(/\/api\/v\d+\/?$/, '');
+}
+
+/** Build a full URL for an uploaded file path (attachments, docs, etc.). */
+export function getFileUrl(path?: string) {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  return `${getFileHostUrl()}${path.startsWith('/') ? '' : '/'}${path}`;
+}
+
 export async function apiPost(endpoint: string, token: string, body: any) {
   const res = await fetch(`${API_BASE}${endpoint}`, {
     method: 'POST',

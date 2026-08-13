@@ -17,6 +17,7 @@ import { SystemSetting } from '../system/entities/system-setting.entity';
 import { FeeGroup } from '../finance/entities/fee-group.entity';
 import { FeeHead } from '../finance/entities/fee-head.entity';
 import { CarryForward } from '../finance/entities/carry-forward.entity';
+import { Expense } from '../expenses/entities/expense.entity';
 import { StudentsModule } from '../students/students.module';
 import { FinanceModule } from '../finance/finance.module';
 
@@ -40,6 +41,7 @@ import { FinanceModule } from '../finance/finance.module';
       FeeGroup,
       FeeHead,
       CarryForward,
+      Expense,
     ]),
   ],
   controllers: [SyncController],

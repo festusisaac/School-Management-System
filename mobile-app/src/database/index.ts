@@ -2,6 +2,7 @@ import { Database } from '@nozbe/watermelondb';
 import SQLiteAdapter from '@nozbe/watermelondb/adapters/sqlite';
 import { setGenerator } from '@nozbe/watermelondb/utils/common/randomId';
 import schema from './schema';
+import migrations from './migrations';
 
 // Pure JS UUIDv4 generator to avoid native module requirements (like expo-crypto)
 function generateUUID() {
@@ -24,9 +25,11 @@ import StudentTermResult from './models/StudentTermResult';
 import StudentDocument from './models/StudentDocument';
 import CommunicationLog from './models/CommunicationLog';
 import FeeGroup from './models/FeeGroup';
+import Expense from './models/Expense';
 
 const adapter = new SQLiteAdapter({
   schema,
+  migrations, /* upgrade the local DB in place instead of wiping on version bumps */
   jsi: true, /* recommended for performance */
   dbName: 'edumanage_v10',
   onSetUpError: error => {
@@ -47,5 +50,6 @@ export const database = new Database({
     StudentDocument,
     CommunicationLog,
     FeeGroup,
+    Expense,
   ],
 });

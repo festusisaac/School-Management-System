@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
+import { SettingsRoute } from './components/auth/SettingsRoute'
 import LoginPage from '@pages/auth/LoginPage'
 import ChangePasswordPage from '@pages/auth/ChangePasswordPage'
 import DashboardPage from '@pages/dashboard/DashboardPage'
@@ -305,16 +306,18 @@ function AppRoutes() {
                 <Route path="history" element={<Donations.DonationHistory />} />
               </Route>
 
-              {/* Settings Routes */}
-              <Route path="settings">
-                <Route index element={<Navigate to="general" replace />} />
-                <Route path="general" element={<Settings.GeneralSettingsPage />} />
-                <Route path="sessions" element={<Settings.SessionsPage />} />
-                <Route path="terms" element={<Settings.TermsPage />} />
-                <Route path="roles-permissions" element={<Settings.RolesPermissionsPage />} />
-                <Route path="users" element={<Settings.UsersPage />} />
-                <Route path="payments" element={<Settings.PaymentSettingsPage />} />
-                <Route path="profile" element={<Settings.AdminProfilePage />} />
+              {/* Settings Routes — admins or anyone granted a settings permission */}
+              <Route element={<SettingsRoute />}>
+                <Route path="settings">
+                  <Route index element={<Navigate to="general" replace />} />
+                  <Route path="general" element={<Settings.GeneralSettingsPage />} />
+                  <Route path="sessions" element={<Settings.SessionsPage />} />
+                  <Route path="terms" element={<Settings.TermsPage />} />
+                  <Route path="roles-permissions" element={<Settings.RolesPermissionsPage />} />
+                  <Route path="users" element={<Settings.UsersPage />} />
+                  <Route path="payments" element={<Settings.PaymentSettingsPage />} />
+                  <Route path="profile" element={<Settings.AdminProfilePage />} />
+                </Route>
               </Route>
 
               {/* Front CMS Routes */}

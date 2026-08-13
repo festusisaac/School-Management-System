@@ -11,6 +11,7 @@ import Student from '../../database/models/Student';
 import Class from '../../database/models/Class';
 import Section from '../../database/models/Section';
 import AdminLayout from '../../components/AdminLayout';
+import { useSectionStore } from '../../store/sectionStore';
 
 const { width } = Dimensions.get('window');
 
@@ -128,28 +129,43 @@ const EnhancedStudentItem = withObservables(['student'], ({ student }) => ({
 // --- Main Screen ---
 interface Props {
   students: Student[];
+  classes: Class[];
 }
 
-const StudentManagementScreen = ({ students }: Props) => {
+const StudentManagementScreen = ({ students, classes }: Props) => {
   const navigation = useNavigation();
   const [searchQuery, setSearchQuery] = useState('');
+  const activeSectionId = useSectionStore((s) => s.activeSectionId);
+
+  // Map each class to its school section so students can be scoped by section.
+  const classSection = useMemo(() => {
+    const m = new Map<string, string | undefined>();
+    classes.forEach((c) => m.set(c.id, c.schoolSectionId));
+    return m;
+  }, [classes]);
+
+  // Scope by the selected section first (admins can pick "All Sections" = show all).
+  const sectionStudents = useMemo(() => {
+    if (!activeSectionId) return students;
+    return students.filter((s) => s.classId && classSection.get(s.classId) === activeSectionId);
+  }, [students, classSection, activeSectionId]);
 
   const filteredStudents = useMemo(() => {
     const q = searchQuery.toLowerCase();
-    if (!q) return students;
-    return students.filter((s) => {
+    if (!q) return sectionStudents;
+    return sectionStudents.filter((s) => {
       const fullName = `${s.firstName} ${s.lastName || ''}`.toLowerCase();
       return fullName.includes(q) || s.admissionNo.toLowerCase().includes(q);
     });
-  }, [students, searchQuery]);
+  }, [sectionStudents, searchQuery]);
 
   const stats = useMemo(() => {
     return {
-      total: students.length,
-      active: students.filter(s => s.isActive).length,
-      pending: students.filter(s => !s.isActive).length,
+      total: sectionStudents.length,
+      active: sectionStudents.filter(s => s.isActive).length,
+      pending: sectionStudents.filter(s => !s.isActive).length,
     };
-  }, [students]);
+  }, [sectionStudents]);
 
   return (
     <AdminLayout activeTab="Students">
@@ -226,6 +242,7 @@ const EnhancedStudentManagement = withObservables([], () => ({
       Q.sortBy('created_at', Q.desc)
     )
     .observe(),
+  classes: database.collections.get<Class>('classes').query().observe(),
 }))(StudentManagementScreen);
 
 export default EnhancedStudentManagement;

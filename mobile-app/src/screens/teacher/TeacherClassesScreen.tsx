@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { TeacherStackParamList } from '../../navigation/RootNavigator';
 import { useAuthStore } from '../../store/authStore';
 import { apiGet } from '../../services/api';
 import TeacherLayout from '../../components/TeacherLayout';
@@ -16,6 +19,7 @@ const COLORS = {
 
 export default function TeacherClassesScreen() {
   const { user } = useAuthStore();
+  const navigation = useNavigation<NativeStackNavigationProp<TeacherStackParamList>>();
   const [activeTab, setActiveTab] = useState<'classes' | 'subjects'>('classes');
   
   const [classes, setClasses] = useState<any[]>([]);
@@ -54,7 +58,11 @@ export default function TeacherClassesScreen() {
   }, [user]);
 
   const renderClassItem = ({ item }: { item: any }) => (
-    <TouchableOpacity style={styles.card}>
+    <TouchableOpacity
+      style={styles.card}
+      activeOpacity={0.7}
+      onPress={() => navigation.navigate('ClassRoster', { classId: item.id, className: item.name })}
+    >
       <View style={styles.cardHeader}>
         <View style={[styles.iconWrap, { backgroundColor: '#eff6ff' }]}>
           <Ionicons name="book" size={24} color={COLORS.secondary} />

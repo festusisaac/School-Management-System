@@ -15,11 +15,13 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '../../store/authStore';
 import { useSettingsStore } from '../../store/settingsStore';
+import { useSectionStore } from '../../store/sectionStore';
 import { performGlobalSync } from '../../hooks/useAutoSync';
 import { syncData } from '../../database/sync';
 import AdminLayout from '../../components/AdminLayout';
 import { database } from '../../database';
 import FeeRecord from '../../database/models/FeeRecord';
+import Class from '../../database/models/Class';
 import Student from '../../database/models/Student';
 import { Q } from '@nozbe/watermelondb';
 
@@ -80,17 +82,20 @@ interface FeeHead {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-async function searchStudentsLocal(query: string): Promise<any[]> {
+async function searchStudentsLocal(query: string, allowedClassIds?: string[] | null): Promise<any[]> {
   const db = database.collections.get<Student>('students');
   const pat = Q.sanitizeLikeString(query);
-  return db.query(
-    Q.take(10),
+  const clauses: any[] = [
     Q.or(
       Q.where('first_name', Q.like(`%${pat}%`)),
       Q.where('last_name', Q.like(`%${pat}%`)),
       Q.where('admission_no', Q.like(`%${pat}%`))
-    )
-  ).fetch();
+    ),
+  ];
+  // Scope to the active school section (via the student's class) when set.
+  if (allowedClassIds) clauses.push(Q.where('class_id', Q.oneOf(allowedClassIds)));
+  clauses.push(Q.take(10));
+  return db.query(...clauses).fetch();
 }
 
 /**
@@ -274,12 +279,25 @@ async function loadStudentFeeHeads(studentId: string, sessionId?: string | null)
 export default function RecordFeeScreen({ onBack }: { onBack?: () => void }) {
   const { user } = useAuthStore();
   const { settings } = useSettingsStore();
+  const activeSectionId = useSectionStore((s) => s.activeSectionId);
 
   // Step 1 – Student search
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
+  // Class ids belonging to the active section (null = no section filter).
+  const [allowedClassIds, setAllowedClassIds] = useState<string[] | null>(null);
+
+  // Resolve which classes belong to the active school section (local, offline).
+  useEffect(() => {
+    if (!activeSectionId) { setAllowedClassIds(null); return; }
+    database.collections.get<Class>('classes')
+      .query(Q.where('school_section_id', activeSectionId))
+      .fetch()
+      .then((cls) => setAllowedClassIds(cls.map((c) => c.id)))
+      .catch(() => setAllowedClassIds([]));
+  }, [activeSectionId]);
 
   // Step 2 – Fee heads
   const [feeHeads, setFeeHeads] = useState<FeeHead[]>([]);
@@ -296,11 +314,11 @@ export default function RecordFeeScreen({ onBack }: { onBack?: () => void }) {
     if (!searchQuery || searchQuery.length < 2) { setSearchResults([]); return; }
     const t = setTimeout(async () => {
       setSearching(true);
-      setSearchResults(await searchStudentsLocal(searchQuery));
+      setSearchResults(await searchStudentsLocal(searchQuery, allowedClassIds));
       setSearching(false);
     }, 300);
     return () => clearTimeout(t);
-  }, [searchQuery]);
+  }, [searchQuery, allowedClassIds]);
 
   // ── Load fee heads when student selected ──
   const handleSelectStudent = useCallback(async (student: any) => {
@@ -403,6 +421,7 @@ export default function RecordFeeScreen({ onBack }: { onBack?: () => void }) {
           record.reference = reference || undefined;
           record.meta = metaPayload;
           record.sessionId = settings.currentSessionId || undefined;
+          record.schoolSectionId = activeSectionId || undefined;
         });
       });
 

@@ -39,19 +39,24 @@ export default function TeacherDashboard() {
   const { settings } = useSettingsStore();
   const [isLoading, setIsLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState<any>(null);
+  const [todaySchedule, setTodaySchedule] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const navigation = useNavigation<NativeStackNavigationProp<TeacherStackParamList>>();
 
   async function fetchData() {
     if (!user?.token) return;
     try {
-      const stats = await apiGet(`/hr/staff/dashboard/stats?sessionId=${settings?.currentSessionId || ''}&termId=${settings?.currentTermId || ''}`, user.token);
-      
+      const [stats, schedule] = await Promise.all([
+        apiGet(`/hr/staff/dashboard/stats?sessionId=${settings?.currentSessionId || ''}&termId=${settings?.currentTermId || ''}`, user.token),
+        apiGet('/academics/timetable/slots/teacher/today', user.token).catch(() => []),
+      ]);
+
       setDashboardData({
         assignedClasses: stats?.totalClasses || 0,
         pendingAssignments: stats?.pendingHomework || 0,
         upcomingClasses: stats?.classesToday || 0,
       });
+      setTodaySchedule(Array.isArray(schedule) ? schedule : []);
     } catch (err: any) {
       console.error('Failed to fetch dashboard data:', err);
     } finally {
@@ -175,14 +180,61 @@ export default function TeacherDashboard() {
             </View>
             <Text style={styles.gridLabel}>My Subjects</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.gridItem}
+            onPress={() => navigation.navigate('ApplyLeave')}
+          >
+            <View style={[styles.gridIconWrap, { backgroundColor: '#ffedd5' }]}>
+              <Ionicons name="calendar-clear-outline" size={22} color="#ea580c" />
+            </View>
+            <Text style={styles.gridLabel}>Apply Leave</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.gridItem}
+            onPress={() => navigation.navigate('MyTimetable')}
+          >
+            <View style={[styles.gridIconWrap, { backgroundColor: '#cffafe' }]}>
+              <Ionicons name="calendar-outline" size={22} color="#0891b2" />
+            </View>
+            <Text style={styles.gridLabel}>My Timetable</Text>
+          </TouchableOpacity>
         </View>
 
         {/* --- Today's Schedule --- */}
-        <Text style={[styles.sectionTitle, { marginTop: 24 }]}>TODAY'S SCHEDULE</Text>
-        <View style={styles.emptyCard}>
-          <Ionicons name="calendar-outline" size={40} color="#94a3b8" />
-          <Text style={styles.emptyText}>No classes scheduled for today.</Text>
+        <View style={styles.scheduleHeaderRow}>
+          <Text style={styles.sectionTitle}>TODAY'S SCHEDULE</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('MyTimetable')}>
+            <Text style={styles.scheduleLink}>Full timetable</Text>
+          </TouchableOpacity>
         </View>
+        {isLoading ? (
+          <ActivityIndicator color={COLORS.primary} style={{ marginTop: 20 }} />
+        ) : todaySchedule.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <Ionicons name="calendar-outline" size={40} color="#94a3b8" />
+            <Text style={styles.emptyText}>No classes scheduled for today.</Text>
+          </View>
+        ) : (
+          <View style={{ gap: 10 }}>
+            {todaySchedule.map((period) => (
+              <View key={period.id} style={styles.periodCard}>
+                <View style={styles.periodTime}>
+                  <Text style={styles.periodStart}>{period.startTime || '--'}</Text>
+                  <Text style={styles.periodEnd}>{period.endTime || ''}</Text>
+                </View>
+                <View style={styles.periodDivider} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.periodSubject}>{period.subjectName || 'N/A'}</Text>
+                  <Text style={styles.periodClass}>
+                    <Ionicons name="people-outline" size={12} color="#64748b" /> {period.className || ''}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
 
       </ScrollView>
     </TeacherLayout>
@@ -302,6 +354,35 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.onSurface,
   },
+
+  /* --- Today's Schedule --- */
+  scheduleHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 24,
+  },
+  scheduleLink: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.secondary,
+    marginBottom: 12,
+  },
+  periodCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surfaceContainerLowest,
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+  },
+  periodTime: { width: 56 },
+  periodStart: { fontSize: 14, fontWeight: '800', color: COLORS.secondary },
+  periodEnd: { fontSize: 11, color: '#94a3b8', marginTop: 2 },
+  periodDivider: { width: 1, alignSelf: 'stretch', backgroundColor: '#e2e8f0', marginHorizontal: 14 },
+  periodSubject: { fontSize: 15, fontWeight: '700', color: COLORS.onSurface },
+  periodClass: { fontSize: 12, color: '#64748b', marginTop: 2 },
 
   /* --- Empty State --- */
   emptyCard: {

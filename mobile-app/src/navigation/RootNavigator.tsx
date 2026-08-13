@@ -37,7 +37,7 @@ export default function RootNavigator() {
     case 'principal':
       return <PrincipalDashboard />;
     case 'accountant':
-      return <AccountingDashboard />;
+      return <AccountingStack />;
     case 'teacher':
       return <TeacherStack />;
     case 'student':
@@ -98,6 +98,12 @@ import EnterScoresScreen from '../screens/teacher/EnterScoresScreen';
 import AssignmentsScreen from '../screens/teacher/AssignmentsScreen';
 import DownloadCenterScreen from '../screens/teacher/DownloadCenterScreen';
 import OnlineClassScreen from '../screens/teacher/OnlineClassScreen';
+import MyTimetableScreen from '../screens/teacher/MyTimetableScreen';
+import ClassRosterScreen from '../screens/teacher/ClassRosterScreen';
+import StudentDetailScreen from '../screens/teacher/StudentDetailScreen';
+import ApplyLeaveScreen from '../screens/teacher/ApplyLeaveScreen';
+import NoticesScreen from '../screens/teacher/NoticesScreen';
+import TeacherProfileScreen from '../screens/teacher/TeacherProfileScreen';
 
 export type TeacherStackParamList = {
   TeacherDashboard: undefined;
@@ -109,6 +115,11 @@ export type TeacherStackParamList = {
   Assignments: undefined;
   DownloadCenter: undefined;
   OnlineClass: undefined;
+  MyTimetable: undefined;
+  ClassRoster: { classId: string; className?: string };
+  StudentDetail: { studentId: string };
+  ApplyLeave: undefined;
+  Notices: undefined;
 };
 
 const TeacherStack_Nav = createNativeStackNavigator<TeacherStackParamList>();
@@ -120,12 +131,60 @@ function TeacherStack() {
       <TeacherStack_Nav.Screen name="TeacherClasses" component={TeacherClassesScreen} />
       <TeacherStack_Nav.Screen name="Attendance" component={AttendanceScreen} />
       <TeacherStack_Nav.Screen name="StudentProfile" component={StudentProfileScreen} />
-      <TeacherStack_Nav.Screen name="Profile" component={ProfileScreen} />
+      <TeacherStack_Nav.Screen name="Profile" component={TeacherProfileScreen} />
       <TeacherStack_Nav.Screen name="EnterScores" component={EnterScoresScreen} />
       <TeacherStack_Nav.Screen name="Assignments" component={AssignmentsScreen} />
       <TeacherStack_Nav.Screen name="DownloadCenter" component={DownloadCenterScreen} />
       <TeacherStack_Nav.Screen name="OnlineClass" component={OnlineClassScreen} />
+      <TeacherStack_Nav.Screen name="MyTimetable" component={MyTimetableScreen} />
+      <TeacherStack_Nav.Screen name="ClassRoster" component={ClassRosterScreen} />
+      <TeacherStack_Nav.Screen name="StudentDetail" component={StudentDetailScreen} />
+      <TeacherStack_Nav.Screen name="ApplyLeave" component={ApplyLeaveScreen} />
+      <TeacherStack_Nav.Screen name="Notices" component={NoticesScreen} />
     </TeacherStack_Nav.Navigator>
+  );
+}
+
+// --- Accounting Stack ---
+import FeesHistoryScreen from '../screens/accounting/FeesHistoryScreen';
+import DebtorsScreen from '../screens/accounting/DebtorsScreen';
+import CollectionSummaryScreen from '../screens/accounting/CollectionSummaryScreen';
+import ExpensesScreen from '../screens/accounting/ExpensesScreen';
+import AccountantProfileScreen from '../screens/accounting/AccountantProfileScreen';
+import { performGlobalSync } from '../hooks/useAutoSync';
+
+export type AccountingStackParamList = {
+  AccountingDashboard: undefined;
+  RecordFee: undefined;
+  FeesHistory: undefined;
+  Debtors: undefined;
+  CollectionSummary: undefined;
+  Expenses: undefined;
+  Profile: undefined;
+};
+
+const AccountingStack_Nav = createNativeStackNavigator<AccountingStackParamList>();
+
+function AccountingStack() {
+  return (
+    <AccountingStack_Nav.Navigator screenOptions={{ headerShown: false }}>
+      <AccountingStack_Nav.Screen name="AccountingDashboard" component={AccountingDashboard} />
+      <AccountingStack_Nav.Screen name="FeesHistory" component={FeesHistoryScreen} />
+      <AccountingStack_Nav.Screen name="Debtors" component={DebtorsScreen} />
+      <AccountingStack_Nav.Screen name="CollectionSummary" component={CollectionSummaryScreen} />
+      <AccountingStack_Nav.Screen name="Expenses" component={ExpensesScreen} />
+      <AccountingStack_Nav.Screen name="Profile" component={AccountantProfileScreen} />
+      <AccountingStack_Nav.Screen name="RecordFee">
+        {({ navigation }) => (
+          <RecordFeeScreen
+            onBack={() => {
+              navigation.goBack();
+              performGlobalSync();
+            }}
+          />
+        )}
+      </AccountingStack_Nav.Screen>
+    </AccountingStack_Nav.Navigator>
   );
 }
 

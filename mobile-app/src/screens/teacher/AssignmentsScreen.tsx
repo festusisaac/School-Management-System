@@ -13,13 +13,14 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import TeacherLayout from '../../components/TeacherLayout';
 import Dropdown, { DropdownOption } from '../../components/Dropdown';
 import DateTimeField from '../../components/DateTimeField';
 import { useAuthStore } from '../../store/authStore';
-import { apiGet, apiDelete, apiPostForm } from '../../services/api';
+import { apiGet, apiPatch, apiDelete, apiPostForm, getFileUrl } from '../../services/api';
 
 const COLORS = {
   surface: '#f7f9fb',
@@ -59,6 +60,7 @@ export default function AssignmentsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [detailsHomework, setDetailsHomework] = useState<Homework | null>(null);
 
   const fetchHomework = useCallback(async () => {
     if (!token) return;
@@ -108,7 +110,7 @@ export default function AssignmentsScreen() {
     const overdue = new Date(item.dueDate).getTime() < Date.now();
     const submissionCount = item.submissions?.length || 0;
     return (
-      <View style={styles.card}>
+      <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={() => setDetailsHomework(item)}>
         <View style={styles.cardTop}>
           <View style={[styles.iconWrap, { backgroundColor: '#fef3c7' }]}>
             <Ionicons name="document-text" size={22} color="#d97706" />
@@ -147,8 +149,12 @@ export default function AssignmentsScreen() {
             <Ionicons name="people-outline" size={14} color="#64748b" />
             <Text style={styles.footerText}>{submissionCount} submitted</Text>
           </View>
+          <View style={styles.footerItem}>
+            <Ionicons name="chevron-forward" size={14} color={COLORS.secondary} />
+            <Text style={[styles.footerText, { color: COLORS.secondary, fontWeight: '600' }]}>Grade</Text>
+          </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -198,7 +204,238 @@ export default function AssignmentsScreen() {
           fetchHomework();
         }}
       />
+
+      <SubmissionsModal
+        homework={detailsHomework}
+        token={token}
+        onClose={() => setDetailsHomework(null)}
+      />
     </TeacherLayout>
+  );
+}
+
+interface SubmissionsModalProps {
+  homework: Homework | null;
+  token: string;
+  onClose: () => void;
+}
+
+interface Submission {
+  id: string;
+  content?: string;
+  attachmentUrls?: string[];
+  status: string;
+  grade?: string;
+  feedback?: string;
+  submittedAt: string;
+  student?: { firstName: string; lastName: string };
+}
+
+function SubmissionsModal({ homework, token, onClose }: SubmissionsModalProps) {
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [gradingId, setGradingId] = useState<string | null>(null);
+  const [grade, setGrade] = useState('');
+  const [feedback, setFeedback] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const visible = !!homework;
+
+  const fetchSubmissions = useCallback(async () => {
+    if (!homework) return;
+    setLoading(true);
+    try {
+      const data = await apiGet(`/homework/${homework.id}/submissions`, token);
+      setSubmissions(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error('Failed to load submissions', e);
+    } finally {
+      setLoading(false);
+    }
+  }, [homework, token]);
+
+  useEffect(() => {
+    if (visible) {
+      setGradingId(null);
+      fetchSubmissions();
+    }
+  }, [visible, fetchSubmissions]);
+
+  const startGrading = (sub: Submission) => {
+    setGradingId(sub.id);
+    setGrade(sub.grade || '');
+    setFeedback(sub.feedback || '');
+  };
+
+  const saveGrade = async (subId: string) => {
+    if (!grade.trim()) {
+      Alert.alert('Missing grade', 'Enter a grade (e.g. A, 90).');
+      return;
+    }
+    try {
+      setSaving(true);
+      await apiPatch(`/homework/submissions/${subId}/grade`, token, {
+        grade: grade.trim(),
+        feedback: feedback.trim(),
+      });
+      setGradingId(null);
+      await fetchSubmissions();
+    } catch (e) {
+      Alert.alert('Error', 'Failed to save grade.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const openAttachment = async (url: string) => {
+    try {
+      await Linking.openURL(getFileUrl(url));
+    } catch {
+      Alert.alert('Error', 'Could not open attachment.');
+    }
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={styles.modalRoot}>
+        <View style={[styles.modalSheet, { maxHeight: '88%' }]}>
+          <View style={styles.modalHeader}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.modalTitle} numberOfLines={1}>
+                {homework?.title}
+              </Text>
+              <Text style={styles.cardMeta}>
+                {(homework?.class?.name || '')} • {(homework?.subject?.name || '')}
+              </Text>
+            </View>
+            <TouchableOpacity onPress={onClose}>
+              <Ionicons name="close" size={24} color={COLORS.onSurface} />
+            </TouchableOpacity>
+          </View>
+
+          {loading ? (
+            <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 40 }} />
+          ) : submissions.length === 0 ? (
+            <View style={styles.emptyCard}>
+              <Ionicons name="time-outline" size={40} color="#94a3b8" />
+              <Text style={styles.emptyText}>No submissions yet.</Text>
+            </View>
+          ) : (
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingBottom: 24 }}>
+              <Text style={styles.subCount}>{submissions.length} submission(s)</Text>
+              {submissions.map((sub) => {
+                const graded = sub.status === 'GRADED' || !!sub.grade;
+                return (
+                  <View key={sub.id} style={styles.subCard}>
+                    <View style={styles.subHeader}>
+                      <View style={styles.subAvatar}>
+                        <Text style={styles.subAvatarText}>
+                          {sub.student?.firstName?.[0]}
+                          {sub.student?.lastName?.[0]}
+                        </Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.subName}>
+                          {sub.student?.firstName} {sub.student?.lastName}
+                        </Text>
+                        <Text style={styles.subDate}>{formatDate(sub.submittedAt)}</Text>
+                      </View>
+                      <Text
+                        style={[
+                          styles.subStatus,
+                          graded
+                            ? { color: '#16a34a', backgroundColor: '#dcfce7' }
+                            : { color: '#d97706', backgroundColor: '#fef3c7' },
+                        ]}
+                      >
+                        {graded ? 'Graded' : 'Pending'}
+                      </Text>
+                    </View>
+
+                    {sub.content ? <Text style={styles.subContent}>"{sub.content}"</Text> : null}
+
+                    {sub.attachmentUrls && sub.attachmentUrls.length > 0 ? (
+                      <View style={styles.attachRow}>
+                        {sub.attachmentUrls.map((url, i) => (
+                          <TouchableOpacity key={i} style={styles.attachChip} onPress={() => openAttachment(url)}>
+                            <Ionicons name="attach" size={13} color={COLORS.secondary} />
+                            <Text style={styles.attachText}>File {i + 1}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    ) : null}
+
+                    {gradingId === sub.id ? (
+                      <View style={styles.gradeBox}>
+                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                          <View style={{ width: 80 }}>
+                            <Text style={styles.gradeLabel}>Grade</Text>
+                            <TextInput
+                              style={styles.gradeInput}
+                              value={grade}
+                              onChangeText={setGrade}
+                              placeholder="A / 90"
+                              placeholderTextColor="#94a3b8"
+                            />
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.gradeLabel}>Feedback</Text>
+                            <TextInput
+                              style={styles.gradeInput}
+                              value={feedback}
+                              onChangeText={setFeedback}
+                              placeholder="Well done!"
+                              placeholderTextColor="#94a3b8"
+                            />
+                          </View>
+                        </View>
+                        <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+                          <TouchableOpacity
+                            style={[styles.gradeSaveBtn, saving && { opacity: 0.7 }]}
+                            onPress={() => saveGrade(sub.id)}
+                            disabled={saving}
+                          >
+                            {saving ? (
+                              <ActivityIndicator color="#fff" size="small" />
+                            ) : (
+                              <Ionicons name="save-outline" size={14} color="#fff" />
+                            )}
+                            <Text style={styles.gradeSaveText}>Save</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity style={styles.gradeCancelBtn} onPress={() => setGradingId(null)}>
+                            <Text style={styles.gradeCancelText}>Cancel</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ) : (
+                      <View style={styles.gradeFooter}>
+                        {sub.grade ? (
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.gradeShown}>
+                              Grade: <Text style={{ color: COLORS.secondary }}>{sub.grade}</Text>
+                            </Text>
+                            {sub.feedback ? (
+                              <Text style={styles.feedbackShown} numberOfLines={1}>
+                                {sub.feedback}
+                              </Text>
+                            ) : null}
+                          </View>
+                        ) : (
+                          <Text style={styles.notGraded}>Not graded yet</Text>
+                        )}
+                        <TouchableOpacity style={styles.gradeBtn} onPress={() => startGrading(sub)}>
+                          <Text style={styles.gradeBtnText}>{sub.grade ? 'Edit Grade' : 'Grade'}</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+            </ScrollView>
+          )}
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -463,4 +700,124 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   submitBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+
+  /* Submissions modal */
+  subCount: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#64748b',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  subCard: {
+    backgroundColor: COLORS.surfaceContainerLowest,
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+  },
+  subHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  subAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  subAvatarText: { fontSize: 13, fontWeight: '800', color: COLORS.secondary },
+  subName: { fontSize: 14, fontWeight: '700', color: COLORS.onSurface },
+  subDate: { fontSize: 11, color: '#94a3b8', marginTop: 1 },
+  subStatus: {
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    overflow: 'hidden',
+  },
+  subContent: {
+    fontSize: 13,
+    color: '#64748b',
+    fontStyle: 'italic',
+    marginTop: 10,
+    backgroundColor: '#f8fafc',
+    padding: 10,
+    borderRadius: 8,
+  },
+  attachRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
+  attachChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#eff6ff',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  attachText: { fontSize: 11, fontWeight: '700', color: COLORS.secondary },
+  gradeBox: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+  },
+  gradeLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#94a3b8',
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  gradeInput: {
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 13,
+    color: COLORS.onSurface,
+    backgroundColor: '#f8fafc',
+  },
+  gradeSaveBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: COLORS.secondary,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  gradeSaveText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  gradeCancelBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gradeCancelText: { color: '#64748b', fontWeight: '700', fontSize: 13 },
+  gradeFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+  },
+  gradeShown: { fontSize: 13, fontWeight: '700', color: COLORS.onSurface },
+  feedbackShown: { fontSize: 11, color: '#94a3b8', fontStyle: 'italic', marginTop: 2 },
+  notGraded: { flex: 1, fontSize: 12, color: '#94a3b8', fontStyle: 'italic' },
+  gradeBtn: {
+    backgroundColor: '#f1f5f9',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  gradeBtnText: { fontSize: 12, fontWeight: '700', color: COLORS.primary },
 });

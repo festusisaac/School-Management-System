@@ -23,7 +23,9 @@ import AdminLayout from '../../components/AdminLayout';
 const schoolLogo = require('../../../assets/school-logo.png');
 import { useAuthStore } from '../../store/authStore';
 import { useSettingsStore } from '../../store/settingsStore';
+import { useSectionStore } from '../../store/sectionStore';
 import { apiGet } from '../../services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /* --- Design System Colors --- */
 const COLORS = {
@@ -50,6 +52,7 @@ const COLORS = {
 export default function AdminDashboard() {
   const { user, logout } = useAuthStore();
   const { settings } = useSettingsStore();
+  const activeSectionId = useSectionStore((s) => s.activeSectionId);
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -68,10 +71,15 @@ export default function AdminDashboard() {
     return () => unsubscribe();
   }, []);
 
+  const cacheKey = `admin_dashboard_${settings?.currentSessionId || 'na'}_${activeSectionId || 'all'}`;
+
   async function fetchData() {
     if (!user?.token) return;
     try {
-      const query = settings?.currentSessionId ? `?sessionId=${settings.currentSessionId}` : '';
+      const params = new URLSearchParams();
+      if (settings?.currentSessionId) params.append('sessionId', settings.currentSessionId);
+      if (activeSectionId) params.append('sectionId', activeSectionId);
+      const query = params.toString() ? `?${params.toString()}` : '';
       const stats = await apiGet(`/reporting/dashboard/admin/stats${query}`, user!.token);
       setDashboardData(stats);
 
@@ -98,10 +106,23 @@ export default function AdminDashboard() {
         .slice(0, 4); // show top 4
 
       setRecentActivities(combined);
+      // Cache the last-synced dashboard so it shows offline.
+      AsyncStorage.setItem(cacheKey, JSON.stringify({ stats, activities: combined })).catch(() => {});
     } catch (err: any) {
       if (err.message !== 'UNAUTHORIZED') {
         console.error('Failed to fetch dashboard data:', err);
       }
+      // Offline / failed → fall back to the last-synced snapshot.
+      try {
+        const cached = await AsyncStorage.getItem(cacheKey);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed.stats) setDashboardData(parsed.stats);
+          if (Array.isArray(parsed.activities)) {
+            setRecentActivities(parsed.activities.map((a: any) => ({ ...a, date: new Date(a.date) })));
+          }
+        }
+      } catch {}
     } finally {
       setIsLoading(false);
     }
@@ -138,7 +159,7 @@ export default function AdminDashboard() {
   useEffect(() => {
 
     fetchData();
-  }, [user, settings?.currentSessionId]);
+  }, [user, settings?.currentSessionId, activeSectionId]);
 
   return (
     <AdminLayout activeTab="Home">

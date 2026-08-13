@@ -18,9 +18,35 @@ import { FeeHead } from '../finance/entities/fee-head.entity';
 import { StudentsService } from '../students/services/students.service';
 import { FeesService } from '../finance/services/fees.service';
 import { CarryForward } from '../finance/entities/carry-forward.entity';
+import { Expense } from '../expenses/entities/expense.entity';
 
 /** Records older than this many months are excluded from pull-all syncs */
 const ROLLING_MONTHS = 3;
+
+/** Maps a backend Expense entity to the shape the mobile app expects (with
+ *  denormalized category/vendor names for offline display). */
+function mapExpenseToMobile(e: Expense): any {
+  return {
+    id: e.id,
+    tenantId: e.tenantId,
+    title: e.title,
+    description: e.description ?? null,
+    amount: parseFloat(e.amount || '0'),
+    expenseDate: e.expenseDate ?? null,
+    status: e.status ?? null,
+    paymentMethod: e.paymentMethod ?? null,
+    categoryId: e.categoryId ?? null,
+    vendorId: e.vendorId ?? null,
+    categoryName: (e as any).category?.name ?? null,
+    vendorName: (e as any).vendor?.name ?? null,
+    referenceNumber: e.referenceNumber ?? null,
+    sessionId: e.sessionId ?? null,
+    schoolSectionId: e.schoolSectionId ?? null,
+    createdAt: e.createdAt,
+    updatedAt: e.updatedAt,
+    deletedAt: null,
+  };
+}
 
 function threeMonthsAgo(): Date {
   const d = new Date();
@@ -117,6 +143,8 @@ export class SyncService {
     private feeHeadRepository: Repository<FeeHead>,
     @InjectRepository(CarryForward)
     private carryForwardRepository: Repository<CarryForward>,
+    @InjectRepository(Expense)
+    private expenseRepository: Repository<Expense>,
     @Inject(forwardRef(() => StudentsService))
     private studentsService: StudentsService,
     @Inject(forwardRef(() => FeesService))
@@ -258,8 +286,11 @@ export class SyncService {
         this.attendanceRepository.find({
           where: { updatedAt: MoreThan(lastPulledAt), tenantId },
         }),
+        // Always send ALL classes (small table). Needed so newly-added columns
+        // like schoolSectionId reliably populate on existing devices without a
+        // full re-pull, and because class↔section changes have no row timestamp.
         this.classesRepository.find({
-          where: { updatedAt: MoreThan(lastPulledAt), tenantId },
+          where: { tenantId },
         }),
         this.sectionsRepository.find({
           where: { updatedAt: MoreThan(lastPulledAt), tenantId },
@@ -282,6 +313,11 @@ export class SyncService {
         // Always fetch all carry-forwards for this tenant (no timestamp cap — small table)
         this.carryForwardRepository.find({ where: { tenantId }, relations: ['feeHead'] }),
       ]);
+
+    const expenses = await this.expenseRepository.find({
+      where: { updatedAt: MoreThan(lastPulledAt), tenantId, createdAt: MoreThan(cutoff) },
+      relations: ['category', 'vendor'],
+    });
 
     // feeHeads removed — they are embedded inside fee_groups as heads_json
 
@@ -390,6 +426,11 @@ export class SyncService {
           updated: allFeeGroups.filter(g => g.createdAt <= lastPulledAt),
           deleted: [],
         },
+        expenses: {
+          created: expenses.filter(e => e.createdAt > lastPulledAt).map(mapExpenseToMobile),
+          updated: expenses.filter(e => e.createdAt <= lastPulledAt).map(mapExpenseToMobile),
+          deleted: [] as string[],
+        },
       },
       timestamp: Date.now(),
     };
@@ -424,6 +465,12 @@ export class SyncService {
         this.feeGroupRepository.find({ where: { tenantId }, relations: ['heads'] }),
         this.carryForwardRepository.find({ where: { tenantId }, relations: ['feeHead'] }),
       ]);
+
+    const expenses = await this.expenseRepository.find({
+      where: { tenantId, createdAt: MoreThan(cutoff) },
+      relations: ['category', 'vendor'],
+      order: { createdAt: 'DESC' },
+    });
 
     // feeHeads removed — they are embedded inside fee_groups as heads_json
 
@@ -488,6 +535,7 @@ export class SyncService {
         student_term_results: { created: [], updated: termResults, deleted: [] as string[] },
         exam_groups: { created: [], updated: examGroups, deleted: [] as string[] },
         fee_groups: { created: [], updated: mappedFeeGroups, deleted: [] as string[] },
+        expenses: { created: [], updated: expenses.map(mapExpenseToMobile), deleted: [] as string[] },
       },
       timestamp: Date.now(),
     };
@@ -695,6 +743,47 @@ export class SyncService {
       if (deleted?.length) {
         for (const id of deleted) {
           await this.transactionsRepository.softDelete({ id, tenantId });
+        }
+      }
+    }
+
+    // --- Expenses (offline-created by accountants) ---
+    if (changes.expenses) {
+      const { created, updated } = changes.expenses;
+
+      const prepareExpense = (record: any): any => {
+        const sanitized = this.sanitizeRecordDates(record, ['createdAt', 'updatedAt']);
+        // Denormalized display-only fields — not columns on the entity.
+        delete sanitized.categoryName;
+        delete sanitized.vendorName;
+        delete sanitized.deletedAt;
+        // amount is a decimal column (string) on the backend.
+        if (sanitized.amount != null) sanitized.amount = String(sanitized.amount);
+        // expenseDate is a DATE column (YYYY-MM-DD).
+        if (typeof sanitized.expenseDate === 'number') {
+          sanitized.expenseDate = new Date(sanitized.expenseDate).toISOString().slice(0, 10);
+        }
+        if (!sanitized.expenseDate) sanitized.expenseDate = new Date().toISOString().slice(0, 10);
+        if (!sanitized.status) sanitized.status = 'PENDING';
+        if (!sanitized.vendorId) sanitized.vendorId = null;
+        return sanitized;
+      };
+
+      if (created?.length) {
+        for (const record of created) {
+          const sanitized = prepareExpense(record);
+          if (!sanitized.categoryId) continue; // category is required — skip invalid rows
+          await this.expenseRepository.save({ ...sanitized, tenantId });
+        }
+      }
+
+      if (updated?.length) {
+        for (const record of updated) {
+          const sanitized = prepareExpense(record);
+          const existing = await this.expenseRepository.findOne({ where: { id: sanitized.id, tenantId } });
+          if (existing) {
+            await this.expenseRepository.save({ ...existing, ...sanitized });
+          }
         }
       }
     }

@@ -15,6 +15,7 @@ import AdminLayout from '../../components/AdminLayout';
 import AddStaffModal from './components/AddStaffModal';
 import { apiGet } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
+import { useSectionStore } from '../../store/sectionStore';
 
 const COLORS = {
   primary: '#031632',
@@ -55,6 +56,7 @@ function PageTitle({ onBack }: { onBack: () => void }) {
 export default function StaffManagementScreen() {
   const navigation = useNavigation<any>();
   const { user } = useAuthStore();
+  const activeSectionId = useSectionStore((s) => s.activeSectionId);
   const token = user?.token;
   const [isOnline, setIsOnline] = useState(true);
   const [staffList, setStaffList] = useState<any[]>([]);
@@ -72,8 +74,9 @@ export default function StaffManagementScreen() {
   const fetchStaff = useCallback(async () => {
     if (!token) return;
     try {
-      // The backend uses /hr/staff 
-      const response = await apiGet('/hr/staff?limit=100', token);
+      // The backend uses /hr/staff — scope to the selected section when one is active.
+      const sectionParam = activeSectionId ? `&sectionId=${activeSectionId}` : '';
+      const response = await apiGet(`/hr/staff?limit=100${sectionParam}`, token);
       // The response structure might have data as array or inside items depending on pagination
       if (Array.isArray(response)) {
         setStaffList(response);
@@ -88,7 +91,7 @@ export default function StaffManagementScreen() {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [token]);
+  }, [token, activeSectionId]);
 
   useEffect(() => {
     if (isOnline) {
