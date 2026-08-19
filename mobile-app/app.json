@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "School Management System",
-    "slug": "school-management-system",
+    "name": "PHJC School",
+    "slug": "sms-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/school-logo.png",
     "userInterfaceStyle": "dark",
     "ios": {
       "supportsTablet": true,
@@ -12,12 +12,11 @@
     },
     "android": {
       "package": "com.schoolmgt.sms",
+      "googleServicesFile": "./google-services.json",
       "minSdkVersion": 26,
       "adaptiveIcon": {
-        "backgroundColor": "#0f172a",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#ffffff",
+        "foregroundImage": "./assets/school-logo.png"
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
@@ -28,10 +27,23 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "extra": {},
+    "extra": {
+      "eas": {
+        "projectId": "b1c3bae6-6d0a-4513-9fc7-7eff24b4bed9"
+      }
+    },
     "plugins": [
       "expo-sqlite",
-      "@react-native-community/datetimepicker"
-    ]
+      "@react-native-community/datetimepicker",
+      "expo-sharing",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#031632"
+        }
+      ]
+    ],
+    "owner": "festusisaacs-team"
   }
 }

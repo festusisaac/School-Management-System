@@ -6,7 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Alert
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NetInfo from '@react-native-community/netinfo';
@@ -14,18 +14,20 @@ import AdminLayout from '../../components/AdminLayout';
 import TeacherLayout from '../../components/TeacherLayout';
 import { useAuthStore } from '../../store/authStore';
 import { useSettingsStore } from '../../store/settingsStore';
+import { useSyncStore } from '../../hooks/useAutoSync';
 import { syncData } from '../../database/sync';
 
 const COLORS = {
   surface: '#f7f9fb',
+  surfaceContainerLowest: '#ffffff',
   onSurface: '#191c1e',
+  outline: '#c5c6ce',
   primary: '#031632',
   onPrimary: '#ffffff',
   primaryContainer: '#1a2b48',
   secondary: '#055db6',
   onSecondary: '#ffffff',
   error: '#ba1a1a',
-  onError: '#ffffff',
   successLight: '#dcfce7',
   successText: '#166534',
   errorLight: '#fee2e2',
@@ -35,13 +37,12 @@ const COLORS = {
 export default function ProfileScreen() {
   const { user, logout } = useAuthStore();
   const { settings } = useSettingsStore();
+  const { lastSyncedAt } = useSyncStore();
   const [isOnline, setIsOnline] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener((state) => {
-      setIsOnline(!!state.isConnected);
-    });
+    const unsubscribe = NetInfo.addEventListener((state) => setIsOnline(!!state.isConnected));
     return () => unsubscribe();
   }, []);
 
@@ -62,261 +63,208 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure you want to log out?', [
+    Alert.alert('Log Out', 'Are you sure you want to log out?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout', style: 'destructive', onPress: logout },
+      { text: 'Log Out', style: 'destructive', onPress: logout },
     ]);
   };
 
   const userInitials = user ? `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`.toUpperCase() : 'U';
+  const roleLabel =
+    user?.displayRole ||
+    (user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Staff');
+  const lastSynced = lastSyncedAt ? new Date(lastSyncedAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : null;
 
   const Layout = user?.role === 'teacher' ? TeacherLayout : AdminLayout;
 
   return (
     <Layout activeTab="Profile">
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        
-        {/* Header / Avatar */}
-        <View style={styles.profileHeader}>
-          <View style={styles.avatarContainer}>
+        {/* --- Identity header card --- */}
+        <View style={styles.headerCard}>
+          <View style={styles.avatar}>
             <Text style={styles.avatarText}>{userInitials}</Text>
           </View>
-          <Text style={styles.userName}>{user?.firstName} {user?.lastName}</Text>
-          <Text style={styles.userRole}>
-            {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Staff'}
-          </Text>
-        </View>
-
-        {/* Account Details */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account Details</Text>
-          <View style={styles.card}>
-            <View style={styles.row}>
-              <Ionicons name="mail-outline" size={20} color="#64748b" />
-              <View style={styles.rowContent}>
-                <Text style={styles.rowLabel}>Email</Text>
-                <Text style={styles.rowValue}>{user?.email || 'N/A'}</Text>
-              </View>
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.row}>
-              <Ionicons name="business-outline" size={20} color="#64748b" />
-              <View style={styles.rowContent}>
-                <Text style={styles.rowLabel}>Tenant ID</Text>
-                <Text style={styles.rowValue}>{user?.tenantId || 'N/A'}</Text>
-              </View>
-            </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.name} numberOfLines={1}>{user?.firstName} {user?.lastName}</Text>
+            <Text style={styles.roleBadge}>{roleLabel}</Text>
+            <Text style={styles.email} numberOfLines={1}>{user?.email || 'No email'}</Text>
           </View>
         </View>
 
-        {/* System Information */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>System Information</Text>
-          <View style={styles.card}>
-            <View style={styles.row}>
-              <Ionicons name="school-outline" size={20} color="#64748b" />
-              <View style={styles.rowContent}>
-                <Text style={styles.rowLabel}>School Name</Text>
-                <Text style={styles.rowValue}>{settings.schoolName || 'Not Set'}</Text>
-              </View>
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.row}>
-              <Ionicons name="calendar-outline" size={20} color="#64748b" />
-              <View style={styles.rowContent}>
-                <Text style={styles.rowLabel}>Active Session</Text>
-                <Text style={styles.rowValue}>{settings.currentSessionName || 'N/A'}</Text>
-              </View>
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.row}>
-              <Ionicons name="time-outline" size={20} color="#64748b" />
-              <View style={styles.rowContent}>
-                <Text style={styles.rowLabel}>Active Term</Text>
-                <Text style={styles.rowValue}>{settings.currentTermName || 'N/A'}</Text>
-              </View>
-            </View>
-          </View>
+        {/* --- School context --- */}
+        <Text style={styles.sectionTitle}>School Context</Text>
+        <View style={styles.card}>
+          <Row icon="school-outline" label="School" value={settings.schoolName || 'Not set'} />
+          <Divider />
+          <Row icon="calendar-outline" label="Active Session" value={settings.currentSessionName || 'N/A'} />
+          <Divider />
+          <Row icon="time-outline" label="Active Term" value={settings.currentTermName || 'N/A'} last />
         </View>
 
-        {/* Sync Status */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Synchronization</Text>
-          <View style={styles.card}>
-            <View style={styles.row}>
+        {/* --- Account --- */}
+        <Text style={styles.sectionTitle}>Account</Text>
+        <View style={styles.card}>
+          <Row icon="person-outline" label="Role" value={roleLabel} last />
+        </View>
+
+        {/* --- Data & Sync --- */}
+        <Text style={styles.sectionTitle}>Data & Sync</Text>
+        <View style={styles.card}>
+          <View style={styles.syncRow}>
+            <View style={styles.rowLeft}>
               <Ionicons name={isOnline ? 'cloud-done-outline' : 'cloud-offline-outline'} size={20} color={isOnline ? COLORS.successText : COLORS.errorText} />
-              <View style={styles.rowContent}>
-                <Text style={styles.rowLabel}>Network Status</Text>
-                <View style={[styles.badge, isOnline ? styles.badgeSuccess : styles.badgeError]}>
-                  <Text style={[styles.badgeText, isOnline ? styles.badgeTextSuccess : styles.badgeTextError]}>
-                    {isOnline ? 'ONLINE' : 'OFFLINE'}
-                  </Text>
-                </View>
-              </View>
+              <Text style={styles.rowLabel}>Network</Text>
             </View>
-            <View style={styles.divider} />
-            <TouchableOpacity 
-              style={styles.syncButton} 
-              onPress={handleForceSync}
-              disabled={isSyncing}
-            >
-              {isSyncing ? (
-                <ActivityIndicator color={COLORS.onSecondary} size="small" />
-              ) : (
-                <>
-                  <Ionicons name="sync-outline" size={20} color={COLORS.onSecondary} />
-                  <Text style={styles.syncButtonText}>Force Sync Now</Text>
-                </>
-              )}
-            </TouchableOpacity>
+            <View style={[styles.badge, isOnline ? styles.badgeSuccess : styles.badgeError]}>
+              <Text style={[styles.badgeText, { color: isOnline ? COLORS.successText : COLORS.errorText }]}>
+                {isOnline ? 'ONLINE' : 'OFFLINE'}
+              </Text>
+            </View>
           </View>
+          {lastSynced && (
+            <>
+              <Divider />
+              <View style={styles.syncRow}>
+                <View style={styles.rowLeft}>
+                  <Ionicons name="sync-outline" size={20} color="#64748b" />
+                  <Text style={styles.rowLabel}>Last synced</Text>
+                </View>
+                <Text style={styles.rowValueMuted}>{lastSynced}</Text>
+              </View>
+            </>
+          )}
+          <TouchableOpacity style={[styles.syncButton, isSyncing && { opacity: 0.7 }]} onPress={handleForceSync} disabled={isSyncing}>
+            {isSyncing ? (
+              <ActivityIndicator color={COLORS.onSecondary} size="small" />
+            ) : (
+              <Ionicons name="sync" size={18} color={COLORS.onSecondary} />
+            )}
+            <Text style={styles.syncButtonText}>{isSyncing ? 'Syncing...' : 'Force Sync Now'}</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Logout */}
+        {/* --- Logout --- */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={20} color={COLORS.error} />
           <Text style={styles.logoutButtonText}>Log Out</Text>
         </TouchableOpacity>
-
       </ScrollView>
     </Layout>
   );
 }
 
+function Row({ icon, label, value, last, mono }: { icon: any; label: string; value: string; last?: boolean; mono?: boolean }) {
+  return (
+    <View style={[styles.row, last && { borderBottomWidth: 0 }]}>
+      <View style={styles.rowLeft}>
+        <Ionicons name={icon} size={20} color="#64748b" />
+        <Text style={styles.rowLabel}>{label}</Text>
+      </View>
+      <Text style={[styles.rowValue, mono && styles.mono]} numberOfLines={1}>{value}</Text>
+    </View>
+  );
+}
+
+function Divider() {
+  return <View style={styles.divider} />;
+}
+
 const styles = StyleSheet.create({
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  profileHeader: {
+  scrollContent: { padding: 16, paddingBottom: 40 },
+  headerCard: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 32,
-    marginTop: 20,
+    gap: 14,
+    backgroundColor: COLORS.surfaceContainerLowest,
+    borderRadius: 16,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+    marginBottom: 20,
   },
-  avatarContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+  avatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: COLORS.primaryContainer,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
   },
-  avatarText: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#bae6fd',
-  },
-  userName: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: COLORS.onSurface,
-    marginBottom: 4,
-  },
-  userRole: {
-    fontSize: 15,
-    color: '#64748b',
-    fontWeight: '500',
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#64748b',
-    letterSpacing: 1.2,
+  avatarText: { fontSize: 24, fontWeight: '800', color: '#bae6fd' },
+  name: { fontSize: 19, fontWeight: '800', color: COLORS.onSurface },
+  roleBadge: {
+    alignSelf: 'flex-start',
+    fontSize: 10,
+    fontWeight: '800',
+    color: COLORS.secondary,
+    backgroundColor: '#eff6ff',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    overflow: 'hidden',
     textTransform: 'uppercase',
-    marginBottom: 12,
-    marginLeft: 4,
+    letterSpacing: 0.5,
+    marginTop: 5,
+  },
+  email: { fontSize: 13, color: '#64748b', marginTop: 6 },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#64748b',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 10,
+    marginLeft: 2,
   },
   card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: COLORS.surfaceContainerLowest,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+    marginBottom: 20,
   },
   row: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+    gap: 12,
   },
-  rowContent: {
-    marginLeft: 16,
-    flex: 1,
-  },
-  rowLabel: {
-    fontSize: 12,
-    color: '#64748b',
-    marginBottom: 2,
-  },
-  rowValue: {
-    fontSize: 15,
-    color: COLORS.onSurface,
-    fontWeight: '500',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#f1f5f9',
-    marginVertical: 8,
-  },
-  badge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    marginTop: 4,
-  },
-  badgeSuccess: {
-    backgroundColor: COLORS.successLight,
-  },
-  badgeError: {
-    backgroundColor: COLORS.errorLight,
-  },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  badgeTextSuccess: {
-    color: COLORS.successText,
-  },
-  badgeTextError: {
-    color: COLORS.errorText,
-  },
+  rowLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  rowLabel: { fontSize: 14, color: '#64748b' },
+  rowValue: { fontSize: 14, fontWeight: '600', color: COLORS.onSurface, flexShrink: 1, textAlign: 'right' },
+  rowValueMuted: { fontSize: 13, color: '#94a3b8', fontWeight: '500' },
+  mono: { fontSize: 12, fontFamily: 'monospace' },
+  divider: { height: 1, backgroundColor: '#f1f5f9' },
+  syncRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14 },
+  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  badgeSuccess: { backgroundColor: COLORS.successLight },
+  badgeError: { backgroundColor: COLORS.errorLight },
+  badgeText: { fontSize: 11, fontWeight: '800' },
   syncButton: {
     backgroundColor: COLORS.secondary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 12,
+    paddingVertical: 13,
+    borderRadius: 10,
+    marginVertical: 14,
     gap: 8,
   },
-  syncButtonText: {
-    color: COLORS.onSecondary,
-    fontSize: 15,
-    fontWeight: '600',
-  },
+  syncButtonText: { color: COLORS.onSecondary, fontSize: 15, fontWeight: '700' },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 16,
-    backgroundColor: '#ffffff',
+    padding: 15,
+    backgroundColor: '#fef2f2',
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#fecaca',
     gap: 8,
-    marginTop: 8,
+    marginTop: 4,
   },
-  logoutButtonText: {
-    color: COLORS.error,
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  logoutButtonText: { color: COLORS.error, fontSize: 15, fontWeight: '700' },
 });

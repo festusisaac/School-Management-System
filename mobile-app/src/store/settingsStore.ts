@@ -11,6 +11,14 @@ export interface AppSettings {
   currentTermName?: string;
   currencySymbol: string;
   dateFormat: string;
+  // Branding / report-card fields (mirrors the website's system settings)
+  schoolAddress?: string;
+  schoolMotto?: string;
+  primaryLogo?: string;
+  printLogo?: string;
+  principalSignature?: string;
+  bursarSignature?: string;
+  reportCardConfig?: Record<string, any>;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -23,6 +31,13 @@ const DEFAULT_SETTINGS: AppSettings = {
   currentTermName: '',
   currencySymbol: '₦',
   dateFormat: 'DD/MM/YYYY',
+  schoolAddress: '',
+  schoolMotto: '',
+  primaryLogo: '',
+  printLogo: '',
+  principalSignature: '',
+  bursarSignature: '',
+  reportCardConfig: undefined,
 };
 
 interface SettingsState {

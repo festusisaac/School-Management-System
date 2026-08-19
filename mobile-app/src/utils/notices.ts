@@ -14,16 +14,22 @@ export interface Notice {
 }
 
 /**
- * Fetch staff-audience notices. Returns [] on permission errors (teachers
- * without the communication:view_notices permission) rather than throwing.
+ * Fetch notices for a given audience ('Staff' | 'Students'). Returns [] on
+ * permission errors (users without communication:view_notices) rather than
+ * throwing.
  */
-export async function fetchStaffNotices(token: string): Promise<Notice[]> {
+export async function fetchNotices(token: string, audience: 'Staff' | 'Students' = 'Staff'): Promise<Notice[]> {
   try {
-    const data = await apiGet('/communication/notices?audience=Staff', token);
+    const data = await apiGet(`/communication/notices?audience=${audience}`, token);
     return Array.isArray(data) ? data : [];
   } catch {
     return [];
   }
+}
+
+/** Convenience wrapper for staff-audience notices. */
+export function fetchStaffNotices(token: string): Promise<Notice[]> {
+  return fetchNotices(token, 'Staff');
 }
 
 /** Strip HTML tags/entities from web-authored notice content for plain display. */

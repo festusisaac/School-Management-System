@@ -1,9 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseInterceptors, UploadedFiles, UseGuards, Request, ForbiddenException, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseInterceptors, UploadedFiles, UseGuards, Request, Res, ForbiddenException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { Public } from '@decorators/public.decorator';
 import { JwtAuthGuard } from '@guards/jwt-auth.guard';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { extname, join, basename } from 'path';
+import * as fs from 'fs';
+import type { Response } from 'express';
+import { StudentDocument } from '../entities/student-document.entity';
 import { StudentsService } from '../services/students.service';
 import { CreateStudentDto } from '../dtos/create-student.dto';
 import { UpdateStudentDto } from '../dtos/update-student.dto';
@@ -113,10 +116,21 @@ export class StudentsController {
         { name: 'documentFiles', maxCount: 10 },
     ], {
         storage: diskStorage({
-            destination: './uploads/students',
+            // Photos stay public (/uploads/students). Documents (birth certs, etc.)
+            // go to a PRIVATE folder, served only via the authenticated endpoint.
+            destination: (req, file, cb) => {
+                const dir = file.fieldname === 'documentFiles' ? './private-uploads/student-documents' : './uploads/students';
+                if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+                cb(null, dir);
+            },
             filename: (req, file, cb) => {
                 const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('');
-                cb(null, `${randomName}${extname(file.originalname)}`);
+                if (file.fieldname === 'documentFiles') {
+                    // Embed the original name so downloads keep their real filename.
+                    cb(null, `${randomName}__${encodeURIComponent(file.originalname)}`);
+                } else {
+                    cb(null, `${randomName}${extname(file.originalname)}`);
+                }
             },
         }),
     }))
@@ -423,10 +437,21 @@ export class StudentsController {
         { name: 'documentFiles', maxCount: 10 },
     ], {
         storage: diskStorage({
-            destination: './uploads/students',
+            // Photos stay public (/uploads/students). Documents (birth certs, etc.)
+            // go to a PRIVATE folder, served only via the authenticated endpoint.
+            destination: (req, file, cb) => {
+                const dir = file.fieldname === 'documentFiles' ? './private-uploads/student-documents' : './uploads/students';
+                if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+                cb(null, dir);
+            },
             filename: (req, file, cb) => {
                 const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('');
-                cb(null, `${randomName}${extname(file.originalname)}`);
+                if (file.fieldname === 'documentFiles') {
+                    // Embed the original name so downloads keep their real filename.
+                    cb(null, `${randomName}__${encodeURIComponent(file.originalname)}`);
+                } else {
+                    cb(null, `${randomName}${extname(file.originalname)}`);
+                }
             },
         }),
     }))
@@ -475,6 +500,53 @@ export class StudentsController {
     @Delete('documents/:id')
     removeDocument(@Param('id') id: string, @Request() req: any) {
         return this.studentsService.removeDocument(id, req.user.tenantId);
+    }
+
+    /**
+     * Download a student document (private). Access: staff with directory view,
+     * admins, or the owning student / their parent. Not reachable by URL.
+     */
+    @Get('documents/:id/file')
+    async downloadDocument(@Param('id') id: string, @Request() req: any, @Res() res: Response) {
+        const doc = await this.entityManager.getRepository(StudentDocument).findOne({
+            where: { id, tenantId: req.user.tenantId },
+        });
+        if (!doc || !doc.filePath) throw new NotFoundException('Document not found');
+
+        const role = (req.user.role || '').toLowerCase();
+        // Any authenticated internal user (staff/teacher/accountant/admin/etc.) may
+        // download student documents — matching who can already open student profiles.
+        // Only students and parents are scoped to their own records. This still closes
+        // the previous hole (unauthenticated access via a public URL).
+        const isStaff = role !== 'student' && role !== 'parent';
+        if (!isStaff) {
+            if (role === 'student') {
+                const rows = await this.entityManager.query(
+                    `SELECT 1 FROM students WHERE id = $1 AND ("userId" = $2 OR id = $3) AND "tenantId" = $4 LIMIT 1`,
+                    [doc.studentId, req.user.id, req.user.studentId || null, req.user.tenantId]
+                );
+                if (!rows || rows.length === 0) throw new ForbiddenException('You cannot access this document.');
+            } else if (role === 'parent') {
+                const rows = await this.entityManager.query(
+                    `SELECT 1 FROM students s JOIN parents p ON p.id = s."parentId" WHERE p."userId" = $1 AND s.id = $2 AND s."tenantId" = $3 LIMIT 1`,
+                    [req.user.id, doc.studentId, req.user.tenantId]
+                );
+                if (!rows || rows.length === 0) throw new ForbiddenException('You cannot access this document.');
+            } else {
+                throw new ForbiddenException('You cannot access this document.');
+            }
+        }
+
+        const rel = doc.filePath.replace(/^\/+/, '');
+        const abs = join(process.cwd(), rel);
+        const allowedRoots = [join(process.cwd(), 'private-uploads'), join(process.cwd(), 'uploads')];
+        if (!allowedRoots.some((r) => abs.startsWith(r)) || !fs.existsSync(abs)) throw new NotFoundException('File not found');
+
+        const base = basename(abs);
+        const sep = base.indexOf('__');
+        let name = doc.title || base;
+        if (sep !== -1) { try { name = decodeURIComponent(base.slice(sep + 2)) || name; } catch { /* keep title */ } }
+        return res.download(abs, name);
     }
 
     @Post('bulk/promote')

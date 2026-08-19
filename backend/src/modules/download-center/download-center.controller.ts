@@ -27,7 +27,10 @@ import { Permissions } from '@decorators/permissions.decorator';
 import { DownloadCenterService } from './download-center.service';
 import { CreateDownloadResourceDto, DownloadResourceFilterDto, UpdateDownloadResourceDto } from './dto/download-resource.dto';
 
-const uploadPath = join(process.cwd(), 'uploads', 'download-center');
+// PRIVATE: stored outside the public /uploads tree so the files can only be
+// reached through the permission-guarded /download-center/:id/file endpoint
+// (previously they were also directly downloadable at /uploads/download-center/*).
+const uploadPath = join(process.cwd(), 'private-uploads', 'download-center');
 if (!fs.existsSync(uploadPath)) {
   fs.mkdirSync(uploadPath, { recursive: true });
 }
@@ -75,6 +78,7 @@ export class DownloadCenterController {
   async getFile(
     @Param('id') id: string,
     @Query('download') download: string,
+    @Query('native') native: string,
     @Request() req: any,
     @Res() res: Response,
   ) {
@@ -96,13 +100,23 @@ export class DownloadCenterController {
       const mimeType = resource.mimeType || 'application/octet-stream';
       const safeTitle = resource.title.replace(/[^a-z0-9-_]+/gi, '-').replace(/^-+|-+$/g, '') || 'resource';
       const extension = extname(filePath);
-      // Bypass IDM Interception completely:
-      // IDM intercepts XHR requests that return recognizable file mime types or Content-Disposition.
-      // We always send 'text/plain' and no disposition. The frontend handles recasting the blob
-      // and forcing the download natively using a blob: URL.
-      res.setHeader('Content-Type', 'text/plain');
-      res.setHeader('Content-Length', fileSize);
-      res.setHeader('Accept-Ranges', 'bytes');
+
+      if (native === '1' || native === 'true') {
+        // Native app clients (mobile) download via an authenticated request and
+        // open the file in a viewer — they need the REAL mime type + filename,
+        // not the web-only text/plain workaround below.
+        res.setHeader('Content-Type', mimeType);
+        res.setHeader('Content-Length', fileSize);
+        res.setHeader('Content-Disposition', `attachment; filename="${safeTitle}${extension}"`);
+      } else {
+        // Bypass IDM Interception completely (web browsers):
+        // IDM intercepts XHR requests that return recognizable file mime types or Content-Disposition.
+        // We always send 'text/plain' and no disposition. The frontend handles recasting the blob
+        // and forcing the download natively using a blob: URL.
+        res.setHeader('Content-Type', 'text/plain');
+        res.setHeader('Content-Length', fileSize);
+        res.setHeader('Accept-Ranges', 'bytes');
+      }
 
       const fileStream = createReadStream(filePath);
 

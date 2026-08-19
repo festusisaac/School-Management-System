@@ -40,6 +40,36 @@ class ApiService {
     return response.data
   }
 
+  /**
+   * Authenticated file download. Fetches the file as a blob (Bearer token is
+   * attached by the axios interceptor), reads the real filename from the
+   * Content-Disposition header, and triggers a browser "Save as". Used for
+   * private files that are NOT served at a public URL (e.g. homework files).
+   */
+  async downloadFile(url: string, fallbackName = 'download') {
+    const response = await this.axiosInstance.get(url, { responseType: 'blob', timeout: 60000 })
+    const blob = response.data as Blob
+    const disposition = (response.headers?.['content-disposition'] || response.headers?.['Content-Disposition']) as string | undefined
+    let name = fallbackName
+    if (disposition) {
+      const star = /filename\*=(?:UTF-8'')?([^;]+)/i.exec(disposition)
+      const plain = /filename="?([^";]+)"?/i.exec(disposition)
+      if (star && star[1]) {
+        try { name = decodeURIComponent(star[1].replace(/["']/g, '')) } catch { name = star[1] }
+      } else if (plain && plain[1]) {
+        name = plain[1]
+      }
+    }
+    const objectUrl = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = objectUrl
+    a.download = name
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(objectUrl)
+  }
+
   // Global Search
   async globalSearch(query: string) {
     return this.get<any>('/search/global', { params: { q: query } })

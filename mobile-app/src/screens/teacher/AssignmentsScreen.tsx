@@ -13,14 +13,14 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import TeacherLayout from '../../components/TeacherLayout';
 import Dropdown, { DropdownOption } from '../../components/Dropdown';
 import DateTimeField from '../../components/DateTimeField';
 import { useAuthStore } from '../../store/authStore';
-import { apiGet, apiPatch, apiDelete, apiPostForm, getFileUrl } from '../../services/api';
+import { apiGet, apiPatch, apiDelete, apiPostForm } from '../../services/api';
+import { pickFiles, toFormFile, downloadSecure, PickedFile } from '../../utils/files';
 
 const COLORS = {
   surface: '#f7f9fb',
@@ -287,12 +287,8 @@ function SubmissionsModal({ homework, token, onClose }: SubmissionsModalProps) {
     }
   };
 
-  const openAttachment = async (url: string) => {
-    try {
-      await Linking.openURL(getFileUrl(url));
-    } catch {
-      Alert.alert('Error', 'Could not open attachment.');
-    }
+  const openAttachment = async (submissionId: string, index: number) => {
+    await downloadSecure(`/homework/submissions/${submissionId}/attachment/${index}`, token);
   };
 
   return (
@@ -357,7 +353,7 @@ function SubmissionsModal({ homework, token, onClose }: SubmissionsModalProps) {
                     {sub.attachmentUrls && sub.attachmentUrls.length > 0 ? (
                       <View style={styles.attachRow}>
                         {sub.attachmentUrls.map((url, i) => (
-                          <TouchableOpacity key={i} style={styles.attachChip} onPress={() => openAttachment(url)}>
+                          <TouchableOpacity key={i} style={styles.attachChip} onPress={() => openAttachment(sub.id, i)}>
                             <Ionicons name="attach" size={13} color={COLORS.secondary} />
                             <Text style={styles.attachText}>File {i + 1}</Text>
                           </TouchableOpacity>
@@ -457,6 +453,7 @@ function AssignmentForm({ visible, token, teacherId, onClose, onSuccess }: FormP
   const [dueDate, setDueDate] = useState<Date | null>(null);
   const [classId, setClassId] = useState('');
   const [subjectId, setSubjectId] = useState('');
+  const [file, setFile] = useState<PickedFile | null>(null);
 
   useEffect(() => {
     if (!visible || !token) return;
@@ -466,6 +463,7 @@ function AssignmentForm({ visible, token, teacherId, onClose, onSuccess }: FormP
     setDueDate(null);
     setClassId('');
     setSubjectId('');
+    setFile(null);
     apiGet('/academics/classes', token)
       .then((c) => setClasses(Array.isArray(c) ? c : []))
       .catch(() => setClasses([]));
@@ -505,6 +503,7 @@ function AssignmentForm({ visible, token, teacherId, onClose, onSuccess }: FormP
       form.append('classId', classId);
       form.append('subjectId', subjectId);
       form.append('teacherId', teacherId);
+      if (file) form.append('attachment', toFormFile(file));
       await apiPostForm('/homework', token, form);
       Alert.alert('Success', 'Homework assigned successfully.');
       onSuccess();
@@ -575,6 +574,32 @@ function AssignmentForm({ visible, token, teacherId, onClose, onSuccess }: FormP
               placeholder="Pick a due date"
               minimumDate={new Date()}
             />
+
+            <Text style={styles.fieldLabel}>Attachment</Text>
+            {file ? (
+              <View style={styles.pickedFile}>
+                <Ionicons name="document-outline" size={16} color="#64748b" />
+                <Text style={styles.pickedFileName} numberOfLines={1}>{file.name}</Text>
+                <TouchableOpacity onPress={() => setFile(null)}>
+                  <Ionicons name="close-circle" size={18} color="#94a3b8" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.attachPickBtn}
+                onPress={async () => {
+                  try {
+                    const picked = await pickFiles(false);
+                    if (picked.length) setFile(picked[0]);
+                  } catch {
+                    Alert.alert('Error', 'Could not open the file picker.');
+                  }
+                }}
+              >
+                <Ionicons name="attach" size={18} color={COLORS.secondary} />
+                <Text style={styles.attachPickText}>Attach a file (optional)</Text>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity
               style={[styles.submitBtn, saving && { opacity: 0.7 }]}
@@ -700,6 +725,33 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   submitBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  attachPickBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#eff6ff',
+    borderWidth: 1,
+    borderColor: '#dbeafe',
+    borderStyle: 'dashed',
+    paddingVertical: 12,
+    borderRadius: 10,
+    marginBottom: 12,
+  },
+  attachPickText: { fontSize: 13, fontWeight: '700', color: COLORS.secondary },
+  pickedFile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: COLORS.surfaceContainerLowest,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    marginBottom: 12,
+  },
+  pickedFileName: { flex: 1, fontSize: 13, color: COLORS.onSurface, fontWeight: '500' },
 
   /* Submissions modal */
   subCount: {

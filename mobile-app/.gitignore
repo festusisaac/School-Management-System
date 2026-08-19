@@ -42,3 +42,6 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Firebase client config (project-specific, not a secret but keep out of git)
+google-services.json

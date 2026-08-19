@@ -18,6 +18,7 @@ import { CbtManifestService } from './services/cbt-manifest.service';
 import { CbtQuestionService } from './services/cbt-question.service';
 import { TranscriptService } from './services/transcript.service';
 import { TranscriptController } from './controllers/transcript.controller';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { Student } from '../students/entities/student.entity';
 import { StudentAttendance } from '../students/entities/student-attendance.entity';
 import { ExamGroup } from './entities/exam-group.entity';
@@ -73,6 +74,7 @@ import { FinanceModule } from '../finance/finance.module';
         ]),
         SystemModule,
         FinanceModule,
+        NotificationsModule,
         BullModule.registerQueue(
             { name: 'score-import' },
             { name: 'result-processing' }

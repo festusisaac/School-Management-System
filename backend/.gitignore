@@ -45,3 +45,6 @@ temp/
 # Debug/dev data dumps (not meant for the repo)
 output.json
 sync-payload.json
+
+# Private uploaded files (homework materials & submissions) - never commit
+/private-uploads/

@@ -1134,15 +1134,15 @@ export default function StudentProfile() {
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center gap-2">
-                                                        <a 
-                                                            href={getFileUrl(doc.filePath)} 
-                                                            target="_blank" 
-                                                            rel="noopener noreferrer"
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => api.downloadFile(`/students/documents/${doc.id}/file`, doc.title || 'document')
+                                                                .catch((e: any) => toast.showError(e?.response?.status === 403 ? 'You do not have access to this document.' : 'Download failed.'))}
                                                             className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/40 rounded-lg transition-all"
                                                             title="Download/View"
                                                         >
                                                             <Download className="w-5 h-5" />
-                                                        </a>
+                                                        </button>
                                                         {!isStudent && (
                                                             <button 
                                                                 onClick={() => handleDeleteDocument(doc.id)}

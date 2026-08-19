@@ -18,6 +18,8 @@ import { Q } from '@nozbe/watermelondb';
 
 import { database } from '../../database';
 import { getSyncBaseUrl } from '../../services/api';
+import { useAuthStore } from '../../store/authStore';
+import { downloadSecure } from '../../utils/files';
 import Student from '../../database/models/Student';
 import Class from '../../database/models/Class';
 import Section from '../../database/models/Section';
@@ -102,7 +104,8 @@ function getPhotoUrl(photoPath?: string): string | null {
   if (!photoPath) return null;
   if (photoPath.startsWith('http://') || photoPath.startsWith('https://')) return photoPath;
   const baseUrl = getSyncBaseUrl().replace('/api/v1', '');
-  return `${baseUrl}/${photoPath}`;
+  // Normalize Windows backslashes — RN's <Image> won't load a URL with "\".
+  return `${baseUrl}/${photoPath.replace(/\\/g, '/')}`;
 }
 
 function formatDate(date?: Date | number | string | null) {
@@ -650,7 +653,7 @@ function CommunicationTab({ commLogs }: { commLogs: CommunicationLog[] }) {
 
 function DocumentsTab({ documents }: { documents: StudentDocument[] }) {
   const sorted = [...documents].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  const baseUrl = getSyncBaseUrl().replace('/api/v1', '');
+  const token = useAuthStore((s) => s.user?.token) || '';
 
   const getFileIcon = (fileType?: string): keyof typeof Ionicons.glyphMap => {
     if (!fileType) return 'document-outline';
@@ -672,7 +675,6 @@ function DocumentsTab({ documents }: { documents: StudentDocument[] }) {
           <EmptyState icon="folder-open-outline" message="No documents uploaded yet" />
         ) : (
           sorted.map((doc, idx) => {
-            const fileUrl = doc.filePath?.startsWith('http') ? doc.filePath : `${baseUrl}/${doc.filePath}`;
             const ext = doc.fileType?.split('/').pop()?.toUpperCase() || doc.filePath?.split('.').pop()?.toUpperCase() || 'FILE';
             return (
               <View key={doc.id} style={[styles.infoRow, idx === sorted.length - 1 && styles.infoRowLast]}>
@@ -685,7 +687,7 @@ function DocumentsTab({ documents }: { documents: StudentDocument[] }) {
                 </View>
                 <TouchableOpacity
                   style={{ padding: 8, backgroundColor: COLORS.surfaceContainerLow, borderRadius: 8 }}
-                  onPress={() => Linking.openURL(fileUrl)}
+                  onPress={() => downloadSecure(`/students/documents/${doc.id}/file`, token, doc.title)}
                 >
                   <Ionicons name="download-outline" size={20} color={COLORS.primary} />
                 </TouchableOpacity>

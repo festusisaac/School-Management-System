@@ -1,11 +1,20 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, RefreshCw, ShieldCheck, Eye, EyeOff } from 'lucide-react';
+import { BookOpen, RefreshCw, ShieldCheck, Eye, EyeOff, Printer } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import ReportCardTemplate, { ReportCardData } from '../../components/examination/ReportCardTemplate';
 import { resolveReportCardConfig } from '../../utils/reportCardConfig';
 import { useSystem } from '../../context/SystemContext';
+
+function gradeBadgeClass(grade?: string): string {
+    const g = (grade || '').toUpperCase();
+    if (g.startsWith('A')) return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+    if (g.startsWith('B') || g.startsWith('C')) return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+    if (g.startsWith('D') || g.startsWith('E')) return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400';
+    if (g.startsWith('F')) return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+    return 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400';
+}
 
 const StudentResultPage = () => {
     const { user, selectedChildId } = useAuthStore();
@@ -184,6 +193,13 @@ const StudentResultPage = () => {
                             margin: 0 !important;
                             padding: 0 !important;
                         }
+
+                        /* The mobile-only wrapper collapses the sheet on-screen; undo that for print
+                           so the printed/PDF-saved output is the exact same full sheet as desktop. */
+                        .print-sheet-shell {
+                            max-height: none !important;
+                            overflow: visible !important;
+                        }
                     }
                 `}</style>
                 {/* Header Action */}
@@ -193,13 +209,14 @@ const StudentResultPage = () => {
                         <p className="text-sm text-gray-500 dark:text-gray-400">Authenticated student academic record.</p>
                     </div>
                     <div className="flex gap-3">
-                        <button 
+                        <button
                             onClick={() => window.print()}
-                            className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
                         >
+                            <Printer className="w-4 h-4" />
                             Print Result
                         </button>
-                        <button 
+                        <button
                             onClick={() => setResultData(null)}
                             className="px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                         >
@@ -208,16 +225,75 @@ const StudentResultPage = () => {
                     </div>
                 </div>
 
-                {/* Official Report Card Template */}
-                <div
-                    id="student-result-print-root"
-                    className="bg-white dark:bg-transparent rounded-xl shadow-sm border border-gray-200 dark:border-gray-800/50 print:shadow-none print:border-none print:p-0 overflow-x-auto w-full max-w-[215mm] mx-auto flex justify-center pb-8"
-                >
-                    <ReportCardTemplate
-                        data={reportCardData}
-                        assessments={assessments || []}
-                        config={reportCardConfig}
-                    />
+                {/* Mobile: readable summary (mirrors the mobile app's result view) — the full A4
+                    sheet below is hidden here since it's too large for a phone screen. */}
+                <div className="md:hidden print:hidden w-full max-w-[210mm] mx-auto mb-6 space-y-4">
+                    <div className="bg-primary-900 dark:bg-primary-950 rounded-2xl p-5 text-white">
+                        <h2 className="text-lg font-bold">{reportCardData.student.name}</h2>
+                        <p className="text-sm text-primary-200 mt-1">
+                            {reportCardData.student.class}
+                            {reportCardData.student.admissionNumber ? ` • ${reportCardData.student.admissionNumber}` : ''}
+                        </p>
+                        <p className="text-[11px] text-primary-300 mt-2 uppercase tracking-wide font-semibold">{reportCardData.examGroup.name}</p>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3">
+                        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl py-3 text-center">
+                            <div className="text-lg font-extrabold text-gray-900 dark:text-white">
+                                {reportCardData.summary.averageScore != null ? `${Number(reportCardData.summary.averageScore).toFixed(1)}%` : '—'}
+                            </div>
+                            <div className="text-[10px] uppercase tracking-wide text-gray-500 mt-1">Average</div>
+                        </div>
+                        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl py-3 text-center">
+                            <div className="text-lg font-extrabold text-gray-900 dark:text-white">{reportCardData.summary.position || '—'}</div>
+                            <div className="text-[10px] uppercase tracking-wide text-gray-500 mt-1">Position</div>
+                        </div>
+                        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl py-3 text-center">
+                            <div className="text-lg font-extrabold text-gray-900 dark:text-white">{reportCardData.summary.classSize || '—'}</div>
+                            <div className="text-[10px] uppercase tracking-wide text-gray-500 mt-1">Class Size</div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+                        <div className="px-4 py-2.5 bg-gray-50 dark:bg-gray-800/60 text-[11px] font-bold uppercase tracking-wide text-gray-500">Subjects</div>
+                        <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                            {reportCardData.subjects.map((s, i) => (
+                                <div key={i} className="flex items-center justify-between px-4 py-2.5">
+                                    <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate pr-2">{s.subjectName}</span>
+                                    <span className="flex items-center gap-2 shrink-0">
+                                        <span className="text-sm font-semibold text-gray-900 dark:text-white">{s.totalScore}</span>
+                                        <span className={`text-xs font-bold px-2 py-0.5 rounded ${gradeBadgeClass(s.grade)}`}>{s.grade}</span>
+                                    </span>
+                                </div>
+                            ))}
+                            {reportCardData.subjects.length === 0 && (
+                                <div className="px-4 py-4 text-sm text-gray-400 text-center">No subject scores recorded.</div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="bg-primary-50/60 dark:bg-primary-900/10 border border-primary-100 dark:border-primary-900/20 rounded-xl p-4 flex items-start gap-3">
+                        <Printer className="w-5 h-5 text-primary-600 dark:text-primary-400 shrink-0 mt-0.5" />
+                        <p className="text-xs text-gray-600 dark:text-gray-300">
+                            This is a summary. Tap <strong>Print Result</strong> above and choose "Save as PDF" for the full official report card with remarks &amp; skills.
+                        </p>
+                    </div>
+                </div>
+
+                {/* Official Report Card Template — same markup/size on every screen; on mobile its
+                    height is collapsed (print-sheet-shell) so it doesn't show raw on a small screen,
+                    but the print stylesheet above restores it for Print, producing the exact desktop layout. */}
+                <div className="print-sheet-shell max-h-0 overflow-hidden md:max-h-none md:overflow-visible">
+                    <div
+                        id="student-result-print-root"
+                        className="bg-white dark:bg-transparent rounded-xl shadow-sm border border-gray-200 dark:border-gray-800/50 print:shadow-none print:border-none print:p-0 overflow-x-auto w-full max-w-[215mm] mx-auto flex justify-center pb-8"
+                    >
+                        <ReportCardTemplate
+                            data={reportCardData}
+                            assessments={assessments || []}
+                            config={reportCardConfig}
+                        />
+                    </div>
                 </div>
             </div>
         );
@@ -264,14 +340,14 @@ const StudentResultPage = () => {
                     )}
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-900 dark:text-gray-200 mb-2">Term</label>
+                        <label className="block text-sm font-medium text-gray-900 dark:text-gray-200 mb-2">Exam Group</label>
                         <select 
                             className="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
                             value={form.examGroupId}
                             onChange={(e) => setForm({...form, examGroupId: e.target.value})}
                             required
                         >
-                            <option value="" disabled>Select Term</option>
+                            <option value="" disabled>Select Exam Group</option>
                             {examGroups.length === 0 && <option value="" disabled>No Active Exams Available</option>}
                             {examGroups.map(group => (
                                 <option key={group.id} value={group.id}>{group.name}</option>

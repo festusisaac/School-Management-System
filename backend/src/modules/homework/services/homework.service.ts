@@ -8,6 +8,7 @@ import { UpdateHomeworkDto } from '../dto/update-homework.dto';
 import { EmailService } from '../../internal-communication/email.service';
 import { Student } from '../../students/entities/student.entity';
 import { SystemSettingsService } from '../../system/services/system-settings.service';
+import { PushNotificationService } from '../../notifications/services/push-notification.service';
 import moment from 'moment';
 
 @Injectable()
@@ -21,6 +22,7 @@ export class HomeworkService {
         private readonly submissionRepository: Repository<HomeworkSubmission>,
         private readonly emailService: EmailService,
         private readonly systemSettingsService: SystemSettingsService,
+        private readonly pushService: PushNotificationService,
     ) {}
 
     async create(createDto: CreateHomeworkDto, tenantId: string): Promise<Homework> {
@@ -47,7 +49,7 @@ export class HomeworkService {
         try {
             const students = await this.studentRepository.find({
                 where: { classId: homework.classId, tenantId, isActive: true },
-                select: ['email', 'firstName']
+                relations: ['parent'],
             });
 
             console.log(`HomeworkService: Found ${students.length} students to notify for class ${homework.classId}`);
@@ -56,29 +58,81 @@ export class HomeworkService {
             const subject = `New Homework Assigned: ${homework.title}`;
             const title = `New Assignment for ${homework.subject?.name || 'your class'}`;
 
+            let skipped = 0;
+            const studentUserIds: string[] = [];
             for (const student of students) {
-                if (!student.email) {
-                    console.log(`HomeworkService: Student ${student.firstName} has no email, skipping.`);
+                if (student.userId) studentUserIds.push(student.userId);
+
+                const recipient = this.resolveNotificationRecipient(student);
+                if (!recipient) {
+                    skipped++;
+                    console.log(`HomeworkService: Student ${student.firstName} has no email (and no guardian email), skipping.`);
                     continue;
                 }
 
+                // When we fall back to a guardian, address the guardian and name the child.
+                const greeting = recipient.isStudent
+                    ? `Hello ${student.firstName || 'Student'},`
+                    : `Hello,`;
+                const intro = recipient.isStudent
+                    ? `A new homework assignment has been posted for your class.`
+                    : `A new homework assignment has been posted for ${student.firstName || 'your child'}'s class.`;
+                const closing = recipient.isStudent
+                    ? `<em>Remember to submit your work before the deadline.</em>`
+                    : `<em>Kindly ensure ${student.firstName || 'your child'} submits the work before the deadline.</em>`;
+
                 const message = `
-                    Hello ${student.firstName || 'Student'},<br/><br/>
-                    A new homework assignment has been posted for your class.<br/><br/>
+                    ${greeting}<br/><br/>
+                    ${intro}<br/><br/>
                     <strong>Title:</strong> ${homework.title}<br/>
                     <strong>Subject:</strong> ${homework.subject?.name || 'N/A'}<br/>
                     <strong>Due Date:</strong> ${dueDate}<br/><br/>
                     Please log in to the portal to view the details and download any attachments.<br/><br/>
-                    <em>Remember to submit your work before the deadline.</em>
+                    ${closing}
                 `;
 
-                console.log(`HomeworkService: Attempting to send email to ${student.email}`);
-                const sent = await this.emailService.sendNotificationEmail(student.email, subject, message, title);
-                console.log(`HomeworkService: Email to ${student.email} ${sent ? 'SUCCESS' : 'FAILED'}`);
+                console.log(`HomeworkService: Attempting to send email to ${recipient.email} (${recipient.isStudent ? 'student' : 'guardian'})`);
+                const sent = await this.emailService.sendNotificationEmail(recipient.email, subject, message, title);
+                console.log(`HomeworkService: Email to ${recipient.email} ${sent ? 'SUCCESS' : 'FAILED'}`);
+            }
+            if (studentUserIds.length) {
+                this.pushService.sendToUserIds(studentUserIds, {
+                    title: `New Homework: ${homework.title}`,
+                    body: `${homework.subject?.name || 'A subject'} • Due ${dueDate}`,
+                    data: { type: 'homework', homeworkId: homework.id },
+                }).catch((err) => console.error('Failed to push-notify homework:', err));
+            }
+            if (skipped > 0) {
+                console.log(`HomeworkService: ${skipped} student(s) had no reachable email (student or guardian).`);
             }
         } catch (error) {
             console.error('Error in notifyStudents (Homework):', error);
         }
+    }
+
+    /**
+     * Resolve who to email for a student: the student's own address if set,
+     * otherwise fall back to the primary guardian (guardian → father → mother),
+     * checking both the student record and the linked parent record.
+     */
+    private resolveNotificationRecipient(student: any): { email: string; isStudent: boolean } | null {
+        const clean = (v?: string) => {
+            const t = (v || '').trim();
+            return t && t.includes('@') ? t : '';
+        };
+
+        const studentEmail = clean(student.email);
+        if (studentEmail) return { email: studentEmail, isStudent: true };
+
+        const guardianEmail =
+            clean(student.guardianEmail) ||
+            clean(student.fatherEmail) ||
+            clean(student.motherEmail) ||
+            clean(student.parent?.guardianEmail) ||
+            clean(student.parent?.fatherEmail) ||
+            clean(student.parent?.motherEmail);
+
+        return guardianEmail ? { email: guardianEmail, isStudent: false } : null;
     }
 
     async findAll(tenantId: string, filters: { classId?: string; classIds?: string[]; subjectId?: string; teacherId?: string }, studentId?: string): Promise<Homework[]> {

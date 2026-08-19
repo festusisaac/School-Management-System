@@ -41,7 +41,7 @@ export default function RootNavigator() {
     case 'teacher':
       return <TeacherStack />;
     case 'student':
-      return <StudentDashboard />;
+      return <StudentStack />;
     case 'parent':
       return <ParentDashboard />;
     default:
@@ -185,6 +185,49 @@ function AccountingStack() {
         )}
       </AccountingStack_Nav.Screen>
     </AccountingStack_Nav.Navigator>
+  );
+}
+
+// --- Student Stack ---
+import StudentResultsScreen from '../screens/student/StudentResultsScreen';
+import StudentFeeStatusScreen from '../screens/student/StudentFeeStatusScreen';
+import StudentHomeworkScreen from '../screens/student/StudentHomeworkScreen';
+import StudentAttendanceScreen from '../screens/student/StudentAttendanceScreen';
+import StudentTimetableScreen from '../screens/student/StudentTimetableScreen';
+import StudentOnlineClassesScreen from '../screens/student/StudentOnlineClassesScreen';
+import StudentDownloadsScreen from '../screens/student/StudentDownloadsScreen';
+import StudentNoticesScreen from '../screens/student/StudentNoticesScreen';
+import StudentMyProfileScreen from '../screens/student/StudentMyProfileScreen';
+
+export type StudentStackParamList = {
+  StudentDashboard: undefined;
+  Results: undefined;
+  FeeStatus: undefined;
+  Homework: undefined;
+  Attendance: undefined;
+  Timetable: undefined;
+  OnlineClasses: undefined;
+  Downloads: undefined;
+  Notices: undefined;
+  Profile: undefined;
+};
+
+const StudentStack_Nav = createNativeStackNavigator<StudentStackParamList>();
+
+function StudentStack() {
+  return (
+    <StudentStack_Nav.Navigator screenOptions={{ headerShown: false }}>
+      <StudentStack_Nav.Screen name="StudentDashboard" component={StudentDashboard} />
+      <StudentStack_Nav.Screen name="Results" component={StudentResultsScreen} />
+      <StudentStack_Nav.Screen name="FeeStatus" component={StudentFeeStatusScreen} />
+      <StudentStack_Nav.Screen name="Homework" component={StudentHomeworkScreen} />
+      <StudentStack_Nav.Screen name="Attendance" component={StudentAttendanceScreen} />
+      <StudentStack_Nav.Screen name="Timetable" component={StudentTimetableScreen} />
+      <StudentStack_Nav.Screen name="OnlineClasses" component={StudentOnlineClassesScreen} />
+      <StudentStack_Nav.Screen name="Downloads" component={StudentDownloadsScreen} />
+      <StudentStack_Nav.Screen name="Notices" component={StudentNoticesScreen} />
+      <StudentStack_Nav.Screen name="Profile" component={StudentMyProfileScreen} />
+    </StudentStack_Nav.Navigator>
   );
 }
 

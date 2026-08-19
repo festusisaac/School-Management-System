@@ -8,12 +8,14 @@ import { HomeworkController } from './controllers/homework.controller';
 import { Student } from '../students/entities/student.entity';
 import { CommunicationModule } from '../communication/communication.module';
 import { SystemModule } from '../system/system.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
     imports: [
         TypeOrmModule.forFeature([Homework, HomeworkSubmission, Student]),
         CommunicationModule,
         SystemModule,
+        NotificationsModule,
     ],
     controllers: [HomeworkController],
     providers: [HomeworkService, HomeworkSubmissionService],

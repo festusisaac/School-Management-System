@@ -14,7 +14,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import TeacherLayout from '../../components/TeacherLayout';
 import { useAuthStore } from '../../store/authStore';
-import { apiGet, apiPost, getSyncBaseUrl } from '../../services/api';
+import { apiGet, apiPost } from '../../services/api';
+import { downloadSecure } from '../../utils/files';
 
 const COLORS = {
   surface: '#f7f9fb',
@@ -96,15 +97,10 @@ export default function DownloadCenterScreen() {
         apiPost(`/download-center/${item.id}/view`, token, {}).catch(() => {});
         return;
       }
-      // File download — open via browser with token so the server authorizes it
-      const base = `${getSyncBaseUrl()}/download-center/${item.id}/file?download=true`;
-      const url = token ? `${base}&token=${encodeURIComponent(token)}` : base;
-      const supported = await Linking.canOpenURL(url);
-      if (!supported) {
-        Alert.alert('Cannot open', 'No app available to open this file.');
-        return;
-      }
-      await Linking.openURL(url);
+      // Uploaded files: download in-app (authenticated) and open in a viewer.
+      // ?native=1 makes the server send the real file type + name instead of the
+      // web-only text/plain response (which rendered as raw text in a browser).
+      await downloadSecure(`/download-center/${item.id}/file?native=1`, token, item.title);
       apiPost(`/download-center/${item.id}/download`, token, {}).catch(() => {});
     } catch (e) {
       Alert.alert('Error', 'Failed to open resource.');

@@ -86,7 +86,7 @@ export class LeaveService {
             reason: dto.reason,
             numberOfDays,
             status: LeaveStatus.PENDING,
-            supportingDocument: file ? `/uploads/leaves/${file.filename}` : undefined
+            supportingDocument: file ? `/private-uploads/leaves/${file.filename}` : undefined
         });
 
         const savedRequest = await this.leaveRequestRepository.save(request);
@@ -130,6 +130,10 @@ export class LeaveService {
         }
 
         return savedRequest;
+    }
+
+    async getLeaveRequestById(id: string): Promise<LeaveRequest | null> {
+        return this.leaveRequestRepository.findOne({ where: { id } });
     }
 
     async getStaffLeaveRequests(staffId: string): Promise<LeaveRequest[]> {

@@ -12,9 +12,13 @@ const AppDataSource = new DataSource({
   username: process.env.DATABASE_USER || 'sms_user',
   password: process.env.DATABASE_PASSWORD || 'sms_password',
   database: process.env.DATABASE_NAME || 'sms_db',
-  // When located in src, __dirname is the src folder
+  // __dirname resolves correctly in both contexts this file runs in:
+  // - dev (ts-node on src/data-source.ts)  -> .../backend/src/database/migrations
+  // - prod (node on dist/data-source.js)   -> .../backend/dist/database/migrations
+  // The old process.cwd()-based path always pointed at src/, which doesn't exist in the
+  // production image (the Dockerfile only ships dist/) — migrations silently found nothing.
   entities: [join(__dirname, '**/*.entity{.ts,.js}')],
-  migrations: [join(process.cwd(), 'src/database/migrations/*{.ts,.js}')],
+  migrations: [join(__dirname, 'database/migrations/*{.ts,.js}')],
   synchronize: process.env.DATABASE_SYNC === 'true',
   logging: process.env.DATABASE_LOGGING === 'true',
 });

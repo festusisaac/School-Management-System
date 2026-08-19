@@ -17,6 +17,7 @@ import { StudentsModule } from '../students/students.module';
 import { HrModule } from '../hr/hr.module';
 import { InternalCommunicationModule } from '../internal-communication/internal-communication.module';
 import { FinanceModule } from '../finance/finance.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { FinanceModule } from '../finance/finance.module';
     forwardRef(() => StudentsModule),
     forwardRef(() => HrModule),
     forwardRef(() => FinanceModule),
+    forwardRef(() => NotificationsModule),
   ],
   controllers: [
     MessageTemplatesController,
