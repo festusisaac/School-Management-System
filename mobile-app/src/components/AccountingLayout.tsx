@@ -23,7 +23,7 @@ import { useAuthStore } from '../store/authStore';
 import { useAutoSync, useSyncStore } from '../hooks/useAutoSync';
 import { useSettingsStore } from '../store/settingsStore';
 import { useSectionStore } from '../store/sectionStore';
-import { apiGet } from '../services/api';
+import { apiGet, getFileUrl } from '../services/api';
 
 const COLORS = {
   surface: '#f7f9fb',
@@ -57,6 +57,7 @@ export default function AccountingLayout({ children, activeTab: activeTabProp = 
   const { settings, setSettings, loadFromStorage } = useSettingsStore();
   const { availableSections, activeSectionId, setSections, setActiveSectionId, loadFromStorage: loadSection } = useSectionStore();
   const [sectionPickerOpen, setSectionPickerOpen] = useState(false);
+  const [photo, setPhoto] = useState<string | null>(null);
 
   const activeSection = availableSections.find((s) => s.id === activeSectionId);
 
@@ -79,6 +80,7 @@ export default function AccountingLayout({ children, activeTab: activeTabProp = 
       .then((data: any) => {
         const sections = Array.isArray(data?.sections) ? data.sections.map((s: any) => ({ id: s.id, name: s.name })) : [];
         setSections(sections);
+        setPhoto(getFileUrl(data?.photo) || null);
       })
       .catch((e) => console.log('Failed to load assigned sections', e));
   }, [isOnline, user?.token]);
@@ -161,7 +163,11 @@ export default function AccountingLayout({ children, activeTab: activeTabProp = 
             <Ionicons name="refresh" size={22} color={isSyncing ? COLORS.outline : COLORS.onSurface} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.headerProfileBtn} onPress={() => navigation.navigate('Profile')}>
-            <Text style={styles.headerProfileText}>{userInitials}</Text>
+            {photo || user?.photo ? (
+              <Image source={{ uri: photo || getFileUrl(user?.photo) }} style={{ width: 32, height: 32, borderRadius: 16 }} />
+            ) : (
+              <Text style={styles.headerProfileText}>{userInitials}</Text>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -267,6 +273,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 4,
+    overflow: 'hidden',
   },
   headerProfileText: { color: '#bae6fd', fontWeight: 'bold', fontSize: 12 },
   content: { flex: 1 },

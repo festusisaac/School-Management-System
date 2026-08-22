@@ -7,10 +7,10 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
-  Alert,
   Linking,
   TextInput,
 } from 'react-native';
+import { Alert } from '../../utils/alert';
 import { Ionicons } from '@expo/vector-icons';
 import TeacherLayout from '../../components/TeacherLayout';
 import { useAuthStore } from '../../store/authStore';

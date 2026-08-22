@@ -7,9 +7,9 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   TextInput,
-  Alert,
   Switch,
 } from 'react-native';
+import { Alert } from '../../utils/alert';
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import AdminLayout from '../../components/AdminLayout';

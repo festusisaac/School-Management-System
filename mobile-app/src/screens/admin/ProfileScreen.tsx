@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,8 +6,9 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
+  Image,
 } from 'react-native';
+import { Alert } from '../../utils/alert';
 import { Ionicons } from '@expo/vector-icons';
 import NetInfo from '@react-native-community/netinfo';
 import AdminLayout from '../../components/AdminLayout';
@@ -16,6 +17,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useSyncStore } from '../../hooks/useAutoSync';
 import { syncData } from '../../database/sync';
+import { apiGet, getFileUrl } from '../../services/api';
 
 const COLORS = {
   surface: '#f7f9fb',
@@ -40,11 +42,29 @@ export default function ProfileScreen() {
   const { lastSyncedAt } = useSyncStore();
   const [isOnline, setIsOnline] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [photo, setPhoto] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => setIsOnline(!!state.isConnected));
     return () => unsubscribe();
   }, []);
+
+  const fetchPhoto = useCallback(async () => {
+    if (!user?.token) return;
+    try {
+      const data = await apiGet('/hr/staff/profile/me', user.token);
+      // Super admins (and any admin without a staff record) have no staff.photo —
+      // fall back to users.photo, which is what the website's own header uses.
+      setPhoto(getFileUrl(data?.photo) || getFileUrl(user.photo) || null);
+    } catch (e) {
+      setPhoto(getFileUrl(user.photo) || null);
+      console.log('Failed to load profile photo', e);
+    }
+  }, [user?.token]);
+
+  useEffect(() => {
+    fetchPhoto();
+  }, [fetchPhoto]);
 
   const handleForceSync = async () => {
     if (!isOnline) {
@@ -82,9 +102,13 @@ export default function ProfileScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* --- Identity header card --- */}
         <View style={styles.headerCard}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{userInitials}</Text>
-          </View>
+          {photo ? (
+            <Image source={{ uri: photo }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatar, styles.avatarFallback]}>
+              <Text style={styles.avatarText}>{userInitials}</Text>
+            </View>
+          )}
           <View style={{ flex: 1 }}>
             <Text style={styles.name} numberOfLines={1}>{user?.firstName} {user?.lastName}</Text>
             <Text style={styles.roleBadge}>{roleLabel}</Text>
@@ -187,6 +211,8 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
+  },
+  avatarFallback: {
     backgroundColor: COLORS.primaryContainer,
     alignItems: 'center',
     justifyContent: 'center',

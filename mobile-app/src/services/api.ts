@@ -33,27 +33,72 @@ export async function loginRequest(email: string, password: string) {
   return parsed;
 }
 
-export async function apiGet(endpoint: string, token: string) {
-  const res = await fetch(`${API_BASE}${endpoint}`, {
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  });
+// Access tokens are short-lived (15m) by design; the refresh token (long-lived, see
+// JWT_EXPIRE on the backend) is what actually keeps a user signed in across sessions.
+// Every authorized request below transparently refreshes-and-retries once on a 401
+// instead of logging the user out — matching what the web app's httpClient does.
+let refreshPromise: Promise<string> | null = null;
 
-  if (!res.ok) {
-    if (res.status === 401) {
-      useAuthStore.getState().logout();
+export async function refreshAccessToken(): Promise<string> {
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = (async () => {
+    const { user, updateTokens, logout } = useAuthStore.getState();
+    if (!user?.refreshToken) {
+      logout();
       throw new Error('UNAUTHORIZED');
     }
+    try {
+      const res = await fetch(`${API_BASE}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: user.refreshToken }),
+      });
+      if (!res.ok) throw new Error('Refresh failed');
+      const parsed = await res.json();
+      const data = parsed && typeof parsed === 'object' && 'data' in parsed ? parsed.data : parsed;
+      updateTokens(data.access_token, data.refresh_token);
+      return data.access_token as string;
+    } catch (e) {
+      logout();
+      throw new Error('UNAUTHORIZED');
+    }
+  })();
+
+  try {
+    return await refreshPromise;
+  } finally {
+    refreshPromise = null;
+  }
+}
+
+/** Shared request core for the JSON verbs below: retries once with a refreshed token on 401. */
+async function authorizedRequest(endpoint: string, token: string, init: RequestInit, isRetry = false): Promise<any> {
+  const res = await fetch(`${API_BASE}${endpoint}`, {
+    ...init,
+    headers: { ...(init.headers as Record<string, string> | undefined), 'Authorization': `Bearer ${token}` },
+  });
+
+  if (res.status === 401 && !isRetry) {
+    const newToken = await refreshAccessToken();
+    return authorizedRequest(endpoint, newToken, init, true);
+  }
+
+  if (!res.ok) {
+    if (res.status === 401) throw new Error('UNAUTHORIZED');
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message ?? `API request failed: ${res.status}`);
   }
 
-  const parsed = await res.json();
+  const parsed = await res.json().catch(() => ({}));
   if (parsed && typeof parsed === 'object' && 'data' in parsed) {
     return parsed.data;
   }
   return parsed;
+}
+
+export async function apiGet(endpoint: string, token: string) {
+  return authorizedRequest(endpoint, token, {});
 }
 
 export function getSyncBaseUrl() {
@@ -76,53 +121,15 @@ export function getFileUrl(path?: string) {
 }
 
 export async function apiPost(endpoint: string, token: string, body: any) {
-  const res = await fetch(`${API_BASE}${endpoint}`, {
+  return authorizedRequest(endpoint, token, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(body)
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
   });
-
-  if (!res.ok) {
-    if (res.status === 401) {
-      useAuthStore.getState().logout();
-      throw new Error('UNAUTHORIZED');
-    }
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message ?? `API request failed: ${res.status}`);
-  }
-
-  const parsed = await res.json();
-  if (parsed && typeof parsed === 'object' && 'data' in parsed) {
-    return parsed.data;
-  }
-  return parsed;
 }
 
 export async function apiDelete(endpoint: string, token: string) {
-  const res = await fetch(`${API_BASE}${endpoint}`, {
-    method: 'DELETE',
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  });
-
-  if (!res.ok) {
-    if (res.status === 401) {
-      useAuthStore.getState().logout();
-      throw new Error('UNAUTHORIZED');
-    }
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message ?? `API request failed: ${res.status}`);
-  }
-
-  const parsed = await res.json().catch(() => ({}));
-  if (parsed && typeof parsed === 'object' && 'data' in parsed) {
-    return parsed.data;
-  }
-  return parsed;
+  return authorizedRequest(endpoint, token, { method: 'DELETE' });
 }
 
 /**
@@ -135,7 +142,7 @@ export async function apiDelete(endpoint: string, token: string) {
  * networking module, which DOES support uri-based file parts for uploads.
  * Do NOT set Content-Type manually — RN sets the multipart boundary for us.
  */
-export function apiPostForm(endpoint: string, token: string, formData: FormData): Promise<any> {
+export function apiPostForm(endpoint: string, token: string, formData: FormData, isRetry = false): Promise<any> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', `${API_BASE}${endpoint}`);
@@ -151,7 +158,12 @@ export function apiPostForm(endpoint: string, token: string, formData: FormData)
         return;
       }
       if (status === 401) {
-        useAuthStore.getState().logout();
+        if (!isRetry) {
+          refreshAccessToken()
+            .then((newToken) => apiPostForm(endpoint, newToken, formData, true))
+            .then(resolve, reject);
+          return;
+        }
         reject(new Error('UNAUTHORIZED'));
         return;
       }
@@ -170,27 +182,9 @@ export function apiPostForm(endpoint: string, token: string, formData: FormData)
 }
 
 export async function apiPatch(endpoint: string, token: string, body: any) {
-  const res = await fetch(`${API_BASE}${endpoint}`, {
+  return authorizedRequest(endpoint, token, {
     method: 'PATCH',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(body)
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
   });
-
-  if (!res.ok) {
-    if (res.status === 401) {
-      useAuthStore.getState().logout();
-      throw new Error('UNAUTHORIZED');
-    }
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message ?? `API request failed: ${res.status}`);
-  }
-
-  const parsed = await res.json();
-  if (parsed && typeof parsed === 'object' && 'data' in parsed) {
-    return parsed.data;
-  }
-  return parsed;
 }

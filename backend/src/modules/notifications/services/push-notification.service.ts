@@ -92,9 +92,12 @@ export class PushNotificationService {
 
     /** All logged-in staff (users whose email matches a staff record) for a tenant. */
     async getStaffUserIds(tenantId: string): Promise<string[]> {
+        // Cast both sides: staff.tenantId and users.tenantId are typed differently in production
+        // (uuid vs varchar) despite matching entity definitions — a straight column-to-column
+        // comparison errors with "operator does not exist: character varying = uuid".
         const rows = await this.entityManager.query(
             `SELECT DISTINCT u.id FROM users u
-             INNER JOIN staff s ON LOWER(s.email) = LOWER(u.email) AND s."tenantId" = u."tenantId"
+             INNER JOIN staff s ON LOWER(s.email) = LOWER(u.email) AND s."tenantId"::text = u."tenantId"::text
              WHERE u."tenantId" = $1`,
             [tenantId],
         );

@@ -23,7 +23,7 @@ const schoolLogo = require('../../assets/school-logo.png');
 import { useAuthStore } from '../store/authStore';
 import { useAutoSync, useSyncStore } from '../hooks/useAutoSync';
 import { useSettingsStore } from '../store/settingsStore';
-import { apiGet } from '../services/api';
+import { apiGet, getFileUrl } from '../services/api';
 import { fetchStaffNotices, stripHtml, isNoticeSeen, isNoticePopped, markNoticePopped, Notice } from '../utils/notices';
 
 // Cache the fetched notices so the unread badge can recompute cheaply on focus.
@@ -118,6 +118,7 @@ export default function TeacherLayout({ children, activeTab: activeTabProp = 'Ho
   );
 
   const userInitials = user ? `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`.toUpperCase() : 'T';
+  const [photo, setPhoto] = useState<string | null>(null);
 
   const { settings, setSettings, loadFromStorage } = useSettingsStore();
 
@@ -134,6 +135,9 @@ export default function TeacherLayout({ children, activeTab: activeTabProp = 'Ho
 
   useEffect(() => {
     if (isOnline && user?.token) {
+      apiGet('/hr/staff/profile/me', user.token)
+        .then((data: any) => setPhoto(getFileUrl(data?.photo) || null))
+        .catch((e) => console.log('Failed to load profile photo', e));
       apiGet('/system/settings', user.token)
         .then((data: any) => {
           if (data) {
@@ -210,7 +214,11 @@ export default function TeacherLayout({ children, activeTab: activeTabProp = 'Ho
             <Ionicons name="refresh" size={22} color={isSyncing ? COLORS.outline : COLORS.onSurface} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.headerProfileBtn} onPress={() => navigation.navigate('Profile')}>
-            <Text style={styles.headerProfileText}>{userInitials}</Text>
+            {photo || user?.photo ? (
+              <Image source={{ uri: photo || getFileUrl(user?.photo) }} style={{ width: 32, height: 32, borderRadius: 16 }} />
+            ) : (
+              <Text style={styles.headerProfileText}>{userInitials}</Text>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -376,6 +384,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 4,
+    overflow: 'hidden',
   },
   headerProfileText: {
     color: '#bae6fd',

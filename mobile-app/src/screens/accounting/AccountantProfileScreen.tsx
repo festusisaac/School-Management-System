@@ -9,8 +9,8 @@ import {
   TouchableOpacity,
   Image,
   Linking,
-  Alert,
 } from 'react-native';
+import { Alert } from '../../utils/alert';
 import { Ionicons } from '@expo/vector-icons';
 import AccountingLayout from '../../components/AccountingLayout';
 import { useAuthStore } from '../../store/authStore';

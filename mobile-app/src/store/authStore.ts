@@ -13,12 +13,15 @@ interface User {
   displayRole?: string;
   tenantId: string;
   token: string;
+  refreshToken?: string;
+  photo?: string;
 }
 
 interface AuthState {
   user: User | null;
   isLoading: boolean;
   setUser: (user: User | null) => void;
+  updateTokens: (token: string, refreshToken?: string) => void;
   logout: () => Promise<void>;
   loadFromStorage: () => Promise<void>;
 }
@@ -34,6 +37,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } else {
       AsyncStorage.removeItem('auth_user');
     }
+  },
+
+  updateTokens: (token, refreshToken) => {
+    const current = get().user;
+    if (!current) return;
+    const updated = { ...current, token, refreshToken: refreshToken ?? current.refreshToken };
+    set({ user: updated });
+    AsyncStorage.setItem('auth_user', JSON.stringify(updated));
   },
 
   logout: async () => {

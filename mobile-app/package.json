@@ -18,6 +18,7 @@
     "expo-document-picker": "~56.0.4",
     "expo-file-system": "~56.0.9",
     "expo-intent-launcher": "~56.0.4",
+    "expo-linear-gradient": "~56.0.4",
     "expo-notifications": "~56.0.23",
     "expo-print": "~56.0.4",
     "expo-sharing": "~56.0.24",

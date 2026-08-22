@@ -7,6 +7,7 @@ import RootNavigator from './src/navigation/RootNavigator';
 import { navigationRef } from './src/navigation/navigationRef';
 import { useAuthStore } from './src/store/authStore';
 import { syncPushToken, handleNotificationTap } from './src/utils/pushNotifications';
+import { AlertHost } from './src/utils/alert';
 
 export default function App() {
   const { loadFromStorage, user } = useAuthStore();
@@ -45,6 +46,7 @@ export default function App() {
       <NavigationContainer ref={navigationRef}>
         <RootNavigator />
       </NavigationContainer>
+      <AlertHost />
     </SafeAreaProvider>
   );
 }

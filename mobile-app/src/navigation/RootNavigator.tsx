@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '../store/authStore';
 
 // Screens
 import LoginScreen from '../screens/LoginScreen';
+import IntroScreen from '../screens/IntroScreen';
 import AdminDashboard from '../screens/admin/AdminDashboard';
 import AccountingDashboard from '../screens/accounting/AccountingDashboard';
 import TeacherDashboard from '../screens/teacher/TeacherDashboard';
@@ -13,9 +15,14 @@ import PrincipalDashboard from '../screens/principal/PrincipalDashboard';
 
 export default function RootNavigator() {
   const { user, isLoading } = useAuthStore();
+  const [hasSeenIntro, setHasSeenIntro] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    AsyncStorage.getItem('has_seen_intro').then((v) => setHasSeenIntro(!!v));
+  }, []);
 
   // Show spinner while reading persisted auth from AsyncStorage
-  if (isLoading) {
+  if (isLoading || hasSeenIntro === null) {
     return (
       <View style={styles.loader}>
         <ActivityIndicator size="large" color="#6366f1" />
@@ -23,8 +30,11 @@ export default function RootNavigator() {
     );
   }
 
-  // Not logged in → show login
+  // Not logged in → show the one-time intro first, then login
   if (!user) {
+    if (!hasSeenIntro) {
+      return <IntroScreen onDone={() => setHasSeenIntro(true)} />;
+    }
     return <LoginScreen />;
   }
 

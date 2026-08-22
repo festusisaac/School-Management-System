@@ -9,15 +9,20 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
   Image,
   StatusBar,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Alert } from '../utils/alert';
 import { loginRequest } from '../services/api';
 import { useAuthStore } from '../store/authStore';
 
 // @ts-ignore
 const schoolLogo = require('../../assets/school-logo.png');
+
+const NAVY = '#12233d';
+const MUTED = '#7488a0';
+const ICON_COLOR = '#9fb2c6';
 
 /* ── Minimal icon components (no external dependency) ── */
 const UserIcon = () => (
@@ -58,6 +63,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [focusedField, setFocusedField] = useState<'email' | 'password' | null>(null);
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -93,6 +99,8 @@ export default function LoginScreen() {
         displayRole: data.user.role || data.user.roleObject?.name || normalizedRole,
         tenantId: data.user.tenantId,
         token: data.access_token,
+        refreshToken: data.refresh_token,
+        photo: data.user.photo,
       });
     } catch (err: any) {
       Alert.alert('Login Failed', err.message ?? 'Something went wrong.');
@@ -102,107 +110,88 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <StatusBar barStyle="dark-content" backgroundColor="#f5f7fa" />
-      <ScrollView
-        contentContainerStyle={styles.container}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {/* ── Header: Logo + School Name ── */}
-        <View style={styles.header}>
-          <Image source={schoolLogo} style={styles.logo} resizeMode="contain" />
-          <Text style={styles.schoolName}>PHJC School Azhin Kasa</Text>
-          <Text style={styles.welcomeTitle}>Welcome to PHJC School</Text>
-          <Text style={styles.welcomeSub}>Sign in to access your dashboard</Text>
-        </View>
-
-        {/* ── Form Card ── */}
-        <View style={styles.card}>
-          {/* Email / User ID */}
-          <Text style={styles.label}>User ID or Email</Text>
-          <View style={styles.inputWrapper}>
-            <UserIcon />
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your credentials"
-              placeholderTextColor="#a0aec0"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              value={email}
-              onChangeText={setEmail}
-            />
+    <LinearGradient colors={['#eaf3fc', '#f9f6f1']} style={styles.flex}>
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* ── Hero ── */}
+          <View style={styles.hero}>
+            <View style={styles.glowOuter} />
+            <View style={styles.glowInner} />
+            <Image source={schoolLogo} style={styles.logo} resizeMode="contain" />
+            <Text style={styles.schoolName}>PHJC School Azhin Kasa</Text>
+            <Text style={styles.tagline}>Excellence through Hardwork &amp; Perseverance</Text>
           </View>
 
-          {/* Password */}
-          <Text style={[styles.label, { marginTop: 16 }]}>Password</Text>
-          <View style={styles.inputWrapper}>
-            <LockIcon />
-            <TextInput
-              style={[styles.input, styles.passwordInput]}
-              placeholder="Enter your password"
-              placeholderTextColor="#a0aec0"
-              secureTextEntry={!showPassword}
-              value={password}
-              onChangeText={setPassword}
-            />
+          {/* ── Form Card ── */}
+          <View style={styles.card}>
+            <Text style={styles.cardHeading}>Sign in</Text>
+            <Text style={styles.cardSub}>Enter your details to continue</Text>
+
+            <Text style={styles.label}>User ID or Email</Text>
+            <View style={[styles.inputWrapper, focusedField === 'email' && styles.inputWrapperFocused]}>
+              <UserIcon />
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your credentials"
+                placeholderTextColor="#a9b8c9"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                value={email}
+                onChangeText={setEmail}
+                onFocus={() => setFocusedField('email')}
+                onBlur={() => setFocusedField(null)}
+              />
+            </View>
+
+            <Text style={[styles.label, { marginTop: 16 }]}>Password</Text>
+            <View style={[styles.inputWrapper, focusedField === 'password' && styles.inputWrapperFocused]}>
+              <LockIcon />
+              <TextInput
+                style={[styles.input, styles.passwordInput]}
+                placeholder="Enter your password"
+                placeholderTextColor="#a9b8c9"
+                secureTextEntry={!showPassword}
+                value={password}
+                onChangeText={setPassword}
+                onFocus={() => setFocusedField('password')}
+                onBlur={() => setFocusedField(null)}
+              />
+              <TouchableOpacity
+                style={styles.eyeBtn}
+                onPress={() => setShowPassword(!showPassword)}
+                activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <EyeIcon open={showPassword} />
+              </TouchableOpacity>
+            </View>
+
             <TouchableOpacity
-              style={styles.eyeBtn}
-              onPress={() => setShowPassword(!showPassword)}
-              activeOpacity={0.7}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={[styles.loginBtn, loading && styles.loginBtnDisabled]}
+              onPress={handleLogin}
+              disabled={loading}
+              activeOpacity={0.88}
             >
-              <EyeIcon open={showPassword} />
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <View style={styles.loginBtnContent}>
+                  <Text style={styles.loginBtnText}>Sign In</Text>
+                  <ArrowIcon />
+                </View>
+              )}
             </TouchableOpacity>
           </View>
-
-          {/* Sign In Button */}
-          <TouchableOpacity
-            style={[styles.loginBtn, loading && styles.loginBtnDisabled]}
-            onPress={handleLogin}
-            disabled={loading}
-            activeOpacity={0.85}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <View style={styles.loginBtnContent}>
-                <Text style={styles.loginBtnText}>Sign In</Text>
-                <ArrowIcon />
-              </View>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {/* ── Secure Connection Indicator ── */}
-        <View style={styles.secureRow}>
-          <View style={styles.greenDot} />
-          <Text style={styles.secureText}>Secure Institutional Connection Active</Text>
-        </View>
-
-        {/* ── Footer ── */}
-        <View style={styles.footer}>
-          <Text style={styles.footerHelp}>
-            Need help? <Text style={styles.footerLink}>Contact Support</Text>
-          </Text>
-          <View style={styles.footerLinks}>
-            <Text style={styles.footerSmall}>Privacy Policy</Text>
-            <Text style={styles.footerDot}>·</Text>
-            <Text style={styles.footerSmall}>Terms of Service</Text>
-          </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </LinearGradient>
   );
 }
-
-/* ── Color Constants ── */
-const BLUE = '#1a56db';
-const BLUE_DARK = '#1e40af';
-const ICON_COLOR = '#94a3b8';
 
 /* ── Icon Styles ── */
 const iconStyles = StyleSheet.create({
@@ -253,7 +242,7 @@ const iconStyles = StyleSheet.create({
     width: 3,
     height: 3,
     borderRadius: 1.5,
-    backgroundColor: '#f7fafc',
+    backgroundColor: '#f4f8fc',
   },
   /* Eye */
   eyeWrap: {
@@ -316,78 +305,103 @@ const iconStyles = StyleSheet.create({
 const styles = StyleSheet.create({
   flex: {
     flex: 1,
-    backgroundColor: '#f5f7fa',
   },
   container: {
     flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingTop: 50,
-    paddingBottom: 30,
+    justifyContent: 'center',
+    paddingHorizontal: 26,
+    paddingVertical: 40,
   },
 
-  /* ── Header ── */
-  header: {
+  /* ── Hero ── */
+  hero: {
     alignItems: 'center',
-    marginBottom: 28,
+    marginBottom: 30,
+  },
+  glowOuter: {
+    position: 'absolute',
+    top: -30,
+    width: 210,
+    height: 210,
+    borderRadius: 105,
+    backgroundColor: '#cfe3f7',
+    opacity: 0.45,
+  },
+  glowInner: {
+    position: 'absolute',
+    top: 4,
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    backgroundColor: '#ffffff',
+    opacity: 0.55,
   },
   logo: {
-    width: 100,
-    height: 100,
-    marginBottom: 10,
+    width: 92,
+    height: 92,
+    marginBottom: 14,
   },
   schoolName: {
     fontSize: 20,
     fontWeight: '800',
-    color: BLUE_DARK,
+    color: NAVY,
     textAlign: 'center',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
-  welcomeTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1a202c',
-    marginTop: 18,
-  },
-  welcomeSub: {
-    fontSize: 14,
-    color: '#718096',
-    marginTop: 4,
+  tagline: {
+    fontSize: 12.5,
+    color: MUTED,
+    marginTop: 6,
+    fontWeight: '500',
+    textAlign: 'center',
   },
 
   /* ── Card ── */
   card: {
     backgroundColor: '#ffffff',
-    borderRadius: 18,
-    padding: 22,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: '#e8ecf1',
+    borderRadius: 26,
+    padding: 26,
+    shadowColor: '#12233d',
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.1,
+    shadowRadius: 28,
+    elevation: 6,
+  },
+  cardHeading: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: NAVY,
+  },
+  cardSub: {
+    fontSize: 13,
+    color: MUTED,
+    marginTop: 3,
+    marginBottom: 22,
   },
 
   /* ── Form Fields ── */
   label: {
-    color: '#2d3748',
-    fontSize: 13,
-    fontWeight: '600',
+    color: '#3d4f63',
+    fontSize: 12.5,
+    fontWeight: '700',
     marginBottom: 8,
-    marginTop: 4,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f7fafc',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    paddingHorizontal: 14,
+    backgroundColor: '#f4f8fc',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#f4f8fc',
+    paddingHorizontal: 15,
+  },
+  inputWrapperFocused: {
+    borderColor: '#bcd8f5',
+    backgroundColor: '#ffffff',
   },
   input: {
     flex: 1,
-    color: '#1a202c',
+    color: NAVY,
     fontSize: 15,
     paddingVertical: 14,
   },
@@ -396,22 +410,22 @@ const styles = StyleSheet.create({
   },
   eyeBtn: {
     position: 'absolute',
-    right: 14,
+    right: 15,
     padding: 4,
   },
 
   /* ── Sign In Button ── */
   loginBtn: {
-    backgroundColor: BLUE,
-    borderRadius: 14,
+    backgroundColor: NAVY,
+    borderRadius: 15,
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 24,
-    shadowColor: BLUE,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    marginTop: 26,
+    shadowColor: NAVY,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 14,
     elevation: 6,
   },
   loginBtnDisabled: {
@@ -426,54 +440,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.3,
-  },
-
-  /* ── Secure Connection ── */
-  secureRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 24,
-  },
-  greenDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#48bb78',
-    marginRight: 8,
-  },
-  secureText: {
-    color: '#718096',
-    fontSize: 13,
-    fontWeight: '500',
-  },
-
-  /* ── Footer ── */
-  footer: {
-    alignItems: 'center',
-    marginTop: 'auto',
-    paddingTop: 30,
-  },
-  footerHelp: {
-    fontSize: 14,
-    color: '#4a5568',
-  },
-  footerLink: {
-    color: BLUE,
-    fontWeight: '600',
-  },
-  footerLinks: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  footerSmall: {
-    color: '#a0aec0',
-    fontSize: 13,
-  },
-  footerDot: {
-    color: '#a0aec0',
-    marginHorizontal: 8,
-    fontSize: 13,
   },
 });

@@ -23,7 +23,7 @@ import { useAuthStore } from '../store/authStore';
 import { useAutoSync, useSyncStore } from '../hooks/useAutoSync';
 import { useSettingsStore } from '../store/settingsStore';
 import { useSectionStore } from '../store/sectionStore';
-import { apiGet } from '../services/api';
+import { apiGet, getFileUrl } from '../services/api';
 
 const COLORS = {
   surface: '#f7f9fb',
@@ -46,7 +46,7 @@ interface AdminLayoutProps {
 }
 
 export default function AdminLayout({ children, activeTab: activeTabProp = 'Home' }: AdminLayoutProps) {
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
   const [isOnline, setIsOnline] = useState(true);
   const { performSync } = useAutoSync();
   const { isSyncing } = useSyncStore();
@@ -57,6 +57,7 @@ export default function AdminLayout({ children, activeTab: activeTabProp = 'Home
   const { settings, setSettings, loadFromStorage, isLoaded } = useSettingsStore();
   const { availableSections, activeSectionId, setSections, setActiveSectionId, loadFromStorage: loadSection } = useSectionStore();
   const [sectionPickerOpen, setSectionPickerOpen] = useState(false);
+  const [photo, setPhoto] = useState<string | null>(null);
   const activeSection = availableSections.find((s) => s.id === activeSectionId);
   // Only the super administrator overrides all sections; a normal admin is
   // locked to the section(s) assigned to them (same as the website).
@@ -91,6 +92,7 @@ export default function AdminLayout({ children, activeTab: activeTabProp = 'Home
         .then((data: any) => {
           const sections = Array.isArray(data?.sections) ? data.sections.map((s: any) => ({ id: s.id, name: s.name })) : [];
           setSections(sections, false);
+          setPhoto(getFileUrl(data?.photo) || null);
         })
         .catch((e) => console.log('Failed to load assigned sections', e));
     }
@@ -179,8 +181,12 @@ export default function AdminLayout({ children, activeTab: activeTabProp = 'Home
           <TouchableOpacity style={styles.iconButton} onPress={performSync} disabled={isSyncing}>
             <Ionicons name="refresh" size={22} color={isSyncing ? COLORS.outline : COLORS.onSurface} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.headerProfileBtn} onPress={() => logout()}>
-            <Text style={styles.headerProfileText}>{userInitials}</Text>
+          <TouchableOpacity style={styles.headerProfileBtn} onPress={() => navigation.navigate('Profile')}>
+            {photo || user?.photo ? (
+              <Image source={{ uri: photo || getFileUrl(user?.photo) }} style={{ width: 32, height: 32, borderRadius: 16 }} />
+            ) : (
+              <Text style={styles.headerProfileText}>{userInitials}</Text>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -308,6 +314,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 4,
+    overflow: 'hidden',
   },
   headerProfileText: {
     color: '#bae6fd',

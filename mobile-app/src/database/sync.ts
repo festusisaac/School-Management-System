@@ -1,8 +1,20 @@
 import { synchronize } from '@nozbe/watermelondb/sync';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { database } from './index';
-import { getSyncBaseUrl } from '../services/api';
+import { getSyncBaseUrl, refreshAccessToken } from '../services/api';
 import { useAuthStore } from '../store/authStore';
+
+/** Re-fetch with a freshly refreshed token when the access token has expired mid-sync. */
+async function fetchWithRefresh(input: string, init: RequestInit): Promise<Response> {
+  const res = await fetch(input, init);
+  if (res.status !== 401) return res;
+
+  const newToken = await refreshAccessToken(); // throws (and logs out) if the refresh token is also invalid
+  return fetch(input, {
+    ...init,
+    headers: { ...(init.headers as Record<string, string> | undefined), Authorization: `Bearer ${newToken}` },
+  });
+}
 
 /**
  * Convert camelCase field names (from backend) to snake_case (for database schema)
@@ -129,7 +141,7 @@ export async function syncData(): Promise<void> {
         const useFullPull = !hasCompletedFirstSync;
         const endpoint = useFullPull ? '/sync/pull-all' : `/sync/pull?lastPulledAt=${lastPulledAt || 0}`;
         
-        const response = await fetch(`${API_BASE}${endpoint}`, {
+        const response = await fetchWithRefresh(`${API_BASE}${endpoint}`, {
           method: 'GET',
           headers: {
             Authorization: `Bearer ${user.token}`,
@@ -137,10 +149,7 @@ export async function syncData(): Promise<void> {
         });
 
         if (!response.ok) {
-          if (response.status === 401) {
-            useAuthStore.getState().logout();
-            throw new Error('UNAUTHORIZED');
-          }
+          if (response.status === 401) throw new Error('UNAUTHORIZED');
           throw new Error(`Sync pull failed: ${response.status}`);
         }
 
@@ -177,7 +186,7 @@ export async function syncData(): Promise<void> {
           }
         }
 
-        const response = await fetch(`${API_BASE}/sync/push`, {
+        const response = await fetchWithRefresh(`${API_BASE}/sync/push`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -187,10 +196,7 @@ export async function syncData(): Promise<void> {
         });
 
         if (!response.ok) {
-          if (response.status === 401) {
-            useAuthStore.getState().logout();
-            throw new Error('UNAUTHORIZED');
-          }
+          if (response.status === 401) throw new Error('UNAUTHORIZED');
           throw new Error(`Sync push failed: ${response.status}`);
         }
       },

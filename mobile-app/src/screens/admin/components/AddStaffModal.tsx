@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, Modal, TouchableOpacity, TextInput,
-  ActivityIndicator, Alert, ScrollView,
+  View,
+  Text,
+  StyleSheet,
+  Modal,
+  TouchableOpacity,
+  TextInput,
+  ActivityIndicator,
+  ScrollView,
 } from 'react-native';
+import { Alert } from '../../../utils/alert';
 import { Ionicons } from '@expo/vector-icons';
 import { apiPost, apiGet } from '../../../services/api';
 import { useAuthStore } from '../../../store/authStore';
