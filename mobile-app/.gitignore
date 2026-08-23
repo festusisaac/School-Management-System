@@ -18,6 +18,9 @@ bundle.js
 *.jks
 *.p8
 *.p12
+
+# Sentry (contains an auth token — never commit)
+android/sentry.properties
 *.key
 *.mobileprovision
 
@@ -39,9 +42,16 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-# generated native folders
+# The android/ project is hand-maintained (manual local builds, not `expo prebuild`),
+# so it's tracked in git — only its build artifacts and machine-specific files are excluded.
+/android/build/
+/android/app/build/
+/android/app/.cxx/
+/android/.gradle/
+/android/local.properties
+
+# No ios/ project is maintained (Android-only local builds); ignore it if one ever appears.
 /ios
-/android
 
 # Firebase client config (project-specific, not a secret but keep out of git)
 google-services.json

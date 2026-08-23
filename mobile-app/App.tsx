@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { AppState } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
@@ -8,14 +9,27 @@ import { navigationRef } from './src/navigation/navigationRef';
 import { useAuthStore } from './src/store/authStore';
 import { syncPushToken, handleNotificationTap } from './src/utils/pushNotifications';
 import { AlertHost } from './src/utils/alert';
+import { checkForUpdate } from './src/utils/otaUpdates';
+import { Sentry } from './src/utils/sentry';
 
-export default function App() {
+function App() {
   const { loadFromStorage, user } = useAuthStore();
   const notificationListener = useRef<Notifications.Subscription>();
 
   // On app start, try to restore persisted login session
   useEffect(() => {
     loadFromStorage();
+  }, []);
+
+  // Check for an OTA update on cold start and every time the app returns to the
+  // foreground — so a published fix reaches an already-installed app within
+  // minutes instead of waiting for someone to happen to relaunch it.
+  useEffect(() => {
+    checkForUpdate();
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') checkForUpdate();
+    });
+    return () => sub.remove();
   }, []);
 
   // Register this device for push notifications whenever a user is logged in
@@ -50,3 +64,5 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
+
+export default Sentry.wrap(App);

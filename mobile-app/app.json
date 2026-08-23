@@ -3,6 +3,10 @@
     "name": "PHJC School",
     "slug": "sms-app",
     "version": "1.0.0",
+    "runtimeVersion": "1.0.0",
+    "updates": {
+      "url": "https://u.expo.dev/b1c3bae6-6d0a-4513-9fc7-7eff24b4bed9"
+    },
     "orientation": "portrait",
     "icon": "./assets/school-logo.png",
     "userInterfaceStyle": "dark",
@@ -43,7 +47,8 @@
           "icon": "./assets/icon.png",
           "color": "#031632"
         }
-      ]
+      ],
+      "@sentry/react-native"
     ],
     "owner": "festusisaacs-team"
   }
