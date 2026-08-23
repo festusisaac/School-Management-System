@@ -17,6 +17,8 @@ import AdmissionStatusPage from './pages/public/AdmissionStatusPage'
 import AlumniPage from './pages/public/AlumniPage'
 import CareersPage from './pages/public/CareersPage'
 import PublicDonations from './pages/public/PublicDonations'
+import PrivacyPolicyPage from './pages/public/PrivacyPolicyPage'
+import TermsOfUsePage from './pages/public/TermsOfUsePage'
 import SetupWizard from './pages/SetupWizard'
 import { MainLayout } from './components/layout/MainLayout'
 import PublicLayout from './components/layout/PublicLayout'
@@ -119,6 +121,8 @@ function AppRoutes() {
             <Route path="/alumni-hub" element={<PublicLayout><AlumniPage /></PublicLayout>} />
             <Route path="/career-hub" element={<PublicLayout><CareersPage /></PublicLayout>} />
             <Route path="/donations" element={<PublicLayout><PublicDonations /></PublicLayout>} />
+            <Route path="/privacy" element={<PublicLayout><PrivacyPolicyPage /></PublicLayout>} />
+            <Route path="/terms" element={<PublicLayout><TermsOfUsePage /></PublicLayout>} />
             
             {/* Public Admission Routes */}
             <Route path="/verify/receipt/:id" element={<Finance.VerifyReceiptPage />} />
