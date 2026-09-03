@@ -44,11 +44,11 @@ yarn-error.*
 
 # The android/ project is hand-maintained (manual local builds, not `expo prebuild`),
 # so it's tracked in git — only its build artifacts and machine-specific files are excluded.
-/android/build/
-/android/app/build/
-/android/app/.cxx/
-/android/.gradle/
-/android/local.properties
+android/build/
+android/app/build/
+android/app/.cxx/
+android/.gradle/
+android/local.properties
 
 # No ios/ project is maintained (Android-only local builds); ignore it if one ever appears.
 /ios
