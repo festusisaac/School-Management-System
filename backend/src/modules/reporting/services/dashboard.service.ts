@@ -16,6 +16,7 @@ import { StudentTermResult } from '../../examination/entities/student-term-resul
 import { CarryForward } from '../../finance/entities/carry-forward.entity';
 import { AcademicSession } from '../../system/entities/academic-session.entity';
 import { Brackets, IsNull } from 'typeorm';
+import { FeesService } from '../../finance/services/fees.service';
 
 @Injectable()
 export class DashboardService {
@@ -48,6 +49,7 @@ export class DashboardService {
         private readonly carryForwardRepository: Repository<CarryForward>,
         @InjectRepository(AcademicSession)
         private readonly academicSessionRepository: Repository<AcademicSession>,
+        private readonly feesService: FeesService,
     ) { }
 
     private async getSessionDateRange(sessionId?: string) {
@@ -97,7 +99,7 @@ export class DashboardService {
             allTransactions = await this.transactionRepository.createQueryBuilder('tx')
                 .where('tx.studentId = :studentId', { studentId })
                 .andWhere('(tx.tenantId = :tenantId OR tx.tenantId IS NULL)', { tenantId })
-                .andWhere('("tx"."sessionId"::text = :sessionId OR "tx"."sessionId" IS NULL)', { sessionId })
+                .andWhere('"tx"."sessionId"::text = :sessionId', { sessionId })
                 .getMany();
         } else {
             allTransactions = await this.transactionRepository.find({ where: { studentId, tenantId } });
@@ -106,26 +108,13 @@ export class DashboardService {
 
         const cfWhere: any = { studentId, tenantId };
         const carryForwards = await this.carryForwardRepository.find({
-            where: sessionId
-                ? [
-                    { ...cfWhere, sessionId },
-                    { ...cfWhere, sessionId: IsNull(), academicYear: sessionName || undefined },
-                ]
-                : cfWhere,
+            where: sessionId ? { ...cfWhere, sessionId } : cfWhere,
         });
 
         const assignmentWhere: any = { studentId, isActive: true, tenantId };
-        // NOTE: Do NOT filter fee assignments by sessionId — many legacy assignments
-        // were created before sessionId was tracked and have NULL. Filtering strictly would
-        // produce an outstandingFees of 0 for those students.
 
         const assignments = this.dedupeAssignments(await this.feeAssignmentRepository.find({
-            where: sessionId 
-                ? [
-                    { ...assignmentWhere, sessionId },
-                    { ...assignmentWhere, sessionId: IsNull() }
-                  ]
-                : assignmentWhere,
+            where: sessionId ? { ...assignmentWhere, sessionId } : assignmentWhere,
             relations: ['feeGroup', 'feeGroup.heads'],
         }));
 
@@ -141,19 +130,23 @@ export class DashboardService {
             }
         });
 
-        const assignedTotal = assignments.reduce((sum, assignment) => {
-            const excludedIds = assignment.excludedHeadIds || [];
-            const groupHeads = assignment.feeGroup?.heads || [];
-            const headTotal = groupHeads
-                .filter((head) => !excludedIds.includes(head.id))
-                .reduce((headSum, head) => headSum + parseFloat(head.defaultAmount || '0'), 0);
-            return sum + headTotal;
-        }, 0);
-
-        const carryForwardTotal = carryForwards.reduce((sum, carryForward) => sum + parseFloat(carryForward.amount || '0'), 0);
-        const totalDue = assignedTotal + carryForwardTotal;
         const totalPaid = transactions.reduce((sum, tx) => sum + parseFloat(tx.amount || '0'), 0);
-        const balance = Math.max(0, totalDue - totalPaid);
+        
+        let balance = 0;
+        try {
+            const { totalOutstanding } = await this.feesService.getLiveOutstandingSnapshot(
+                this.studentRepository.manager,
+                studentId,
+                tenantId,
+                sessionId
+            );
+            balance = totalOutstanding;
+        } catch (e) {
+            console.error('[Dashboard] Error fetching accurate balance:', (e as any).message);
+        }
+
+        // Ensure totalDue is backward compatible for chart math
+        const totalDue = totalPaid + balance;
 
         return {
             totalDue,
@@ -286,12 +279,7 @@ export class DashboardService {
                     }));
             }
             if (isValidSession) {
-                transQb.andWhere(
-                    new Brackets((qb) => {
-                        qb.where('"transaction"."sessionId"::text = CAST(:sessionId AS text)', { sessionId })
-                          .orWhere('"transaction"."sessionId" IS NULL');
-                    })
-                );
+                transQb.andWhere('"transaction"."sessionId"::text = CAST(:sessionId AS text)', { sessionId });
             }
             const revenueResult = await transQb.select('SUM(transaction.amount::numeric)', 'total').getRawOne();
             stats.finance.totalRevenue = parseFloat(revenueResult?.total || '0') || 0;
@@ -944,37 +932,13 @@ export class DashboardService {
 
         // 2. Fees Balance
         try {
-            const feeStatusRaw = await this.studentRepository.manager.query(`
-                SELECT 
-                    (
-                        SELECT COALESCE(SUM(fh."defaultAmount"::numeric), 0)
-                        FROM students s
-                        LEFT JOIN fee_assignments fa ON fa."studentId"::text = s.id::text 
-                            AND (fa."tenantId"::text = $1::text OR fa."tenantId" IS NULL)
-                            AND fa."isActive" = true
-                            ${isValidSession ? 'AND fa."sessionId"::text = $3::text' : ''}
-                        LEFT JOIN fee_group_heads fgh ON fgh."feeGroupId"::text = fa."feeGroupId"::text
-                        LEFT JOIN fee_heads fh ON fh.id::text = fgh."feeHeadId"::text
-                        WHERE s.id = $2
-                    ) + (
-                        SELECT COALESCE(SUM(amount::numeric), 0)
-                        FROM carry_forwards
-                        WHERE "studentId"::text = $2::text AND ("tenantId"::text = $1::text OR "tenantId" IS NULL)
-                        ${isValidSession ? 'AND ("sessionId"::text = $3::text OR ("sessionId" IS NULL AND "academicYear" = (SELECT name FROM academic_sessions WHERE id::text = $3::text)))' : ''}
-                    ) as assigned,
-                    (
-                        SELECT COALESCE(SUM(amount::numeric), 0)
-                        FROM transactions
-                        WHERE type = 'FEE_PAYMENT' AND "studentId"::text = $2::text AND ("tenantId"::text = $1::text OR "tenantId" IS NULL)
-                        ${isValidSession ? 'AND "sessionId"::text = $3::text' : ''}
-                    ) as paid
-            `, isValidSession ? [tenantId, studentId, sessionId] : [tenantId, studentId]);
-
-            if (feeStatusRaw && feeStatusRaw[0]) {
-                const assigned = parseFloat(feeStatusRaw[0].assigned || '0');
-                const paid = parseFloat(feeStatusRaw[0].paid || '0');
-                feesBalance = Math.max(0, assigned - paid);
-            }
+            const { totalOutstanding } = await this.feesService.getLiveOutstandingSnapshot(
+                this.studentRepository.manager,
+                studentId,
+                tenantId,
+                sessionId
+            );
+            feesBalance = totalOutstanding;
         } catch (e) { console.error('[DashboardService] Student balance error:', (e as any).message) }
 
         // 3. Latest Average
@@ -1136,38 +1100,14 @@ export class DashboardService {
             // Balance
             try {
                 const childTenantId = child.tenantId || tenantId;
-                const feeStatusRaw = await this.studentRepository.manager.query(`
-                    SELECT 
-                        (
-                            SELECT COALESCE(SUM(fh."defaultAmount"::numeric), 0)
-                            FROM students s
-                            LEFT JOIN fee_assignments fa ON fa."studentId"::text = s.id::text
-                                AND (fa."tenantId"::text = $1::text OR fa."tenantId" IS NULL)
-                                AND fa."isActive" = true
-                                ${isValidSession ? 'AND fa."sessionId"::text = $3::text' : ''}
-                            LEFT JOIN fee_group_heads fgh ON fgh."feeGroupId"::text = fa."feeGroupId"::text
-                            LEFT JOIN fee_heads fh ON fh.id::text = fgh."feeHeadId"::text
-                            WHERE s.id = $2
-                        ) + (
-                            SELECT COALESCE(SUM(amount::numeric), 0)
-                            FROM carry_forwards
-                            WHERE "studentId"::text = $2::text AND ("tenantId"::text = $1::text OR "tenantId" IS NULL)
-                            ${isValidSession ? 'AND ("sessionId"::text = $3::text OR ("sessionId" IS NULL AND "academicYear" = (SELECT name FROM academic_sessions WHERE id::text = $3::text)))' : ''}
-                        ) as assigned,
-                        (
-                            SELECT COALESCE(SUM(amount::numeric), 0)
-                            FROM transactions
-                            WHERE type = 'FEE_PAYMENT' AND "studentId"::text = $2::text AND ("tenantId"::text = $1::text OR "tenantId" IS NULL)
-                            ${isValidSession ? 'AND "sessionId"::text = $3::text' : ''}
-                        ) as paid
-                `, isValidSession ? [childTenantId, childId, sessionId] : [childTenantId, childId]);
-
-                if (feeStatusRaw && feeStatusRaw[0]) {
-                    const assigned = parseFloat(feeStatusRaw[0].assigned || '0');
-                    const paid = parseFloat(feeStatusRaw[0].paid || '0');
-                    balance = Math.max(0, assigned - paid);
-                    totalFamilyBalance += balance;
-                }
+                const { totalOutstanding } = await this.feesService.getLiveOutstandingSnapshot(
+                    this.studentRepository.manager,
+                    childId,
+                    childTenantId,
+                    sessionId
+                );
+                balance = totalOutstanding;
+                totalFamilyBalance += balance;
             } catch (e) { console.error('[DashboardService] Parent balance error:', (e as any).message) }
 
             // Performance

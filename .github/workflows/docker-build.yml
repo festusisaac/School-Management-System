@@ -2,7 +2,7 @@ name: Docker Build & Push
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, App]
     tags: ['v*']
   pull_request:
     branches: [main, develop]
@@ -48,6 +48,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend
             ${{ secrets.DOCKER_USERNAME }}/sms-backend
           tags: |
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/App' || github.ref == 'refs/heads/main' }}
             type=ref,event=branch
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
@@ -97,6 +98,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend
             ${{ secrets.DOCKER_USERNAME }}/sms-frontend
           tags: |
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/App' || github.ref == 'refs/heads/main' }}
             type=ref,event=branch
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
@@ -109,6 +111,8 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VITE_API_URL=https://sms.festus.com.ng/api/v1
 
   scan-images:
     needs: [build-backend, build-frontend]

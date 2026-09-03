@@ -16,7 +16,7 @@ import { format, isBefore } from 'date-fns';
 import { useAuthStore } from '@stores/authStore';
 import { useToast } from '../../context/ToastContext';
 import homeworkService, { Homework, HomeworkSubmission } from '../../services/homework.service';
-import { getFileUrl } from '../../services/api';
+import api from '../../services/api';
 import HomeworkForm from './components/HomeworkForm';
 import HomeworkDetailsModal from './components/HomeworkDetailsModal';
 import SubmissionModal from './components/SubmissionModal';
@@ -199,15 +199,18 @@ export default function HomeworkPage() {
 
                                 <div className="flex items-center gap-3 ml-auto md:ml-0">
                                     {item.attachmentUrl && (
-                                        <a 
-                                            href={getFileUrl(item.attachmentUrl)} 
-                                            target="_blank" 
-                                            rel="noopener noreferrer"
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                api.downloadFile(`/homework/${item.id}/attachment`, 'material')
+                                                    .catch((err: any) => toast.showError(err?.response?.status === 403 ? 'You do not have access to this file.' : 'Download failed.'));
+                                            }}
                                             className="p-2 rounded-lg bg-gray-50 dark:bg-gray-900/50 text-gray-500 hover:text-primary-600 transition-colors"
                                             title="Download Attachment"
                                         >
                                             <Download className="w-5 h-5" />
-                                        </a>
+                                        </button>
                                     )}
                                     {isStaff && (
                                         <>

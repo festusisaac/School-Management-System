@@ -652,7 +652,7 @@ const LandingPage = () => {
                       {cmsData.sections.heritage.metadata.author && ` — ${cmsData.sections.heritage.metadata.author}`}
                     </p>
                   )}
-                  {!cmsData?.sections.heritage?.metadata?.quote && (
+                  {!cmsData?.sections?.heritage?.metadata?.quote && (
                     <p className="italic text-slate-500 font-medium text-center lg:text-left">
                       "We have more to do with the people than with the walls, of this be always mindful." — St. Katharina Kasper
                     </p>

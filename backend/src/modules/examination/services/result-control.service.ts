@@ -7,6 +7,7 @@ import { ScratchCardLog } from '../entities/scratch-card-log.entity';
 import { StudentTermResult } from '../entities/student-term-result.entity';
 import { GenerateScratchCardDto, GetScratchCardsFilterDto, VerifyScratchCardDto } from '../dtos/control/control.dto';
 import { Student } from '../../students/entities/student.entity';
+import { PushNotificationService } from '../../notifications/services/push-notification.service';
 import { v4 as uuidv4 } from 'uuid';
 import * as crypto from 'crypto';
 import moment from 'moment';
@@ -27,6 +28,7 @@ export class ResultControlService {
         private logRepo: Repository<ScratchCardLog>,
         @InjectRepository(StudentTermResult)
         private termResultRepo: Repository<StudentTermResult>,
+        private readonly pushService: PushNotificationService,
     ) { }
 
     async getResultSummary(examGroupId: string, classId: string, tenantId: string) {
@@ -103,10 +105,27 @@ export class ResultControlService {
     }
 
     async publishResults(examGroupId: string, classId: string, tenantId: string) {
+        const results = await this.termResultRepo.find({
+            where: { examGroupId, classId, status: 'APPROVED', tenantId },
+            select: ['studentId'],
+        });
+
         await this.termResultRepo.update(
             { examGroupId, classId, status: 'APPROVED', tenantId },
             { status: 'PUBLISHED' }
         );
+
+        const studentIds = results.map((r) => r.studentId).filter((id): id is string => !!id);
+        if (studentIds.length) {
+            this.pushService.getStudentUserIds(tenantId, studentIds)
+                .then((userIds) => this.pushService.sendToUserIds(userIds, {
+                    title: 'Result Published',
+                    body: 'Your result is now available. Tap to check it.',
+                    data: { type: 'result', examGroupId },
+                }))
+                .catch((err) => console.error('Failed to push-notify results published:', err));
+        }
+
         return { message: 'Results published successfully' };
     }
 

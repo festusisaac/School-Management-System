@@ -1419,14 +1419,14 @@ export default function StudentAdmission() {
                                                                     <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border border-green-100 dark:border-green-800">
                                                                         Uploaded
                                                                     </span>
-                                                                    <a
-                                                                        href={getFileUrl(doc.filePath)}
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => api.downloadFile(`/students/documents/${doc.id}/file`, doc.title || 'document')
+                                                                            .catch((e: any) => toast.showError(e?.response?.status === 403 ? 'You do not have access to this document.' : 'Download failed.'))}
                                                                         className="text-xs text-primary-500 hover:underline flex items-center gap-1"
                                                                     >
                                                                         View Document
-                                                                    </a>
+                                                                    </button>
                                                                 </div>
                                                             )}
                                                         </div>

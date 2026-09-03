@@ -30,7 +30,13 @@ export class SyncController {
     @Body() body: { changes: any; lastPulledAt: number },
     @Req() req: any,
   ) {
-    await this.syncService.pushChanges(body.changes, req.user.tenantId);
-    return { success: true };
+    require('fs').writeFileSync('sync-payload.json', JSON.stringify(body, null, 2));
+    try {
+      await this.syncService.pushChanges(body.changes, req.user.tenantId);
+      return { success: true };
+    } catch (error: any) {
+      require('fs').writeFileSync('sync-error.log', String(error.stack || error.message));
+      throw error;
+    }
   }
 }

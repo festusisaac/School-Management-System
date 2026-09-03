@@ -180,3 +180,6 @@ dependencies {
         implementation jscFlavor
     }
 }
+
+apply plugin: 'com.google.gms.google-services'
+apply from: "../../node_modules/@sentry/react-native/sentry.gradle"

@@ -253,32 +253,102 @@ export class StudentsService {
             await this.feesService.assignFeesToStudent(savedStudent.id, feeGroupIds, tenantId, feeExclusions);
         }
 
-        // 5. Automated User Creation
+        // 5. Automated User Creation & Welcome Email
+        await this.provisionUserAccountsAndSendEmail(savedStudent, parent, tenantId, isOnline);
+
+        return savedStudent;
+    }
+
+    async provisionNewStudentCreatedOffline(studentId: string, tenantId: string): Promise<void> {
+        const student = await this.studentsRepository.findOne({
+            where: { id: studentId, tenantId },
+            relations: ['parent']
+        });
+        if (!student) return;
+
+        // Skip if already has a user account (to prevent duplicate emails)
+        if (student.userId) return;
+
+        let parent = student.parent;
+
+        // 1. Parent Resolution & Creation
+        if (!parent) {
+            const email = student.guardianEmail || student.fatherEmail || student.motherEmail;
+            const guardianPhone = student.guardianPhone || student.fatherPhone || student.motherPhone;
+
+            if (email) {
+                const existingParent = await this.parentRepository.findOne({
+                    where: [
+                        { guardianEmail: email, tenantId },
+                        { fatherEmail: email, tenantId },
+                        { motherEmail: email, tenantId },
+                    ]
+                });
+                if (existingParent) parent = existingParent;
+            }
+
+            if (!parent && guardianPhone) {
+                const existingParentByPhone = await this.parentRepository.findOne({
+                    where: [{ guardianPhone, tenantId }]
+                });
+                if (existingParentByPhone) parent = existingParentByPhone;
+            }
+
+            if (!parent) {
+                const parentData = this.parentRepository.create({
+                    fatherName: student.fatherName,
+                    fatherPhone: student.fatherPhone,
+                    fatherEmail: student.fatherEmail,
+                    fatherOccupation: student.fatherOccupation,
+                    motherName: student.motherName,
+                    motherPhone: student.motherPhone,
+                    motherEmail: student.motherEmail,
+                    motherOccupation: student.motherOccupation,
+                    guardianName: student.guardianName,
+                    guardianRelation: student.guardianRelation,
+                    guardianPhone: student.guardianPhone,
+                    guardianEmail: student.guardianEmail,
+                    guardianPhoto: student.guardianPhoto,
+                    guardianAddress: student.guardianAddress,
+                    emergencyContact: student.emergencyContact,
+                    permanentAddress: student.permanentAddress,
+                    tenantId: tenantId,
+                });
+                parent = await this.parentRepository.save(parentData);
+            }
+
+            // Link parent to student
+            student.parent = parent;
+            student.parentId = parent.id;
+            await this.studentsRepository.save(student);
+        }
+
+        // 2. User Provisioning & Emails
+        await this.provisionUserAccountsAndSendEmail(student, parent, tenantId, false);
+    }
+
+    private async provisionUserAccountsAndSendEmail(student: Student, parent: Parent | null, tenantId: string, isOnline: boolean): Promise<void> {
         try {
             const studentRole = await this.roleRepository.findOne({ where: { name: 'Student' } });
             const parentRole = await this.roleRepository.findOne({ where: { name: 'Parent' } });
 
-            // 4. Provision User Account for Student
-            const studentIdentifier = savedStudent.admissionNo;
-            const studentTempPassword = `Std@${savedStudent.admissionNo.slice(-4)}`;
+            const studentIdentifier = student.admissionNo;
+            const studentTempPassword = `Std@${student.admissionNo.slice(-4)}`;
             
-            // Security: Force student to change password on first login
             const studentUser = await this.usersService.findOrCreateUser(studentIdentifier, {
-                firstName: savedStudent.firstName,
-                lastName: savedStudent.lastName || '',
+                firstName: student.firstName,
+                lastName: student.lastName || '',
                 password: studentTempPassword,
                 role: 'student',
                 roleId: studentRole?.id,
                 tenantId: tenantId,
-                photo: savedStudent.studentPhoto,
-                mustChangePassword: true // Explicitly force change
+                photo: student.studentPhoto,
+                mustChangePassword: true
             });
-            await this.studentsRepository.update(savedStudent.id, { userId: studentUser.id });
+            await this.studentsRepository.update(student.id, { userId: studentUser.id });
 
-            // Create Parent User (Prioritize guardian email, fallback to phone)
             const parentEmail = parent?.guardianEmail || (parent?.guardianPhone ? `${parent.guardianPhone.replace(/\s+/g, '')}@parent.sms` : null);
 
-            // --- Parent User Provisioning & Admission Email ---
             if (parent && parentEmail) {
                 let isNewParentUser = false;
                 let parentUser = await this.usersService.findByEmail(parentEmail);
@@ -286,7 +356,6 @@ export class StudentsService {
 
                 if (!parentUser) {
                     isNewParentUser = true;
-                    // Split name into first and last for cleaner user profile
                     const fullName = (parent.guardianName || parent.fatherName || 'Parent').trim();
                     const nameParts = fullName.split(' ');
                     const parentFirstName = nameParts[0];
@@ -300,38 +369,31 @@ export class StudentsService {
                         roleId: parentRole?.id,
                         tenantId: tenantId,
                         photo: parent.guardianPhoto,
-                        mustChangePassword: true // Enforce security for new parents
+                        mustChangePassword: true
                     });
                     await this.parentRepository.update(parent.id, { userId: parentUser.id });
                 } else if (!parent.userId) {
-                    // Link existing user to this parent record if not already linked
                     await this.parentRepository.update(parent.id, { userId: parentUser.id });
                 }
                 
-                // Fetch settings for school/portal info
                 const settings = await this.systemSettingsService.getSettings();
-
-                // --- Consolidated Parent Admission & Login Email ---
                 let admissionLetterHtml: string | undefined = undefined;
+
                 try {
                     const templates = await this.messageTemplatesService.findAll(tenantId);
                     const template = templates.find(t => t.name === 'Admission Template');
 
                     if (template && template.body) {
-                        // Fetch student current balance (from fees allocated during creation)
                         let feeBalance = 0;
                         try {
-                            feeBalance = await this.feesService.getStudentCurrentBalance(savedStudent.id, tenantId);
-                        } catch (e: any) {
-                            console.error('Failed to fetch initial fee balance for admission email:', e.message);
-                        }
+                            feeBalance = await this.feesService.getStudentCurrentBalance(student.id, tenantId);
+                        } catch (e: any) {}
 
-                        // Prepare Replacements for Template
                         const replacements = {
-                            '{first_name}': savedStudent.firstName,
-                            '{student_name}': `${savedStudent.firstName} ${savedStudent.lastName || ''}`.trim(),
+                            '{first_name}': student.firstName,
+                            '{student_name}': `${student.firstName} ${student.lastName || ''}`.trim(),
                             '{guardian_name}': parent.guardianName || parent.fatherName || 'Parent',
-                            '{admission_no}': savedStudent.admissionNo,
+                            '{admission_no}': student.admissionNo,
                             '{school_name}': settings?.schoolName || 'Our School',
                             '{portal_url}': settings?.officialWebsite || process.env.FRONTEND_URL || 'https://phjcschool.com.ng',
                             '{fee_balance}': new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(feeBalance)
@@ -342,15 +404,13 @@ export class StudentsService {
                             admissionLetterHtml = admissionLetterHtml?.replace(new RegExp(key, 'g'), String(value));
                         });
                     }
-                } catch (e) {
-                    console.error('Failed to fetch admission template', e);
-                }
+                } catch (e) {}
 
                 await this.emailService.sendConsolidatedAdmissionEmail({
                     email: parentUser.email,
                     guardianName: parentUser.firstName,
-                    studentName: `${savedStudent.firstName} ${savedStudent.lastName || ''}`,
-                    admissionNo: savedStudent.admissionNo,
+                    studentName: `${student.firstName} ${student.lastName || ''}`,
+                    admissionNo: student.admissionNo,
                     parentUsername: parentUser.email,
                     parentPassword: isNewParentUser ? parentPassword : undefined,
                     studentPassword: studentTempPassword,
@@ -361,12 +421,9 @@ export class StudentsService {
                     isOnline: isOnline
                 });
             }
-
         } catch (error) {
             console.error('Failed to auto-provision user accounts or send welcome emails:', error);
         }
-
-        return savedStudent;
     }
 
     async findAll(query: any, tenantId: string): Promise<Student[]> {

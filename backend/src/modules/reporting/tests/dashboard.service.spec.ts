@@ -4,6 +4,18 @@ import { DashboardService } from '../services/dashboard.service';
 import { Student } from '../../students/entities/student.entity';
 import { Staff } from '../../hr/entities/staff.entity';
 import { Transaction, TransactionType } from '../../finance/entities/transaction.entity';
+import { Class } from '../../academics/entities/class.entity';
+import { Subject } from '../../academics/entities/subject.entity';
+import { FeeAssignment } from '../../finance/entities/fee-assignment.entity';
+import { ExamResult } from '../../examination/entities/exam-result.entity';
+import { ExamGroup } from '../../examination/entities/exam-group.entity';
+import { StaffAttendance } from '../../hr/entities/staff-attendance.entity';
+import { Payroll } from '../../hr/entities/payroll.entity';
+import { StudentAttendance } from '../../students/entities/student-attendance.entity';
+import { StudentTermResult } from '../../examination/entities/student-term-result.entity';
+import { CarryForward } from '../../finance/entities/carry-forward.entity';
+import { AcademicSession } from '../../system/entities/academic-session.entity';
+import { FeesService } from '../../finance/services/fees.service';
 
 describe('DashboardService', () => {
     let service: DashboardService;
@@ -15,6 +27,12 @@ describe('DashboardService', () => {
         orderBy: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        leftJoin: jest.fn().mockReturnThis(),
+        innerJoin: jest.fn().mockReturnThis(),
+        clone: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(0),
+        getMany: jest.fn().mockResolvedValue([]),
         getRawOne: jest.fn(),
         getRawMany: jest.fn(),
     };
@@ -34,6 +52,10 @@ describe('DashboardService', () => {
         find: jest.fn(),
     };
 
+    const mockFeesService = {
+        getLiveOutstandingSnapshot: jest.fn().mockResolvedValue({ totalOutstanding: 100 }),
+    };
+
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -41,6 +63,18 @@ describe('DashboardService', () => {
                 { provide: getRepositoryToken(Student), useValue: mockStudentRepo },
                 { provide: getRepositoryToken(Staff), useValue: mockStaffRepo },
                 { provide: getRepositoryToken(Transaction), useValue: mockTransactionRepo },
+                { provide: getRepositoryToken(Class), useValue: {} },
+                { provide: getRepositoryToken(Subject), useValue: {} },
+                { provide: getRepositoryToken(FeeAssignment), useValue: {} },
+                { provide: getRepositoryToken(ExamResult), useValue: {} },
+                { provide: getRepositoryToken(ExamGroup), useValue: {} },
+                { provide: getRepositoryToken(StaffAttendance), useValue: {} },
+                { provide: getRepositoryToken(Payroll), useValue: {} },
+                { provide: getRepositoryToken(StudentAttendance), useValue: {} },
+                { provide: getRepositoryToken(StudentTermResult), useValue: {} },
+                { provide: getRepositoryToken(CarryForward), useValue: {} },
+                { provide: getRepositoryToken(AcademicSession), useValue: {} },
+                { provide: FeesService, useValue: mockFeesService },
             ],
         }).compile();
 

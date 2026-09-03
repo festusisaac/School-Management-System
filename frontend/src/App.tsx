@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
+import { SettingsRoute } from './components/auth/SettingsRoute'
 import LoginPage from '@pages/auth/LoginPage'
 import ChangePasswordPage from '@pages/auth/ChangePasswordPage'
 import DashboardPage from '@pages/dashboard/DashboardPage'
@@ -16,6 +17,8 @@ import AdmissionStatusPage from './pages/public/AdmissionStatusPage'
 import AlumniPage from './pages/public/AlumniPage'
 import CareersPage from './pages/public/CareersPage'
 import PublicDonations from './pages/public/PublicDonations'
+import PrivacyPolicyPage from './pages/public/PrivacyPolicyPage'
+import TermsOfUsePage from './pages/public/TermsOfUsePage'
 import SetupWizard from './pages/SetupWizard'
 import { MainLayout } from './components/layout/MainLayout'
 import PublicLayout from './components/layout/PublicLayout'
@@ -118,6 +121,8 @@ function AppRoutes() {
             <Route path="/alumni-hub" element={<PublicLayout><AlumniPage /></PublicLayout>} />
             <Route path="/career-hub" element={<PublicLayout><CareersPage /></PublicLayout>} />
             <Route path="/donations" element={<PublicLayout><PublicDonations /></PublicLayout>} />
+            <Route path="/privacy" element={<PublicLayout><PrivacyPolicyPage /></PublicLayout>} />
+            <Route path="/terms" element={<PublicLayout><TermsOfUsePage /></PublicLayout>} />
             
             {/* Public Admission Routes */}
             <Route path="/verify/receipt/:id" element={<Finance.VerifyReceiptPage />} />
@@ -305,16 +310,18 @@ function AppRoutes() {
                 <Route path="history" element={<Donations.DonationHistory />} />
               </Route>
 
-              {/* Settings Routes */}
-              <Route path="settings">
-                <Route index element={<Navigate to="general" replace />} />
-                <Route path="general" element={<Settings.GeneralSettingsPage />} />
-                <Route path="sessions" element={<Settings.SessionsPage />} />
-                <Route path="terms" element={<Settings.TermsPage />} />
-                <Route path="roles-permissions" element={<Settings.RolesPermissionsPage />} />
-                <Route path="users" element={<Settings.UsersPage />} />
-                <Route path="payments" element={<Settings.PaymentSettingsPage />} />
-                <Route path="profile" element={<Settings.AdminProfilePage />} />
+              {/* Settings Routes — admins or anyone granted a settings permission */}
+              <Route element={<SettingsRoute />}>
+                <Route path="settings">
+                  <Route index element={<Navigate to="general" replace />} />
+                  <Route path="general" element={<Settings.GeneralSettingsPage />} />
+                  <Route path="sessions" element={<Settings.SessionsPage />} />
+                  <Route path="terms" element={<Settings.TermsPage />} />
+                  <Route path="roles-permissions" element={<Settings.RolesPermissionsPage />} />
+                  <Route path="users" element={<Settings.UsersPage />} />
+                  <Route path="payments" element={<Settings.PaymentSettingsPage />} />
+                  <Route path="profile" element={<Settings.AdminProfilePage />} />
+                </Route>
               </Route>
 
               {/* Front CMS Routes */}

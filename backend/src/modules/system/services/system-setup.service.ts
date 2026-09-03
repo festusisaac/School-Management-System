@@ -142,7 +142,7 @@ export class SystemSetupService {
         settings.primaryLogo = `uploads/logos/${logoFile.filename}`;
       }
 
-      await queryRunner.manager.save(settings);
+      await queryRunner.manager.save(SystemSetting, settings);
 
       // 6. Log Initialization Action
       await this.activityLogService.logAction({

@@ -27,7 +27,7 @@ export class DownloadCenterService {
     this.validateVideoRules(resource.resourceType, file, resource.externalUrl);
 
     if (file) {
-      resource.fileUrl = `/uploads/download-center/${file.filename}`;
+      resource.fileUrl = `/private-uploads/download-center/${file.filename}`;
       resource.mimeType = file.mimetype;
       resource.fileSize = file.size;
     }
@@ -139,7 +139,7 @@ export class DownloadCenterService {
     this.validateVideoRules(resource.resourceType, file, resource.externalUrl);
 
     if (file) {
-      resource.fileUrl = `/uploads/download-center/${file.filename}`;
+      resource.fileUrl = `/private-uploads/download-center/${file.filename}`;
       resource.mimeType = file.mimetype;
       resource.fileSize = file.size;
     }

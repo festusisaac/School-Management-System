@@ -5,6 +5,7 @@ import { Notice, NoticeAudience } from '../entities/notice.entity';
 import { Staff } from '../../hr/entities/staff.entity';
 import { CreateNoticeDto, UpdateNoticeDto } from '../dto/notice.dto';
 import { SystemSettingsService } from '../../system/services/system-settings.service';
+import { PushNotificationService } from '../../notifications/services/push-notification.service';
 
 @Injectable()
 export class NoticeboardService {
@@ -14,6 +15,7 @@ export class NoticeboardService {
     @InjectRepository(Staff)
     private readonly staffRepository: Repository<Staff>,
     private readonly systemSettingsService: SystemSettingsService,
+    private readonly pushService: PushNotificationService,
   ) {}
 
   async create(dto: CreateNoticeDto, userId: string, tenantId: string, email?: string): Promise<Notice> {
@@ -36,7 +38,33 @@ export class NoticeboardService {
       tenantId,
       expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : undefined,
     });
-    return await this.noticeRepository.save(notice);
+    const saved = await this.noticeRepository.save(notice);
+
+    this.notifyAudience(saved, tenantId).catch((err) =>
+      console.error('Failed to push-notify notice audience:', err),
+    );
+
+    return saved;
+  }
+
+  private async notifyAudience(notice: Notice, tenantId: string): Promise<void> {
+    const audience = notice.targetAudience;
+    const userIds: string[] = [];
+
+    if (audience === NoticeAudience.STAFF || audience === NoticeAudience.ALL) {
+      userIds.push(...(await this.pushService.getStaffUserIds(tenantId)));
+    }
+    if (audience === NoticeAudience.STUDENTS || audience === NoticeAudience.ALL) {
+      userIds.push(...(await this.pushService.getStudentUserIds(tenantId)));
+    }
+
+    if (!userIds.length) return;
+
+    await this.pushService.sendToUserIds(userIds, {
+      title: notice.title,
+      body: notice.content?.replace(/<[^>]+>/g, '').slice(0, 120) || 'A new notice has been posted.',
+      data: { type: 'notice', noticeId: notice.id },
+    });
   }
 
   async findAll(tenantId: string, audience?: NoticeAudience, schoolSectionId?: string): Promise<Notice[]> {

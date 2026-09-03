@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
+import { unregisterPushToken } from '../utils/pushNotifications';
 
 export type UserRole = 'admin' | 'principal' | 'teacher' | 'student' | 'parent' | 'accountant';
 
@@ -12,17 +13,20 @@ interface User {
   displayRole?: string;
   tenantId: string;
   token: string;
+  refreshToken?: string;
+  photo?: string;
 }
 
 interface AuthState {
   user: User | null;
   isLoading: boolean;
   setUser: (user: User | null) => void;
+  updateTokens: (token: string, refreshToken?: string) => void;
   logout: () => Promise<void>;
   loadFromStorage: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isLoading: true,
 
@@ -35,7 +39,20 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
+  updateTokens: (token, refreshToken) => {
+    const current = get().user;
+    if (!current) return;
+    const updated = { ...current, token, refreshToken: refreshToken ?? current.refreshToken };
+    set({ user: updated });
+    AsyncStorage.setItem('auth_user', JSON.stringify(updated));
+  },
+
   logout: async () => {
+    const token = get().user?.token;
+    if (token) {
+      // Fire-and-forget: stop this device from receiving this user's pushes.
+      unregisterPushToken(token).catch(() => {});
+    }
     await AsyncStorage.removeItem('auth_user');
     set({ user: null });
   },

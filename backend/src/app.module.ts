@@ -37,6 +37,7 @@ import { DownloadCenterModule } from '@modules/download-center/download-center.m
 import { LessonNotesModule } from '@modules/lesson-notes/lesson-notes.module';
 import { SearchModule } from '@modules/search/search.module';
 import { SyncModule } from '@modules/sync/sync.module';
+import { NotificationsModule } from '@modules/notifications/notifications.module';
 
 
 @Module({
@@ -105,6 +106,7 @@ import { SyncModule } from '@modules/sync/sync.module';
     forwardRef(() => DownloadCenterModule),
     forwardRef(() => LessonNotesModule),
     forwardRef(() => SyncModule),
+    forwardRef(() => NotificationsModule),
     SearchModule,
   ],
   controllers: [AppController],

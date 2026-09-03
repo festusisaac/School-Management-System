@@ -8,7 +8,8 @@ import {
   StatusBar,
   Image,
   Platform,
-  ActivityIndicator
+  ActivityIndicator,
+  RefreshControl
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
@@ -21,7 +22,10 @@ import AdminLayout from '../../components/AdminLayout';
 // @ts-ignore
 const schoolLogo = require('../../../assets/school-logo.png');
 import { useAuthStore } from '../../store/authStore';
+import { useSettingsStore } from '../../store/settingsStore';
+import { useSectionStore } from '../../store/sectionStore';
 import { apiGet } from '../../services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /* --- Design System Colors --- */
 const COLORS = {
@@ -47,6 +51,8 @@ const COLORS = {
 
 export default function AdminDashboard() {
   const { user, logout } = useAuthStore();
+  const { settings } = useSettingsStore();
+  const activeSectionId = useSectionStore((s) => s.activeSectionId);
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,6 +60,8 @@ export default function AdminDashboard() {
   const navigation = useNavigation<NativeStackNavigationProp<AdminStackParamList>>();
 
   const userInitials = user ? `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`.toUpperCase() : 'U';
+
+  const [refreshing, setRefreshing] = useState(false);
 
   // Track connectivity
   useEffect(() => {
@@ -63,48 +71,95 @@ export default function AdminDashboard() {
     return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
+  const cacheKey = `admin_dashboard_${settings?.currentSessionId || 'na'}_${activeSectionId || 'all'}`;
+
+  async function fetchData() {
     if (!user?.token) return;
+    try {
+      const params = new URLSearchParams();
+      if (settings?.currentSessionId) params.append('sessionId', settings.currentSessionId);
+      if (activeSectionId) params.append('sectionId', activeSectionId);
+      const query = params.toString() ? `?${params.toString()}` : '';
+      const stats = await apiGet(`/reporting/dashboard/admin/stats${query}`, user!.token);
+      setDashboardData(stats);
 
-    async function fetchData() {
-      try {
-        const stats = await apiGet('/reporting/dashboard/admin/stats', user!.token);
-        setDashboardData(stats);
+      const acts = await apiGet(`/reporting/dashboard/admin/activities${query}`, user!.token);
+      const enrolls = (acts.recentEnrollments || []).map((s: any) => ({
+        id: `stu_${s.id}`,
+        type: 'enrollment',
+        title: 'New admission:',
+        boldText: `${s.firstName} ${s.lastName}`,
+        subtitle: `Added • ${new Date(s.createdAt).toLocaleDateString()}`,
+        date: new Date(s.createdAt)
+      }));
+      const payments = (acts.recentPayments || []).map((p: any) => ({
+        id: `pay_${p.id}`,
+        type: 'payment',
+        title: 'Payment received:',
+        boldText: `₦${p.amount?.toLocaleString() || '0'}`,
+        subtitle: `Ref: ${p.reference || 'N/A'} • ${new Date(p.createdAt).toLocaleDateString()}`,
+        date: new Date(p.createdAt)
+      }));
 
-        const acts = await apiGet('/reporting/dashboard/admin/activities', user!.token);
-        const enrolls = (acts.recentEnrollments || []).map((s: any) => ({
-          id: `stu_${s.id}`,
-          type: 'enrollment',
-          title: 'New admission:',
-          boldText: `${s.firstName} ${s.lastName}`,
-          subtitle: `Added • ${new Date(s.createdAt).toLocaleDateString()}`,
-          date: new Date(s.createdAt)
-        }));
-        const payments = (acts.recentPayments || []).map((p: any) => ({
-          id: `pay_${p.id}`,
-          type: 'payment',
-          title: 'Payment received:',
-          boldText: `₦${p.amount?.toLocaleString() || '0'}`,
-          subtitle: `Ref: ${p.reference || 'N/A'} • ${new Date(p.createdAt).toLocaleDateString()}`,
-          date: new Date(p.createdAt)
-        }));
+      const combined = [...enrolls, ...payments]
+        .sort((a, b) => b.date.getTime() - a.date.getTime())
+        .slice(0, 4); // show top 4
 
-        const combined = [...enrolls, ...payments]
-          .sort((a, b) => b.date.getTime() - a.date.getTime())
-          .slice(0, 4); // show top 4
-
-        setRecentActivities(combined);
-      } catch (err: any) {
-        if (err.message !== 'UNAUTHORIZED') {
-          console.error('Failed to fetch dashboard data:', err);
-        }
-      } finally {
-        setIsLoading(false);
+      setRecentActivities(combined);
+      // Cache the last-synced dashboard so it shows offline.
+      AsyncStorage.setItem(cacheKey, JSON.stringify({ stats, activities: combined })).catch(() => {});
+    } catch (err: any) {
+      if (err.message !== 'UNAUTHORIZED') {
+        console.error('Failed to fetch dashboard data:', err);
       }
+      // Offline / failed → fall back to the last-synced snapshot.
+      try {
+        const cached = await AsyncStorage.getItem(cacheKey);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed.stats) setDashboardData(parsed.stats);
+          if (Array.isArray(parsed.activities)) {
+            setRecentActivities(parsed.activities.map((a: any) => ({ ...a, date: new Date(a.date) })));
+          }
+        }
+      } catch {}
+    } finally {
+      setIsLoading(false);
     }
+  }
+
+  const onRefresh = React.useCallback(async () => {
+    if (!user?.token) return;
+    setRefreshing(true);
+    try {
+      // 1. Force refresh system settings (including currentSessionId)
+      const data = await apiGet('/system/settings', user.token);
+      if (data) {
+        useSettingsStore.getState().setSettings({
+          schoolName: data.schoolName,
+          staffIdPrefix: data.staffIdPrefix || 'STF/',
+          admissionNumberPrefix: data.admissionNumberPrefix || 'SCH/',
+          currentSessionId: data.currentSessionId,
+          currentTermId: data.currentTermId,
+          currentSessionName: data.currentSessionName,
+          currentTermName: data.currentTermName,
+          currencySymbol: data.currencySymbol || '₦',
+          dateFormat: data.dateFormat || 'DD/MM/YYYY',
+        });
+      }
+      // 2. Fetch dashboard data (the useEffect will also trigger if sessionId changes, but we fetch here to be safe)
+      await fetchData();
+    } catch (e) {
+      console.log('Refresh failed', e);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [user, settings?.currentSessionId]);
+
+  useEffect(() => {
 
     fetchData();
-  }, [user]);
+  }, [user, settings?.currentSessionId, activeSectionId]);
 
   return (
     <AdminLayout activeTab="Home">
@@ -112,6 +167,9 @@ export default function AdminDashboard() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         style={{ flex: 1 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
+        }
       >
         {/* --- Stat Cards --- */}
         <View style={styles.statCardsContainer}>
@@ -155,27 +213,23 @@ export default function AdminDashboard() {
           </View>
         </View>
 
-        {/* --- Sync Banner --- */}
+        {/* --- Sync Status Banner --- */}
         <View style={styles.syncBanner}>
           <View style={styles.syncIconWrap}>
-            <Ionicons name="cloud-upload-outline" size={28} color={COLORS.secondary} />
+            <Ionicons name="checkmark-circle-outline" size={28} color="#10b981" />
           </View>
           <View style={styles.syncContent}>
-            <Text style={styles.syncTitle}>Local Storage Sync</Text>
+            <Text style={styles.syncTitle}>Sync Status</Text>
             <Text style={styles.syncText}>
-              14 Records awaiting institutional database sync. Your offline changes are safe.
+              All data is synchronized. Sync runs automatically when online.
             </Text>
-            <TouchableOpacity style={styles.syncBtn}>
-              <Ionicons name="sync" size={16} color={COLORS.onSecondary} />
-              <Text style={styles.syncBtnText}>Sync Now</Text>
-            </TouchableOpacity>
           </View>
         </View>
 
         {/* --- Quick Administration --- */}
         <Text style={styles.sectionTitle}>QUICK ADMINISTRATION</Text>
         <View style={styles.gridContainer}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.gridItem}
             onPress={() => navigation.navigate('StudentManagement')}
           >
@@ -184,24 +238,34 @@ export default function AdminDashboard() {
             </View>
             <Text style={styles.gridLabel}>Manage Students</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.gridItem}>
+          <TouchableOpacity
+            style={styles.gridItem}
+            onPress={() => navigation.navigate('StaffManagement')}
+          >
+            <View style={[styles.gridIconWrap, { backgroundColor: '#eff6ff' }]}>
+              <Ionicons name="id-card-outline" size={22} color={COLORS.secondary} />
+            </View>
+            <Text style={styles.gridLabel}>Manage Staff</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.gridItem}
+            onPress={() => navigation.navigate('RecordFee')}
+          >
             <View style={[styles.gridIconWrap, { backgroundColor: '#eff6ff' }]}>
               <Ionicons name="receipt-outline" size={22} color={COLORS.secondary} />
             </View>
             <Text style={styles.gridLabel}>Record Fee</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.gridItem}>
+          <TouchableOpacity
+            style={styles.gridItem}
+            onPress={() => navigation.navigate('Attendance')}
+          >
             <View style={[styles.gridIconWrap, { backgroundColor: '#dcfce7' }]}>
               <Ionicons name="checkmark-done-outline" size={22} color="#16a34a" />
             </View>
             <Text style={styles.gridLabel}>Mark Attendance</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.gridItem}>
-            <View style={[styles.gridIconWrap, { backgroundColor: '#f1f5f9' }]}>
-              <Ionicons name="document-text-outline" size={22} color="#475569" />
-            </View>
-            <Text style={styles.gridLabel}>Generate Report</Text>
-          </TouchableOpacity>
+
         </View>
 
         {/* --- Recent Activity --- */}

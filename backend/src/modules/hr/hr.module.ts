@@ -2,7 +2,7 @@ import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MulterModule } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
+import * as fs from 'fs';
 
 // Entities
 import {
@@ -41,6 +41,7 @@ import { AcademicsModule } from '../academics/academics.module';
 import { BullModule } from '@nestjs/bull';
 import { StaffImportProcessor } from './processors/staff-import.processor';
 import { InternalCommunicationModule } from '../internal-communication/internal-communication.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
     imports: [
@@ -49,6 +50,7 @@ import { InternalCommunicationModule } from '../internal-communication/internal-
         forwardRef(() => StudentsModule),
         forwardRef(() => AcademicsModule),
         forwardRef(() => InternalCommunicationModule),
+        forwardRef(() => NotificationsModule),
         TypeOrmModule.forFeature([
             Department,
             Staff,
@@ -64,11 +66,18 @@ import { InternalCommunicationModule } from '../internal-communication/internal-
             name: 'staff-import',
         }),
         MulterModule.register({
+            // PRIVATE: leave supporting documents (medical/personal) are served
+            // only via the authenticated, scoped download endpoint.
             storage: diskStorage({
-                destination: './uploads/leaves',
+                destination: (req, file, cb) => {
+                    const dir = './private-uploads/leaves';
+                    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+                    cb(null, dir);
+                },
                 filename: (req, file, cb) => {
                     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-                    cb(null, `${file.fieldname}-${uniqueSuffix}${extname(file.originalname)}`);
+                    // Embed the original name (URL-encoded) so downloads keep their real filename.
+                    cb(null, `${uniqueSuffix}__${encodeURIComponent(file.originalname)}`);
                 },
             }),
         }),

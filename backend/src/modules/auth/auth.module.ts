@@ -22,7 +22,10 @@ import { Staff } from '../hr/entities/staff.entity';
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get('JWT_SECRET'),
         signOptions: {
-          expiresIn: configService.get('JWT_EXPIRE', '24h'),
+          // Long-lived by default: the mobile app is used offline-first (admins/staff at
+          // schools with intermittent connectivity). Forcing re-login on a short expiry
+          // would strand them without internet exactly when offline support matters most.
+          expiresIn: configService.get('JWT_EXPIRE', '90d'),
         },
       }),
     }),

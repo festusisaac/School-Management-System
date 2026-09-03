@@ -1,9 +1,9 @@
 import { synchronize } from '@nozbe/watermelondb/sync';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Constants from 'expo-constants';
 import { database } from './index';
+import { getSyncBaseUrl } from '../services/api';
 
-const API_BASE = Constants.expoConfig?.extra?.apiUrl ?? 'http://192.168.1.100:3000/api/v1';
+const API_BASE = getSyncBaseUrl();
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
   const stored = await AsyncStorage.getItem('auth_user');

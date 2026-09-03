@@ -21,6 +21,7 @@ import { ActivityLog } from '../system/entities/activity-log.entity';
 import { CommunicationLog } from '../communication/entities/communication-log.entity';
 import { CarryForward } from '../finance/entities/carry-forward.entity';
 import { AcademicSession } from '../system/entities/academic-session.entity';
+import { FinanceModule } from '../finance/finance.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { AcademicSession } from '../system/entities/academic-session.entity';
       ActivityLog,
       CommunicationLog,
     ]),
+    FinanceModule,
   ],
   controllers: [DashboardController, StudentDashboardController, AuditController],
   providers: [DashboardService, AuditService],

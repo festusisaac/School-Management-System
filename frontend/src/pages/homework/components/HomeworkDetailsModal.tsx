@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, Calendar, User, BookOpen, Download, FileText, CheckCircle, Clock, Paperclip, Loader2, Save } from 'lucide-react';
 import { format } from 'date-fns';
 import homeworkService, { Homework, HomeworkSubmission } from '../../../services/homework.service';
-import { getFileUrl } from '../../../services/api';
+import api from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
 
 interface HomeworkDetailsModalProps {
@@ -15,6 +15,14 @@ interface HomeworkDetailsModalProps {
 
 export default function HomeworkDetailsModal({ isOpen, onClose, homework, isStaff, onStatusClick }: HomeworkDetailsModalProps) {
     const toast = useToast();
+    // Homework files are private: download via the authenticated endpoint, not a public URL.
+    const handleDownload = async (endpoint: string, fallbackName: string) => {
+        try {
+            await api.downloadFile(endpoint, fallbackName);
+        } catch (e: any) {
+            toast.showError(e?.response?.status === 403 ? 'You do not have access to this file.' : 'Download failed.');
+        }
+    };
     const [submissions, setSubmissions] = useState<HomeworkSubmission[]>([]);
     const [loadingSubmissions, setLoadingSubmissions] = useState(false);
     const [gradingId, setGradingId] = useState<string | null>(null);
@@ -114,11 +122,10 @@ export default function HomeworkDetailsModal({ isOpen, onClose, homework, isStaf
                     {homework.attachmentUrl && (
                         <div className="space-y-2">
                             <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">Materials</h3>
-                            <a 
-                                href={getFileUrl(homework.attachmentUrl)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-3 p-4 bg-primary-50 dark:bg-primary-900/10 rounded-2xl border border-primary-100 dark:border-primary-900/20 group hover:bg-primary-100 transition-all shadow-sm"
+                            <button
+                                type="button"
+                                onClick={() => handleDownload(`/homework/${homework.id}/attachment`, 'material')}
+                                className="w-full text-left flex items-center gap-3 p-4 bg-primary-50 dark:bg-primary-900/10 rounded-2xl border border-primary-100 dark:border-primary-900/20 group hover:bg-primary-100 transition-all shadow-sm"
                             >
                                 <div className="w-10 h-10 rounded-xl bg-primary-100 dark:bg-primary-800 flex items-center justify-center text-primary-600 dark:text-primary-300">
                                     <FileText className="w-5 h-5" />
@@ -128,7 +135,7 @@ export default function HomeworkDetailsModal({ isOpen, onClose, homework, isStaf
                                     <p className="text-xs text-gray-500">Click to view/download attachment</p>
                                 </div>
                                 <Download className="w-5 h-5 text-primary-600 dark:text-primary-400 group-hover:translate-y-0.5 transition-transform" />
-                            </a>
+                            </button>
                         </div>
                     )}
 
@@ -175,11 +182,11 @@ export default function HomeworkDetailsModal({ isOpen, onClose, homework, isStaf
 
                                                 {sub.attachmentUrls && sub.attachmentUrls.length > 0 && (
                                                     <div className="flex flex-wrap gap-2">
-                                                        {sub.attachmentUrls.map((url, i) => (
-                                                            <a key={i} href={getFileUrl(url)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg text-[10px] font-bold text-primary-600 hover:underline">
+                                                        {sub.attachmentUrls.map((_url, i) => (
+                                                            <button type="button" key={i} onClick={() => handleDownload(`/homework/submissions/${sub.id}/attachment/${i}`, `File ${i + 1}`)} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg text-[10px] font-bold text-primary-600 hover:underline">
                                                                 <Paperclip className="w-3 h-3" />
                                                                 File {i + 1}
-                                                            </a>
+                                                            </button>
                                                         ))}
                                                     </div>
                                                 )}
@@ -277,17 +284,16 @@ export default function HomeworkDetailsModal({ isOpen, onClose, homework, isStaf
                                 )}
                                 {homework.submission.attachmentUrls && homework.submission.attachmentUrls.length > 0 && (
                                     <div className="flex flex-wrap gap-2">
-                                        {homework.submission.attachmentUrls.map((url, index) => (
-                                            <a 
+                                        {homework.submission.attachmentUrls.map((_url, index) => (
+                                            <button
+                                                type="button"
                                                 key={index}
-                                                href={getFileUrl(url)}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
+                                                onClick={() => handleDownload(`/homework/submissions/${homework.submission!.id}/attachment/${index}`, `File ${index + 1}`)}
                                                 className="text-[10px] bg-white/60 dark:bg-black/20 px-3 py-1.5 rounded-lg text-primary-600 font-bold flex items-center gap-1.5 hover:underline border border-green-100/50 dark:border-green-900/20 shadow-sm"
                                             >
                                                 <Paperclip className="w-3 h-3" />
                                                 File {index + 1}
-                                            </a>
+                                            </button>
                                         ))}
                                     </div>
                                 )}
