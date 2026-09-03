@@ -137,8 +137,9 @@ export function TopBar({ onMenuClick }: TopBarProps) {
     const rawRole = (user?.roleObject?.name || user?.role || '').toLowerCase().trim();
     const isViewingChildPortal = Boolean(selectedChildId);
     const isSuperAdmin = rawRole === 'super administrator' || rawRole === 'super admin';
+    const isAdmin = rawRole === 'admin' || rawRole === 'administrator';
     const isScopedFinanceUser = rawRole === 'accountant' || rawRole === 'bursar';
-    const canShowSectionSwitcher = isSuperAdmin || isScopedFinanceUser;
+    const canShowSectionSwitcher = isSuperAdmin || isAdmin || isScopedFinanceUser;
     const userPermissions = [
         ...(user?.permissions || []),
         ...(user?.roleObject?.permissions?.map((permission: any) => permission.slug) || []),

@@ -112,16 +112,18 @@ export class LeaveService {
 
                 // Send notification email to each super administrator
                 for (const admin of superAdmins) {
-                    await this.emailService.sendNotificationEmail(
-                        admin.email,
-                        `New Leave Request: ${fullRequest.staff.firstName} ${fullRequest.staff.lastName}`,
-                        `A new leave application has been submitted by teacher/staff <strong>${fullRequest.staff.firstName} ${fullRequest.staff.lastName}</strong>.<br/><br/>` +
-                            `<strong>Leave Type:</strong> ${fullRequest.leaveType?.name || 'N/A'}<br/>` +
-                            `<strong>Duration:</strong> ${fullRequest.numberOfDays} day(s) (${dto.startDate} to ${dto.endDate})<br/>` +
-                            `<strong>Reason:</strong> ${fullRequest.reason}<br/><br/>` +
-                            `Please login to the portal to review and approve/reject this request.`,
-                        'Leave Application Submitted'
-                    );
+                    if (admin.email) {
+                        await this.emailService.sendNotificationEmail(
+                            admin.email,
+                            `New Leave Request: ${fullRequest.staff.firstName} ${fullRequest.staff.lastName}`,
+                            `A new leave application has been submitted by teacher/staff <strong>${fullRequest.staff.firstName} ${fullRequest.staff.lastName}</strong>.<br/><br/>` +
+                                `<strong>Leave Type:</strong> ${fullRequest.leaveType?.name || 'N/A'}<br/>` +
+                                `<strong>Duration:</strong> ${fullRequest.numberOfDays} day(s) (${dto.startDate} to ${dto.endDate})<br/>` +
+                                `<strong>Reason:</strong> ${fullRequest.reason}<br/><br/>` +
+                                `Please login to the portal to review and approve/reject this request.`,
+                            'Leave Application Submitted'
+                        );
+                    }
                 }
             }
         } catch (error) {

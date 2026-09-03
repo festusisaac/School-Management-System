@@ -594,6 +594,16 @@ export default function StudentAdmission() {
             return;
         }
 
+        const hasEmail = [formData.guardianEmail, formData.fatherEmail, formData.motherEmail].some(e => e && e.trim().length > 0);
+        const hasPhone = [formData.guardianPhone, formData.fatherPhone, formData.motherPhone].some(p => p && p.trim().length > 0);
+        const hasParentLink = (formData.parentId && formData.parentId.trim().length > 0) || (formData.siblingId && formData.siblingId.trim().length > 0);
+
+        if (!hasEmail && !hasPhone && !hasParentLink) {
+            toast.showWarning('Please provide at least one parent/guardian phone number or email address');
+            return;
+        }
+
+
         setLoading(true);
         try {
             // Create FormData object for upload if photo exists, otherwise simple JSON

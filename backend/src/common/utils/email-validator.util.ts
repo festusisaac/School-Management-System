@@ -7,6 +7,9 @@
 export function isValidEmail(email: string): boolean {
   if (!email || typeof email !== 'string') return false;
   
+  // Exclude placeholder system domains (e.g. @parent.sms, @student.sms)
+  if (email.toLowerCase().endsWith('.sms')) return false;
+
   // RFC 5322 Official Standard Regex (Simplified but effective for most cases)
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   

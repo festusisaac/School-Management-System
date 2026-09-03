@@ -114,6 +114,17 @@ export class StudentsService {
     // --- Students ---
 
     async create(createStudentDto: CreateStudentDto, tenantId: string, documentFiles?: Express.Multer.File[], isOnline = false): Promise<Student> {
+        const hasEmail = [createStudentDto.guardianEmail, createStudentDto.fatherEmail, createStudentDto.motherEmail].some(e => typeof e === 'string' && e.trim().length > 0 && e !== 'null' && e !== 'undefined');
+        const hasPhone = [createStudentDto.guardianPhone, createStudentDto.fatherPhone, createStudentDto.motherPhone].some(p => typeof p === 'string' && p.trim().length > 0 && p !== 'null' && p !== 'undefined');
+        const hasParentId = typeof createStudentDto.parentId === 'string' && createStudentDto.parentId.trim().length > 0 && createStudentDto.parentId !== 'null' && createStudentDto.parentId !== 'undefined';
+        const hasSiblingId = typeof createStudentDto.siblingId === 'string' && createStudentDto.siblingId.trim().length > 0 && createStudentDto.siblingId !== 'null' && createStudentDto.siblingId !== 'undefined';
+
+        console.log("Validation check:", { hasEmail, hasPhone, hasParentId, hasSiblingId, raw: { guardianEmail: createStudentDto.guardianEmail, guardianPhone: createStudentDto.guardianPhone, parentId: createStudentDto.parentId, siblingId: createStudentDto.siblingId } });
+
+        if (!hasEmail && !hasPhone && !hasParentId && !hasSiblingId) {
+            throw new BadRequestException('A parent phone number or email address is required for admission.');
+        }
+
         let parent: Parent | null = null;
 
         // 1. Check for Sibling or Parent Link (explicit linking)
@@ -347,21 +358,30 @@ export class StudentsService {
             });
             await this.studentsRepository.update(student.id, { userId: studentUser.id });
 
-            const parentEmail = parent?.guardianEmail || (parent?.guardianPhone ? `${parent.guardianPhone.replace(/\s+/g, '')}@parent.sms` : null);
+            const parentEmail = parent?.guardianEmail || parent?.fatherEmail || parent?.motherEmail || null;
+            const parentPhone = parent?.guardianPhone || parent?.fatherPhone || parent?.motherPhone || null;
 
-            if (parent && parentEmail) {
+            if (parent && (parentEmail || parent.guardianPhone)) {
                 let isNewParentUser = false;
-                let parentUser = await this.usersService.findByEmail(parentEmail);
-                const parentPassword = `Parent@${parent.guardianPhone?.slice(-4) || '1234'}`;
+                let parentUser = null;
+                
+                if (parent.userId) {
+                    parentUser = await this.usersService.findOne(parent.userId).catch(() => null);
+                } else if (parentEmail) {
+                    parentUser = await this.usersService.findByEmail(parentEmail);
+                }
+
+                const parentPassword = `Parent@${parentPhone?.slice(-4) || '1234'}`;
 
                 if (!parentUser) {
                     isNewParentUser = true;
-                    const fullName = (parent.guardianName || parent.fatherName || 'Parent').trim();
+                    const fullName = (parent.guardianName || parent.fatherName || parent.motherName || 'Parent').trim();
                     const nameParts = fullName.split(' ');
                     const parentFirstName = nameParts[0];
                     const parentLastName = nameParts.slice(1).join(' ') || '';
 
-                    parentUser = await this.usersService.findOrCreateUser(parentEmail, {
+                    parentUser = await this.usersService.create({
+                        email: parentEmail as any,
                         firstName: parentFirstName,
                         lastName: parentLastName, 
                         password: parentEmail === studentIdentifier ? undefined : parentPassword,
@@ -370,7 +390,7 @@ export class StudentsService {
                         tenantId: tenantId,
                         photo: parent.guardianPhoto,
                         mustChangePassword: true
-                    });
+                    } as any);
                     await this.parentRepository.update(parent.id, { userId: parentUser.id });
                 } else if (!parent.userId) {
                     await this.parentRepository.update(parent.id, { userId: parentUser.id });
@@ -392,7 +412,7 @@ export class StudentsService {
                         const replacements = {
                             '{first_name}': student.firstName,
                             '{student_name}': `${student.firstName} ${student.lastName || ''}`.trim(),
-                            '{guardian_name}': parent.guardianName || parent.fatherName || 'Parent',
+                            '{guardian_name}': parent.guardianName || parent.fatherName || parent.motherName || 'Parent',
                             '{admission_no}': student.admissionNo,
                             '{school_name}': settings?.schoolName || 'Our School',
                             '{portal_url}': settings?.officialWebsite || process.env.FRONTEND_URL || 'https://phjcschool.com.ng',
@@ -406,20 +426,40 @@ export class StudentsService {
                     }
                 } catch (e) {}
 
-                await this.emailService.sendConsolidatedAdmissionEmail({
-                    email: parentUser.email,
-                    guardianName: parentUser.firstName,
-                    studentName: `${student.firstName} ${student.lastName || ''}`,
-                    admissionNo: student.admissionNo,
-                    parentUsername: parentUser.email,
-                    parentPassword: isNewParentUser ? parentPassword : undefined,
-                    studentPassword: studentTempPassword,
-                    schoolName: settings?.schoolName,
-                    portalUrl: settings?.officialWebsite,
-                    admissionLetterHtml: admissionLetterHtml,
-                    isNewUser: isNewParentUser,
-                    isOnline: isOnline
-                });
+                if (parentUser.email && !parentUser.email.endsWith('.sms')) {
+                    const recipientEmail = parentUser.email;
+                    await this.emailService.sendConsolidatedAdmissionEmail({
+                        email: recipientEmail,
+                        guardianName: parentUser.firstName,
+                        studentName: `${student.firstName} ${student.lastName || ''}`,
+                        admissionNo: student.admissionNo,
+                        parentUsername: recipientEmail,
+                        parentPassword: isNewParentUser ? parentPassword : undefined,
+                        studentPassword: studentTempPassword,
+                        schoolName: settings?.schoolName,
+                        portalUrl: settings?.officialWebsite,
+                        admissionLetterHtml: admissionLetterHtml,
+                        isNewUser: isNewParentUser,
+                        isOnline: isOnline
+                    });
+                } else if (parentPhone) {
+                    // Send SMS credentials since they don't have an email
+                    const recipientPhone = parentPhone;
+                    const parentMsg = isNewParentUser 
+                        ? `Welcome to ${settings?.schoolName}! Login to the parent portal using your phone number (${recipientPhone}) and password: ${parentPassword}`
+                        : `Your child ${student.firstName} has been admitted to ${settings?.schoolName}!`;
+                    const studentMsg = `Student Login -> ID: ${student.admissionNo}, Pass: ${studentTempPassword}`;
+                    
+                    await this.smsService.sendSms({
+                        to: recipientPhone,
+                        message: parentMsg,
+                    });
+                    
+                    await this.smsService.sendSms({
+                        to: recipientPhone,
+                        message: studentMsg,
+                    });
+                }
             }
         } catch (error) {
             console.error('Failed to auto-provision user accounts or send welcome emails:', error);
@@ -838,6 +878,14 @@ export class StudentsService {
 
     async createOnlineAdmission(dto: CreateOnlineAdmissionDto, tenantId: string, documentFiles?: Express.Multer.File[]): Promise<OnlineAdmission> {
         console.log('Creating Online Admission with DTO:', dto);
+
+        const hasEmail = [dto.guardianEmail, dto.fatherEmail, dto.motherEmail].some(e => typeof e === 'string' && e.trim().length > 0 && e !== 'null' && e !== 'undefined');
+        const hasPhone = [dto.guardianPhone, dto.fatherPhone, dto.motherPhone].some(p => typeof p === 'string' && p.trim().length > 0 && p !== 'null' && p !== 'undefined');
+
+        if (!hasEmail && !hasPhone) {
+            throw new BadRequestException('A parent phone number or email address is required for admission.');
+        }
+
         const referenceNumber = await this.generateAdmissionReference(tenantId);
         
         let documents: { title: string; filePath: string; fileType: string }[] = [];

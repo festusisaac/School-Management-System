@@ -117,9 +117,9 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
                     const rawRole = (user?.roleObject?.name || user?.role || '').toLowerCase().trim();
                     const isSuperAdmin = rawRole.includes('super administrator') || rawRole.includes('super admin') || rawRole.includes('superadmin');
-                    const isFinanceScopedUser = rawRole === 'accountant' || rawRole === 'bursar';
+                    const isScopedUser = rawRole === 'accountant' || rawRole === 'bursar' || rawRole === 'admin' || rawRole === 'administrator';
 
-                    if (isFinanceScopedUser) {
+                    if (isScopedUser) {
                         const profileData = await api.getMyProfile().catch(() => null) as StaffProfile | null;
                         const assignedSectionIds = profileData?.sections?.map((section) => section.id) || [];
 

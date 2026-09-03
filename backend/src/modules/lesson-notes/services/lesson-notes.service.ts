@@ -131,16 +131,18 @@ export class LessonNotesService {
 
             // Send notification email to each super administrator
             for (const admin of superAdmins) {
-                await this.emailService.sendNotificationEmail(
-                    admin.email,
-                    `New Lesson Note Submitted: ${savedNote.topic}`,
-                    `A new lesson note has been submitted for review by teacher <strong>${lessonNote.teacher?.firstName || 'Unknown'} ${lessonNote.teacher?.lastName || 'Teacher'}</strong>.<br/><br/>` +
-                        `<strong>Topic:</strong> ${savedNote.topic}<br/>` +
-                        `<strong>Subject:</strong> ${savedNote.subject?.name || 'N/A'}<br/>` +
-                        `<strong>Class:</strong> ${savedNote.class?.name || 'N/A'}<br/><br/>` +
-                        `Please login to the portal to review and approve/reject this lesson note.`,
-                    'Lesson Note Submitted',
-                );
+                if (admin.email) {
+                    await this.emailService.sendNotificationEmail(
+                        admin.email,
+                        `New Lesson Note Submitted: ${savedNote.topic}`,
+                        `A new lesson note has been submitted for review by teacher <strong>${lessonNote.teacher?.firstName || 'Unknown'} ${lessonNote.teacher?.lastName || 'Teacher'}</strong>.<br/><br/>` +
+                            `<strong>Topic:</strong> ${savedNote.topic}<br/>` +
+                            `<strong>Subject:</strong> ${savedNote.subject?.name || 'N/A'}<br/>` +
+                            `<strong>Class:</strong> ${savedNote.class?.name || 'N/A'}<br/><br/>` +
+                            `Please login to the portal to review and approve/reject this lesson note.`,
+                        'Lesson Note Submitted',
+                    );
+                }
             }
         } catch (error) {
             // Log the error but do not block the submission if email fails

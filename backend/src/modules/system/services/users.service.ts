@@ -78,7 +78,8 @@ export class UsersService implements OnModuleInit {
     return user;
   }
 
-  async findByEmail(email: string): Promise<User | null> {
+  async findByEmail(email: string | null | undefined): Promise<User | null> {
+    if (!email) return null;
     return this.usersRepository.findOne({
       where: { email },
       relations: ['roleObject'],

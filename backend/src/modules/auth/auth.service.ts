@@ -44,13 +44,15 @@ export class AuthService {
     await this.usersRepository.save(user);
 
     // Send registration email (async, don't block response)
-    this.emailService
-      .sendRegistrationEmail(
-        user.email,
-        user.firstName,
-        `${process.env.FRONTEND_URL || 'https://phjcschool.com.ng'}/verify-email?token=sample`,
-      )
-      .catch((err: any) => this.logger.error('Failed to send registration email', err));
+    if (user.email) {
+      this.emailService
+        .sendRegistrationEmail(
+          user.email,
+          user.firstName,
+          `${process.env.FRONTEND_URL || 'https://phjcschool.com.ng'}/verify-email?token=sample`,
+        )
+        .catch((err: any) => this.logger.error('Failed to send registration email', err));
+    }
 
     const { password, ...userWithoutPassword } = user;
     return {
@@ -97,7 +99,7 @@ export class AuthService {
 
     this.logger.debug(`Password valid for user: ${loginDto.email}`);
 
-    if (!user.student && !user.parent) {
+    if (!user.student && !user.parent && user.email) {
       const linkedStaff = await this.staffRepository.findOne({
         where: { email: user.email, tenantId: user.tenantId },
         relations: ['roleObject'],

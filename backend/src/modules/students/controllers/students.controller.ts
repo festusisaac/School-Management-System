@@ -139,6 +139,8 @@ export class StudentsController {
         @UploadedFiles() files: { studentPhoto?: Express.Multer.File[], guardianPhoto?: Express.Multer.File[], documentFiles?: Express.Multer.File[] },
         @Request() req: any
     ) {
+        console.log('--- Incoming CreateStudentDto ---');
+        console.log(createStudentDto);
         if (!req.user?.tenantId) throw new ForbiddenException('Tenant context missing');
         if (files?.studentPhoto && files.studentPhoto[0]) {
             createStudentDto.studentPhoto = files.studentPhoto[0].path;
