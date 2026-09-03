@@ -1,0 +1,83 @@
+{
+  "changes": {
+    "students": {
+      "created": [],
+      "updated": [],
+      "deleted": []
+    },
+    "attendance": {
+      "created": [],
+      "updated": [],
+      "deleted": []
+    },
+    "fee_records": {
+      "created": [],
+      "updated": [],
+      "deleted": []
+    },
+    "classes": {
+      "created": [],
+      "updated": [],
+      "deleted": []
+    },
+    "sections": {
+      "created": [],
+      "updated": [],
+      "deleted": []
+    },
+    "exam_groups": {
+      "created": [],
+      "updated": [],
+      "deleted": []
+    },
+    "student_term_results": {
+      "created": [],
+      "updated": [],
+      "deleted": []
+    },
+    "student_documents": {
+      "created": [],
+      "updated": [],
+      "deleted": []
+    },
+    "communication_logs": {
+      "created": [],
+      "updated": [],
+      "deleted": []
+    },
+    "fee_groups": {
+      "created": [],
+      "updated": [],
+      "deleted": []
+    },
+    "expenses": {
+      "created": [
+        {
+          "id": "d3ea284d-2b2c-4788-8e8c-560e44aeff66",
+          "Status": "created",
+          "Changed": "",
+          "tenantId": "5fddf804-e861-4ffd-9f62-d8f849f7d5c8",
+          "title": "Water Supply",
+          "description": null,
+          "amount": 3000,
+          "expenseDate": "2026-08-13",
+          "status": "PENDING",
+          "paymentMethod": "CHEQUE",
+          "categoryId": "1d67566b-97b1-48cb-8ab0-0bcf2bb90e55",
+          "vendorId": null,
+          "categoryName": "Consummables",
+          "vendorName": null,
+          "referenceNumber": null,
+          "sessionId": null,
+          "schoolSectionId": "7f30249d-14f1-46a4-ba01-5faaf2d21c35",
+          "createdAt": "2026-08-13T11:53:17.899Z",
+          "updatedAt": "2026-08-13T11:53:17.899Z",
+          "deletedAt": null
+        }
+      ],
+      "updated": [],
+      "deleted": []
+    }
+  },
+  "lastPulledAt": 1786622030009
+}
