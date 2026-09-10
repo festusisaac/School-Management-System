@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Save, Upload, Search, Users, User, Check, ShieldCheck, X, Plus, FileText, Trash2, AlertCircle, XCircle, Info, ChevronRight } from 'lucide-react';
 import { clsx } from 'clsx';
 import api, { getFileUrl } from '../../services/api';
@@ -151,11 +151,20 @@ export default function StudentAdmission() {
     const [fetchingAdmissionNo, setFetchingAdmissionNo] = useState(false);
 
     // Section-aware admission number auto-generation
-    // When classId changes on a new admission, fetch the next admission number from the backend
+    // When classId changes, fetch the next admission number from the backend.
+    // In edit mode, only fetch if the classId was manually CHANGED by the user after initial load.
+    const initialClassIdRef = useRef<string | null>(null);
+
     useEffect(() => {
-        if (isEditMode || !formData.classId) {
-            // In edit mode or no class selected: use global fallback prefix
-            if (!isEditMode && !formData.classId && !formData.admissionNo) {
+        // Track the initial classId loaded from the student data
+        if (isEditMode && formData.classId && initialClassIdRef.current === null) {
+            initialClassIdRef.current = formData.classId;
+            return; // Don't auto-generate on initial load of edit mode
+        }
+
+        if (!formData.classId) {
+            if (!isEditMode && !formData.admissionNo) {
+                // In no class selected: use global fallback prefix
                 const currentYear = new Date().getFullYear();
                 const prefix = settings?.admissionNumberPrefix || '';
                 const yearStr = `${currentYear}/`;
@@ -166,6 +175,11 @@ export default function StudentAdmission() {
                     admissionNo: finalAutoValue
                 }));
             }
+            return;
+        }
+
+        // If in edit mode and classId hasn't changed from the initial, don't overwrite!
+        if (isEditMode && formData.classId === initialClassIdRef.current) {
             return;
         }
 
@@ -196,7 +210,7 @@ export default function StudentAdmission() {
         };
 
         fetchNextAdmissionNo();
-    }, [formData.classId, isEditMode]);
+    }, [formData.classId, isEditMode, settings?.admissionNumberPrefix]);
 
 
     // Debounced Search Logic
