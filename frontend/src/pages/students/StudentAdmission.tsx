@@ -148,6 +148,7 @@ export default function StudentAdmission() {
 
     // Section-aware admission prefix state
     const [sectionPrefix, setSectionPrefix] = useState('');
+    const [fetchingAdmissionNo, setFetchingAdmissionNo] = useState(false);
 
     // Section-aware admission number auto-generation
     // When classId changes on a new admission, fetch the next admission number from the backend
@@ -169,6 +170,7 @@ export default function StudentAdmission() {
         }
 
         const fetchNextAdmissionNo = async () => {
+            setFetchingAdmissionNo(true);
             try {
                 const result = await api.getNextAdmissionNumber(formData.classId);
                 setSectionPrefix(result.prefix);
@@ -188,6 +190,8 @@ export default function StudentAdmission() {
                     ...prev,
                     admissionNo: finalAutoValue
                 }));
+            } finally {
+                setFetchingAdmissionNo(false);
             }
         };
 
@@ -832,37 +836,6 @@ export default function StudentAdmission() {
                                 <h3 className="text-xl font-bold text-gray-900 dark:text-white border-b-2 border-gray-200 dark:border-gray-800/50 pb-3 mb-2">Personal Details</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     <div className="space-y-1.5">
-                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Admission No *</label>
-                                        <div className="flex">
-                                            {(sectionPrefix || settings?.admissionNumberPrefix) && (
-                                                <span className="inline-flex items-center px-3 py-2 rounded-l-lg border border-r-0 border-gray-300 dark:border-gray-800/50 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-sm font-bold select-none whitespace-nowrap">
-                                                    {sectionPrefix || settings.admissionNumberPrefix}
-                                                </span>
-                                            )}
-                                            <input
-                                                name="admissionNo"
-                                                value={(sectionPrefix || settings?.admissionNumberPrefix) ? formData.admissionNo.replace(sectionPrefix || settings?.admissionNumberPrefix || '', '') : formData.admissionNo}
-                                                onChange={(e) => {
-                                                    const prefix = sectionPrefix || settings?.admissionNumberPrefix || '';
-                                                    setFormData(prev => ({
-                                                        ...prev,
-                                                        admissionNo: prefix + e.target.value
-                                                    }));
-                                                }}
-                                                type="text"
-                                                placeholder="e.g. 2026/0001"
-                                                className={`w-full px-3 py-2 border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 ${(sectionPrefix || settings?.admissionNumberPrefix) ? 'rounded-r-lg' : 'rounded-lg'}`}
-                                            />
-                                        </div>
-                                        {!isEditMode && formData.classId && sectionPrefix && (
-                                            <p className="text-[10px] text-gray-400 mt-1">Auto-generated from section prefix. You can override this.</p>
-                                        )}
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Roll No</label>
-                                        <input name="rollNo" value={formData.rollNo} onChange={handleChange} type="text" className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800" />
-                                    </div>
-                                    <div className="space-y-1.5">
                                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">First Name *</label>
                                         <input name="firstName" value={formData.firstName} onChange={handleChange} type="text" className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800" />
                                     </div>
@@ -885,6 +858,10 @@ export default function StudentAdmission() {
                                     <div className="space-y-1.5">
                                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Date of Birth *</label>
                                         <input name="dob" value={formData.dob} onChange={handleChange} type="date" className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800" />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Roll No</label>
+                                        <input name="rollNo" value={formData.rollNo} onChange={handleChange} type="text" className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800" />
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Religion</label>
@@ -1280,6 +1257,38 @@ export default function StudentAdmission() {
                                                 );
                                             })()}
                                         </select>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Admission No *</label>
+                                            {fetchingAdmissionNo && (
+                                                <span className="text-xs text-primary-600 dark:text-primary-400 animate-pulse font-medium">Generating...</span>
+                                            )}
+                                        </div>
+                                        <div className="flex">
+                                            {(sectionPrefix || settings?.admissionNumberPrefix) && (
+                                                <span className="inline-flex items-center px-3 py-2 rounded-l-lg border border-r-0 border-gray-300 dark:border-gray-800/50 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-sm font-bold select-none whitespace-nowrap">
+                                                    {sectionPrefix || settings.admissionNumberPrefix}
+                                                </span>
+                                            )}
+                                            <input
+                                                name="admissionNo"
+                                                value={(sectionPrefix || settings?.admissionNumberPrefix) ? formData.admissionNo.replace(sectionPrefix || settings?.admissionNumberPrefix || '', '') : formData.admissionNo}
+                                                onChange={(e) => {
+                                                    const prefix = sectionPrefix || settings?.admissionNumberPrefix || '';
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        admissionNo: prefix + e.target.value
+                                                    }));
+                                                }}
+                                                type="text"
+                                                placeholder={fetchingAdmissionNo ? "Generating..." : "e.g. 2026/0001"}
+                                                className={`w-full px-3 py-2 border border-gray-300 dark:border-gray-800/50 dark:bg-gray-800 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 ${(sectionPrefix || settings?.admissionNumberPrefix) ? 'rounded-r-lg' : 'rounded-lg'}`}
+                                            />
+                                        </div>
+                                        {!isEditMode && formData.classId && sectionPrefix && (
+                                            <p className="text-[10px] text-gray-400 mt-1">Auto-generated for selected class/section. You can override this.</p>
+                                        )}
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>

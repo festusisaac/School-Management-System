@@ -22,6 +22,10 @@ import Class from '../../database/models/Class';
 import Section from '../../database/models/Section';
 import FeeGroup from '../../database/models/FeeGroup';
 import { useAuthStore } from '../../store/authStore';
+import { apiGet } from '../../services/api';
+import { useSettingsStore } from '../../store/settingsStore';
+import NetInfo from '@react-native-community/netinfo';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const FormContext = createContext<any>(null);
 
@@ -499,19 +503,82 @@ function PageTitle({ onBack, onSave, isSaving }: { onBack: () => void; onSave: (
   );
 }
 
-// ─── Admission Number Generator ──────────────────────────────────────────────
+// ─── Admission Number Generator (100% Offline-Capable) ─────────────────────────
 
-async function generateAdmissionNo(): Promise<string> {
+async function resolveTenantPrefix(classId?: string, prefixSetting?: string): Promise<string> {
+  // 1. Check direct prefixSetting if provided and not default
+  if (prefixSetting && prefixSetting.trim() && prefixSetting.trim() !== 'SCH/' && prefixSetting.trim() !== 'SCH') {
+    const p = prefixSetting.trim();
+    return p.endsWith('/') ? p : `${p}/`;
+  }
+
+  // 2. Check in-memory settingsStore
+  const storePrefix = useSettingsStore.getState().settings?.admissionNumberPrefix;
+  if (storePrefix && storePrefix.trim() && storePrefix.trim() !== 'SCH/' && storePrefix.trim() !== 'SCH') {
+    const p = storePrefix.trim();
+    return p.endsWith('/') ? p : `${p}/`;
+  }
+
+  // 3. Read directly from AsyncStorage 'app_settings'
+  try {
+    const stored = await AsyncStorage.getItem('app_settings');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed?.admissionNumberPrefix && parsed.admissionNumberPrefix.trim() && parsed.admissionNumberPrefix.trim() !== 'SCH/' && parsed.admissionNumberPrefix.trim() !== 'SCH') {
+        const p = parsed.admissionNumberPrefix.trim();
+        return p.endsWith('/') ? p : `${p}/`;
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+
+  // 4. Check existing students in local WatermelonDB database
+  try {
+    const students = await database.collections
+      .get<Student>('students')
+      .query(Q.sortBy('created_at', Q.desc), Q.take(20))
+      .fetch();
+
+    for (const s of students) {
+      if (s.admissionNo && s.admissionNo.includes('/')) {
+        const parts = s.admissionNo.split('/');
+        if (parts.length >= 2 && parts[0] && parts[0].length >= 2) {
+          if (!/^\d{4}$/.test(parts[0])) {
+            return `${parts[0]}/`;
+          }
+        }
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+
+  // 5. Fallback if genuinely nothing else is configured
+  if (prefixSetting && prefixSetting.trim()) {
+    const p = prefixSetting.trim();
+    return p.endsWith('/') ? p : `${p}/`;
+  }
+
+  return 'SCH/';
+}
+
+async function generateAdmissionNo(classId?: string, prefixSetting?: string): Promise<string> {
+  const prefix = await resolveTenantPrefix(classId, prefixSetting);
   const year = new Date().getFullYear().toString();
-  const prefix = `SCH/${year}/`;
+  const searchPattern = `${prefix}${year}/`;
 
-  const count = await database.collections
-    .get<Student>('students')
-    .query(Q.where('admission_no', Q.like(`${Q.sanitizeLikeString(prefix)}%`)))
-    .fetchCount();
+  try {
+    const count = await database.collections
+      .get<Student>('students')
+      .query(Q.where('admission_no', Q.like(`${Q.sanitizeLikeString(searchPattern)}%`)))
+      .fetchCount();
 
-  const sequence = (count + 1).toString().padStart(4, '0');
-  return `${prefix}${sequence}`;
+    const sequence = (count + 1).toString().padStart(4, '0');
+    return `${searchPattern}${sequence}`;
+  } catch (e) {
+    return `${searchPattern}0001`;
+  }
 }
 
 // ─── Form State ──────────────────────────────────────────────────────────────
@@ -667,20 +734,99 @@ const initialFormState: AdmissionFormState = {
 export default function StudentAdmissionScreen() {
   const navigation = useNavigation();
   const { user } = useAuthStore();
+  const { settings, setSettings, loadFromStorage } = useSettingsStore();
   const [activeTab, setActiveTab] = useState<string>('personal');
   const [isSaving, setIsSaving] = useState(false);
+  const [isFetchingAdmissionNo, setIsFetchingAdmissionNo] = useState(false);
   const [form, setForm] = useState<AdmissionFormState>(initialFormState);
 
   // Class / Section picker data
   const [classes, setClasses] = useState<Class[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
 
-  // Auto-generate admission number on mount
+  // 1. Ensure settings are loaded from storage on screen mount
   useEffect(() => {
-    generateAdmissionNo().then((no) => {
-      setForm((f) => ({ ...f, admissionNo: no }));
-    });
-  }, []);
+    loadFromStorage();
+  }, [loadFromStorage]);
+
+  // 2. If online, fetch latest settings from backend in background to refresh local cache
+  useEffect(() => {
+    if (user?.token) {
+      apiGet('/system/settings', user.token)
+        .then((data: any) => {
+          if (data && data.admissionNumberPrefix) {
+            setSettings({
+              admissionNumberPrefix: data.admissionNumberPrefix,
+              schoolName: data.schoolName,
+              staffIdPrefix: data.staffIdPrefix,
+            });
+          }
+        })
+        .catch(() => {});
+    }
+  }, [user?.token, setSettings]);
+
+  // Fetch next admission number: instant local generation (100% offline-safe) + background server check when online
+  const fetchNextAdmissionNo = useCallback(async (targetClassId?: string) => {
+    const classId = targetClassId || form.classId;
+    if (!classId) return;
+
+    // 1. Generate local WatermelonDB number INSTANTLY so offline usage is immediate (no lag, no waiting)
+    const fallbackNo = await generateAdmissionNo(classId, settings?.admissionNumberPrefix);
+    setForm((f) => ({ ...f, admissionNo: fallbackNo }));
+
+    // 2. Check if device is connected to the internet
+    try {
+      const netState = await NetInfo.fetch();
+      if (!netState.isConnected || !user?.token) {
+        return; // Fully offline: keep instant local number with zero delay
+      }
+
+      // 3. If online, fetch from backend with 2.5s timeout so it never blocks or hangs
+      setIsFetchingAdmissionNo(true);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('TIMEOUT')), 2500)
+      );
+      const fetchPromise = apiGet(`/students/next-admission-number?classId=${classId}`, user.token);
+      const result: any = await Promise.race([fetchPromise, timeoutPromise]);
+      if (result?.admissionNo) {
+        setForm((f) => ({ ...f, admissionNo: result.admissionNo }));
+      }
+    } catch (err) {
+      // Offline, network failure, or timeout: local number is already safely in place
+    } finally {
+      setIsFetchingAdmissionNo(false);
+    }
+  }, [form.classId, user?.token, settings?.admissionNumberPrefix]);
+
+  // When classId changes, automatically fetch the next admission number
+  useEffect(() => {
+    if (form.classId) {
+      fetchNextAdmissionNo(form.classId);
+    }
+  }, [form.classId, fetchNextAdmissionNo]);
+
+  // Initial load / when settings change: auto-populate admission number with the true prefix
+  useEffect(() => {
+    let isMounted = true;
+    const updateInitialAdmissionNo = async () => {
+      const autoNo = await generateAdmissionNo(form.classId, settings?.admissionNumberPrefix);
+      if (isMounted) {
+        setForm((f) => {
+          const isStaleSCH = f.admissionNo.startsWith('SCH/') && !autoNo.startsWith('SCH/');
+          if (!f.admissionNo || isStaleSCH) {
+            return { ...f, admissionNo: autoNo };
+          }
+          return f;
+        });
+      }
+    };
+
+    updateInitialAdmissionNo();
+    return () => {
+      isMounted = false;
+    };
+  }, [settings?.admissionNumberPrefix, form.classId]);
 
   // Load classes
   useEffect(() => {
@@ -863,7 +1009,7 @@ export default function StudentAdmissionScreen() {
 
   // ─── RENDER ────────────────────────────────────────────────────────────────
   return (
-    <FormContext.Provider value={{ form, set, classes, sections }}>
+    <FormContext.Provider value={{ form, set, classes, sections, isFetchingAdmissionNo, fetchNextAdmissionNo }}>
     <AdminLayout activeTab="Students">
       <View style={styles.main}>
         <PageTitle onBack={() => navigation.goBack()} onSave={handleSave} isSaving={isSaving} />
@@ -877,38 +1023,17 @@ export default function StudentAdmissionScreen() {
               <>
                 <SectionHeader icon="person-outline" title="Personal Details" />
 
-                {/* Auto-generated admission badge (now editable) */}
-                <View style={styles.admissionBadge}>
-                  <Ionicons name="ribbon-outline" size={18} color={COLORS.successText} />
-                  <View style={{ flex: 1, marginLeft: 10 }}>
-                    <Text style={styles.admissionBadgeLabel}>Admission No</Text>
-                    <TextInput
-                      style={styles.admissionBadgeInput}
-                      value={form.admissionNo}
-                      onChangeText={(t) => set('admissionNo', t)}
-                      placeholder="Generating..."
-                      placeholderTextColor={COLORS.successText}
-                    />
-                  </View>
-                  <TouchableOpacity
-                    style={styles.regenerateBtn}
-                    onPress={() => generateAdmissionNo().then((no) => set('admissionNo', no))}
-                  >
-                    <Ionicons name="refresh-outline" size={16} color={COLORS.secondary} />
-                  </TouchableOpacity>
-                </View>
-
-                <Row2>
-                  <Col><Field label="Roll No" field="rollNo" /></Col>
-                  <Col><GenderDropdown /></Col>
-                </Row2>
                 <Row2>
                   <Col><Field label="First Name *" field="firstName" /></Col>
                   <Col><Field label="Last Name" field="lastName" /></Col>
                 </Row2>
                 <Row2>
                   <Col><Field label="Middle Name" field="middleName" /></Col>
+                  <Col><GenderDropdown /></Col>
+                </Row2>
+                <Row2>
                   <Col><DatePickerField label="Date of Birth *" field="dob" /></Col>
+                  <Col><Field label="Roll No" field="rollNo" /></Col>
                 </Row2>
                 <Row2>
                   <Col><Field label="Religion" field="religion" /></Col>
@@ -1021,6 +1146,41 @@ export default function StudentAdmissionScreen() {
                 <SectionHeader icon="school-outline" title="Academic Details" />
                 <ClassPicker />
                 <SectionPicker />
+
+                {/* Auto-generated Admission Number (Section / Class Aware) */}
+                <View style={styles.admissionBadge}>
+                  <Ionicons name="ribbon-outline" size={20} color={COLORS.successText} />
+                  <View style={{ flex: 1, marginLeft: 10 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+                      <Text style={styles.admissionBadgeLabel}>Admission No *</Text>
+                      {isFetchingAdmissionNo && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <ActivityIndicator size="small" color={COLORS.successText} />
+                          <Text style={{ ...TYPOGRAPHY.labelSm, color: COLORS.successText }}>Generating...</Text>
+                        </View>
+                      )}
+                    </View>
+                    <TextInput
+                      style={styles.admissionBadgeInput}
+                      value={form.admissionNo}
+                      onChangeText={(t) => set('admissionNo', t)}
+                      placeholder={isFetchingAdmissionNo ? 'Generating...' : 'Select Class to Generate'}
+                      placeholderTextColor={COLORS.successText}
+                    />
+                  </View>
+                  <TouchableOpacity
+                    style={styles.regenerateBtn}
+                    onPress={() => fetchNextAdmissionNo(form.classId)}
+                    disabled={isFetchingAdmissionNo}
+                  >
+                    {isFetchingAdmissionNo ? (
+                      <ActivityIndicator size="small" color={COLORS.secondary} />
+                    ) : (
+                      <Ionicons name="refresh-outline" size={16} color={COLORS.secondary} />
+                    )}
+                  </TouchableOpacity>
+                </View>
+
                 <Field label="Previous School Name" field="previousSchoolName" />
                 <Field label="Last Class Passed" field="lastClassPassed" />
               </>
