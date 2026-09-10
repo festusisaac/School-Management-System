@@ -170,7 +170,7 @@ const BulkReportCardPage = () => {
         const getFullUrl = (path: string) => {
             if (!path) return '';
             if (path.startsWith('http')) return path;
-            const bUrl = (import.meta as any).env?.VITE_API_URL || 'https://api.phjcschool.com.ng';
+            const bUrl = (import.meta as any).env?.VITE_API_URL || 'https://api.phjcschool.com';
             return bUrl + (path.startsWith('/') ? '' : '/') + path;
         };
 
