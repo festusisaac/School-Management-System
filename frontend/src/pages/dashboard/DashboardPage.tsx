@@ -78,16 +78,18 @@ const COLORS = ['#3B82F6', '#EC4899', '#10B981', '#F59E0B'];
 
 const DashboardPage: React.FC = () => {
   const { user, selectedChildId } = useAuthStore()
-  const userRole = (user?.roleObject?.name || user?.role || '').toLowerCase()
+  const userRole = (user?.roleObject?.name || user?.role || '').toLowerCase().trim()
   const isViewingChildPortal = Boolean(selectedChildId)
   const isStudentOrParent = userRole === 'student' || userRole === 'parent'
+  const isTeacher = userRole.includes('teacher')
+  const isAccountant = userRole.includes('accountant') || userRole.includes('bursar') || userRole.includes('finance')
+  const isLibrarian = userRole.includes('librarian')
   const hasDedicatedDashboard =
     isViewingChildPortal ||
     isStudentOrParent ||
-    userRole === 'teacher' ||
-    userRole === 'accountant' ||
-    userRole === 'bursar' ||
-    userRole === 'librarian'
+    isTeacher ||
+    isAccountant ||
+    isLibrarian
   const { activeSectionId, settings, getSchoolInfo } = useSystem()
   const { showError, showLoading, hideLoading, showSuccess } = useToast()
   const currentSessionId = settings?.currentSessionId
@@ -151,15 +153,15 @@ const DashboardPage: React.FC = () => {
     return <StudentDashboard />;
   }
 
-  if (userRole === 'teacher') {
+  if (isTeacher) {
     return <TeacherDashboard />;
   }
 
-  if (userRole === 'accountant' || userRole === 'bursar') {
+  if (isAccountant) {
     return <AccountantDashboard />;
   }
 
-  if (userRole === 'librarian') {
+  if (isLibrarian) {
     return <LibraryDashboard />;
   }
 
