@@ -7,7 +7,7 @@ import { Platform } from 'react-native';
 // Any real build (release/standalone): hit the live, publicly-hosted production server —
 // this is what makes the app work anywhere, not just on the same WiFi as a laptop.
 const DEV_API_BASE = 'http://10.100.142.192:3000/api/v1';
-const PROD_API_BASE = 'https://api.phjcschool.com/api/v1';
+const PROD_API_BASE = 'https://api.phjcschool.com.ng/api/v1';
 
 let API_BASE = __DEV__ ? DEV_API_BASE : PROD_API_BASE;
 
