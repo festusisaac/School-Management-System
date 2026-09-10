@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Homework } from '../entities/homework.entity';
@@ -7,6 +7,7 @@ import { CreateHomeworkDto } from '../dto/create-homework.dto';
 import { UpdateHomeworkDto } from '../dto/update-homework.dto';
 import { EmailService } from '../../internal-communication/email.service';
 import { Student } from '../../students/entities/student.entity';
+import { Staff } from '../../hr/entities/staff.entity';
 import { SystemSettingsService } from '../../system/services/system-settings.service';
 import { PushNotificationService } from '../../notifications/services/push-notification.service';
 import moment from 'moment';
@@ -18,6 +19,8 @@ export class HomeworkService {
         private readonly homeworkRepository: Repository<Homework>,
         @InjectRepository(Student)
         private readonly studentRepository: Repository<Student>,
+        @InjectRepository(Staff)
+        private readonly staffRepository: Repository<Staff>,
         @InjectRepository(HomeworkSubmission)
         private readonly submissionRepository: Repository<HomeworkSubmission>,
         private readonly emailService: EmailService,
@@ -25,7 +28,10 @@ export class HomeworkService {
         private readonly pushService: PushNotificationService,
     ) {}
 
-    async create(createDto: CreateHomeworkDto, tenantId: string): Promise<Homework> {
+    async create(createDto: CreateHomeworkDto, tenantId: string, currentUser?: any): Promise<Homework> {
+        // Resolve teacherId: mobile app or clients may pass user.id instead of staff.id
+        createDto.teacherId = await this.resolveStaffTeacherId(createDto.teacherId, currentUser, tenantId);
+
         const sessionId = await this.systemSettingsService.getActiveSessionId();
         const homework = this.homeworkRepository.create({
             ...createDto,
@@ -189,7 +195,10 @@ export class HomeworkService {
         return homework;
     }
 
-    async update(id: string, updateDto: UpdateHomeworkDto, tenantId: string): Promise<Homework> {
+    async update(id: string, updateDto: UpdateHomeworkDto, tenantId: string, currentUser?: any): Promise<Homework> {
+        if (updateDto.teacherId) {
+            updateDto.teacherId = await this.resolveStaffTeacherId(updateDto.teacherId, currentUser, tenantId);
+        }
         const homework = await this.findOne(id, tenantId);
         Object.assign(homework, updateDto);
         return await this.homeworkRepository.save(homework);
@@ -198,5 +207,55 @@ export class HomeworkService {
     async remove(id: string, tenantId: string): Promise<void> {
         const homework = await this.findOne(id, tenantId);
         await this.homeworkRepository.remove(homework);
+    }
+
+    /**
+     * Resolves the teacher identifier to a valid Staff.id.
+     * Clients (like the mobile app) might pass the authenticated user's ID (from users table)
+     * instead of the staff table ID, which violates the homework.teacherId foreign key constraint.
+     */
+    private async resolveStaffTeacherId(teacherId: string | undefined, user: any, tenantId: string): Promise<string> {
+        // 1. Check if teacherId is already a valid Staff.id in this tenant
+        if (teacherId) {
+            const staff = await this.staffRepository.findOne({ where: { id: teacherId, tenantId } });
+            if (staff) return staff.id;
+        }
+
+        // 2. If user email is present, look up Staff by email
+        if (user?.email) {
+            const staff = await this.staffRepository.findOne({ where: { email: user.email, tenantId } });
+            if (staff) return staff.id;
+        }
+
+        // 3. If teacherId was passed as a User ID, look up Staff via users table email match
+        if (teacherId) {
+            const staffByUser = await this.staffRepository.manager.query(
+                `SELECT s.id FROM "staff" s 
+                 JOIN "users" u ON LOWER(u.email) = LOWER(s.email) 
+                 WHERE u.id = $1 AND s."tenantId" = $2 LIMIT 1`,
+                [teacherId, tenantId]
+            );
+            if (staffByUser && staffByUser.length > 0) {
+                return staffByUser[0].id;
+            }
+        }
+
+        // 4. If current user's ID can be mapped to Staff via email
+        if (user?.id) {
+            const staffByUser = await this.staffRepository.manager.query(
+                `SELECT s.id FROM "staff" s 
+                 JOIN "users" u ON LOWER(u.email) = LOWER(s.email) 
+                 WHERE u.id = $1 AND s."tenantId" = $2 LIMIT 1`,
+                [user.id, tenantId]
+            );
+            if (staffByUser && staffByUser.length > 0) {
+                return staffByUser[0].id;
+            }
+        }
+
+        // 5. If teacherId was supplied, return as-is (database or validator will handle)
+        if (teacherId) return teacherId;
+
+        throw new BadRequestException('A valid teacher must be assigned to this homework.');
     }
 }

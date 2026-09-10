@@ -238,7 +238,7 @@ export class HomeworkController {
         if (file) {
             createDto.attachmentUrl = `/private-uploads/homework/${file.filename}`;
         }
-        return this.homeworkService.create(createDto, req.user.tenantId);
+        return this.homeworkService.create(createDto, req.user.tenantId, req.user);
     }
 
     @Get()
@@ -334,7 +334,7 @@ export class HomeworkController {
 
     @Patch(':id')
     update(@Param('id') id: string, @Body() updateDto: UpdateHomeworkDto, @Request() req: any) {
-        return this.homeworkService.update(id, updateDto, req.user.tenantId);
+        return this.homeworkService.update(id, updateDto, req.user.tenantId, req.user);
     }
 
     @Delete(':id')

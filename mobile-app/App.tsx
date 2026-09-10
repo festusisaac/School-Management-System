@@ -7,6 +7,7 @@ import * as Notifications from 'expo-notifications';
 import RootNavigator from './src/navigation/RootNavigator';
 import { navigationRef } from './src/navigation/navigationRef';
 import { useAuthStore } from './src/store/authStore';
+import { useSettingsStore } from './src/store/settingsStore';
 import { syncPushToken, handleNotificationTap } from './src/utils/pushNotifications';
 import { AlertHost } from './src/utils/alert';
 import { checkForUpdate } from './src/utils/otaUpdates';
@@ -14,11 +15,13 @@ import { Sentry } from './src/utils/sentry';
 
 function App() {
   const { loadFromStorage, user } = useAuthStore();
+  const { loadFromStorage: loadSettings } = useSettingsStore();
   const notificationListener = useRef<Notifications.Subscription>();
 
-  // On app start, try to restore persisted login session
+  // On app start, try to restore persisted login session and system settings
   useEffect(() => {
     loadFromStorage();
+    loadSettings();
   }, []);
 
   // Check for an OTA update on cold start and every time the app returns to the

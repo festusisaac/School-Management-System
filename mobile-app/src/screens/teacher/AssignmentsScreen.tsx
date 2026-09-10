@@ -61,14 +61,27 @@ export default function AssignmentsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [detailsHomework, setDetailsHomework] = useState<Homework | null>(null);
+  const [staffId, setStaffId] = useState<string>('');
+
+  useEffect(() => {
+    if (!token) return;
+    apiGet('/hr/staff/profile/me', token)
+      .then((res: any) => {
+        if (res?.id) setStaffId(res.id);
+      })
+      .catch(() => {});
+  }, [token]);
 
   const fetchHomework = useCallback(async () => {
     if (!token) return;
     try {
       const data = await apiGet('/homework', token);
       const list: Homework[] = Array.isArray(data) ? data : [];
-      // Scope to the logged-in teacher (mirrors teacher context on web)
-      const mine = user?.id ? list.filter((h) => !h.teacherId || h.teacherId === user.id) : list;
+      // Scope to the logged-in teacher (matching staffId or fallback userId)
+      const targetId = staffId || user?.id;
+      const mine = targetId
+        ? list.filter((h) => !h.teacherId || h.teacherId === targetId || (staffId && h.teacherId === staffId) || (user?.id && h.teacherId === user.id))
+        : list;
       mine.sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
       setHomework(mine);
     } catch (e) {
@@ -76,7 +89,7 @@ export default function AssignmentsScreen() {
     } finally {
       setLoading(false);
     }
-  }, [token, user?.id]);
+  }, [token, user?.id, staffId]);
 
   useEffect(() => {
     fetchHomework();
@@ -197,7 +210,7 @@ export default function AssignmentsScreen() {
       <AssignmentForm
         visible={modalOpen}
         token={token}
-        teacherId={user?.id || ''}
+        teacherId={staffId || user?.id || ''}
         onClose={() => setModalOpen(false)}
         onSuccess={() => {
           setModalOpen(false);

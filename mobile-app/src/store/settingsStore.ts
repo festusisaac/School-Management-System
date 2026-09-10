@@ -70,3 +70,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     }
   },
 }));
+
+// Immediately initialize from AsyncStorage on app launch
+useSettingsStore.getState().loadFromStorage();

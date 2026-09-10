@@ -57,6 +57,9 @@ services:
   # Backend API — image is built on your PC or GitHub Actions, then pulled on the server.
   # Do NOT run: docker compose up --build  (will OOM on small Lightsail instances)
   backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     image: festusisaac/sms-backend:latest
     container_name: sms-backend-prod
     environment:
@@ -108,6 +111,9 @@ services:
 
   # Frontend — built with VITE_API_URL on your PC / CI, not on Lightsail
   frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     image: festusisaac/sms-frontend:latest
     container_name: sms-frontend-prod
     depends_on:

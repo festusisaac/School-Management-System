@@ -23,6 +23,10 @@ export default function HomeworkForm({ isOpen, onClose, onSuccess, initialData }
     const [teachers, setTeachers] = useState<any[]>([]);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
+    const userRole = (user?.role || user?.roleObject?.name || 'student').toLowerCase();
+    const isTeacher = userRole === 'teacher';
+    const [currentTeacherStaff, setCurrentTeacherStaff] = useState<any>(null);
+
     const [formData, setFormData] = useState({
         title: '',
         description: '',
@@ -45,11 +49,14 @@ export default function HomeworkForm({ isOpen, onClose, onSuccess, initialData }
                     teacherId: initialData.teacherId || '',
                 });
             } else {
-                // Default teacher to current user if they are a teacher
-                const userRole = (user?.role || user?.roleObject?.name || 'student').toLowerCase();
-                if (['teacher'].includes(userRole)) {
-                    setFormData(prev => ({ ...prev, teacherId: user?.id || '' }));
-                }
+                setFormData({
+                    title: '',
+                    description: '',
+                    dueDate: '',
+                    classId: '',
+                    subjectId: '',
+                    teacherId: '',
+                });
             }
             setSelectedFile(null);
         }
@@ -57,12 +64,25 @@ export default function HomeworkForm({ isOpen, onClose, onSuccess, initialData }
 
     const fetchInitialData = async () => {
         try {
-            const [classesRes, teachersRes] = await Promise.all([
-                api.get('/academics/classes'),
-                api.get('/hr/staff?isTeachingStaff=true'),
-            ]);
-            setClasses(Array.isArray(classesRes) ? classesRes : []);
-            setTeachers(Array.isArray(teachersRes) ? teachersRes : []);
+            if (isTeacher) {
+                const [classesRes, myProfile] = await Promise.all([
+                    api.get('/academics/classes'),
+                    api.get<any>('/hr/staff/profile/me').catch(() => null),
+                ]);
+                setClasses(Array.isArray(classesRes) ? classesRes : []);
+                const staffProfile = myProfile as any;
+                if (staffProfile?.id) {
+                    setCurrentTeacherStaff(staffProfile);
+                    setFormData(prev => ({ ...prev, teacherId: staffProfile.id }));
+                }
+            } else {
+                const [classesRes, teachersRes] = await Promise.all([
+                    api.get('/academics/classes'),
+                    api.get('/hr/staff?isTeachingStaff=true'),
+                ]);
+                setClasses(Array.isArray(classesRes) ? classesRes : []);
+                setTeachers(Array.isArray(teachersRes) ? teachersRes : []);
+            }
         } catch (error) {
             console.error('Error fetching form data:', error);
             toast.showError('Failed to load form data');
@@ -111,13 +131,23 @@ export default function HomeworkForm({ isOpen, onClose, onSuccess, initialData }
         try {
             setLoading(true);
             
+            const payloadTeacherId = isTeacher
+                ? (currentTeacherStaff?.id || formData.teacherId || user?.id)
+                : formData.teacherId;
+
+            if (!payloadTeacherId) {
+                toast.showWarning('Please select an assigning teacher.');
+                setLoading(false);
+                return;
+            }
+
             const data = new FormData();
             data.append('title', formData.title);
             data.append('description', formData.description);
             data.append('dueDate', formData.dueDate);
             data.append('classId', formData.classId);
             data.append('subjectId', formData.subjectId);
-            data.append('teacherId', formData.teacherId);
+            data.append('teacherId', payloadTeacherId);
             
             if (selectedFile) {
                 data.append('attachment', selectedFile);
@@ -209,15 +239,28 @@ export default function HomeworkForm({ isOpen, onClose, onSuccess, initialData }
                         </div>
                         <div>
                             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Assigning Teacher *</label>
-                            <select
-                                required
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 outline-none transition-all text-sm font-medium"
-                                value={formData.teacherId}
-                                onChange={e => setFormData({ ...formData, teacherId: e.target.value })}
-                            >
-                                <option value="">Select Teacher</option>
-                                {teachers.map(t => <option key={t.id} value={t.id}>{t.firstName} {t.lastName}</option>)}
-                            </select>
+                            {isTeacher ? (
+                                <div className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50/80 dark:bg-gray-900/60 text-sm font-medium text-gray-800 dark:text-gray-200 flex items-center justify-between">
+                                    <span className="font-semibold">
+                                        {currentTeacherStaff
+                                            ? `${currentTeacherStaff.firstName} ${currentTeacherStaff.lastName}`
+                                            : (user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : 'You (Teacher)')}
+                                    </span>
+                                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300 font-semibold border border-primary-200 dark:border-primary-800/50">
+                                        Teacher Account
+                                    </span>
+                                </div>
+                            ) : (
+                                <select
+                                    required
+                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 outline-none transition-all text-sm font-medium"
+                                    value={formData.teacherId}
+                                    onChange={e => setFormData({ ...formData, teacherId: e.target.value })}
+                                >
+                                    <option value="">Select Teacher</option>
+                                    {teachers.map(t => <option key={t.id} value={t.id}>{t.firstName} {t.lastName}</option>)}
+                                </select>
+                            )}
                         </div>
                     </div>
 
