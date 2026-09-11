@@ -6,6 +6,7 @@ import StudentLayout from '../../components/StudentLayout';
 import { useAuthStore } from '../../store/authStore';
 import { useStudentStore } from '../../store/studentStore';
 import { apiGet } from '../../services/api';
+import { getSubjectAbbreviation } from '../../utils/subjectUtils';
 
 const C = { surface: '#f7f9fb', card: '#ffffff', onSurface: '#191c1e', muted: '#64748b', faint: '#94a3b8', primary: '#031632', secondary: '#055db6' };
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -76,7 +77,7 @@ export default function StudentTimetableScreen() {
                   </View>
                   <View style={styles.periodDivider} />
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.periodSubject}>{slot.subject?.name || slot.period?.name || 'N/A'}</Text>
+                    <Text style={styles.periodSubject}>{getSubjectAbbreviation(slot.subject?.name || slot.period?.name || '') || 'N/A'}</Text>
                     {slot.teacher && <Text style={styles.periodTeacher}><Ionicons name="person-outline" size={12} color={C.muted} /> {slot.teacher.firstName} {slot.teacher.lastName}</Text>}
                   </View>
                 </View>

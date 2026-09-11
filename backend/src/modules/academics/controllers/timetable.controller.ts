@@ -64,6 +64,13 @@ export class TimetableController {
         return this.timetableService.updatePeriod(id, body);
     }
 
+    @Delete('periods/:id')
+    @Roles(UserRole.ADMIN)
+    async deletePeriod(@Param('id') id: string) {
+        await this.timetableService.deletePeriod(id);
+        return { message: 'Period deleted successfully' };
+    }
+
     @Get('periods/reorder')
     @Roles(UserRole.ADMIN)
     reorderPeriods(@Body() body: { periodIds: string[] }, @Request() req: any) {
