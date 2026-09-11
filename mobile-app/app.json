@@ -16,6 +16,7 @@
     },
     "android": {
       "package": "com.schoolmgt.sms",
+      "versionCode": 1,
       "googleServicesFile": "./google-services.json",
       "minSdkVersion": 26,
       "adaptiveIcon": {

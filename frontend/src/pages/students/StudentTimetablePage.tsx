@@ -11,6 +11,7 @@ import {
 import api from '../../services/api';
 import { useAuthStore } from '../../stores/authStore';
 import { clsx } from 'clsx';
+import { getSubjectAbbreviation } from '../../utils/subjectUtils';
 
 interface Period {
     id: string;
@@ -36,44 +37,6 @@ const DAYS = [
     { value: 5, label: 'Friday' },
 ];
 
-const getSubjectAbbreviation = (name: string): string => {
-    const abbrevMap: { [key: string]: string } = {
-        'english': 'ENG',
-        'mathematics': 'MATHS',
-        'kiswahili': 'KISW',
-        'science': 'SCI',
-        'social studies': 'SST',
-        'religious education': 'REL.E',
-        'christian religious education': 'CRE',
-        'islamic religious education': 'IRE',
-        'physical education': 'P.E & S',
-        'agriculture': 'AGRIC',
-        'home science': 'H. Scie',
-        'art and craft': 'ART',
-        'music': 'MUSIC',
-        'business studies': 'BST',
-        'integrated science': 'INT/SCI',
-        'life skills': 'L/SKILL',
-        'technology': 'TECH',
-        'performing arts': 'P.Arts',
-        'optional language': 'Opt Lang',
-        'french': 'FRE',
-        'german': 'GER',
-        'arabic': 'ARAB',
-        'computer': 'COMP',
-        'history': 'HIST',
-        'geography': 'GEO',
-        'biology': 'BIO',
-        'chemistry': 'CHEM',
-        'physics': 'PHY',
-    };
-
-    const lowerName = name.toLowerCase();
-    for (const [key, abbrev] of Object.entries(abbrevMap)) {
-        if (lowerName.includes(key)) return abbrev;
-    }
-    return name.substring(0, 6).toUpperCase();
-};
 
 export default function StudentTimetablePage() {
     const { user, selectedChildId, childrenList } = useAuthStore();
@@ -380,7 +343,7 @@ export default function StudentTimetablePage() {
                                             {slot.subject?.code || <BookOpen className="w-6 h-6" />}
                                         </div>
                                         <div className="flex-1">
-                                            <h4 className="font-bold text-gray-900 dark:text-white text-lg leading-tight">{slot.subject?.name}</h4>
+                                            <h4 className="font-bold text-gray-900 dark:text-white text-lg leading-tight">{getSubjectAbbreviation(slot.subject?.name || '')}</h4>
                                             <div className="flex flex-wrap gap-x-4 gap-y-2 mt-2">
                                                 <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center bg-gray-50 dark:bg-gray-700/50 px-2 py-1 rounded-lg">
                                                     <User className="w-3.5 h-3.5 mr-2 text-primary-500" /> 

@@ -3,6 +3,7 @@ import { Printer, ChevronDown, Calendar, User, Clock } from 'lucide-react';
 import api from '../../services/api';
 import { useAuthStore } from '../../stores/authStore';
 import { useToast } from '../../context/ToastContext';
+import { getSubjectAbbreviation } from '../../utils/subjectUtils';
 
 interface Staff {
     id: string;
@@ -286,7 +287,7 @@ const TeachersTimetablePage = () => {
                                                                                 </div>
                                                                             )}
                                                                             <div className="font-bold text-sm mb-1">
-                                                                                {slot.subject?.code || slot.subject?.name}
+                                                                                {slot.subject?.code || getSubjectAbbreviation(slot.subject?.name || '')}
                                                                             </div>
                                                                             <div className="text-xs opacity-90">
                                                                                 {slot.class?.name} - {slot.section?.name}
@@ -406,7 +407,7 @@ const TeachersTimetablePage = () => {
                                                                             <div className="text-[8px] text-red-700 font-bold uppercase mb-0.5">! Conflict</div>
                                                                         )}
                                                                         <div className="font-bold text-sm leading-tight truncate w-full">
-                                                                            {slot.subject?.code || slot.subject?.name}
+                                                                            {slot.subject?.code || getSubjectAbbreviation(slot.subject?.name || '')}
                                                                         </div>
                                                                         <div className="text-xs font-semibold opacity-90 truncate w-full">
                                                                             {slot.class?.name} - {slot.section?.name}

@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import TeacherLayout from '../../components/TeacherLayout';
 import { useAuthStore } from '../../store/authStore';
 import { apiGet } from '../../services/api';
+import { getSubjectAbbreviation } from '../../utils/subjectUtils';
 
 const COLORS = {
   surface: '#f7f9fb',
@@ -152,7 +153,7 @@ export default function MyTimetableScreen() {
                   </View>
                   <View style={styles.periodDivider} />
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.periodSubject}>{slot.subject?.name || slot.period?.name || 'N/A'}</Text>
+                    <Text style={styles.periodSubject}>{getSubjectAbbreviation(slot.subject?.name || slot.period?.name || '') || 'N/A'}</Text>
                     <Text style={styles.periodClass}>
                       <Ionicons name="people-outline" size={12} color="#64748b" />{' '}
                       {slot.class?.name || ''}

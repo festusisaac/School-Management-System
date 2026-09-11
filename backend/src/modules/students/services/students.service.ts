@@ -446,18 +446,15 @@ export class StudentsService {
                     // Send SMS credentials since they don't have an email
                     const recipientPhone = parentPhone;
                     const parentMsg = isNewParentUser 
-                        ? `Welcome to ${settings?.schoolName}! Login to the parent portal using your phone number (${recipientPhone}) and password: ${parentPassword}`
+                        ? `Welcome to ${settings?.schoolName}! Parent login: ${recipientPhone}, pass: ${parentPassword}.`
                         : `Your child ${student.firstName} has been admitted to ${settings?.schoolName}!`;
-                    const studentMsg = `Student Login -> ID: ${student.admissionNo}, Pass: ${studentTempPassword}`;
+                    const studentMsg = ` Student login: ${student.admissionNo}, pass: ${studentTempPassword}`;
+                    
+                    const combinedMsg = `${parentMsg}${studentMsg}`;
                     
                     await this.smsService.sendSms({
                         to: recipientPhone,
-                        message: parentMsg,
-                    });
-                    
-                    await this.smsService.sendSms({
-                        to: recipientPhone,
-                        message: studentMsg,
+                        message: combinedMsg,
                     });
                 }
             }
