@@ -889,10 +889,7 @@ export default function StudentAdmissionScreen() {
       Alert.alert('Validation Error', 'Guardian Phone is required');
       return;
     }
-    if (!form.guardianEmail.trim()) {
-      Alert.alert('Validation Error', 'Guardian Email is required');
-      return;
-    }
+
 
     const dobDate = new Date(form.dob);
     if (isNaN(dobDate.getTime())) {
@@ -1124,7 +1121,7 @@ export default function StudentAdmissionScreen() {
                 </Row2>
                 <Row2>
                   <Col><Field label="Guardian Phone *" field="guardianPhone" editable={form.primaryGuardian === 'Other'} keyboardType="phone-pad" /></Col>
-                  <Col><Field label="Guardian Email *" field="guardianEmail" editable={form.primaryGuardian === 'Other'} keyboardType="email-address" /></Col>
+                  <Col><Field label="Guardian Email" field="guardianEmail" editable={form.primaryGuardian === 'Other'} keyboardType="email-address" /></Col>
                 </Row2>
                 <Field label="Guardian Address" field="guardianAddress" multiline />
                 <Field label="Emergency Contact" field="emergencyContact" placeholder="Name & Phone Number" keyboardType="phone-pad" />
