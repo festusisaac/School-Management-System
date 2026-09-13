@@ -67,8 +67,10 @@ export const getSubjectAbbreviation = (name: string): string => {
     const lowerName = name.toLowerCase().trim();
     if (abbrevMap[lowerName]) return abbrevMap[lowerName];
 
-    for (const [key, abbrev] of Object.entries(abbrevMap)) {
-        if (lowerName.includes(key)) return abbrev;
+    // Sort keys by length descending to match more specific names first
+    const sortedKeys = Object.keys(abbrevMap).sort((a, b) => b.length - a.length);
+    for (const key of sortedKeys) {
+        if (lowerName.includes(key)) return abbrevMap[key];
     }
     
     // If it's a short name already, return it
