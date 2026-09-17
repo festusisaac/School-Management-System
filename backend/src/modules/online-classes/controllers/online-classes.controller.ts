@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, Request, ForbiddenException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { OnlineClassesService } from '../services/online-classes.service';
 import { CreateOnlineClassDto } from '../dto/create-online-class.dto';
@@ -68,7 +68,6 @@ export class OnlineClassesController {
             `, [req.user.id, childId, req.user.tenantId]);
 
             if (!hasAccess || hasAccess.length === 0) {
-               const { ForbiddenException } = require('@nestjs/common');
                throw new ForbiddenException('You can only view classes for your own children.');
             }
 
@@ -123,7 +122,6 @@ export class OnlineClassesController {
             `, [req.user.id, childId, req.user.tenantId]);
 
             if (!hasAccess || hasAccess.length === 0) {
-              const { ForbiddenException } = require('@nestjs/common');
                throw new ForbiddenException('You can only view classes for your own children.');
             }
 

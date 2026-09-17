@@ -17,7 +17,7 @@ describe('Homework Module E2E', () => {
         TypeOrmModule.forRoot({
           type: 'sqlite',
           database: ':memory:',
-          entities: [Homework, Student],
+          entities: [__dirname + '/../src/**/*.entity{.ts,.js}'],
           synchronize: true,
           dropSchema: true,
         }),

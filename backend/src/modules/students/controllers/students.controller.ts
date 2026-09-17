@@ -192,7 +192,7 @@ export class StudentsController {
             return students.filter(s => s.classId && managedClassIds.includes(s.classId));
         }
 
-        return this.studentsService.findDeactivatedStudents(req.user?.tenantId!);
+        return this.studentsService.findDeactivatedStudents(req.user.tenantId!);
     }
 
     @Get('profile/my-children')

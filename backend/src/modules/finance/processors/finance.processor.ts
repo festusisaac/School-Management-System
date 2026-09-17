@@ -26,7 +26,8 @@ export class FinanceProcessor {
 
   @Process('bulk-carry-forward')
   async handleBulkCarryForward(job: Job<any>) {
-    let { oldSessionId, newSessionId, oldSessionName, newSessionName, tenantId } = job.data;
+    let { oldSessionId, newSessionId } = job.data;
+    const { oldSessionName, newSessionName, tenantId } = job.data;
     this.logger.log(`Starting bulk carry forward from ${oldSessionName || oldSessionId} to ${newSessionName || newSessionId}`);
 
     // Resolve sessions if only names provided
@@ -103,7 +104,7 @@ export class FinanceProcessor {
 
     // Send Consolidated Notifications
     this.logger.log(`Processing complete. Sending ${parentAlerts.size} consolidated notifications...`);
-    for (const [_, alert] of parentAlerts) {
+    for (const alert of parentAlerts.values()) {
         try {
             const parentName = alert.parent.fatherName || alert.parent.motherName || alert.parent.guardianName || 'Parent';
             const parentEmail = alert.parent.fatherEmail || alert.parent.motherEmail || alert.parent.guardianEmail;

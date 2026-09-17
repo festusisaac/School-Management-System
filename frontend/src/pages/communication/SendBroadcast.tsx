@@ -399,18 +399,10 @@ const SendBroadcast = () => {
                  )}
 
                  <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-xs text-blue-700 dark:text-blue-300">
-                   <Info size={16} />
-                   <div className="flex items-center gap-4">
-                     <span>Who receives the message?</span>
-                     <label className="flex items-center gap-2 cursor-pointer ml-4">
-                       <input
-                         type="checkbox"
-                         checked={formData.includeParents}
-                         onChange={(e) => setFormData(prev => ({ ...prev, includeParents: e.target.checked }))}
-                         className="rounded text-primary-600 focus:ring-primary-500"
-                       />
-                       <span className="font-bold">Include Parents/Guardians</span>
-                     </label>
+                   <Info size={16} className="flex-shrink-0" />
+                   <div>
+                     <span className="font-bold block mb-0.5">Delivery Notice</span>
+                     <span>Messages targeting students are automatically routed to their primary parents/guardians.</span>
                    </div>
                  </div>
                </div>

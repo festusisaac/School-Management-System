@@ -20,6 +20,10 @@ describe('Auth Module E2E', () => {
   let dataSource: DataSource;
 
   beforeAll(async () => {
+    if (!process.env.DATABASE_NAME || !process.env.DATABASE_NAME.includes('test')) {
+      throw new Error('CRITICAL: E2E tests must be run against a database name containing "test" to prevent accidental data loss!');
+    }
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({
@@ -33,7 +37,7 @@ describe('Auth Module E2E', () => {
           username: process.env.DATABASE_USER || 'test_user',
           password: process.env.DATABASE_PASSWORD || 'test_password',
           database: process.env.DATABASE_NAME || 'test_db',
-          entities: [User],
+          entities: [__dirname + '/../src/**/*.entity{.ts,.js}'],
           synchronize: true,
           dropSchema: true,
         }),
