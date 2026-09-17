@@ -50,7 +50,7 @@ export class StaffService {
         // Apply filters
         if (filters?.search) {
             query.andWhere(
-                '(staff.firstName LIKE :search OR staff.lastName LIKE :search OR staff.employeeId LIKE :search OR staff.email LIKE :search)',
+                '(staff.firstName ILIKE :search OR staff.lastName ILIKE :search OR staff.employeeId ILIKE :search OR staff.email ILIKE :search)',
                 { search: `%${filters.search}%` }
             );
         }

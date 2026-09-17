@@ -47,10 +47,38 @@ const SendBroadcast = () => {
   });
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [selectedIndividuals, setSelectedIndividuals] = useState<{id: string; label: string}[]>([]);
 
   useEffect(() => {
     fetchInitialData();
   }, [activeSectionId]);
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      if (!searchTerm || searchTerm.length < 2) {
+        setSearchResults([]);
+        return;
+      }
+      try {
+        setIsSearching(true);
+        if (formData.target === BroadcastTarget.INDIVIDUAL_STUDENTS) {
+          const res = await api.get<any[]>('/students', { params: { keyword: searchTerm } });
+          setSearchResults(res);
+        } else if (formData.target === BroadcastTarget.INDIVIDUAL_STAFF) {
+          const res = await api.get<any[]>('/hr/staff', { params: { search: searchTerm } });
+          setSearchResults(res);
+        }
+      } catch (err) {
+        console.error('Search failed', err);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm, formData.target]);
 
   const fetchInitialData = async () => {
     try {
@@ -104,6 +132,9 @@ const SendBroadcast = () => {
 
   const handleTargetChange = (target: BroadcastTarget) => {
     setFormData(prev => ({ ...prev, target, targetIds: [] }));
+    setSelectedIndividuals([]);
+    setSearchTerm('');
+    setSearchResults([]);
   };
 
   const toggleTargetId = (id: string) => {
@@ -114,6 +145,22 @@ const SendBroadcast = () => {
       } else {
         return { ...prev, targetIds: [...targetIds, id] };
       }
+    });
+  };
+
+  const toggleIndividual = (id: string, label: string) => {
+    setFormData(prev => {
+      const targetIds = prev.targetIds || [];
+      if (targetIds.includes(id)) {
+         return { ...prev, targetIds: targetIds.filter(i => i !== id) };
+      }
+      return { ...prev, targetIds: [...targetIds, id] };
+    });
+    setSelectedIndividuals(prev => {
+       if (prev.find(p => p.id === id)) {
+         return prev.filter(p => p.id !== id);
+       }
+       return [...prev, { id, label }];
     });
   };
 
@@ -131,6 +178,10 @@ const SendBroadcast = () => {
     }
     if ([BroadcastTarget.CLASS, BroadcastTarget.SECTION].includes(formData.target) && (!formData.targetIds || formData.targetIds.length === 0)) {
       toast.showError('Please select at least one class/section');
+      return;
+    }
+    if ([BroadcastTarget.INDIVIDUAL_STUDENTS, BroadcastTarget.INDIVIDUAL_STAFF].includes(formData.target as any) && (!formData.targetIds || formData.targetIds.length === 0)) {
+      toast.showError('Please select at least one recipient');
       return;
     }
 
@@ -358,7 +409,8 @@ const SendBroadcast = () => {
                       { id: BroadcastTarget.STAFF, label: 'All Staff', icon: ShieldCheck },
                       { id: BroadcastTarget.DEBTORS_ONLY, label: 'All Debtors', icon: Wallet },
                       { id: BroadcastTarget.PAID_ONLY, label: 'Fully Paid', icon: Coins },
-                      // { id: BroadcastTarget.INDIVIDUAL_STUDENTS, label: 'Manual Search', icon: Search },
+                      { id: BroadcastTarget.INDIVIDUAL_STUDENTS, label: 'Specific Students', icon: Search },
+                      { id: BroadcastTarget.INDIVIDUAL_STAFF, label: 'Specific Staff', icon: Search },
                     ].map(t => (
                       <button
                         key={t.id}
@@ -395,6 +447,66 @@ const SendBroadcast = () => {
                          </button>
                        ))}
                      </div>
+                   </div>
+                 )}
+
+                 {[BroadcastTarget.INDIVIDUAL_STUDENTS, BroadcastTarget.INDIVIDUAL_STAFF].includes(formData.target as any) && (
+                   <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-700 animate-slide-in space-y-4">
+                     <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Search & Select {formData.target === BroadcastTarget.INDIVIDUAL_STUDENTS ? 'Students' : 'Staff'}</label>
+                     <div className="relative">
+                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                         <Search size={16} />
+                       </div>
+                       <input
+                         type="text"
+                         value={searchTerm}
+                         onChange={(e) => setSearchTerm(e.target.value)}
+                         placeholder={`Search ${formData.target === BroadcastTarget.INDIVIDUAL_STUDENTS ? 'students by name or admission no' : 'staff by name'}...`}
+                         className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-800 text-sm"
+                       />
+                       {isSearching && (
+                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                           <div className="animate-spin h-4 w-4 border-b-2 border-primary-500 rounded-full"></div>
+                         </div>
+                       )}
+                     </div>
+                     
+                     {searchResults.length > 0 && (
+                       <div className="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
+                         {searchResults.map(result => {
+                           const label = formData.target === BroadcastTarget.INDIVIDUAL_STUDENTS 
+                             ? `${result.firstName} ${result.lastName || ''} (${result.admissionNo})` 
+                             : `${result.firstName} ${result.lastName || ''}`;
+                           const isSelected = formData.targetIds?.includes(result.id);
+                           return (
+                             <div 
+                               key={result.id} 
+                               onClick={() => toggleIndividual(result.id, label)}
+                               className={`px-4 py-2 text-sm cursor-pointer border-b last:border-0 border-gray-100 dark:border-gray-700 flex justify-between items-center ${isSelected ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                             >
+                               <span>{label}</span>
+                               {isSelected && <CheckCircle2 size={16} className="text-primary-500" />}
+                             </div>
+                           );
+                         })}
+                       </div>
+                     )}
+
+                     {selectedIndividuals.length > 0 && (
+                       <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                         <p className="text-xs text-gray-500 mb-2">{selectedIndividuals.length} Selected:</p>
+                         <div className="flex flex-wrap gap-2">
+                           {selectedIndividuals.map(item => (
+                             <span key={item.id} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200">
+                               {item.label}
+                               <button type="button" onClick={() => toggleIndividual(item.id, item.label)} className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-100">
+                                 &times;
+                               </button>
+                             </span>
+                           ))}
+                         </div>
+                       </div>
+                     )}
                    </div>
                  )}
 
