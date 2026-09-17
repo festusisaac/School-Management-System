@@ -69,6 +69,7 @@ export class DepartmentService {
             } else {
                 department.headOfDepartment = null as any;
                 department.headOfDepartmentId = null as any;
+                data.headOfDepartmentId = null as any;
             }
         }
 

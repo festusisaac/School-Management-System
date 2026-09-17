@@ -11,6 +11,7 @@ import {
   UseInterceptors,
   UploadedFile,
   Request,
+  ForbiddenException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -193,7 +194,6 @@ export class LibraryController {
     if (req.user.role === UserRole.PARENT) {
       const hasAccess = await this.libraryService.checkParentAccess(req.user.id, studentId, req.user.tenantId);
       if (!hasAccess) {
-        const { ForbiddenException } = require('@nestjs/common');
         throw new ForbiddenException('You can only view library data for your own children.');
       }
     }

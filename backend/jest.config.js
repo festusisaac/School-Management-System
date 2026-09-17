@@ -5,9 +5,19 @@ module.exports = {
   transform: {
     '^.+\\.(t|j)s$': 'ts-jest',
   },
+  testPathIgnorePatterns: ['\\.e2e-spec\\.ts$'],
   collectCoverageFrom: [
-    '**/*.(t|j)s',
+    '**/*.service.ts',
+    '!**/*.spec.ts',
   ],
+  coverageThreshold: {
+    global: {
+      branches: 70,
+      functions: 70,
+      lines: 70,
+      statements: 70,
+    },
+  },
   coverageDirectory: '../coverage',
   testEnvironment: 'node',
   roots: [
@@ -27,5 +37,6 @@ module.exports = {
     '^@common/(.*)$': '<rootDir>/common/$1',
     '^@queue/(.*)$': '<rootDir>/queue/$1',
     '^@services/(.*)$': '<rootDir>/services/$1',
+    '^expo-server-sdk$': '<rootDir>/../test/mocks/expo-server-sdk.js',
   },
 };

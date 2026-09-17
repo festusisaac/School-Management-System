@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Query, Body, UseGuards, Req } from '@nestjs/common';
+import * as fs from 'fs';
 import { SyncService } from './sync.service';
 import { JwtAuthGuard, RolesGuard } from '../../guards/jwt-auth.guard';
 import { Roles } from '../../decorators/roles.decorator';
@@ -30,12 +31,12 @@ export class SyncController {
     @Body() body: { changes: any; lastPulledAt: number },
     @Req() req: any,
   ) {
-    require('fs').writeFileSync('sync-payload.json', JSON.stringify(body, null, 2));
+    fs.writeFileSync('sync-payload.json', JSON.stringify(body, null, 2));
     try {
       await this.syncService.pushChanges(body.changes, req.user.tenantId);
       return { success: true };
     } catch (error: any) {
-      require('fs').writeFileSync('sync-error.log', String(error.stack || error.message));
+      fs.writeFileSync('sync-error.log', String(error.stack || error.message));
       throw error;
     }
   }

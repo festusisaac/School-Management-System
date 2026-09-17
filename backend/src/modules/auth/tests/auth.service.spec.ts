@@ -7,7 +7,9 @@ import { AuthService } from '../auth.service';
 import { JwtService } from '@nestjs/jwt';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { User } from '../entities/user.entity';
+import { Staff } from '../../hr/entities/staff.entity';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 import { EmailService } from '@modules/internal-communication/email.service';
 
@@ -23,10 +25,26 @@ describe('AuthService', () => {
   let service: AuthService;
   let jwtService: JwtService;
   let emailService: EmailService;
+  const mockQueryBuilder = {
+    leftJoinAndSelect: jest.fn().mockReturnThis(),
+    leftJoin: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    orWhere: jest.fn().mockReturnThis(),
+    getOne: jest.fn().mockResolvedValue({
+      id: 'user-id',
+      email: 'test@example.com',
+      password: 'hashed-password',
+      isActive: true,
+      roleObject: { name: 'admin', permissions: [] }
+    }),
+  };
+
   const mockUserRepository = {
     findOne: jest.fn(),
     create: jest.fn(),
     save: jest.fn(),
+    createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
   };
 
   const mockEmailService = {
@@ -36,6 +54,14 @@ describe('AuthService', () => {
   const mockJwtService = {
     sign: jest.fn().mockReturnValue('test-token'),
     verify: jest.fn().mockReturnValue({ sub: 'user-id', email: 'test@example.com' }),
+  };
+
+  const mockStaffRepository = {
+    findOne: jest.fn(),
+  };
+
+  const mockConfigService = {
+    get: jest.fn().mockReturnValue('mock-secret'),
   };
 
   beforeEach(async () => {
@@ -53,6 +79,14 @@ describe('AuthService', () => {
         {
           provide: EmailService,
           useValue: mockEmailService,
+        },
+        {
+          provide: getRepositoryToken(Staff),
+          useValue: mockStaffRepository,
+        },
+        {
+          provide: ConfigService,
+          useValue: mockConfigService,
         },
       ],
     }).compile();
@@ -128,9 +162,10 @@ describe('AuthService', () => {
         lastName: 'Doe',
         role: 'student',
         tenantId: null,
+        isActive: true,
       };
 
-      mockUserRepository.findOne.mockResolvedValue(user);
+      mockQueryBuilder.getOne.mockResolvedValueOnce(user);
 
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
@@ -148,7 +183,7 @@ describe('AuthService', () => {
         password: 'Password@123',
       };
 
-      mockUserRepository.findOne.mockResolvedValue(null);
+      mockQueryBuilder.getOne.mockResolvedValueOnce(null);
 
       await expect(service.login(loginDto)).rejects.toThrow(
         UnauthorizedException,
@@ -170,9 +205,10 @@ describe('AuthService', () => {
         lastName: 'Doe',
         role: 'student',
         tenantId: null,
+        isActive: true,
       };
 
-      mockUserRepository.findOne.mockResolvedValue(user);
+      mockQueryBuilder.getOne.mockResolvedValueOnce(user);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
       await expect(service.login(loginDto)).rejects.toThrow(
@@ -192,6 +228,7 @@ describe('AuthService', () => {
         lastName: 'Doe',
         role: 'student',
         tenantId: null,
+        isActive: true,
       };
 
       mockJwtService.verify.mockReturnValue({ sub: user.id });

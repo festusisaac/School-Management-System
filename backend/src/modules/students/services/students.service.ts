@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, ForbiddenException, HttpException } from '@nestjs/common';
 import axios from 'axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, ILike, Between, In, Brackets } from 'typeorm';
@@ -103,6 +103,11 @@ export class StudentsService {
                 response: error.response?.data,
                 status: error.response?.status
             });
+
+            // If it's already an HttpException (like ConflictException), rethrow it
+            if (error instanceof HttpException) {
+                throw error;
+            }
 
             if (error.response) {
                 throw new BadRequestException(error.response.data?.message || 'Payment verification failed');
@@ -214,7 +219,8 @@ export class StudentsService {
         }
 
         // 3. Create Student with Parent Link
-        let { feeGroupIds, session, documentTitles, feeExclusions, mustChangePassword, ...studentData } = createStudentDto;
+        let { feeGroupIds, feeExclusions } = createStudentDto;
+        const { session, documentTitles, mustChangePassword, ...studentData } = createStudentDto;
 
         // Clean UUID fields (convert "" to null)
         const uuidFields = ['classId', 'sectionId', 'categoryId', 'houseId', 'deactivateReasonId', 'discountProfileId', 'parentId'];
@@ -554,7 +560,8 @@ export class StudentsService {
         const student = await this.findOne(id, tenantId);
 
         // Destructure metadata out
-        let { documentTitles, siblingId, feeGroupIds, feeExclusions, session, ...entityData } = updateStudentDto as any;
+        let { feeGroupIds, feeExclusions } = updateStudentDto as any;
+        const { documentTitles, siblingId, session, ...entityData } = updateStudentDto as any;
 
         // Parse JSON strings if they came via FormData
         if (typeof feeGroupIds === 'string') {

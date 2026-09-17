@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Student } from '../../students/entities/student.entity';
@@ -846,7 +846,6 @@ export class DashboardService {
            `, [user.id, studentId, tenantId]);
            
            if (!hasAccess || hasAccess.length === 0) {
-              const { ForbiddenException } = require('@nestjs/common');
               throw new ForbiddenException('You can only view your own children\'s dashboard data.');
            }
         }

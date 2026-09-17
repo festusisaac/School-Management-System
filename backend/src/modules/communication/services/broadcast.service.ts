@@ -53,6 +53,10 @@ export class BroadcastService {
     const status = delay > 0 ? CommunicationStatus.SCHEDULED : CommunicationStatus.SENT;
 
     for (const recipient of recipients) {
+      // Skip if they don't have the contact info for the requested channel
+      if (dto.channel === 'EMAIL' && !recipient.email) continue;
+      if (dto.channel === 'SMS' && !recipient.phone) continue;
+
       const personalizedBody = await this.replacePlaceholders(dto.body, recipient, tenantId);
       const personalizedSubject = dto.subject ? await this.replacePlaceholders(dto.subject, recipient, tenantId) : undefined;
 
