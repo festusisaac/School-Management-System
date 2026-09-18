@@ -6,6 +6,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
+import { SystemSettingsService } from '../src/modules/system/services/system-settings.service';
 
 describe('Finance Flow Security E2E', () => {
   let app: INestApplication;
@@ -18,6 +19,9 @@ describe('Finance Flow Security E2E', () => {
     app = moduleFixture.createNestApplication();
     app.setGlobalPrefix('api/v1');
     await app.init();
+    
+    const systemSettingsService = app.get(SystemSettingsService);
+    await systemSettingsService.updateSettings({ isInitialized: true });
   });
 
   afterAll(async () => {

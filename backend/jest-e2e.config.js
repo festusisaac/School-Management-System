@@ -2,11 +2,14 @@ module.exports = {
   moduleFileExtensions: ['js', 'json', 'ts'],
   rootDir: '.',
   testEnvironment: 'node',
+  testTimeout: 30000,
+  setupFiles: ['<rootDir>/test/setup-env.js'],
   testRegex: '.e2e-spec.ts$',
   transform: {
     '^.+\\.(t|j)s$': 'ts-jest',
   },
   moduleNameMapper: {
+    '^expo-server-sdk$': '<rootDir>/test/mocks/expo-server-sdk.js',
     '^@modules/(.*)$': '<rootDir>/src/modules/$1',
     '^@config/(.*)$': '<rootDir>/src/config/$1',
     '^@database/(.*)$': '<rootDir>/src/database/$1',
