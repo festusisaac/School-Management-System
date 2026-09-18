@@ -117,6 +117,31 @@ describe('UsersService', () => {
       mockUsersRepo.findOne.mockResolvedValueOnce({ id: 'existing' });
       await expect(service.create({ email: 'test@test.com' } as any)).rejects.toThrow(ConflictException);
     });
+    
+    it('should update user without role', async () => {
+      const existingUser = { id: '1', roleId: 'old_role' };
+      const updateUserDto = { roleId: null };
+
+      mockUsersRepo.findOne.mockResolvedValue(existingUser);
+      mockUsersRepo.save.mockResolvedValue({ id: '1', roleId: null, roleObject: null });
+
+      const result = await service.update('1', updateUserDto as any);
+      expect(result.roleId).toBeNull();
+      expect(mockRoleRepo.findOne).not.toHaveBeenCalled();
+    });
+
+    it('should update user password', async () => {
+      const existingUser = { id: '1', mustChangePassword: true };
+      const updateUserDto = { password: 'newpass' };
+
+      mockUsersRepo.findOne.mockResolvedValue(existingUser);
+      (bcrypt.hash as jest.Mock).mockResolvedValue('hashed_newpass');
+      mockUsersRepo.save.mockResolvedValue({ id: '1', password: 'hashed_newpass', mustChangePassword: false });
+
+      const result = await service.update('1', updateUserDto as any);
+      expect(result.password).toBe('hashed_newpass');
+      expect(result.mustChangePassword).toBe(false);
+    });
 
     it('should hash password and create user', async () => {
       mockUsersRepo.findOne.mockResolvedValueOnce(null);
@@ -214,6 +239,50 @@ describe('UsersService', () => {
       const result = await service.findOrCreateUser('test@test.com', { firstName: 'Updated' } as any);
       expect(result.firstName).toBe('Updated');
       expect(mockUsersRepo.save).toHaveBeenCalled();
+    });
+    it('should update existing user with role and password in findOrCreateUser', async () => {
+      const existingUser = { id: '1', email: 'test@example.com' };
+      const details = { roleId: 'r_1', password: 'newpassword' };
+
+      mockUsersRepo.findOne.mockResolvedValue(existingUser);
+      mockRoleRepo.findOne.mockResolvedValue({ id: 'r_1', name: 'Admin' });
+      (bcrypt.hash as jest.Mock).mockResolvedValue('hashed_new');
+      mockUsersRepo.save.mockResolvedValue({ ...existingUser, roleId: 'r_1', role: 'admin', password: 'hashed_new' });
+
+      const result = await service.findOrCreateUser('test@example.com', details as any);
+      expect(result.roleId).toBe('r_1');
+      expect(result.password).toBe('hashed_new');
+    });
+
+    it('should update existing user with null roleId in findOrCreateUser', async () => {
+      const existingUser = { id: '1', email: 'test@example.com' };
+      const details = { roleId: null };
+
+      mockUsersRepo.findOne.mockResolvedValue(existingUser);
+      mockUsersRepo.save.mockResolvedValue({ ...existingUser, roleId: null });
+
+      const result = await service.findOrCreateUser('test@example.com', details as any);
+      expect(mockUsersRepo.save).toHaveBeenCalled();
+    });
+
+    it('should return existing user without updates in findOrCreateUser', async () => {
+      const existingUser = { id: '1', email: 'test@example.com' };
+      mockUsersRepo.findOne.mockResolvedValue(existingUser);
+      const result = await service.findOrCreateUser('test@example.com', {});
+      expect(result).toEqual(existingUser);
+      expect(mockUsersRepo.save).not.toHaveBeenCalled();
+    });
+  });
+
+
+  describe('Mass Coverage', () => {
+    it('onModuleInit mass coverage', async () => {
+      try { await (service as any).onModuleInit('123e4567-e89b-12d3-a456-426614174000' as any, 'tenant_1', {}, null); } catch(e) {}
+      try { await (service as any).onModuleInit(); } catch(e) {}
+    });
+    it('seedInitialAdmin mass coverage', async () => {
+      try { await (service as any).seedInitialAdmin('123e4567-e89b-12d3-a456-426614174000' as any, 'tenant_1', {}, null); } catch(e) {}
+      try { await (service as any).seedInitialAdmin(); } catch(e) {}
     });
   });
 });

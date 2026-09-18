@@ -85,7 +85,7 @@ jobs:
           REDIS_PORT: 6379
           JWT_SECRET: test_secret_key
           REFRESH_TOKEN_SECRET: test_refresh_secret
-        run: npm run test
+        run: npm run test -- --runInBand
 
       - name: Run E2E tests
         working-directory: ./backend
@@ -175,40 +175,6 @@ jobs:
           format: 'JSON'
 
   # Build and push Docker images
-  docker:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [backend, frontend]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Build and push backend image
-        uses: docker/build-push-action@v4
-        with:
-          context: ./backend
-          push: true
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/sms-backend:latest
-            ${{ secrets.DOCKER_USERNAME }}/sms-backend:${{ github.sha }}
-
-      - name: Build and push frontend image
-        uses: docker/build-push-action@v4
-        with:
-          context: ./frontend
-          push: true
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/sms-frontend:latest
-            ${{ secrets.DOCKER_USERNAME }}/sms-frontend:${{ github.sha }}
-
   # Deploy to staging
   deploy-staging:
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
@@ -228,12 +194,12 @@ jobs:
           echo "$DEPLOY_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H $DEPLOY_HOST >> ~/.ssh/known_hosts
-          ssh -i ~/.ssh/deploy_key $DEPLOY_USER@$DEPLOY_HOST "cd /app && git pull && docker-compose up -d"
+          ssh -i ~/.ssh/deploy_key $DEPLOY_USER@$DEPLOY_HOST "cd /var/www/sms && git pull && cd backend && npm install && npm run build && pm2 restart backend && cd ../frontend && npm install && npm run build && pm2 restart frontend"
 
   # Deploy to production
   deploy-production:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [docker, backend, frontend, security]
+    needs: [backend, frontend, security]
     runs-on: ubuntu-latest
     environment: production
     steps:
@@ -249,7 +215,7 @@ jobs:
           echo "$DEPLOY_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H $DEPLOY_HOST >> ~/.ssh/known_hosts
-          ssh -i ~/.ssh/deploy_key $DEPLOY_USER@$DEPLOY_HOST "cd /app && git pull && docker-compose -f docker-compose.prod.yml up -d"
+          ssh -i ~/.ssh/deploy_key $DEPLOY_USER@$DEPLOY_HOST "cd /var/www/sms && git pull && cd backend && npm install && npm run build && pm2 restart backend && cd ../frontend && npm install && npm run build && pm2 restart frontend"
 
       - name: Slack notification
         if: always()

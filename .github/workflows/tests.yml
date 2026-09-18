@@ -33,11 +33,11 @@ jobs:
           NODE_ENV: test
           JWT_SECRET: test_secret
           REFRESH_TOKEN_SECRET: test_refresh_secret
-        run: npm run test -- --passWithNoTests
+        run: npm run test -- --passWithNoTests --runInBand
 
       - name: Generate coverage report
         working-directory: ./backend
-        run: npm run test:cov -- --passWithNoTests
+        run: npm run test:cov -- --passWithNoTests --runInBand
         continue-on-error: true
 
       - name: Upload coverage to Codecov
