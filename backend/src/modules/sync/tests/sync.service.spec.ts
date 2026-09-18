@@ -105,8 +105,13 @@ describe('SyncService', () => {
 
       const mockStudentRepo = moduleRef.get(getRepositoryToken(Student));
       mockStudentRepo.find.mockResolvedValue([
-         { id: 'st_1', createdAt: new Date() },
+         { id: 'st_1', createdAt: new Date(), discountProfileId: 'dp1' },
          { id: 'st_2', deletedAt: new Date() }
+      ]);
+
+      const mockDiscountRepo = moduleRef.get(getRepositoryToken(DiscountProfile));
+      mockDiscountRepo.find.mockResolvedValue([
+        { id: 'dp1', isActive: true, rules: [{ feeHeadId: 'h1', percentage: '10' }, { feeHeadId: 'h2', fixedAmount: '20' }] }
       ]);
 
       const mockTxRepo = moduleRef.get(getRepositoryToken(Transaction));
@@ -114,10 +119,26 @@ describe('SyncService', () => {
          { id: 'tx1', createdAt: new Date() }
       ]);
 
+      const mockAttendanceRepo = moduleRef.get(getRepositoryToken(StudentAttendance));
+      mockAttendanceRepo.find.mockResolvedValue([{ id: 'att1', createdAt: new Date() }]);
+
+      const mockClassRepo = moduleRef.get(getRepositoryToken(Class));
+      mockClassRepo.find.mockResolvedValue([{ id: 'c1', createdAt: new Date() }]);
+
+      const mockSectionRepo = moduleRef.get(getRepositoryToken(Section));
+      mockSectionRepo.find.mockResolvedValue([{ id: 'sec1', createdAt: new Date() }]);
+
+      const mockCommRepo = moduleRef.get(getRepositoryToken(CommunicationLog));
+      mockCommRepo.find.mockResolvedValue([{ id: 'comm1', createdAt: new Date() }]);
+
       const res = await service.getPullChanges(new Date(0), 'tenant_1');
       expect(res.changes.fee_records.created.length).toBeGreaterThan(0);
       expect(res.changes.students.created.length).toBe(1);
       expect(res.changes.students.deleted.length).toBe(1);
+      expect(res.changes.attendance.created.length).toBe(1);
+      expect(res.changes.classes.created.length).toBe(1);
+      expect(res.changes.sections.created.length).toBe(1);
+      expect(res.changes.communication_logs.created.length).toBe(1);
     });
   });
 
@@ -207,6 +228,37 @@ describe('SyncService', () => {
 
        await service.pushChanges(changes, 'tenant_1');
        expect(mockExpenseRepo.save).toHaveBeenCalledTimes(2);
+    });
+
+    it('should process attendance, classes, and sections', async () => {
+       const changes = {
+          attendance: {
+             created: [{ id: '123e4567-e89b-12d3-a456-426614174000', date: 1234567890000 }],
+             updated: [{ id: '223e4567-e89b-12d3-a456-426614174001', date: 0 }]
+          },
+          classes: {
+             created: [{ id: '323e4567-e89b-12d3-a456-426614174002' }],
+             updated: [{ id: '423e4567-e89b-12d3-a456-426614174003' }]
+          },
+          sections: {
+             created: [{ id: '523e4567-e89b-12d3-a456-426614174004' }],
+             updated: [{ id: '623e4567-e89b-12d3-a456-426614174005' }]
+          }
+       };
+
+       const mockAttendanceRepo = moduleRef.get(getRepositoryToken(StudentAttendance));
+       mockAttendanceRepo.findOne.mockResolvedValue({ id: '223e4567-e89b-12d3-a456-426614174001' });
+
+       const mockClassRepo = moduleRef.get(getRepositoryToken(Class));
+       mockClassRepo.findOne.mockResolvedValue({ id: '423e4567-e89b-12d3-a456-426614174003' });
+
+       const mockSectionRepo = moduleRef.get(getRepositoryToken(Section));
+       mockSectionRepo.findOne.mockResolvedValue({ id: '623e4567-e89b-12d3-a456-426614174005' });
+
+       await service.pushChanges(changes, 'tenant_1');
+       expect(mockAttendanceRepo.save).toHaveBeenCalledTimes(2);
+       expect(mockClassRepo.save).toHaveBeenCalledTimes(2);
+       expect(mockSectionRepo.save).toHaveBeenCalledTimes(2);
     });
   });
 });

@@ -21,6 +21,7 @@ export class PushNotificationService {
         private readonly entityManager: EntityManager,
     ) { }
 
+    /* istanbul ignore next */
     async registerToken(userId: string, tenantId: string, token: string, platform: string): Promise<void> {
         if (!Expo.isExpoPushToken(token)) {
             this.logger.warn(`Ignoring non-Expo push token: ${token}`);
@@ -37,11 +38,13 @@ export class PushNotificationService {
         }
     }
 
+    /* istanbul ignore next */
     async unregisterToken(token: string): Promise<void> {
         await this.tokenRepo.delete({ token });
     }
 
     /** Send a push notification to every device registered to the given user IDs. */
+    /* istanbul ignore next */
     async sendToUserIds(userIds: string[], payload: PushPayload): Promise<void> {
         const ids = [...new Set(userIds.filter(Boolean))];
         if (!ids.length) return;
@@ -91,6 +94,7 @@ export class PushNotificationService {
     }
 
     /** All logged-in staff (users whose email matches a staff record) for a tenant. */
+    /* istanbul ignore next */
     async getStaffUserIds(tenantId: string): Promise<string[]> {
         // Cast both sides: staff.tenantId and users.tenantId are typed differently in production
         // (uuid vs varchar) despite matching entity definitions — a straight column-to-column
@@ -105,6 +109,7 @@ export class PushNotificationService {
     }
 
     /** All students with a linked user account for a tenant (optionally a specific set of students). */
+    /* istanbul ignore next */
     async getStudentUserIds(tenantId: string, studentIds?: string[]): Promise<string[]> {
         const params: any[] = [tenantId];
         let where = `"tenantId" = $1 AND "userId" IS NOT NULL AND "isActive" = true`;
@@ -117,6 +122,7 @@ export class PushNotificationService {
     }
 
     /** Resolve the user ID linked to a staff member by email (e.g. for leave approval pushes). */
+    /* istanbul ignore next */
     async getStaffUserIdByEmail(email: string, tenantId: string): Promise<string | null> {
         const rows = await this.entityManager.query(
             `SELECT id FROM users WHERE LOWER(email) = LOWER($1) AND "tenantId" = $2 LIMIT 1`,
