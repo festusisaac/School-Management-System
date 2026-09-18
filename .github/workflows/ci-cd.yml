@@ -50,7 +50,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./backend
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Lint code
         working-directory: ./backend
