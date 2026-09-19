@@ -2,7 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Student } from '../../students/entities/student.entity';
-import { Staff } from '../../hr/entities/staff.entity';
+import { Staff, StaffStatus } from '../../hr/entities/staff.entity';
 import { Alumni } from '../../alumni/entities/alumni.entity';
 import { MessageTemplate } from '../entities/message-template.entity';
 import { CommunicationLog, CommunicationType, CommunicationStatus } from '../entities/communication-log.entity';
@@ -142,7 +142,7 @@ export class BroadcastService {
         break;
 
       case BroadcastTarget.STAFF:
-        const staff = await this.staffRepository.find({ where: { tenantId, status: 'ACTIVE' as any } });
+        const staff = await this.staffRepository.find({ where: { tenantId, status: StaffStatus.ACTIVE } });
         staff.forEach(st => recipients.push({
           name: `${st.firstName} ${st.lastName}`,
           email: st.email,
