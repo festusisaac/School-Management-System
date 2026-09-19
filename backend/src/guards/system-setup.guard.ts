@@ -22,7 +22,10 @@ export class SystemSetupGuard implements CanActivate {
       url.includes('/system/setup') ||
       url.includes('/auth/login') ||
       url.includes('/auth/refresh') ||
-      url.includes('/auth/verify-email')
+      url.includes('/auth/verify-email') ||
+      url.includes('/health') ||
+      url === '/api/v1' ||
+      url === '/api/v1/'
     ) {
       return true;
     }

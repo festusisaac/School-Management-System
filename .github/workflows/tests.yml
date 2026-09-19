@@ -97,12 +97,12 @@ jobs:
       - name: Run migrations
         working-directory: ./backend
         env:
-          DATABASE_HOST: localhost
+          DATABASE_HOST: 127.0.0.1
           DATABASE_PORT: 5432
           DATABASE_USER: test_user
           DATABASE_PASSWORD: test_password
           DATABASE_NAME: test_db
-          REDIS_HOST: localhost
+          REDIS_HOST: 127.0.0.1
           REDIS_PORT: 6379
         run: npm run db:migrate
 
@@ -110,12 +110,12 @@ jobs:
         working-directory: ./backend
         env:
           NODE_ENV: test
-          DATABASE_HOST: localhost
+          DATABASE_HOST: 127.0.0.1
           DATABASE_PORT: 5432
           DATABASE_USER: test_user
           DATABASE_PASSWORD: test_password
           DATABASE_NAME: test_db
-          REDIS_HOST: localhost
+          REDIS_HOST: 127.0.0.1
           REDIS_PORT: 6379
           JWT_SECRET: test_secret
           REFRESH_TOKEN_SECRET: test_refresh_secret
@@ -171,12 +171,12 @@ jobs:
         working-directory: ./backend
         env:
           NODE_ENV: test
-          DATABASE_HOST: localhost
+          DATABASE_HOST: 127.0.0.1
           DATABASE_PORT: 5432
           DATABASE_USER: test_user
           DATABASE_PASSWORD: test_password
           DATABASE_NAME: test_db
-          REDIS_HOST: localhost
+          REDIS_HOST: 127.0.0.1
           REDIS_PORT: 6379
           JWT_SECRET: test_secret
           REFRESH_TOKEN_SECRET: test_refresh_secret
@@ -189,12 +189,12 @@ jobs:
         working-directory: ./backend
         env:
           NODE_ENV: test
-          DATABASE_HOST: localhost
+          DATABASE_HOST: 127.0.0.1
           DATABASE_PORT: 5432
           DATABASE_USER: test_user
           DATABASE_PASSWORD: test_password
           DATABASE_NAME: test_db
-          REDIS_HOST: localhost
+          REDIS_HOST: 127.0.0.1
           REDIS_PORT: 6379
           JWT_SECRET: test_secret
           REFRESH_TOKEN_SECRET: test_refresh_secret

@@ -164,6 +164,10 @@ export class CreateSystemSettingDto {
     @IsOptional()
     maxFileUploadSizeMb?: number;
 
+    @IsBoolean()
+    @IsOptional()
+    isInitialized?: boolean;
+
     @IsOptional()
     createdAt?: string | Date;
 
