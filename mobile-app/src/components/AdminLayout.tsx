@@ -83,14 +83,26 @@ export default function AdminLayout({ children, activeTab: activeTabProp = 'Home
     if (isSuperAdmin) {
       apiGet('/academics/school-sections', user.token)
         .then((data: any) => {
-          const sections = Array.isArray(data) ? data.map((s: any) => ({ id: s.id, name: s.name })) : [];
+          const sections = Array.isArray(data)
+            ? data.map((s: any) => ({
+                id: s.id,
+                name: s.name,
+                admissionPrefix: s.admissionPrefix,
+              }))
+            : [];
           setSections(sections, true);
         })
         .catch((e) => console.log('Failed to load sections', e));
     } else {
       apiGet('/hr/staff/profile/me', user.token)
         .then((data: any) => {
-          const sections = Array.isArray(data?.sections) ? data.sections.map((s: any) => ({ id: s.id, name: s.name })) : [];
+          const sections = Array.isArray(data?.sections)
+            ? data.sections.map((s: any) => ({
+                id: s.id,
+                name: s.name,
+                admissionPrefix: s.admissionPrefix,
+              }))
+            : [];
           setSections(sections, false);
           setPhoto(getFileUrl(data?.photo) || null);
         })
@@ -250,7 +262,7 @@ export default function AdminLayout({ children, activeTab: activeTabProp = 'Home
           const iconName = isActive ? tab.icon : `${tab.icon}-outline`;
           return (
             <TouchableOpacity key={tab.key} style={styles.navItem} onPress={() => handleTabPress(tab.key)}>
-              <Ionicons name={iconName as any} size={tab.size || 22} color={isActive ? COLORS.secondary : '#64748b'} />
+              <Ionicons name={iconName as any} size={(tab as any).size || 22} color={isActive ? COLORS.secondary : '#64748b'} />
               <Text style={[styles.navText, isActive && styles.navTextActive]} numberOfLines={1}>{tab.label}</Text>
             </TouchableOpacity>
           );

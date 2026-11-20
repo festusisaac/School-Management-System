@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, createContext, useContext } from 'react';
+import React, { useState, useEffect, useCallback, createContext, useContext, useMemo } from 'react';
 import {
   View,
   Text,
@@ -24,6 +24,7 @@ import FeeGroup from '../../database/models/FeeGroup';
 import { useAuthStore } from '../../store/authStore';
 import { apiGet } from '../../services/api';
 import { useSettingsStore } from '../../store/settingsStore';
+import { useSectionStore } from '../../store/sectionStore';
 import NetInfo from '@react-native-community/netinfo';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -505,40 +506,50 @@ function PageTitle({ onBack, onSave, isSaving }: { onBack: () => void; onSave: (
 
 // ─── Admission Number Generator (100% Offline-Capable) ─────────────────────────
 
-async function resolveTenantPrefix(classId?: string, prefixSetting?: string): Promise<string> {
-  // 1. Check direct prefixSetting if provided and not default
-  if (prefixSetting && prefixSetting.trim() && prefixSetting.trim() !== 'SCH/' && prefixSetting.trim() !== 'SCH') {
-    const p = prefixSetting.trim();
-    return p.endsWith('/') ? p : `${p}/`;
-  }
-
-  // 2. Check in-memory settingsStore
-  const storePrefix = useSettingsStore.getState().settings?.admissionNumberPrefix;
-  if (storePrefix && storePrefix.trim() && storePrefix.trim() !== 'SCH/' && storePrefix.trim() !== 'SCH') {
-    const p = storePrefix.trim();
-    return p.endsWith('/') ? p : `${p}/`;
-  }
-
-  // 3. Read directly from AsyncStorage 'app_settings'
-  try {
-    const stored = await AsyncStorage.getItem('app_settings');
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      if (parsed?.admissionNumberPrefix && parsed.admissionNumberPrefix.trim() && parsed.admissionNumberPrefix.trim() !== 'SCH/' && parsed.admissionNumberPrefix.trim() !== 'SCH') {
-        const p = parsed.admissionNumberPrefix.trim();
-        return p.endsWith('/') ? p : `${p}/`;
+async function resolveTenantPrefix(classId?: string, prefixSetting?: string, activeSectionId?: string): Promise<string> {
+  // 1. If a class is selected, look up the class in WatermelonDB to find its schoolSectionId
+  if (classId) {
+    try {
+      const cls = await database.collections.get<Class>('classes').find(classId);
+      if (cls && cls.schoolSectionId) {
+        const sections = useSectionStore.getState().availableSections;
+        const section = sections.find((s) => s.id === cls.schoolSectionId);
+        if (section?.admissionPrefix && section.admissionPrefix.trim()) {
+          const p = section.admissionPrefix.trim();
+          return p.endsWith('/') ? p : `${p}/`;
+        }
       }
+    } catch (e) {
+      // ignore
     }
-  } catch (e) {
-    // ignore
   }
 
-  // 4. Check existing students in local WatermelonDB database
+  // 2. If no class is selected (or class has no section prefix), check the active school section selected in header
+  const activeId = activeSectionId || useSectionStore.getState().activeSectionId;
+  if (activeId) {
+    const sections = useSectionStore.getState().availableSections;
+    const section = sections.find((s) => s.id === activeId);
+    if (section?.admissionPrefix && section.admissionPrefix.trim()) {
+      const p = section.admissionPrefix.trim();
+      return p.endsWith('/') ? p : `${p}/`;
+    }
+  }
+
+  // 3. Check existing students in local WatermelonDB database
   try {
-    const students = await database.collections
-      .get<Student>('students')
-      .query(Q.sortBy('created_at', Q.desc), Q.take(20))
-      .fetch();
+    let students: Student[] = [];
+    if (classId) {
+      students = await database.collections
+        .get<Student>('students')
+        .query(Q.where('class_id', classId), Q.sortBy('created_at', Q.desc), Q.take(10))
+        .fetch();
+    }
+    if (students.length === 0) {
+      students = await database.collections
+        .get<Student>('students')
+        .query(Q.sortBy('created_at', Q.desc), Q.take(20))
+        .fetch();
+    }
 
     for (const s of students) {
       if (s.admissionNo && s.admissionNo.includes('/')) {
@@ -554,7 +565,33 @@ async function resolveTenantPrefix(classId?: string, prefixSetting?: string): Pr
     // ignore
   }
 
-  // 5. Fallback if genuinely nothing else is configured
+  // 4. Fallback to global setting if configured and not default 'SCH/'
+  if (prefixSetting && prefixSetting.trim() && prefixSetting.trim() !== 'SCH/' && prefixSetting.trim() !== 'SCH') {
+    const p = prefixSetting.trim();
+    return p.endsWith('/') ? p : `${p}/`;
+  }
+
+  const storePrefix = useSettingsStore.getState().settings?.admissionNumberPrefix;
+  if (storePrefix && storePrefix.trim() && storePrefix.trim() !== 'SCH/' && storePrefix.trim() !== 'SCH') {
+    const p = storePrefix.trim();
+    return p.endsWith('/') ? p : `${p}/`;
+  }
+
+  // 5. Read directly from AsyncStorage 'app_settings'
+  try {
+    const stored = await AsyncStorage.getItem('app_settings');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed?.admissionNumberPrefix && parsed.admissionNumberPrefix.trim() && parsed.admissionNumberPrefix.trim() !== 'SCH/' && parsed.admissionNumberPrefix.trim() !== 'SCH') {
+        const p = parsed.admissionNumberPrefix.trim();
+        return p.endsWith('/') ? p : `${p}/`;
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+
+  // 6. Final fallback
   if (prefixSetting && prefixSetting.trim()) {
     const p = prefixSetting.trim();
     return p.endsWith('/') ? p : `${p}/`;
@@ -563,8 +600,8 @@ async function resolveTenantPrefix(classId?: string, prefixSetting?: string): Pr
   return 'SCH/';
 }
 
-async function generateAdmissionNo(classId?: string, prefixSetting?: string): Promise<string> {
-  const prefix = await resolveTenantPrefix(classId, prefixSetting);
+async function generateAdmissionNo(classId?: string, prefixSetting?: string, activeSectionId?: string): Promise<string> {
+  const prefix = await resolveTenantPrefix(classId, prefixSetting, activeSectionId);
   const year = new Date().getFullYear().toString();
   const searchPattern = `${prefix}${year}/`;
 
@@ -735,6 +772,7 @@ export default function StudentAdmissionScreen() {
   const navigation = useNavigation();
   const { user } = useAuthStore();
   const { settings, setSettings, loadFromStorage } = useSettingsStore();
+  const { activeSectionId } = useSectionStore();
   const [activeTab, setActiveTab] = useState<string>('personal');
   const [isSaving, setIsSaving] = useState(false);
   const [isFetchingAdmissionNo, setIsFetchingAdmissionNo] = useState(false);
@@ -743,6 +781,13 @@ export default function StudentAdmissionScreen() {
   // Class / Section picker data
   const [classes, setClasses] = useState<Class[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
+
+  // Filter classes by active school section selected in header (if activeSectionId is set)
+  const filteredClasses = useMemo(() => {
+    if (!activeSectionId) return classes;
+    const matching = classes.filter((c) => c.schoolSectionId === activeSectionId);
+    return matching.length > 0 ? matching : classes;
+  }, [classes, activeSectionId]);
 
   // 1. Ensure settings are loaded from storage on screen mount
   useEffect(() => {
@@ -769,11 +814,12 @@ export default function StudentAdmissionScreen() {
   // Fetch next admission number: instant local generation (100% offline-safe) + background server check when online
   const fetchNextAdmissionNo = useCallback(async (targetClassId?: string) => {
     const classId = targetClassId || form.classId;
-    if (!classId) return;
 
     // 1. Generate local WatermelonDB number INSTANTLY so offline usage is immediate (no lag, no waiting)
-    const fallbackNo = await generateAdmissionNo(classId, settings?.admissionNumberPrefix);
+    const fallbackNo = await generateAdmissionNo(classId, settings?.admissionNumberPrefix, activeSectionId);
     setForm((f) => ({ ...f, admissionNo: fallbackNo }));
+
+    if (!classId) return;
 
     // 2. Check if device is connected to the internet
     try {
@@ -782,10 +828,10 @@ export default function StudentAdmissionScreen() {
         return; // Fully offline: keep instant local number with zero delay
       }
 
-      // 3. If online, fetch from backend with 2.5s timeout so it never blocks or hangs
+      // 3. If online, fetch from backend with 7s timeout so mobile networks don't drop prematurely
       setIsFetchingAdmissionNo(true);
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('TIMEOUT')), 2500)
+        setTimeout(() => reject(new Error('TIMEOUT')), 7000)
       );
       const fetchPromise = apiGet(`/students/next-admission-number?classId=${classId}`, user.token);
       const result: any = await Promise.race([fetchPromise, timeoutPromise]);
@@ -797,7 +843,7 @@ export default function StudentAdmissionScreen() {
     } finally {
       setIsFetchingAdmissionNo(false);
     }
-  }, [form.classId, user?.token, settings?.admissionNumberPrefix]);
+  }, [form.classId, user?.token, settings?.admissionNumberPrefix, activeSectionId]);
 
   // When classId changes, automatically fetch the next admission number
   useEffect(() => {
@@ -806,15 +852,36 @@ export default function StudentAdmissionScreen() {
     }
   }, [form.classId, fetchNextAdmissionNo]);
 
-  // Initial load / when settings change: auto-populate admission number with the true prefix
+  // When activeSectionId changes: reset class if it doesn't belong to it, and re-generate prefix
+  useEffect(() => {
+    if (activeSectionId && form.classId) {
+      const cls = classes.find((c) => c.id === form.classId);
+      if (cls && cls.schoolSectionId && cls.schoolSectionId !== activeSectionId) {
+        setForm((f) => ({ ...f, classId: '', sectionId: '' }));
+      }
+    }
+    if (!form.classId) {
+      generateAdmissionNo(undefined, settings?.admissionNumberPrefix, activeSectionId).then((no) => {
+        setForm((f) => {
+          if (!f.classId) {
+            return { ...f, admissionNo: no };
+          }
+          return f;
+        });
+      });
+    }
+  }, [activeSectionId, classes]);
+
+  // Initial load / when settings or activeSectionId change: auto-populate admission number
   useEffect(() => {
     let isMounted = true;
     const updateInitialAdmissionNo = async () => {
-      const autoNo = await generateAdmissionNo(form.classId, settings?.admissionNumberPrefix);
+      const autoNo = await generateAdmissionNo(form.classId, settings?.admissionNumberPrefix, activeSectionId);
       if (isMounted) {
         setForm((f) => {
           const isStaleSCH = f.admissionNo.startsWith('SCH/') && !autoNo.startsWith('SCH/');
-          if (!f.admissionNo || isStaleSCH) {
+          const isStaleGeneric = f.admissionNo.startsWith('PHJCS/') && (autoNo.startsWith('PHJCNPS/') || autoNo.startsWith('PHJCSS/'));
+          if (!f.admissionNo || isStaleSCH || isStaleGeneric) {
             return { ...f, admissionNo: autoNo };
           }
           return f;
@@ -826,7 +893,7 @@ export default function StudentAdmissionScreen() {
     return () => {
       isMounted = false;
     };
-  }, [settings?.admissionNumberPrefix, form.classId]);
+  }, [settings?.admissionNumberPrefix, form.classId, activeSectionId]);
 
   // Load classes
   useEffect(() => {
@@ -1006,7 +1073,7 @@ export default function StudentAdmissionScreen() {
 
   // ─── RENDER ────────────────────────────────────────────────────────────────
   return (
-    <FormContext.Provider value={{ form, set, classes, sections, isFetchingAdmissionNo, fetchNextAdmissionNo }}>
+    <FormContext.Provider value={{ form, set, classes: filteredClasses, sections, isFetchingAdmissionNo, fetchNextAdmissionNo }}>
     <AdminLayout activeTab="Students">
       <View style={styles.main}>
         <PageTitle onBack={() => navigation.goBack()} onSave={handleSave} isSaving={isSaving} />

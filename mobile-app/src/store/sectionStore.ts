@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export interface SchoolSection {
   id: string;
   name: string;
+  admissionPrefix?: string;
 }
 
 interface SectionState {
@@ -23,6 +24,7 @@ interface SectionState {
 }
 
 const STORAGE_KEY = 'active_section_id';
+const SECTIONS_STORAGE_KEY = 'available_school_sections';
 
 export const useSectionStore = create<SectionState>((set, get) => ({
   availableSections: [],
@@ -31,6 +33,7 @@ export const useSectionStore = create<SectionState>((set, get) => ({
 
   setSections: (sections, allowAll = false) => {
     set({ availableSections: sections });
+    AsyncStorage.setItem(SECTIONS_STORAGE_KEY, JSON.stringify(sections)).catch(() => {});
     const current = get().activeSectionId;
     const isValid = sections.some((s) => s.id === current);
     if (allowAll) {
@@ -56,12 +59,24 @@ export const useSectionStore = create<SectionState>((set, get) => ({
 
   loadFromStorage: async () => {
     try {
-      const stored = await AsyncStorage.getItem(STORAGE_KEY);
-      set({ activeSectionId: stored || '', loaded: true });
+      const [storedId, storedSections] = await Promise.all([
+        AsyncStorage.getItem(STORAGE_KEY),
+        AsyncStorage.getItem(SECTIONS_STORAGE_KEY),
+      ]);
+      const availableSections = storedSections ? JSON.parse(storedSections) : [];
+      set({
+        activeSectionId: storedId || '',
+        availableSections,
+        loaded: true,
+      });
     } catch {
       set({ loaded: true });
     }
   },
 
-  reset: () => set({ availableSections: [], activeSectionId: '' }),
+  reset: () => {
+    AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
+    AsyncStorage.removeItem(SECTIONS_STORAGE_KEY).catch(() => {});
+    set({ availableSections: [], activeSectionId: '' });
+  },
 }));

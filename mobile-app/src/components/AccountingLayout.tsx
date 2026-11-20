@@ -78,7 +78,13 @@ export default function AccountingLayout({ children, activeTab: activeTabProp = 
     if (!isOnline || !user?.token) return;
     apiGet('/hr/staff/profile/me', user.token)
       .then((data: any) => {
-        const sections = Array.isArray(data?.sections) ? data.sections.map((s: any) => ({ id: s.id, name: s.name })) : [];
+        const sections = Array.isArray(data?.sections)
+          ? data.sections.map((s: any) => ({
+              id: s.id,
+              name: s.name,
+              admissionPrefix: s.admissionPrefix,
+            }))
+          : [];
         setSections(sections);
         setPhoto(getFileUrl(data?.photo) || null);
       })

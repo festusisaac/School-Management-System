@@ -4,9 +4,9 @@ import { useAuthStore } from '../store/authStore';
 import { Platform } from 'react-native';
 
 // Local dev (Metro/dev-client): hit your dev machine on the LAN, for fast iteration.
-// Any real build (release/standalone): hit the live, publicly-hosted production server —
-// this is what makes the app work anywhere, not just on the same WiFi as a laptop.
-const DEV_API_BASE = 'http://10.100.142.192:3000/api/v1';
+// Auto-detects your computer's local LAN IP from Expo/Metro so it always connects locally.
+const debuggerHost = Constants.expoConfig?.hostUri?.split(':')[0] || '192.168.0.130';
+const DEV_API_BASE = `http://${debuggerHost}:3000/api/v1`;
 const PROD_API_BASE = 'https://api.phjcschool.com.ng/api/v1';
 
 let API_BASE = __DEV__ ? DEV_API_BASE : PROD_API_BASE;
