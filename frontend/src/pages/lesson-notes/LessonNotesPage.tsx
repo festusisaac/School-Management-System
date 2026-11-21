@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Plus, 
   Search, 
@@ -11,7 +11,9 @@ import {
   AlertCircle,
   ExternalLink,
   Eye,
-  Calendar
+  Calendar,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { lessonNoteService, LessonNote } from '../../services/lessonNote.service';
@@ -21,6 +23,8 @@ import { usePermissions } from '../../hooks/usePermissions';
 import LessonNoteForm from './LessonNoteForm';
 import LessonNoteDetailsModal from './LessonNoteDetailsModal';
 
+const PAGE_SIZE = 10;
+
 const LessonNotesPage: React.FC = () => {
   const { user } = useAuthStore();
   const toast = useToast();
@@ -28,6 +32,7 @@ const LessonNotesPage: React.FC = () => {
   const [lessonNotes, setLessonNotes] = useState<LessonNote[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
   
   // Modals
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -45,6 +50,11 @@ const LessonNotesPage: React.FC = () => {
   useEffect(() => {
     fetchLessonNotes();
   }, [filterStatus]);
+
+  // Reset page when search/filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus]);
 
   const fetchLessonNotes = async () => {
     try {
@@ -110,12 +120,23 @@ const LessonNotesPage: React.FC = () => {
     }
   };
 
-  const filteredNotes = lessonNotes.filter(n => 
+  const filteredNotes = useMemo(() => lessonNotes.filter(n => 
     n.topic.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (n.subject?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (n.class?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (`${n.teacher?.firstName} ${n.teacher?.lastName}`).toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ), [lessonNotes, searchTerm]);
+
+  const totalPages = Math.ceil(filteredNotes.length / PAGE_SIZE);
+  const safePage = Math.max(1, Math.min(currentPage, totalPages || 1));
+  const paginatedNotes = filteredNotes.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const rangeStart = filteredNotes.length > 0 ? (safePage - 1) * PAGE_SIZE + 1 : 0;
+  const rangeEnd = Math.min(safePage * PAGE_SIZE, filteredNotes.length);
+
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-10">
@@ -199,7 +220,7 @@ const LessonNotesPage: React.FC = () => {
             <div key={i} className="bg-white dark:bg-slate-900/50 h-32 rounded-2xl animate-pulse border border-slate-100 dark:border-slate-800"></div>
           ))
         ) : filteredNotes.length > 0 ? (
-          filteredNotes.map((note) => (
+          paginatedNotes.map((note) => (
             <div key={note.id} className="group bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl hover:border-primary-500/30 transition-all duration-500 relative overflow-hidden flex flex-col md:flex-row md:items-center gap-6">
               {/* Left Color Indicator */}
               <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${
@@ -299,7 +320,63 @@ const LessonNotesPage: React.FC = () => {
         )}
       </div>
 
+      {/* Pagination */}
+      {!loading && totalPages > 1 && (
+        <div className="flex items-center justify-between pt-2">
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+            Showing <span className="font-bold text-slate-700 dark:text-slate-200">{rangeStart}–{rangeEnd}</span> of{' '}
+            <span className="font-bold text-slate-700 dark:text-slate-200">{filteredNotes.length}</span> notes
+          </p>
 
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => goToPage(safePage - 1)}
+              disabled={safePage <= 1}
+              className="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter(page => {
+                if (totalPages <= 7) return true;
+                if (page === 1 || page === totalPages) return true;
+                if (Math.abs(page - safePage) <= 1) return true;
+                return false;
+              })
+              .reduce<(number | 'gap')[]>((acc, page, idx, arr) => {
+                if (idx > 0 && page - (arr[idx - 1] as number) > 1) acc.push('gap');
+                acc.push(page);
+                return acc;
+              }, [])
+              .map((item, idx) =>
+                item === 'gap' ? (
+                  <span key={`gap-${idx}`} className="px-1 text-slate-400 dark:text-slate-600 text-xs select-none">•••</span>
+                ) : (
+                  <button
+                    key={item}
+                    onClick={() => goToPage(item as number)}
+                    className={`min-w-[32px] h-8 rounded-lg text-xs font-bold transition-all ${
+                      safePage === item
+                        ? 'bg-primary-600 text-white shadow-sm shadow-primary-500/25'
+                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    {item}
+                  </button>
+                )
+              )}
+
+            <button
+              onClick={() => goToPage(safePage + 1)}
+              disabled={safePage >= totalPages}
+              className="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Forms & Modals */}
       {isFormOpen && (

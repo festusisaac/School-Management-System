@@ -50,43 +50,203 @@ const LessonNoteDetailsModal: React.FC<Props> = ({ isOpen, onClose, note, canApp
   };
 
   const handlePrint = () => {
-    window.print();
+    const printWindow = window.open('', '_blank', 'width=900,height=700');
+    if (!printWindow) {
+      toast.showError('Pop-up blocked. Please allow pop-ups for this site to print.');
+      return;
+    }
+
+    const noteDate = note.date ? format(new Date(note.date), 'MMMM dd, yyyy') : 'N/A';
+    const teacherName = `${note.teacher?.firstName || ''} ${note.teacher?.lastName || ''}`.trim() || 'N/A';
+    const reviewerName = note.reviewer ? `${note.reviewer.firstName || ''} ${note.reviewer.lastName || ''}`.trim() : '';
+    const reviewedDate = note.reviewedAt ? format(new Date(note.reviewedAt), 'MMM dd, yyyy') : '';
+
+    printWindow.document.write(`
+      <!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>Lesson Note - ${(note.topic || '').replace(/</g, '&lt;')}</title>
+          <style>
+            @page {
+              size: A4;
+              margin: 10mm 10mm;
+            }
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            html, body {
+              width: 100%;
+              font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+              font-size: 14px;
+              line-height: 1.6;
+              color: #1a1a1a;
+              background: #fff;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            .container {
+              width: 100%;
+              max-width: 100%;
+              padding: 0;
+            }
+            .header {
+              text-align: center;
+              border-bottom: 2px solid #1e293b;
+              padding-bottom: 16px;
+              margin-bottom: 24px;
+            }
+            .header h1 {
+              font-size: 22px;
+              font-weight: 800;
+              text-transform: uppercase;
+              letter-spacing: -0.5px;
+              color: #0f172a;
+              margin-bottom: 16px;
+            }
+            .meta-grid {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 8px 24px;
+              font-size: 13px;
+              text-align: left;
+            }
+            .meta-grid div {
+              padding: 2px 0;
+            }
+            .meta-grid strong {
+              color: #334155;
+            }
+            .content {
+              margin-top: 8px;
+            }
+            .content h1, .content h2, .content h3, .content h4, .content h5, .content h6 {
+              margin-top: 1em;
+              margin-bottom: 0.5em;
+              color: #0f172a;
+            }
+            .content p {
+              margin-bottom: 0.8em;
+            }
+            .content ul, .content ol {
+              margin-bottom: 0.8em;
+              padding-left: 24px;
+            }
+            .content li {
+              margin-bottom: 0.3em;
+            }
+            .content table {
+              width: 100%;
+              border-collapse: collapse;
+              margin: 1em 0;
+              break-inside: avoid;
+            }
+            .content table th,
+            .content table td {
+              border: 1px solid #cbd5e1;
+              padding: 6px 10px;
+              text-align: left;
+              font-size: 13px;
+            }
+            .content table th {
+              background: #f1f5f9;
+              font-weight: 700;
+            }
+            .content img {
+              max-width: 100%;
+              height: auto;
+            }
+            .content blockquote {
+              border-left: 3px solid #94a3b8;
+              padding-left: 12px;
+              margin: 1em 0;
+              color: #475569;
+              font-style: italic;
+            }
+            .footer {
+              margin-top: 40px;
+              padding-top: 12px;
+              border-top: 1px solid #e2e8f0;
+              font-size: 11px;
+              font-style: italic;
+              color: #94a3b8;
+              display: flex;
+              justify-content: space-between;
+              break-inside: avoid;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Lesson Note</h1>
+              <div class="meta-grid">
+                <div><strong>Topic:</strong> ${(note.topic || '').replace(/</g, '&lt;')}</div>
+                <div><strong>Subject:</strong> ${(note.subject?.name || 'N/A').replace(/</g, '&lt;')}</div>
+                <div><strong>Class:</strong> ${(note.class?.name || 'N/A').replace(/</g, '&lt;')}</div>
+                <div><strong>Date:</strong> ${noteDate}</div>
+                <div><strong>Teacher:</strong> ${teacherName.replace(/</g, '&lt;')}</div>
+                <div><strong>Duration:</strong> ${(note.duration || 'N/A').replace(/</g, '&lt;')}</div>
+              </div>
+            </div>
+
+            <div class="content">
+              ${note.content || '<p style="color: #94a3b8; font-style: italic;">This lesson note has no content.</p>'}
+            </div>
+
+            <div class="footer">
+              <span>Status: ${(note.status || '').toUpperCase()}</span>
+              ${note.status === 'approved' && reviewerName ? `<span>Approved by: ${reviewerName.replace(/</g, '&lt;')} on ${reviewedDate}</span>` : ''}
+            </div>
+          </div>
+
+          <script>
+            (function() {
+              var images = Array.from(document.images || []);
+              var done = false;
+
+              function doPrint() {
+                if (done) return;
+                done = true;
+                setTimeout(function() {
+                  window.focus();
+                  window.print();
+                  window.addEventListener('mouseover', function() {
+                    setTimeout(function() { window.close(); }, 500);
+                  }, { once: true });
+                }, 400);
+              }
+
+              if (images.length === 0) {
+                window.addEventListener('load', doPrint, { once: true });
+                setTimeout(doPrint, 1500);
+              } else {
+                var loaded = 0;
+                function check() {
+                  loaded++;
+                  if (loaded >= images.length) doPrint();
+                }
+                images.forEach(function(img) {
+                  if (img.complete) check();
+                  else {
+                    img.addEventListener('load', check, { once: true });
+                    img.addEventListener('error', check, { once: true });
+                  }
+                });
+                setTimeout(doPrint, 3000);
+              }
+            })();
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   return (
     <div className="fixed inset-0 z-[60] overflow-y-auto bg-slate-950/90 flex items-center justify-center p-0 md:p-4">
-      {/* Print-only CSS */}
-      <style>
-        {`
-          @media print {
-            body * {
-              visibility: hidden;
-            }
-            #printable-lesson-note, #printable-lesson-note * {
-              visibility: visible;
-            }
-            #printable-lesson-note {
-              position: absolute;
-              left: 0;
-              top: 0;
-              width: 100%;
-              padding: 0 !important;
-              margin: 0 !important;
-              border: none !important;
-              box-shadow: none !important;
-              background: white !important;
-            }
-            .no-print {
-              display: none !important;
-            }
-          }
-        `}
-      </style>
-
       <div className="bg-white dark:bg-slate-950 w-full max-w-5xl md:rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col h-full md:h-auto max-h-[100vh] md:max-h-[95vh] overflow-hidden">
         
         {/* Modal Header */}
-        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-950 no-print">
+        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-950">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 rounded-lg border border-slate-200 dark:border-slate-800">
               <FileText size={20} />
@@ -121,7 +281,7 @@ const LessonNoteDetailsModal: React.FC<Props> = ({ isOpen, onClose, note, canApp
         <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-8 bg-white dark:bg-slate-950 custom-scrollbar">
           
           {/* Metadata Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 no-print">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="flex items-center gap-3 p-3 bg-slate-50/50 dark:bg-slate-900/50 rounded-lg border border-slate-100 dark:border-slate-800">
               <User size={16} className="text-slate-400" />
               <div>
@@ -146,38 +306,15 @@ const LessonNoteDetailsModal: React.FC<Props> = ({ isOpen, onClose, note, canApp
           </div>
 
           {/* Lesson Note Document Area */}
-          <div id="printable-lesson-note" className="bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 p-8 md:p-12 min-h-[400px]">
-             {/* Printable Header - Only visible during print */}
-             <div className="hidden print:block border-b-2 border-slate-900 pb-4 mb-8">
-                <h1 className="text-2xl font-bold text-center uppercase tracking-tighter mb-2">Lesson Note</h1>
-                <div className="grid grid-cols-2 gap-4 text-sm font-medium">
-                   <div><strong>Topic:</strong> {note.topic}</div>
-                   <div><strong>Subject:</strong> {note.subject?.name}</div>
-                   <div><strong>Class:</strong> {note.class?.name}</div>
-                   <div><strong>Date:</strong> {note.date ? format(new Date(note.date), 'MMMM dd, yyyy') : 'N/A'}</div>
-                   <div><strong>Teacher:</strong> {note.teacher?.firstName} {note.teacher?.lastName}</div>
-                   <div><strong>Duration:</strong> {note.duration}</div>
-                </div>
-             </div>
-
-             <div className="prose prose-slate dark:prose-invert max-w-none print:prose-black">
+          <div className="bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 p-8 md:p-12 min-h-[400px]">
+             <div className="prose prose-slate dark:prose-invert max-w-none">
                 <div dangerouslySetInnerHTML={{ __html: note.content || '<p class="italic text-slate-400">This lesson note has no content.</p>' }} />
-             </div>
-
-             {/* Printable Footer - Status/Review */}
-             <div className="hidden print:block mt-12 pt-8 border-t border-slate-200 text-xs italic text-slate-500">
-                <div className="flex justify-between">
-                   <span>Status: {note.status.toUpperCase()}</span>
-                   {note.status === 'approved' && (
-                      <span>Approved by: {note.reviewer?.firstName} {note.reviewer?.lastName} on {note.reviewedAt ? format(new Date(note.reviewedAt), 'MMM dd, yyyy') : ''}</span>
-                   )}
-                </div>
              </div>
           </div>
 
           {/* Supervisor Review Status (Only in UI) */}
           {(note.status === 'approved' || note.status === 'rejected') && (
-            <div className={`p-6 rounded-xl border no-print ${
+            <div className={`p-6 rounded-xl border ${
               note.status === 'approved' 
               ? 'bg-green-50/50 border-green-100 dark:bg-green-900/10 dark:border-green-900/30' 
               : 'bg-red-50/50 border-red-100 dark:bg-red-900/10 dark:border-red-900/30'
@@ -205,7 +342,7 @@ const LessonNoteDetailsModal: React.FC<Props> = ({ isOpen, onClose, note, canApp
 
           {/* Supervisor Review Form (Only in UI) */}
           {canApprove && note.status === 'submitted' && (
-            <div className="bg-slate-900 text-white p-8 rounded-xl no-print space-y-6">
+            <div className="bg-slate-900 text-white p-8 rounded-xl space-y-6">
               <div className="flex items-center gap-2">
                 <MessageSquare className="text-primary-400" size={18} />
                 <h3 className="text-lg font-bold">Academic Review</h3>
@@ -242,7 +379,7 @@ const LessonNoteDetailsModal: React.FC<Props> = ({ isOpen, onClose, note, canApp
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 flex items-center justify-end gap-3 no-print">
+        <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 flex items-center justify-end gap-3">
           <button 
             onClick={onClose}
             className="px-5 py-2 bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 rounded-lg hover:bg-slate-200 transition-colors font-bold text-xs"
