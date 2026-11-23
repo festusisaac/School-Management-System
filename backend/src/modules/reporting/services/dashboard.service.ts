@@ -183,7 +183,7 @@ export class DashboardService {
 
         // Initialize with default values for safety
         const stats = {
-            students: { total: 0, active: 0, inactive: 0 },
+            students: { total: 0, active: 0, inactive: 0, allTime: 0 },
             staff: { total: 0, teaching: 0, nonTeaching: 0 },
             academics: { totalClasses: 0, totalSubjects: 0 },
             finance: { totalRevenue: 0, outstandingFees: 0 },
@@ -216,9 +216,13 @@ export class DashboardService {
             if (isValidSection) {
                 studentQb.leftJoin('student.class', 'cls').andWhere('cls.schoolSectionId = :sectionId', { sectionId });
             }
-            stats.students.total = await studentQb.getCount();
-            stats.students.active = await studentQb.clone().andWhere('student.isActive = :isActive', { isActive: true }).getCount();
-            stats.students.inactive = stats.students.total - stats.students.active;
+            const totalRecords = await studentQb.getCount();
+            const activeCount = await studentQb.clone().andWhere('student.isActive = :isActive', { isActive: true }).getCount();
+            stats.students.active = activeCount;
+            stats.students.inactive = totalRecords - activeCount;
+            // Operational total reflects active enrolled students to match Student Directory and active Staff count
+            stats.students.total = activeCount;
+            stats.students.allTime = totalRecords;
         } catch (e) {
             console.error('[Dashboard] Error fetching student stats', (e as any).message);
         }
@@ -760,9 +764,9 @@ export class DashboardService {
             const isValidSection = sectionId && sectionId !== 'undefined' && sectionId !== 'null' && sectionId !== '';
             const isValidSession = sessionId && sessionId !== 'undefined' && sessionId !== 'null' && sessionId !== '';
 
-            const maleQb = this.studentRepository.createQueryBuilder('student').where('(student.tenantId = :tenantId OR student.tenantId IS NULL)', { tenantId }).andWhere('student.gender = :gender', { gender: 'Male' });
-            const femaleQb = this.studentRepository.createQueryBuilder('student').where('(student.tenantId = :tenantId OR student.tenantId IS NULL)', { tenantId }).andWhere('student.gender = :gender', { gender: 'Female' });
-            const enrollQb = this.studentRepository.createQueryBuilder('student').where('(student.tenantId = :tenantId OR student.tenantId IS NULL)', { tenantId });
+            const maleQb = this.studentRepository.createQueryBuilder('student').where('(student.tenantId = :tenantId OR student.tenantId IS NULL)', { tenantId }).andWhere('student.isActive = :isActive', { isActive: true }).andWhere('student.gender = :gender', { gender: 'Male' });
+            const femaleQb = this.studentRepository.createQueryBuilder('student').where('(student.tenantId = :tenantId OR student.tenantId IS NULL)', { tenantId }).andWhere('student.isActive = :isActive', { isActive: true }).andWhere('student.gender = :gender', { gender: 'Female' });
+            const enrollQb = this.studentRepository.createQueryBuilder('student').where('(student.tenantId = :tenantId OR student.tenantId IS NULL)', { tenantId }).andWhere('student.isActive = :isActive', { isActive: true });
 
             if (isValidSection) {
                 maleQb.leftJoin('student.class', 'cls1').andWhere('cls1.schoolSectionId = :sectionId', { sectionId });

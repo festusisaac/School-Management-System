@@ -385,10 +385,14 @@ const DashboardPage: React.FC = () => {
           <div className="mt-4 flex items-center text-sm">
             <span className="text-green-600 font-medium flex items-center">
               <TrendingUp className="w-4 h-4 mr-1" />
-              Active
+              {stats?.students?.active ?? stats?.students?.total ?? 0} Active
             </span>
-            <span className="text-gray-400 mx-2">•</span>
-            <span className="text-gray-500 dark:text-gray-400">{stats?.students?.inactive || 0} Inactive</span>
+            {Boolean(stats?.students?.inactive) && (
+              <>
+                <span className="text-gray-400 mx-2">•</span>
+                <span className="text-amber-500 dark:text-amber-400 font-medium">{stats?.students?.inactive} Inactive</span>
+              </>
+            )}
           </div>
         </div>
 
